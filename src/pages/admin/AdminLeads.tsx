@@ -123,13 +123,19 @@ const AdminLeads = () => {
   // Fix: Extract district properties safely with optional chaining and default values
   const locationData = {
     states: [...new Set(agents.map(agent => {
-      return agent.district?.state || '';
+      const district = agent.district;
+      // Check if district is an object with a state property
+      return typeof district === 'object' && district !== null ? district.state : '';
     }).filter(Boolean))],
     districts: [...new Set(agents.map(agent => {
-      return agent.district?.name || '';
+      const district = agent.district;
+      // Check if district is an object with a name property
+      return typeof district === 'object' && district !== null ? district.name : '';
     }).filter(Boolean))],
     cities: [...new Set(agents.map(agent => {
-      return agent.district?.city || '';
+      const district = agent.district;
+      // Check if district is an object with a city property
+      return typeof district === 'object' && district !== null ? district.city : '';
     }).filter(Boolean))]
   };
 
