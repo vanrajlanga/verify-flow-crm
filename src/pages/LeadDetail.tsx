@@ -63,6 +63,18 @@ const LeadDetail = () => {
         status: 'In Progress'
       };
       setLead(updatedLead);
+      
+      // Update the lead in localStorage to persist the change
+      const storedUser = localStorage.getItem('kycUser');
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        const mockLeads = JSON.parse(localStorage.getItem('mockLeads') || '[]');
+        const updatedLeads = mockLeads.map((l: Lead) => 
+          l.id === updatedLead.id ? updatedLead : l
+        );
+        localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+      }
+      
       toast({
         title: "Verification Started",
         description: `You've started verification for ${lead.name}.`,
@@ -78,6 +90,14 @@ const LeadDetail = () => {
         arrivalTime: new Date(),
       };
       setLead(updatedLead);
+      
+      // Update in localStorage
+      const mockLeads = JSON.parse(localStorage.getItem('mockLeads') || '[]');
+      const updatedLeads = mockLeads.map((l: Lead) => 
+        l.id === updatedLead.id ? updatedLead : l
+      );
+      localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+      
       toast({
         title: "Arrival Marked",
         description: `You've marked your arrival at the verification location.`,
@@ -103,6 +123,14 @@ const LeadDetail = () => {
       };
       
       setLead(updatedLead);
+      
+      // Update in localStorage
+      const mockLeads = JSON.parse(localStorage.getItem('mockLeads') || '[]');
+      const updatedLeads = mockLeads.map((l: Lead) => 
+        l.id === updatedLead.id ? updatedLead : l
+      );
+      localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+      
       toast({
         title: "Photos Uploaded",
         description: `${files.length} photo(s) uploaded successfully.`,
@@ -128,6 +156,14 @@ const LeadDetail = () => {
       };
       
       setLead(updatedLead);
+      
+      // Update in localStorage
+      const mockLeads = JSON.parse(localStorage.getItem('mockLeads') || '[]');
+      const updatedLeads = mockLeads.map((l: Lead) => 
+        l.id === updatedLead.id ? updatedLead : l
+      );
+      localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+      
       toast({
         title: "Documents Uploaded",
         description: `${files.length} document(s) uploaded successfully.`,
@@ -143,6 +179,13 @@ const LeadDetail = () => {
         notes
       };
       setLead(updatedLead);
+      
+      // Update in localStorage
+      const mockLeads = JSON.parse(localStorage.getItem('mockLeads') || '[]');
+      const updatedLeads = mockLeads.map((l: Lead) => 
+        l.id === updatedLead.id ? updatedLead : l
+      );
+      localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
     }
   };
 
@@ -157,6 +200,14 @@ const LeadDetail = () => {
       updatedLead.status = 'Completed';
       
       setLead(updatedLead);
+      
+      // Update in localStorage
+      const mockLeads = JSON.parse(localStorage.getItem('mockLeads') || '[]');
+      const updatedLeads = mockLeads.map((l: Lead) => 
+        l.id === updatedLead.id ? updatedLead : l
+      );
+      localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+      
       toast({
         title: "Verification Completed",
         description: `You've successfully completed the verification for ${lead.name}.`,
@@ -172,10 +223,18 @@ const LeadDetail = () => {
         adminRemarks: remarks,
         reviewedBy: currentUser.id,
         reviewedAt: new Date(),
-        status: 'Completed'
+        status: 'Approved'
       };
       
       setLead(updatedLead);
+      
+      // Update in localStorage
+      const mockLeads = JSON.parse(localStorage.getItem('mockLeads') || '[]');
+      const updatedLeads = mockLeads.map((l: Lead) => 
+        l.id === updatedLead.id ? updatedLead : l
+      );
+      localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+      
       toast({
         title: "Verification Approved",
         description: `You've approved the verification for ${lead.name}.`,
@@ -196,6 +255,14 @@ const LeadDetail = () => {
       updatedLead.status = 'Rejected';
       
       setLead(updatedLead);
+      
+      // Update in localStorage
+      const mockLeads = JSON.parse(localStorage.getItem('mockLeads') || '[]');
+      const updatedLeads = mockLeads.map((l: Lead) => 
+        l.id === updatedLead.id ? updatedLead : l
+      );
+      localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+      
       toast({
         title: "Verification Rejected",
         description: `You've rejected the verification for ${lead.name}.`,
@@ -204,10 +271,24 @@ const LeadDetail = () => {
   };
 
   const handleForwardToBank = () => {
-    toast({
-      title: "Forwarded to Bank",
-      description: "The verification has been forwarded to the bank successfully.",
-    });
+    if (lead) {
+      const updatedLead = { ...lead };
+      updatedLead.status = 'Forwarded to Bank';
+      
+      setLead(updatedLead);
+      
+      // Update in localStorage
+      const mockLeads = JSON.parse(localStorage.getItem('mockLeads') || '[]');
+      const updatedLeads = mockLeads.map((l: Lead) => 
+        l.id === updatedLead.id ? updatedLead : l
+      );
+      localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+      
+      toast({
+        title: "Forwarded to Bank",
+        description: "The verification has been forwarded to the bank successfully.",
+      });
+    }
   };
 
   if (!currentUser || !lead) {
@@ -244,11 +325,11 @@ const LeadDetail = () => {
               </div>
               {isAdmin ? null : (
                 <Button 
-                  variant={lead.status === 'Completed' ? 'outline' : 'default'}
-                  disabled={lead.status === 'Completed'}
+                  variant={lead.verification?.status === 'Completed' ? 'outline' : 'default'}
+                  disabled={lead.verification?.status === 'Completed'}
                   onClick={handleStartVerification}
                 >
-                  {lead.status === 'Completed' ? 'Completed' : 'Start Verification'}
+                  {lead.verification?.status === 'Completed' ? 'Completed' : 'Start Verification'}
                 </Button>
               )}
             </div>

@@ -31,8 +31,15 @@ const AgentLeads = () => {
     setCurrentUser(parsedUser);
     
     // Fetch leads for the agent
-    const agentLeads = getLeadsByAgentId(parsedUser.id);
-    setLeads(agentLeads);
+    const storedLeads = localStorage.getItem('mockLeads');
+    if (storedLeads) {
+      const allLeads = JSON.parse(storedLeads);
+      const agentLeads = allLeads.filter((lead: Lead) => lead.assignedTo === parsedUser.id);
+      setLeads(agentLeads);
+    } else {
+      const agentLeads = getLeadsByAgentId(parsedUser.id);
+      setLeads(agentLeads);
+    }
   }, [navigate]);
 
   const handleLogout = () => {
