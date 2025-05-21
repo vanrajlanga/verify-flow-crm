@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -119,22 +120,39 @@ const AdminLeads = () => {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
   }
 
-  // Fix the district properties checks with proper null handling
+  // Fix the district properties checks with proper null handling - this time ensuring TypeScript sees the null check
   const locationData = {
     states: [...new Set(agents.map(agent => {
-      if (!agent.district) return '';
-      return typeof agent.district === 'object' && agent.district !== null ? 
-        agent.district.state || '' : '';
+      // First check if district exists at all
+      if (agent.district === null || agent.district === undefined) {
+        return '';
+      }
+      
+      // Now TypeScript knows district is not null
+      const district = agent.district;
+      return typeof district === 'object' ? district.state || '' : '';
     }).filter(Boolean))],
+    
     districts: [...new Set(agents.map(agent => {
-      if (!agent.district) return '';
-      return typeof agent.district === 'object' && agent.district !== null ? 
-        agent.district.name || '' : '';
+      // First check if district exists at all
+      if (agent.district === null || agent.district === undefined) {
+        return '';
+      }
+      
+      // Now TypeScript knows district is not null
+      const district = agent.district;
+      return typeof district === 'object' ? district.name || '' : '';
     }).filter(Boolean))],
+    
     cities: [...new Set(agents.map(agent => {
-      if (!agent.district) return '';
-      return typeof agent.district === 'object' && agent.district !== null ? 
-        agent.district.city || '' : '';
+      // First check if district exists at all
+      if (agent.district === null || agent.district === undefined) {
+        return '';
+      }
+      
+      // Now TypeScript knows district is not null
+      const district = agent.district;
+      return typeof district === 'object' ? district.city || '' : '';
     }).filter(Boolean))]
   };
 
