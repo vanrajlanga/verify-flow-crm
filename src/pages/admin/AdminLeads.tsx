@@ -120,11 +120,17 @@ const AdminLeads = () => {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
   }
 
-  // Get location data for the AddLeadForm
+  // Fix: Extract district properties safely with optional chaining and default values
   const locationData = {
-    states: [...new Set(agents.map(agent => agent.district?.state).filter(Boolean))],
-    districts: [...new Set(agents.map(agent => agent.district?.name).filter(Boolean))],
-    cities: [...new Set(agents.map(agent => agent.district?.city).filter(Boolean))]
+    states: [...new Set(agents.map(agent => {
+      return agent.district?.state || '';
+    }).filter(Boolean))],
+    districts: [...new Set(agents.map(agent => {
+      return agent.district?.name || '';
+    }).filter(Boolean))],
+    cities: [...new Set(agents.map(agent => {
+      return agent.district?.city || '';
+    }).filter(Boolean))]
   };
 
   return (
@@ -183,7 +189,12 @@ const AdminLeads = () => {
                   leads={leads} 
                   currentUser={currentUser}
                   isAdmin={true}
-                  onUpdate={handleUpdateLead} 
+                  onUpdate={(lead) => {
+                    // Fix: Adapter function to match expected signature
+                    if (lead && lead.id && lead.status) {
+                      handleUpdateLead(lead.id, lead.status);
+                    }
+                  }}
                   onDelete={handleDeleteLead}
                   availableAgents={agents}
                 />
