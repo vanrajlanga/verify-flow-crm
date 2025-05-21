@@ -6,6 +6,9 @@ export interface User {
   email: string;
   role: 'admin' | 'agent';
   district?: string;
+  state?: string;
+  city?: string;
+  password?: string;
   totalVerifications?: number;
   completionRate?: number;
 }
