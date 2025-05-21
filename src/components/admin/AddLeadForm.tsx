@@ -7,7 +7,7 @@ import { Lead, User, getBankById } from '@/utils/mockData';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload } from 'lucide-react';
+import { Upload, Plus, X } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import {
   Form,
@@ -24,6 +24,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  RadioGroup,
+  RadioGroupItem,
+} from "@/components/ui/radio-group";
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -56,9 +60,16 @@ const formSchema = z.object({
   visitType: z.string().min(1, {
     message: "Please select a visit type.",
   }),
+  assignmentType: z.enum(["auto", "manual"]),
   assignedTo: z.string().optional(),
   instructions: z.string().optional(),
 });
+
+interface Document {
+  id: string;
+  file: File;
+  name: string;
+}
 
 interface AddLeadFormProps {
   agents: User[];
@@ -69,7 +80,9 @@ interface AddLeadFormProps {
 }
 
 const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLeadFormProps) => {
-  const [uploadedDocuments, setUploadedDocuments] = useState<File[]>([]);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [documentName, setDocumentName] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -84,22 +97,77 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
       pincode: "",
       bank: "",
       visitType: "",
+      assignmentType: "auto",
       assignedTo: "",
       instructions: ""
     },
   });
 
-  const handleDocumentUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setUploadedDocuments(prev => [...prev, ...Array.from(e.target.files || [])]);
+  const selectedState = form.watch("state");
+  const selectedDistrict = form.watch("district");
+  const assignmentType = form.watch("assignmentType");
+  
+  const availableDistricts = locationData.states.find(s => s.name === selectedState)?.districts || [];
+  const availableCities = availableDistricts.find(d => d.name === selectedDistrict)?.cities || [];
+  const filteredAgents = agents.filter(agent => 
+    agent.district === selectedDistrict || !agent.district
+  );
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
     }
   };
 
-  const removeDocument = (index: number) => {
-    setUploadedDocuments(prev => prev.filter((_, i) => i !== index));
+  const addDocument = () => {
+    if (!selectedFile) {
+      toast({
+        title: "No file selected",
+        description: "Please select a file to upload",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!documentName) {
+      toast({
+        title: "Missing document name",
+        description: "Please provide a name for the document",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newDocument: Document = {
+      id: `doc-${Date.now()}-${documents.length}`,
+      file: selectedFile,
+      name: documentName
+    };
+
+    setDocuments([...documents, newDocument]);
+    setDocumentName('');
+    setSelectedFile(null);
+    
+    // Reset the file input
+    const fileInput = document.getElementById('document-upload') as HTMLInputElement;
+    if (fileInput) fileInput.value = '';
+  };
+
+  const removeDocument = (docId: string) => {
+    setDocuments(documents.filter(doc => doc.id !== docId));
   };
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
+    // Create documents array from the uploaded files
+    const uploadedDocuments = documents.map(doc => ({
+      id: doc.id,
+      name: doc.name,
+      type: 'Other' as const,
+      uploadedBy: 'bank' as const,
+      url: '/placeholder.svg',
+      uploadDate: new Date()
+    }));
+
     // Create a new lead object
     const newLead: Lead = {
       id: `lead-${Date.now()}`,
@@ -116,22 +184,15 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
       status: 'Pending',
       bank: values.bank,
       visitType: values.visitType as "Home" | "Office" | "Both",
-      assignedTo: values.assignedTo || '',
+      assignedTo: values.assignmentType === 'manual' && values.assignedTo ? values.assignedTo : '',
       createdAt: new Date(),
-      documents: uploadedDocuments.map((file, index) => ({
-        id: `doc-${Date.now()}-${index}`,
-        name: file.name,
-        type: 'Other', // Changed from "ID Proof" to "Other" to match Document type
-        uploadedBy: 'bank',
-        url: '/placeholder.svg', // In a real app, we would upload to storage
-        uploadDate: new Date()
-      })),
+      documents: uploadedDocuments,
       instructions: values.instructions || '',
       verification: {
-        status: 'Not Started', // Changed from "Pending" to "Not Started" to match verification status type
-        agentId: values.assignedTo || '', // Fixed: Changed 'agent' to 'agentId' to match the Verification interface
-        leadId: `lead-${Date.now()}`, // Added leadId field which is required by Verification interface
-        id: `verification-${Date.now()}`, // Added id field which is required by Verification interface
+        status: 'Not Started',
+        agentId: values.assignmentType === 'manual' && values.assignedTo ? values.assignedTo : '',
+        leadId: `lead-${Date.now()}`,
+        id: `verification-${Date.now()}`,
         photos: [],
         documents: [],
         notes: ''
@@ -145,15 +206,6 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
     });
     onClose();
   };
-
-  const selectedState = form.watch("state");
-  const selectedDistrict = form.watch("district");
-  
-  const availableDistricts = locationData.states.find(s => s.name === selectedState)?.districts || [];
-  const availableCities = availableDistricts.find(d => d.name === selectedDistrict)?.cities || [];
-  const filteredAgents = agents.filter(agent => 
-    agent.district === selectedDistrict || !agent.district
-  );
 
   return (
     <div className="space-y-6">
@@ -415,75 +467,116 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
               
               <FormField
                 control={form.control}
-                name="assignedTo"
+                name="assignmentType"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Assign Agent (Optional)</FormLabel>
-                    <Select 
-                      onValueChange={field.onChange} 
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Auto-assign based on district" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {filteredAgents.map(agent => (
-                          <SelectItem key={agent.id} value={agent.id}>
-                            {agent.name} {agent.district ? `(${agent.district})` : ''}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormLabel>Agent Assignment</FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        className="flex flex-col space-y-1"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="auto" id="auto" />
+                          <label htmlFor="auto" className="cursor-pointer">Auto-assign based on district</label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="manual" id="manual" />
+                          <label htmlFor="manual" className="cursor-pointer">Manually select agent</label>
+                        </div>
+                      </RadioGroup>
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+              
+              {assignmentType === "manual" && (
+                <FormField
+                  control={form.control}
+                  name="assignedTo"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Select Agent</FormLabel>
+                      <Select 
+                        onValueChange={field.onChange} 
+                        defaultValue={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select an agent" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {filteredAgents.map(agent => (
+                            <SelectItem key={agent.id} value={agent.id}>
+                              {agent.name} {agent.district ? `(${agent.district})` : ''}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
             </div>
           </div>
           
           {/* Document Upload Section */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium">Documents</h3>
-            <div className="border-dashed border-2 border-gray-300 p-6 rounded-lg text-center">
-              <Button variant="outline" className="w-full" asChild>
-                <label className="cursor-pointer">
-                  <Upload className="h-6 w-6 mb-2 mx-auto" />
-                  <span className="block">Upload KYC Documents</span>
-                  <span className="text-xs text-muted-foreground">
-                    (ID Proofs, Address Proofs, etc.)
-                  </span>
-                  <input 
-                    type="file" 
-                    accept="image/*,.pdf" 
-                    multiple 
-                    className="hidden" 
-                    onChange={handleDocumentUpload}
-                  />
-                </label>
-              </Button>
-            </div>
             
-            {uploadedDocuments.length > 0 && (
-              <div className="space-y-2">
-                <h4 className="text-sm font-medium">Uploaded Documents:</h4>
-                <ul className="space-y-2">
-                  {uploadedDocuments.map((file, index) => (
-                    <li key={index} className="flex justify-between items-center p-2 bg-muted rounded-md">
-                      <span className="text-sm truncate max-w-[80%]">{file.name}</span>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => removeDocument(index)}
-                      >
-                        Remove
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
+            <div className="border rounded-lg p-4 space-y-4">
+              <div className="flex flex-wrap gap-3">
+                <div className="flex-grow">
+                  <Input
+                    placeholder="Document name (e.g. ID Proof, Address Proof)"
+                    value={documentName}
+                    onChange={(e) => setDocumentName(e.target.value)}
+                  />
+                </div>
+                <Input
+                  id="document-upload"
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={handleFileChange}
+                  className="max-w-[220px]"
+                />
+                <Button 
+                  type="button" 
+                  onClick={addDocument}
+                  disabled={!selectedFile || !documentName}
+                >
+                  <Plus className="h-4 w-4 mr-1" /> Add
+                </Button>
               </div>
-            )}
+              
+              {documents.length > 0 && (
+                <div className="space-y-2 mt-4">
+                  <h4 className="text-sm font-medium">Uploaded Documents:</h4>
+                  <ul className="space-y-2">
+                    {documents.map((doc) => (
+                      <li key={doc.id} className="flex justify-between items-center p-2 bg-muted rounded-md">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">{doc.name}</span>
+                          <span className="text-xs text-muted-foreground">({doc.file.name})</span>
+                        </div>
+                        <Button 
+                          type="button"
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => removeDocument(doc.id)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
           </div>
           
           <div className="flex justify-end space-x-4 pt-4 border-t">

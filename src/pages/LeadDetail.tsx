@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -33,19 +32,47 @@ const LeadDetail = () => {
     const parsedUser = JSON.parse(storedUser);
     setCurrentUser(parsedUser);
     
-    // Fetch lead by id
+    // Fetch lead from localStorage by id
     if (leadId) {
-      const leadData = getLeadById(leadId);
-      if (!leadData) {
+      try {
+        const storedLeads = localStorage.getItem('mockLeads');
+        if (storedLeads) {
+          const allLeads: Lead[] = JSON.parse(storedLeads);
+          const foundLead = allLeads.find(l => l.id === leadId);
+          
+          if (foundLead) {
+            setLead(foundLead);
+          } else {
+            toast({
+              title: "Lead not found",
+              description: "The lead you're looking for doesn't exist in localStorage.",
+              variant: "destructive",
+            });
+            navigate(isAdmin ? '/admin/leads' : '/agent/leads');
+          }
+        } else {
+          // Fallback to using the utility function
+          const leadData = getLeadById(leadId);
+          if (leadData) {
+            setLead(leadData);
+          } else {
+            toast({
+              title: "Lead not found",
+              description: "The lead you're looking for doesn't exist.",
+              variant: "destructive",
+            });
+            navigate(isAdmin ? '/admin/leads' : '/agent/leads');
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching lead:", error);
         toast({
-          title: "Lead not found",
-          description: "The lead you're looking for doesn't exist.",
+          title: "Error",
+          description: "There was an error fetching the lead details.",
           variant: "destructive",
         });
         navigate(isAdmin ? '/admin/leads' : '/agent/leads');
-        return;
       }
-      setLead(leadData);
     }
   }, [leadId, navigate, isAdmin]);
 
@@ -62,23 +89,29 @@ const LeadDetail = () => {
         startTime: new Date(),
         status: 'In Progress'
       };
+      updatedLead.status = 'In Progress';
       setLead(updatedLead);
       
       // Update the lead in localStorage to persist the change
-      const storedUser = localStorage.getItem('kycUser');
-      if (storedUser) {
-        const parsedUser = JSON.parse(storedUser);
+      try {
         const mockLeads = JSON.parse(localStorage.getItem('mockLeads') || '[]');
         const updatedLeads = mockLeads.map((l: Lead) => 
           l.id === updatedLead.id ? updatedLead : l
         );
         localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+        
+        toast({
+          title: "Verification Started",
+          description: `You've started verification for ${lead.name}.`,
+        });
+      } catch (error) {
+        console.error("Error updating lead in localStorage:", error);
+        toast({
+          title: "Error",
+          description: "There was an error updating the lead status.",
+          variant: "destructive",
+        });
       }
-      
-      toast({
-        title: "Verification Started",
-        description: `You've started verification for ${lead.name}.`,
-      });
     }
   };
 
@@ -92,16 +125,20 @@ const LeadDetail = () => {
       setLead(updatedLead);
       
       // Update in localStorage
-      const mockLeads = JSON.parse(localStorage.getItem('mockLeads') || '[]');
-      const updatedLeads = mockLeads.map((l: Lead) => 
-        l.id === updatedLead.id ? updatedLead : l
-      );
-      localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
-      
-      toast({
-        title: "Arrival Marked",
-        description: `You've marked your arrival at the verification location.`,
-      });
+      try {
+        const mockLeads = JSON.parse(localStorage.getItem('mockLeads') || '[]');
+        const updatedLeads = mockLeads.map((l: Lead) => 
+          l.id === updatedLead.id ? updatedLead : l
+        );
+        localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+        
+        toast({
+          title: "Arrival Marked",
+          description: `You've marked your arrival at the verification location.`,
+        });
+      } catch (error) {
+        console.error("Error updating arrival time:", error);
+      }
     }
   };
 
@@ -125,16 +162,20 @@ const LeadDetail = () => {
       setLead(updatedLead);
       
       // Update in localStorage
-      const mockLeads = JSON.parse(localStorage.getItem('mockLeads') || '[]');
-      const updatedLeads = mockLeads.map((l: Lead) => 
-        l.id === updatedLead.id ? updatedLead : l
-      );
-      localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
-      
-      toast({
-        title: "Photos Uploaded",
-        description: `${files.length} photo(s) uploaded successfully.`,
-      });
+      try {
+        const mockLeads = JSON.parse(localStorage.getItem('mockLeads') || '[]');
+        const updatedLeads = mockLeads.map((l: Lead) => 
+          l.id === updatedLead.id ? updatedLead : l
+        );
+        localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+        
+        toast({
+          title: "Photos Uploaded",
+          description: `${files.length} photo(s) uploaded successfully.`,
+        });
+      } catch (error) {
+        console.error("Error updating photos:", error);
+      }
     }
   };
 
@@ -158,16 +199,20 @@ const LeadDetail = () => {
       setLead(updatedLead);
       
       // Update in localStorage
-      const mockLeads = JSON.parse(localStorage.getItem('mockLeads') || '[]');
-      const updatedLeads = mockLeads.map((l: Lead) => 
-        l.id === updatedLead.id ? updatedLead : l
-      );
-      localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
-      
-      toast({
-        title: "Documents Uploaded",
-        description: `${files.length} document(s) uploaded successfully.`,
-      });
+      try {
+        const mockLeads = JSON.parse(localStorage.getItem('mockLeads') || '[]');
+        const updatedLeads = mockLeads.map((l: Lead) => 
+          l.id === updatedLead.id ? updatedLead : l
+        );
+        localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+        
+        toast({
+          title: "Documents Uploaded",
+          description: `${files.length} document(s) uploaded successfully.`,
+        });
+      } catch (error) {
+        console.error("Error updating documents:", error);
+      }
     }
   };
 
@@ -181,11 +226,15 @@ const LeadDetail = () => {
       setLead(updatedLead);
       
       // Update in localStorage
-      const mockLeads = JSON.parse(localStorage.getItem('mockLeads') || '[]');
-      const updatedLeads = mockLeads.map((l: Lead) => 
-        l.id === updatedLead.id ? updatedLead : l
-      );
-      localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+      try {
+        const mockLeads = JSON.parse(localStorage.getItem('mockLeads') || '[]');
+        const updatedLeads = mockLeads.map((l: Lead) => 
+          l.id === updatedLead.id ? updatedLead : l
+        );
+        localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+      } catch (error) {
+        console.error("Error updating notes:", error);
+      }
     }
   };
 
@@ -202,16 +251,20 @@ const LeadDetail = () => {
       setLead(updatedLead);
       
       // Update in localStorage
-      const mockLeads = JSON.parse(localStorage.getItem('mockLeads') || '[]');
-      const updatedLeads = mockLeads.map((l: Lead) => 
-        l.id === updatedLead.id ? updatedLead : l
-      );
-      localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
-      
-      toast({
-        title: "Verification Completed",
-        description: `You've successfully completed the verification for ${lead.name}.`,
-      });
+      try {
+        const mockLeads = JSON.parse(localStorage.getItem('mockLeads') || '[]');
+        const updatedLeads = mockLeads.map((l: Lead) => 
+          l.id === updatedLead.id ? updatedLead : l
+        );
+        localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+        
+        toast({
+          title: "Verification Completed",
+          description: `You've successfully completed the verification for ${lead.name}.`,
+        });
+      } catch (error) {
+        console.error("Error completing verification:", error);
+      }
     }
   };
 
@@ -223,22 +276,26 @@ const LeadDetail = () => {
         adminRemarks: remarks,
         reviewedBy: currentUser.id,
         reviewedAt: new Date(),
-        status: 'Completed' // Changed from "Approved" to "Completed"
+        status: 'Completed'
       };
       
       setLead(updatedLead);
       
       // Update in localStorage
-      const mockLeads = JSON.parse(localStorage.getItem('mockLeads') || '[]');
-      const updatedLeads = mockLeads.map((l: Lead) => 
-        l.id === updatedLead.id ? updatedLead : l
-      );
-      localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
-      
-      toast({
-        title: "Verification Approved",
-        description: `You've approved the verification for ${lead.name}.`,
-      });
+      try {
+        const mockLeads = JSON.parse(localStorage.getItem('mockLeads') || '[]');
+        const updatedLeads = mockLeads.map((l: Lead) => 
+          l.id === updatedLead.id ? updatedLead : l
+        );
+        localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+        
+        toast({
+          title: "Verification Approved",
+          description: `You've approved the verification for ${lead.name}.`,
+        });
+      } catch (error) {
+        console.error("Error approving verification:", error);
+      }
     }
   };
 
@@ -257,37 +314,45 @@ const LeadDetail = () => {
       setLead(updatedLead);
       
       // Update in localStorage
-      const mockLeads = JSON.parse(localStorage.getItem('mockLeads') || '[]');
-      const updatedLeads = mockLeads.map((l: Lead) => 
-        l.id === updatedLead.id ? updatedLead : l
-      );
-      localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
-      
-      toast({
-        title: "Verification Rejected",
-        description: `You've rejected the verification for ${lead.name}.`,
-      });
+      try {
+        const mockLeads = JSON.parse(localStorage.getItem('mockLeads') || '[]');
+        const updatedLeads = mockLeads.map((l: Lead) => 
+          l.id === updatedLead.id ? updatedLead : l
+        );
+        localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+        
+        toast({
+          title: "Verification Rejected",
+          description: `You've rejected the verification for ${lead.name}.`,
+        });
+      } catch (error) {
+        console.error("Error rejecting verification:", error);
+      }
     }
   };
 
   const handleForwardToBank = () => {
     if (lead) {
       const updatedLead = { ...lead };
-      updatedLead.status = 'Completed'; // Changed from "Forwarded to Bank" to "Completed"
+      updatedLead.status = 'Completed';
       
       setLead(updatedLead);
       
       // Update in localStorage
-      const mockLeads = JSON.parse(localStorage.getItem('mockLeads') || '[]');
-      const updatedLeads = mockLeads.map((l: Lead) => 
-        l.id === updatedLead.id ? updatedLead : l
-      );
-      localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
-      
-      toast({
-        title: "Forwarded to Bank",
-        description: "The verification has been forwarded to the bank successfully.",
-      });
+      try {
+        const mockLeads = JSON.parse(localStorage.getItem('mockLeads') || '[]');
+        const updatedLeads = mockLeads.map((l: Lead) => 
+          l.id === updatedLead.id ? updatedLead : l
+        );
+        localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+        
+        toast({
+          title: "Forwarded to Bank",
+          description: "The verification has been forwarded to the bank successfully.",
+        });
+      } catch (error) {
+        console.error("Error forwarding to bank:", error);
+      }
     }
   };
 
@@ -422,7 +487,7 @@ const LeadDetail = () => {
                     <div className="mt-6">
                       <h3 className="font-medium mb-2">Documents from Bank</h3>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2">
-                        {lead.documents.map((doc) => (
+                        {lead.documents.length > 0 ? lead.documents.map((doc) => (
                           <div key={doc.id} className="border rounded-md p-3 flex flex-col">
                             <div className="flex justify-between items-start mb-2">
                               <span className="text-sm font-medium">{doc.name}</span>
@@ -438,10 +503,14 @@ const LeadDetail = () => {
                               />
                             </div>
                             <div className="text-xs text-muted-foreground">
-                              {format(doc.uploadDate, 'MMM d, yyyy')}
+                              {format(new Date(doc.uploadDate), 'MMM d, yyyy')}
                             </div>
                           </div>
-                        ))}
+                        )) : (
+                          <div className="col-span-3 text-center py-8 text-muted-foreground">
+                            No documents uploaded yet
+                          </div>
+                        )}
                       </div>
                     </div>
 

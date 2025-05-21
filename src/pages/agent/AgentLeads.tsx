@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -30,35 +31,78 @@ const AgentLeads = () => {
     setCurrentUser(parsedUser);
     
     // Fetch leads for the agent
-    const storedLeads = localStorage.getItem('mockLeads');
-    if (storedLeads) {
-      const allLeads = JSON.parse(storedLeads);
-      const agentLeads = allLeads
-        .filter((lead: Lead) => lead.assignedTo === parsedUser.id)
-        .map((lead: Lead) => {
-          // Ensure verification status is one of the allowed types
-          if (lead.verification && !["Not Started", "In Progress", "Completed", "Rejected"].includes(lead.verification.status)) {
-            lead.verification.status = "Not Started";
-          }
-          // Ensure lead status is one of the allowed types
-          if (!["Pending", "In Progress", "Completed", "Rejected"].includes(lead.status)) {
-            lead.status = "Pending";
-          }
-          return lead;
-        });
-      setLeads(agentLeads);
-    } else {
-      const agentLeads = getLeadsByAgentId(parsedUser.id)
-        .map(lead => {
-          // Normalize statuses
-          if (lead.verification && !["Not Started", "In Progress", "Completed", "Rejected"].includes(lead.verification.status)) {
-            lead.verification.status = "Not Started";
-          }
-          if (!["Pending", "In Progress", "Completed", "Rejected"].includes(lead.status)) {
-            lead.status = "Pending";
-          }
-          return lead;
-        });
+    try {
+      const storedLeads = localStorage.getItem('mockLeads');
+      if (storedLeads) {
+        const allLeads = JSON.parse(storedLeads);
+        const agentLeads = allLeads
+          .filter((lead: Lead) => lead.assignedTo === parsedUser.id)
+          .map((lead: Lead) => {
+            // Ensure verification object exists and has proper structure
+            if (!lead.verification) {
+              lead.verification = {
+                id: `verification-${lead.id}`,
+                leadId: lead.id,
+                status: "Not Started",
+                agentId: parsedUser.id,
+                photos: [],
+                documents: [],
+                notes: ""
+              };
+            }
+            
+            // Ensure verification status is one of the allowed types
+            if (!["Not Started", "In Progress", "Completed", "Rejected"].includes(lead.verification.status)) {
+              lead.verification.status = "Not Started";
+            }
+            
+            // Ensure lead status is one of the allowed types
+            if (!["Pending", "In Progress", "Completed", "Rejected"].includes(lead.status)) {
+              lead.status = "Pending";
+            }
+            
+            return lead;
+          });
+        setLeads(agentLeads);
+        
+        // Update local storage with normalized leads
+        localStorage.setItem('mockLeads', JSON.stringify(allLeads));
+      } else {
+        const agentLeads = getLeadsByAgentId(parsedUser.id)
+          .map(lead => {
+            // Ensure verification object exists and has proper structure
+            if (!lead.verification) {
+              lead.verification = {
+                id: `verification-${lead.id}`,
+                leadId: lead.id,
+                status: "Not Started",
+                agentId: parsedUser.id,
+                photos: [],
+                documents: [],
+                notes: ""
+              };
+            }
+            
+            // Normalize statuses
+            if (!["Not Started", "In Progress", "Completed", "Rejected"].includes(lead.verification.status)) {
+              lead.verification.status = "Not Started";
+            }
+            
+            if (!["Pending", "In Progress", "Completed", "Rejected"].includes(lead.status)) {
+              lead.status = "Pending";
+            }
+            
+            return lead;
+          });
+        setLeads(agentLeads);
+        
+        // Store in localStorage
+        localStorage.setItem('mockLeads', JSON.stringify([...agentLeads]));
+      }
+    } catch (error) {
+      console.error("Error loading agent leads:", error);
+      // Fallback to the utility function
+      const agentLeads = getLeadsByAgentId(parsedUser.id);
       setLeads(agentLeads);
     }
   }, [navigate]);

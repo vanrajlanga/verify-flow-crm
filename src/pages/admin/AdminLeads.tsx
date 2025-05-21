@@ -82,11 +82,22 @@ const AdminLeads = () => {
     setCurrentUser(parsedUser);
     
     // Get leads from localStorage or use mockLeads
-    const storedLeads = localStorage.getItem('mockLeads');
-    if (storedLeads) {
-      setLeads(JSON.parse(storedLeads));
-    } else {
-      // Add createdAt to mockLeads if it doesn't exist
+    try {
+      const storedLeads = localStorage.getItem('mockLeads');
+      if (storedLeads) {
+        const parsedLeads = JSON.parse(storedLeads);
+        setLeads(parsedLeads);
+      } else {
+        // Add createdAt to mockLeads if it doesn't exist
+        const leadsWithCreatedAt = mockLeads.map(lead => ({
+          ...lead,
+          createdAt: lead.createdAt || new Date()
+        }));
+        setLeads(leadsWithCreatedAt);
+        localStorage.setItem('mockLeads', JSON.stringify(leadsWithCreatedAt));
+      }
+    } catch (error) {
+      console.error("Error parsing stored leads:", error);
       const leadsWithCreatedAt = mockLeads.map(lead => ({
         ...lead,
         createdAt: lead.createdAt || new Date()
@@ -96,10 +107,15 @@ const AdminLeads = () => {
     }
     
     // Get location data from localStorage or use default
-    const storedLocationData = localStorage.getItem('locationData');
-    if (storedLocationData) {
-      setLocationData(JSON.parse(storedLocationData));
-    } else {
+    try {
+      const storedLocationData = localStorage.getItem('locationData');
+      if (storedLocationData) {
+        setLocationData(JSON.parse(storedLocationData));
+      } else {
+        localStorage.setItem('locationData', JSON.stringify(locationData));
+      }
+    } catch (error) {
+      console.error("Error parsing location data:", error);
       localStorage.setItem('locationData', JSON.stringify(locationData));
     }
   }, [navigate]);
@@ -110,7 +126,26 @@ const AdminLeads = () => {
   };
 
   const handleAddLead = (newLead: Lead) => {
-    const updatedLeads = [...leads, newLead];
+    // Generate unique IDs for the lead and verification
+    const leadId = `lead-${Date.now()}`;
+    const verificationId = `verification-${Date.now()}`;
+    
+    // Create a properly formatted lead with all required fields
+    const completeNewLead = {
+      ...newLead,
+      id: leadId,
+      verification: {
+        ...newLead.verification,
+        id: verificationId,
+        leadId: leadId,
+        status: 'Not Started',
+        photos: [],
+        documents: [],
+        notes: newLead.verification?.notes || ''
+      }
+    };
+    
+    const updatedLeads = [...leads, completeNewLead];
     setLeads(updatedLeads);
     localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
   };
