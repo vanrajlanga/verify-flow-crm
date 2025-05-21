@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -120,22 +119,22 @@ const AdminLeads = () => {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
   }
 
-  // Fix: Extract district properties safely with optional chaining and default values
+  // Fix the district properties checks with proper null handling
   const locationData = {
     states: [...new Set(agents.map(agent => {
       const district = agent.district;
-      // Check if district is an object with a state property
-      return typeof district === 'object' && district !== null ? district.state : '';
+      // Check if district is an object with a state property and ensure it's not null
+      return (district && typeof district === 'object') ? district.state || '' : '';
     }).filter(Boolean))],
     districts: [...new Set(agents.map(agent => {
       const district = agent.district;
-      // Check if district is an object with a name property
-      return typeof district === 'object' && district !== null ? district.name : '';
+      // Check if district is an object with a name property and ensure it's not null
+      return (district && typeof district === 'object') ? district.name || '' : '';
     }).filter(Boolean))],
     cities: [...new Set(agents.map(agent => {
       const district = agent.district;
-      // Check if district is an object with a city property
-      return typeof district === 'object' && district !== null ? district.city : '';
+      // Check if district is an object with a city property and ensure it's not null
+      return (district && typeof district === 'object') ? district.city || '' : '';
     }).filter(Boolean))]
   };
 
