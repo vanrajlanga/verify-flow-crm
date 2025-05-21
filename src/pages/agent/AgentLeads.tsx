@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -34,10 +33,32 @@ const AgentLeads = () => {
     const storedLeads = localStorage.getItem('mockLeads');
     if (storedLeads) {
       const allLeads = JSON.parse(storedLeads);
-      const agentLeads = allLeads.filter((lead: Lead) => lead.assignedTo === parsedUser.id);
+      const agentLeads = allLeads
+        .filter((lead: Lead) => lead.assignedTo === parsedUser.id)
+        .map((lead: Lead) => {
+          // Ensure verification status is one of the allowed types
+          if (lead.verification && !["Not Started", "In Progress", "Completed", "Rejected"].includes(lead.verification.status)) {
+            lead.verification.status = "Not Started";
+          }
+          // Ensure lead status is one of the allowed types
+          if (!["Pending", "In Progress", "Completed", "Rejected"].includes(lead.status)) {
+            lead.status = "Pending";
+          }
+          return lead;
+        });
       setLeads(agentLeads);
     } else {
-      const agentLeads = getLeadsByAgentId(parsedUser.id);
+      const agentLeads = getLeadsByAgentId(parsedUser.id)
+        .map(lead => {
+          // Normalize statuses
+          if (lead.verification && !["Not Started", "In Progress", "Completed", "Rejected"].includes(lead.verification.status)) {
+            lead.verification.status = "Not Started";
+          }
+          if (!["Pending", "In Progress", "Completed", "Rejected"].includes(lead.status)) {
+            lead.status = "Pending";
+          }
+          return lead;
+        });
       setLeads(agentLeads);
     }
   }, [navigate]);

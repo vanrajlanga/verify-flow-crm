@@ -223,7 +223,7 @@ const LeadDetail = () => {
         adminRemarks: remarks,
         reviewedBy: currentUser.id,
         reviewedAt: new Date(),
-        status: 'Approved'
+        status: 'Completed' // Changed from "Approved" to "Completed"
       };
       
       setLead(updatedLead);
@@ -273,7 +273,7 @@ const LeadDetail = () => {
   const handleForwardToBank = () => {
     if (lead) {
       const updatedLead = { ...lead };
-      updatedLead.status = 'Forwarded to Bank';
+      updatedLead.status = 'Completed'; // Changed from "Forwarded to Bank" to "Completed"
       
       setLead(updatedLead);
       

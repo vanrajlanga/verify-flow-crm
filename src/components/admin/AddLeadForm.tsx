@@ -121,14 +121,14 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
       documents: uploadedDocuments.map((file, index) => ({
         id: `doc-${Date.now()}-${index}`,
         name: file.name,
-        type: 'ID Proof',
+        type: 'Other', // Changed from "ID Proof" to "Other" to match Document type
         uploadedBy: 'bank',
         url: '/placeholder.svg', // In a real app, we would upload to storage
         uploadDate: new Date()
       })),
       instructions: values.instructions || '',
       verification: {
-        status: 'Pending',
+        status: 'Not Started', // Changed from "Pending" to "Not Started" to match verification status type
         agent: values.assignedTo || '',
         photos: [],
         documents: [],

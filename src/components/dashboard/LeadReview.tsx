@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -34,7 +33,6 @@ const LeadReview = ({
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'Pending':
       case 'Not Started':
         return <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200">{status}</Badge>;
       case 'In Progress':
