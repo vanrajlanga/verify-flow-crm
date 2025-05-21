@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -123,18 +124,27 @@ const AdminLeads = () => {
   const locationData = {
     states: [...new Set(agents.map(agent => {
       const district = agent.district;
-      // Check if district is an object with a state property and ensure it's not null
-      return (district && typeof district === 'object') ? district.state || '' : '';
+      // Ensure district is not null/undefined before accessing properties
+      if (district && typeof district === 'object') {
+        return district.state || '';
+      }
+      return '';
     }).filter(Boolean))],
     districts: [...new Set(agents.map(agent => {
       const district = agent.district;
-      // Check if district is an object with a name property and ensure it's not null
-      return (district && typeof district === 'object') ? district.name || '' : '';
+      // Ensure district is not null/undefined before accessing properties
+      if (district && typeof district === 'object') {
+        return district.name || '';
+      }
+      return '';
     }).filter(Boolean))],
     cities: [...new Set(agents.map(agent => {
       const district = agent.district;
-      // Check if district is an object with a city property and ensure it's not null
-      return (district && typeof district === 'object') ? district.city || '' : '';
+      // Ensure district is not null/undefined before accessing properties
+      if (district && typeof district === 'object') {
+        return district.city || '';
+      }
+      return '';
     }).filter(Boolean))]
   };
 
