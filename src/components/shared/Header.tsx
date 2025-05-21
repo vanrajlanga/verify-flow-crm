@@ -15,13 +15,29 @@ import { User } from '@/utils/mockData';
 import { Bell, Menu, UserIcon } from 'lucide-react';
 
 interface HeaderProps {
-  user: User;
+  user: User | null;  // Updated to allow null
   onLogout: () => void;
   toggleSidebar: () => void;
 }
 
 const Header = ({ user, onLogout, toggleSidebar }: HeaderProps) => {
   const [unreadNotifications] = useState(3);
+
+  // If user is null, render a minimal header
+  if (!user) {
+    return (
+      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex h-16 items-center px-4 md:px-6">
+        <div className="flex w-full items-center justify-between">
+          <Link to="/" className="flex items-center gap-2">
+            <div className="bg-primary rounded-md p-1">
+              <span className="text-primary-foreground font-bold">KYC</span>
+            </div>
+            <span className="font-bold text-lg hidden md:inline-block">Bank Verification CRM</span>
+          </Link>
+        </div>
+      </header>
+    );
+  }
 
   return (
     <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex h-16 items-center px-4 md:px-6">
