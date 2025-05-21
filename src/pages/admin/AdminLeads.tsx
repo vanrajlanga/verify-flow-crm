@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { toast } from '@/components/ui/use-toast';
 import AddLeadForm from '@/components/admin/AddLeadForm';
@@ -21,6 +23,7 @@ const AdminLeads = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [agents, setAgents] = useState<User[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -55,6 +58,22 @@ const AdminLeads = () => {
       setLeads(mockLeads);
       localStorage.setItem('mockLeads', JSON.stringify(mockLeads));
     }
+
+    // Get agents
+    const storedAgents = localStorage.getItem('mockUsers');
+    if (storedAgents) {
+      try {
+        const parsedUsers = JSON.parse(storedAgents);
+        setAgents(parsedUsers.filter((user: User) => user.role === 'agent'));
+      } catch (error) {
+        console.error("Error parsing stored users:", error);
+        const filteredAgents = mockUsers.filter(user => user.role === 'agent');
+        setAgents(filteredAgents);
+      }
+    } else {
+      const filteredAgents = mockUsers.filter(user => user.role === 'agent');
+      setAgents(filteredAgents);
+    }
   }, [navigate]);
 
   const handleLogout = () => {
@@ -75,6 +94,17 @@ const AdminLeads = () => {
     });
   };
 
+  const handleAddLead = (newLead: Lead) => {
+    const updatedLeads = [...leads, newLead];
+    setLeads(updatedLeads);
+    localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+
+    toast({
+      title: "Lead added",
+      description: `New lead ${newLead.name} has been created.`,
+    });
+  };
+
   const handleDeleteLead = (leadId: string) => {
     const updatedLeads = leads.filter(lead => lead.id !== leadId);
     setLeads(updatedLeads);
@@ -89,6 +119,13 @@ const AdminLeads = () => {
   if (!currentUser) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
   }
+
+  // Get location data for the AddLeadForm
+  const locationData = {
+    states: [...new Set(agents.map(agent => agent.district?.state).filter(Boolean))],
+    districts: [...new Set(agents.map(agent => agent.district?.name).filter(Boolean))],
+    cities: [...new Set(agents.map(agent => agent.district?.city).filter(Boolean))]
+  };
 
   return (
     <div className="flex min-h-screen bg-muted/30">
@@ -124,7 +161,13 @@ const AdminLeads = () => {
                       Create a new lead for verification.
                     </DialogDescription>
                   </DialogHeader>
-                  <AddLeadForm />
+                  <AddLeadForm 
+                    agents={agents}
+                    banks={mockBanks}
+                    onAddLead={handleAddLead}
+                    onClose={() => document.querySelector<HTMLButtonElement>('[aria-label="Close"]')?.click()}
+                    locationData={locationData}
+                  />
                 </DialogContent>
               </Dialog>
             </div>
@@ -138,8 +181,11 @@ const AdminLeads = () => {
               <CardContent>
                 <LeadList 
                   leads={leads} 
-                  onUpdateLead={handleUpdateLead} 
-                  onDeleteLead={handleDeleteLead} 
+                  currentUser={currentUser}
+                  isAdmin={true}
+                  onUpdate={handleUpdateLead} 
+                  onDelete={handleDeleteLead}
+                  availableAgents={agents}
                 />
               </CardContent>
             </Card>
