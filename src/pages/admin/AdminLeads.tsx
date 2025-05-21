@@ -86,8 +86,13 @@ const AdminLeads = () => {
     if (storedLeads) {
       setLeads(JSON.parse(storedLeads));
     } else {
-      setLeads(mockLeads);
-      localStorage.setItem('mockLeads', JSON.stringify(mockLeads));
+      // Add createdAt to mockLeads if it doesn't exist
+      const leadsWithCreatedAt = mockLeads.map(lead => ({
+        ...lead,
+        createdAt: lead.createdAt || new Date()
+      }));
+      setLeads(leadsWithCreatedAt);
+      localStorage.setItem('mockLeads', JSON.stringify(leadsWithCreatedAt));
     }
     
     // Get location data from localStorage or use default

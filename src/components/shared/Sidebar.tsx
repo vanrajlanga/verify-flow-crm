@@ -6,7 +6,7 @@ import { User } from '@/utils/mockData';
 import { BadgeCheck, BarChart, File, Home, List, Settings, User as UserIcon, Users } from 'lucide-react';
 
 interface SidebarProps {
-  user: User;
+  user: User | null;
   isOpen: boolean;
 }
 
@@ -34,7 +34,13 @@ const Sidebar = ({ user, isOpen }: SidebarProps) => {
     { group: 'profile', icon: <UserIcon size={20} />, label: 'My Profile', path: '/agent/profile' },
   ];
 
-  const links = user.role === 'admin' ? adminLinks : agentLinks;
+  // Default to admin links if user is null or if role is not defined
+  const links = user?.role === 'agent' ? agentLinks : adminLinks;
+
+  // If user is null, don't render the sidebar
+  if (!user) {
+    return null;
+  }
 
   return (
     <div 

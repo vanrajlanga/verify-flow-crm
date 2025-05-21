@@ -1,3 +1,4 @@
+
 // Types
 export interface User {
   id: string;
@@ -153,7 +154,8 @@ export const mockLeads: Lead[] = [
         uploadDate: new Date('2023-03-15')
       }
     ],
-    instructions: 'Verify both home and office addresses. Confirm employment details with HR.'
+    instructions: 'Verify both home and office addresses. Confirm employment details with HR.',
+    createdAt: new Date('2023-03-14')
   },
   {
     id: '2',
@@ -190,7 +192,8 @@ export const mockLeads: Lead[] = [
       status: 'In Progress',
       photos: [],
       documents: []
-    }
+    },
+    createdAt: new Date('2023-03-17')
   },
   {
     id: '3',
@@ -270,7 +273,8 @@ export const mockLeads: Lead[] = [
       adminRemarks: 'All documents and verification complete. Approved for banking services.',
       reviewedBy: '1',
       reviewedAt: new Date('2023-03-13T14:30:00')
-    }
+    },
+    createdAt: new Date('2023-03-09')
   },
   {
     id: '4',
@@ -306,7 +310,8 @@ export const mockLeads: Lead[] = [
         uploadDate: new Date('2023-03-19')
       }
     ],
-    instructions: 'Verify hospital employment and residence. Collect proof of income.'
+    instructions: 'Verify hospital employment and residence. Collect proof of income.',
+    createdAt: new Date('2023-03-18')
   },
   {
     id: '5',
@@ -341,7 +346,8 @@ export const mockLeads: Lead[] = [
         url: '/placeholder.svg',
         uploadDate: new Date('2023-03-20')
       }
-    ]
+    ],
+    createdAt: new Date('2023-03-19')
   },
   {
     id: '6',
@@ -396,7 +402,8 @@ export const mockLeads: Lead[] = [
       adminRemarks: 'Application rejected due to false employment information.',
       reviewedBy: '1',
       reviewedAt: new Date('2023-03-08T10:00:00')
-    }
+    },
+    createdAt: new Date('2023-03-04')
   }
 ];
 
