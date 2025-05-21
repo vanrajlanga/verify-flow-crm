@@ -86,7 +86,40 @@ const AdminLeads = () => {
       const storedLeads = localStorage.getItem('mockLeads');
       if (storedLeads) {
         const parsedLeads = JSON.parse(storedLeads);
-        setLeads(parsedLeads);
+        
+        // Ensure all leads have proper verification status types before setting state
+        const normalizedLeads = parsedLeads.map((lead: any) => {
+          // Ensure verification object exists with correct type for status
+          if (!lead.verification) {
+            lead.verification = {
+              id: `verification-${lead.id}`,
+              leadId: lead.id,
+              status: "Not Started" as "Not Started" | "In Progress" | "Completed" | "Rejected",
+              photos: [],
+              documents: [],
+              notes: ""
+            };
+          } else if (typeof lead.verification.status === 'string') {
+            // Normalize verification status to one of the allowed types
+            if (!["Not Started", "In Progress", "Completed", "Rejected"].includes(lead.verification.status)) {
+              lead.verification.status = "Not Started";
+            }
+            // Explicit type assertion for the status
+            lead.verification.status = lead.verification.status as "Not Started" | "In Progress" | "Completed" | "Rejected";
+          }
+          
+          // Ensure lead status is one of the allowed types
+          if (!["Pending", "In Progress", "Completed", "Rejected"].includes(lead.status)) {
+            lead.status = "Pending";
+          }
+          
+          return lead as Lead;
+        });
+        
+        setLeads(normalizedLeads);
+        
+        // Update localStorage with normalized leads
+        localStorage.setItem('mockLeads', JSON.stringify(normalizedLeads));
       } else {
         // Add createdAt to mockLeads if it doesn't exist
         const leadsWithCreatedAt = mockLeads.map(lead => ({
@@ -138,7 +171,8 @@ const AdminLeads = () => {
         ...newLead.verification,
         id: verificationId,
         leadId: leadId,
-        status: 'Not Started',
+        status: "Not Started" as "Not Started" | "In Progress" | "Completed" | "Rejected",
+        agentId: newLead.assignedTo,
         photos: [],
         documents: [],
         notes: newLead.verification?.notes || ''
