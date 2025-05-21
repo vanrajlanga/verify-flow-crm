@@ -129,7 +129,9 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
       instructions: values.instructions || '',
       verification: {
         status: 'Not Started', // Changed from "Pending" to "Not Started" to match verification status type
-        agent: values.assignedTo || '',
+        agentId: values.assignedTo || '', // Fixed: Changed 'agent' to 'agentId' to match the Verification interface
+        leadId: `lead-${Date.now()}`, // Added leadId field which is required by Verification interface
+        id: `verification-${Date.now()}`, // Added id field which is required by Verification interface
         photos: [],
         documents: [],
         notes: ''
