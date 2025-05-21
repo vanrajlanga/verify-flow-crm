@@ -37,7 +37,7 @@ const AgentLeads = () => {
         const allLeads = JSON.parse(storedLeads);
         const agentLeads = allLeads
           .filter((lead: Lead) => lead.assignedTo === parsedUser.id)
-          .map((lead: Lead) => {
+          .map((lead: any) => {
             // Ensure verification object exists and has proper structure
             if (!lead.verification) {
               lead.verification = {
@@ -61,7 +61,7 @@ const AgentLeads = () => {
               lead.status = "Pending";
             }
             
-            return lead as Lead; // Explicit cast to Lead type
+            return lead as Lead;
           });
         setLeads(agentLeads);
         
