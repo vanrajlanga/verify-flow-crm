@@ -100,7 +100,16 @@ const AdminAgents = () => {
     // Get agents from localStorage or use mockUsers
     const storedAgents = localStorage.getItem('mockAgents');
     if (storedAgents) {
-      setAgents(JSON.parse(storedAgents).filter((user: User) => user.role === 'agent'));
+      try {
+        const parsedAgents = JSON.parse(storedAgents);
+        setAgents(parsedAgents.filter((user: User) => user.role === 'agent'));
+      } catch (error) {
+        console.error("Error parsing stored agents:", error);
+        // Fallback to mock data
+        const agentUsers = mockUsers.filter(user => user.role === 'agent');
+        setAgents(agentUsers);
+        localStorage.setItem('mockAgents', JSON.stringify(mockUsers));
+      }
     } else {
       const agentUsers = mockUsers.filter(user => user.role === 'agent');
       setAgents(agentUsers);
@@ -110,7 +119,14 @@ const AdminAgents = () => {
     // Get location data from localStorage or use default
     const storedLocationData = localStorage.getItem('locationData');
     if (storedLocationData) {
-      setLocationData(JSON.parse(storedLocationData));
+      try {
+        const parsedLocationData = JSON.parse(storedLocationData);
+        setLocationData(parsedLocationData);
+      } catch (error) {
+        console.error("Error parsing stored location data:", error);
+        // Default data is already set in the state
+        localStorage.setItem('locationData', JSON.stringify(locationData));
+      }
     } else {
       localStorage.setItem('locationData', JSON.stringify(locationData));
     }
