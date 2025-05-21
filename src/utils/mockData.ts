@@ -1,4 +1,3 @@
-
 // Types
 export interface User {
   id: string;
@@ -29,6 +28,7 @@ export interface Lead {
   documents: Document[];
   instructions?: string;
   verification?: Verification;
+  createdAt: Date; // Added createdAt property to match usage in AddLeadForm
 }
 
 export interface Document {
