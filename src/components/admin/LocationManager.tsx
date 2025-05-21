@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,6 +41,11 @@ const LocationManager = ({ locationData, setLocationData }: LocationManagerProps
   const [newCity, setNewCity] = useState('');
   const [selectedState, setSelectedState] = useState<string | null>(null);
   const [selectedDistrict, setSelectedDistrict] = useState<string | null>(null);
+
+  // Effect to save location data to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('locationData', JSON.stringify(locationData));
+  }, [locationData]);
 
   const handleAddState = () => {
     if (!newState.trim()) {

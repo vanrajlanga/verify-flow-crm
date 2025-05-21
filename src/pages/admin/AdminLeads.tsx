@@ -19,11 +19,29 @@ import { toast } from '@/components/ui/use-toast';
 import AddLeadForm from '@/components/admin/AddLeadForm';
 import { Plus } from 'lucide-react';
 
+interface LocationData {
+  states: {
+    id: string;
+    name: string;
+    districts: {
+      id: string;
+      name: string;
+      cities: {
+        id: string;
+        name: string;
+      }[];
+    }[];
+  }[];
+}
+
 const AdminLeads = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [agents, setAgents] = useState<User[]>([]);
+  const [locationData, setLocationData] = useState<LocationData>({
+    states: []
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -74,7 +92,64 @@ const AdminLeads = () => {
       const filteredAgents = mockUsers.filter(user => user.role === 'agent');
       setAgents(filteredAgents);
     }
+
+    // Get location data from localStorage or initialize empty structure
+    const storedLocationData = localStorage.getItem('locationData');
+    if (storedLocationData) {
+      try {
+        const parsedLocationData = JSON.parse(storedLocationData);
+        setLocationData(parsedLocationData);
+      } catch (error) {
+        console.error("Error parsing stored location data:", error);
+        // Initialize with empty structure if parsing fails
+        setLocationData({ states: [] });
+        localStorage.setItem('locationData', JSON.stringify({ states: [] }));
+      }
+    } else {
+      // First time initialization - create a basic structure with some default locations
+      const defaultLocationData = {
+        states: [
+          {
+            id: 'state-1',
+            name: 'Karnataka',
+            districts: [
+              {
+                id: 'district-1',
+                name: 'Bangalore Urban',
+                cities: [
+                  { id: 'city-1', name: 'Bangalore' },
+                  { id: 'city-2', name: 'Electronic City' }
+                ]
+              }
+            ]
+          },
+          {
+            id: 'state-2',
+            name: 'Maharashtra',
+            districts: [
+              {
+                id: 'district-2',
+                name: 'Mumbai',
+                cities: [
+                  { id: 'city-3', name: 'Mumbai' },
+                  { id: 'city-4', name: 'Navi Mumbai' }
+                ]
+              }
+            ]
+          }
+        ]
+      };
+      setLocationData(defaultLocationData);
+      localStorage.setItem('locationData', JSON.stringify(defaultLocationData));
+    }
   }, [navigate]);
+
+  // Save location data to localStorage whenever it changes
+  useEffect(() => {
+    if (locationData.states.length > 0) {
+      localStorage.setItem('locationData', JSON.stringify(locationData));
+    }
+  }, [locationData]);
 
   const handleLogout = () => {
     localStorage.removeItem('kycUser');
@@ -116,44 +191,26 @@ const AdminLeads = () => {
     });
   };
 
+  const handleUpdateLocationData = (newLocationData: LocationData) => {
+    setLocationData(newLocationData);
+    localStorage.setItem('locationData', JSON.stringify(newLocationData));
+  };
+
   if (!currentUser) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
   }
 
-  // Fix the district properties checks with proper null handling - this time ensuring TypeScript sees the null check
-  const locationData = {
-    states: [...new Set(agents.map(agent => {
-      // First check if district exists at all
-      if (agent.district === null || agent.district === undefined) {
-        return '';
-      }
-      
-      // Now TypeScript knows district is not null
-      const district = agent.district;
-      return typeof district === 'object' ? district.state || '' : '';
-    }).filter(Boolean))],
-    
-    districts: [...new Set(agents.map(agent => {
-      // First check if district exists at all
-      if (agent.district === null || agent.district === undefined) {
-        return '';
-      }
-      
-      // Now TypeScript knows district is not null
-      const district = agent.district;
-      return typeof district === 'object' ? district.name || '' : '';
-    }).filter(Boolean))],
-    
-    cities: [...new Set(agents.map(agent => {
-      // First check if district exists at all
-      if (agent.district === null || agent.district === undefined) {
-        return '';
-      }
-      
-      // Now TypeScript knows district is not null
-      const district = agent.district;
-      return typeof district === 'object' ? district.city || '' : '';
-    }).filter(Boolean))]
+  // Create simplified location data for backward compatibility
+  const simplifiedLocationData = {
+    states: locationData.states.map(state => state.name),
+    districts: locationData.states.flatMap(state => 
+      state.districts.map(district => district.name)
+    ),
+    cities: locationData.states.flatMap(state => 
+      state.districts.flatMap(district => 
+        district.cities.map(city => city.name)
+      )
+    )
   };
 
   return (

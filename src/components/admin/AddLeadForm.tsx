@@ -71,12 +71,27 @@ interface Document {
   name: string;
 }
 
+interface LocationData {
+  states: {
+    id: string;
+    name: string;
+    districts: {
+      id: string;
+      name: string;
+      cities: {
+        id: string;
+        name: string;
+      }[];
+    }[];
+  }[];
+}
+
 interface AddLeadFormProps {
   agents: User[];
   banks: { id: string; name: string }[];
   onAddLead: (lead: Lead) => void;
   onClose: () => void;
-  locationData: any;
+  locationData: LocationData;
 }
 
 const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLeadFormProps) => {
@@ -103,14 +118,20 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
     },
   });
 
-  const selectedState = form.watch("state");
-  const selectedDistrict = form.watch("district");
+  // Watch form values for state, district, and assignment type
+  const selectedStateName = form.watch("state");
+  const selectedDistrictName = form.watch("district");
   const assignmentType = form.watch("assignmentType");
   
-  const availableDistricts = locationData.states.find(s => s.name === selectedState)?.districts || [];
-  const availableCities = availableDistricts.find(d => d.name === selectedDistrict)?.cities || [];
+  // Find selected state and district objects
+  const selectedState = locationData.states.find(state => state.name === selectedStateName);
+  const availableDistricts = selectedState?.districts || [];
+  const selectedDistrict = selectedState?.districts.find(district => district.name === selectedDistrictName);
+  const availableCities = selectedDistrict?.cities || [];
+  
+  // Filter agents based on selected district
   const filteredAgents = agents.filter(agent => 
-    agent.district === selectedDistrict || !agent.district
+    agent.district === selectedDistrictName || !agent.district
   );
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -370,7 +391,7 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {locationData.states.map((state: any) => (
+                        {locationData.states.map((state) => (
                           <SelectItem key={state.id} value={state.name}>
                             {state.name}
                           </SelectItem>
@@ -406,7 +427,7 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {availableDistricts.map((district: any) => (
+                        {availableDistricts.map((district) => (
                           <SelectItem key={district.id} value={district.name}>
                             {district.name}
                           </SelectItem>
@@ -439,7 +460,7 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {availableCities.map((city: any) => (
+                        {availableCities.map((city) => (
                           <SelectItem key={city.id} value={city.name}>
                             {city.name}
                           </SelectItem>
