@@ -61,7 +61,7 @@ const AgentLeads = () => {
               lead.status = "Pending";
             }
             
-            return lead;
+            return lead as Lead; // Explicit cast to Lead type
           });
         setLeads(agentLeads);
         

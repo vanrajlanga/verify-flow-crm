@@ -25,9 +25,10 @@ import AgentLeads from "./pages/agent/AgentLeads";
 import AgentHistory from "./pages/agent/AgentHistory";
 import AgentProfile from "./pages/agent/AgentProfile";
 
-const queryClient = new QueryClient();
-
 const App = () => {
+  // Move queryClient creation inside the component
+  const [queryClient] = useState(() => new QueryClient());
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
