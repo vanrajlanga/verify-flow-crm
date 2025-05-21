@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -123,28 +122,19 @@ const AdminLeads = () => {
   // Fix the district properties checks with proper null handling
   const locationData = {
     states: [...new Set(agents.map(agent => {
-      const district = agent.district;
-      // Ensure district is not null/undefined before accessing properties
-      if (district && typeof district === 'object') {
-        return district.state || '';
-      }
-      return '';
+      if (!agent.district) return '';
+      return typeof agent.district === 'object' && agent.district !== null ? 
+        agent.district.state || '' : '';
     }).filter(Boolean))],
     districts: [...new Set(agents.map(agent => {
-      const district = agent.district;
-      // Ensure district is not null/undefined before accessing properties
-      if (district && typeof district === 'object') {
-        return district.name || '';
-      }
-      return '';
+      if (!agent.district) return '';
+      return typeof agent.district === 'object' && agent.district !== null ? 
+        agent.district.name || '' : '';
     }).filter(Boolean))],
     cities: [...new Set(agents.map(agent => {
-      const district = agent.district;
-      // Ensure district is not null/undefined before accessing properties
-      if (district && typeof district === 'object') {
-        return district.city || '';
-      }
-      return '';
+      if (!agent.district) return '';
+      return typeof agent.district === 'object' && agent.district !== null ? 
+        agent.district.city || '' : '';
     }).filter(Boolean))]
   };
 
