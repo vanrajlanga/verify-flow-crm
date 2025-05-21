@@ -7,6 +7,7 @@ import { User, Lead, getLeadsByAgentId } from '@/utils/mockData';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
 import LeadList from '@/components/dashboard/LeadList';
+import { toast } from '@/components/ui/use-toast';
 
 const AgentLeads = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -35,6 +36,8 @@ const AgentLeads = () => {
       const storedLeads = localStorage.getItem('mockLeads');
       if (storedLeads) {
         const allLeads = JSON.parse(storedLeads);
+        
+        // Filter leads assigned to this agent
         const agentLeads = allLeads
           .filter((lead: Lead) => lead.assignedTo === parsedUser.id)
           .map((lead: any) => {
@@ -65,11 +68,16 @@ const AgentLeads = () => {
             
             return lead as Lead;
           });
+          
         setLeads(agentLeads);
         
         // Update local storage with normalized leads
         localStorage.setItem('mockLeads', JSON.stringify(allLeads));
+        
+        // Log to help with debugging
+        console.log(`Found ${agentLeads.length} leads for agent ${parsedUser.id}`);
       } else {
+        // No leads in localStorage, use the utility function
         const agentLeads = getLeadsByAgentId(parsedUser.id)
           .map(lead => {
             // Ensure verification object exists and has proper structure
@@ -98,16 +106,22 @@ const AgentLeads = () => {
             
             return lead;
           });
+        
         setLeads(agentLeads);
         
         // Store in localStorage
         localStorage.setItem('mockLeads', JSON.stringify([...agentLeads]));
+        
+        console.log(`Using mock data: Found ${agentLeads.length} leads for agent ${parsedUser.id}`);
       }
     } catch (error) {
       console.error("Error loading agent leads:", error);
       // Fallback to the utility function
       const agentLeads = getLeadsByAgentId(parsedUser.id);
       setLeads(agentLeads);
+      
+      // Store in localStorage
+      localStorage.setItem('mockLeads', JSON.stringify([...agentLeads]));
     }
   }, [navigate]);
 
@@ -150,10 +164,16 @@ const AgentLeads = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <LeadList 
-                  leads={leads} 
-                  currentUser={currentUser} 
-                />
+                {leads.length > 0 ? (
+                  <LeadList 
+                    leads={leads} 
+                    currentUser={currentUser} 
+                  />
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">You don't have any assigned leads yet.</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

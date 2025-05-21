@@ -24,6 +24,13 @@ import { toast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import EditAgentForm from '@/components/admin/EditAgentForm';
 import LocationManager from '@/components/admin/LocationManager';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const AdminAgents = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -34,7 +41,9 @@ const AdminAgents = () => {
   const [newAgent, setNewAgent] = useState({
     name: '',
     email: '',
+    state: '',
     district: '',
+    city: '',
     password: ''
   });
   const [editingAgent, setEditingAgent] = useState<User | null>(null);
@@ -78,6 +87,10 @@ const AdminAgents = () => {
       }
     ]
   });
+  
+  // Computed values for dropdowns
+  const availableDistricts = locationData.states.find(s => s.name === newAgent.state)?.districts || [];
+  const availableCities = availableDistricts.find(d => d.name === newAgent.district)?.cities || [];
   
   const navigate = useNavigate();
 
@@ -161,7 +174,9 @@ const AdminAgents = () => {
       name: newAgent.name,
       email: newAgent.email,
       role: 'agent',
+      state: newAgent.state,
       district: newAgent.district,
+      city: newAgent.city,
       totalVerifications: 0,
       completionRate: 0
     };
@@ -183,7 +198,9 @@ const AdminAgents = () => {
     setNewAgent({
       name: '',
       email: '',
+      state: '',
       district: '',
+      city: '',
       password: ''
     });
   };
@@ -294,15 +311,81 @@ const AdminAgents = () => {
                         />
                       </div>
                       <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="state" className="text-right">
+                          State
+                        </Label>
+                        <div className="col-span-3">
+                          <Select
+                            value={newAgent.state}
+                            onValueChange={(value) => setNewAgent({
+                              ...newAgent, 
+                              state: value,
+                              district: '',
+                              city: ''
+                            })}
+                          >
+                            <SelectTrigger id="state">
+                              <SelectValue placeholder="Select state" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {locationData.states.map((state) => (
+                                <SelectItem key={state.id} value={state.name}>
+                                  {state.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="district" className="text-right">
                           District
                         </Label>
-                        <Input
-                          id="district"
-                          value={newAgent.district}
-                          onChange={(e) => setNewAgent({...newAgent, district: e.target.value})}
-                          className="col-span-3"
-                        />
+                        <div className="col-span-3">
+                          <Select
+                            value={newAgent.district}
+                            onValueChange={(value) => setNewAgent({
+                              ...newAgent, 
+                              district: value,
+                              city: ''
+                            })}
+                            disabled={availableDistricts.length === 0}
+                          >
+                            <SelectTrigger id="district">
+                              <SelectValue placeholder={newAgent.state ? "Select district" : "Select state first"} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {availableDistricts.map((district) => (
+                                <SelectItem key={district.id} value={district.name}>
+                                  {district.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="city" className="text-right">
+                          City
+                        </Label>
+                        <div className="col-span-3">
+                          <Select
+                            value={newAgent.city}
+                            onValueChange={(value) => setNewAgent({...newAgent, city: value})}
+                            disabled={availableCities.length === 0}
+                          >
+                            <SelectTrigger id="city">
+                              <SelectValue placeholder={newAgent.district ? "Select city" : "Select district first"} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {availableCities.map((city) => (
+                                <SelectItem key={city.id} value={city.name}>
+                                  {city.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
                       <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="password" className="text-right">
@@ -354,7 +437,9 @@ const AdminAgents = () => {
                           <TableRow>
                             <TableHead>Name</TableHead>
                             <TableHead>Email</TableHead>
+                            <TableHead>State</TableHead>
                             <TableHead>District</TableHead>
+                            <TableHead>City</TableHead>
                             <TableHead>Verifications</TableHead>
                             <TableHead>Completion Rate</TableHead>
                             <TableHead className="w-[100px]">Actions</TableHead>
@@ -363,7 +448,7 @@ const AdminAgents = () => {
                         <TableBody>
                           {filteredAgents.length === 0 ? (
                             <TableRow>
-                              <TableCell colSpan={6} className="h-24 text-center">
+                              <TableCell colSpan={8} className="h-24 text-center">
                                 No agents found.
                               </TableCell>
                             </TableRow>
@@ -372,7 +457,9 @@ const AdminAgents = () => {
                               <TableRow key={agent.id}>
                                 <TableCell className="font-medium">{agent.name}</TableCell>
                                 <TableCell>{agent.email}</TableCell>
-                                <TableCell>{agent.district}</TableCell>
+                                <TableCell>{agent.state || 'N/A'}</TableCell>
+                                <TableCell>{agent.district || 'N/A'}</TableCell>
+                                <TableCell>{agent.city || 'N/A'}</TableCell>
                                 <TableCell>{agent.totalVerifications}</TableCell>
                                 <TableCell>
                                   {agent.completionRate}%

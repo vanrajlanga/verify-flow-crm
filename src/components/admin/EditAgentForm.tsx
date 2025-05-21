@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { User } from '@/utils/mockData';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,11 +22,34 @@ interface EditAgentFormProps {
 const EditAgentForm = ({ agent, onUpdate, onClose, locationData }: EditAgentFormProps) => {
   const [name, setName] = useState(agent.name);
   const [email, setEmail] = useState(agent.email);
-  const [state, setState] = useState("");
+  const [state, setState] = useState(agent.state || "");
   const [district, setDistrict] = useState(agent.district || "");
+  const [city, setCity] = useState(agent.city || "");
   const [password, setPassword] = useState("");
   
+  // Find the district options for the selected state
   const availableDistricts = locationData.states.find((s: any) => s.name === state)?.districts || [];
+  
+  // Find the city options for the selected district
+  const availableCities = availableDistricts.find((d: any) => d.name === district)?.cities || [];
+
+  // Set initial state based on agent's district when component loads
+  useEffect(() => {
+    if (agent.district && !state) {
+      // Find which state contains this district
+      for (const s of locationData.states) {
+        const foundDistrict = s.districts.find((d: any) => d.name === agent.district);
+        if (foundDistrict) {
+          setState(s.name);
+          break;
+        }
+      }
+    }
+    
+    if (agent.city && !city) {
+      setCity(agent.city);
+    }
+  }, [agent.district, agent.city, locationData.states, state, city]);
 
   const handleUpdate = () => {
     if (!name.trim() || !email.trim()) {
@@ -42,8 +65,14 @@ const EditAgentForm = ({ agent, onUpdate, onClose, locationData }: EditAgentForm
       ...agent,
       name,
       email,
-      district: district || agent.district
+      state,
+      district,
+      city
     };
+    
+    if (password) {
+      updatedAgent.password = password;
+    }
     
     onUpdate(updatedAgent);
     toast({
@@ -84,9 +113,11 @@ const EditAgentForm = ({ agent, onUpdate, onClose, locationData }: EditAgentForm
             State
           </label>
           <Select 
+            value={state}
             onValueChange={(value) => {
               setState(value);
               setDistrict('');
+              setCity('');
             }}
           >
             <SelectTrigger id="state">
@@ -107,9 +138,12 @@ const EditAgentForm = ({ agent, onUpdate, onClose, locationData }: EditAgentForm
             District
           </label>
           <Select 
-            onValueChange={setDistrict}
-            defaultValue={district}
-            disabled={availableDistricts.length === 0 && !state}
+            value={district}
+            onValueChange={(value) => {
+              setDistrict(value);
+              setCity('');
+            }}
+            disabled={availableDistricts.length === 0}
           >
             <SelectTrigger id="district">
               <SelectValue placeholder={
@@ -120,6 +154,30 @@ const EditAgentForm = ({ agent, onUpdate, onClose, locationData }: EditAgentForm
               {availableDistricts.map((district: any) => (
                 <SelectItem key={district.id} value={district.name}>
                   {district.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        
+        <div className="space-y-2">
+          <label htmlFor="city" className="text-sm font-medium">
+            City
+          </label>
+          <Select 
+            value={city}
+            onValueChange={setCity}
+            disabled={availableCities.length === 0}
+          >
+            <SelectTrigger id="city">
+              <SelectValue placeholder={
+                district ? (availableCities.length === 0 ? "No cities available" : "Select city") : "Select a district first"
+              } />
+            </SelectTrigger>
+            <SelectContent>
+              {availableCities.map((city: any) => (
+                <SelectItem key={city.id} value={city.name}>
+                  {city.name}
                 </SelectItem>
               ))}
             </SelectContent>

@@ -6,17 +6,64 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Lead, User, getUserById, getBankById } from '@/utils/mockData';
-import { Eye, Search } from 'lucide-react';
+import { 
+  Eye, 
+  Search, 
+  Edit, 
+  Trash, 
+  UserCheck, 
+  MoreVertical 
+} from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
 
 interface LeadListProps {
   leads: Lead[];
   currentUser: User;
   isAdmin?: boolean;
+  onUpdate?: (lead: Lead) => void;
+  onDelete?: (leadId: string) => void;
+  availableAgents?: User[];
 }
 
-const LeadList = ({ leads, currentUser, isAdmin = false }: LeadListProps) => {
+const LeadList = ({ 
+  leads, 
+  currentUser, 
+  isAdmin = false,
+  onUpdate,
+  onDelete,
+  availableAgents = []
+}: LeadListProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [isReassignDialogOpen, setIsReassignDialogOpen] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [newAgentId, setNewAgentId] = useState('');
+  
   const navigate = useNavigate();
 
   const filteredLeads = leads.filter(lead => {
@@ -50,6 +97,50 @@ const LeadList = ({ leads, currentUser, isAdmin = false }: LeadListProps) => {
     } else {
       navigate(`/agent/leads/${leadId}`);
     }
+  };
+  
+  const handleEditLead = (lead: Lead) => {
+    if (isAdmin) {
+      navigate(`/admin/leads/${lead.id}`);
+    }
+  };
+  
+  const handleDeleteLead = (leadId: string) => {
+    if (onDelete && isAdmin) {
+      onDelete(leadId);
+    }
+  };
+  
+  const handleOpenReassignDialog = (lead: Lead) => {
+    setSelectedLead(lead);
+    const agent = getUserById(lead.assignedTo);
+    if (agent) {
+      setNewAgentId(agent.id);
+    }
+    setIsReassignDialogOpen(true);
+  };
+  
+  const handleReassignLead = () => {
+    if (!selectedLead || !newAgentId || !onUpdate) {
+      return;
+    }
+    
+    const updatedLead = {
+      ...selectedLead,
+      assignedTo: newAgentId,
+      verification: {
+        ...selectedLead.verification,
+        agentId: newAgentId
+      }
+    };
+    
+    onUpdate(updatedLead);
+    setIsReassignDialogOpen(false);
+    
+    toast({
+      title: "Lead Reassigned",
+      description: "The lead has been successfully reassigned to a new agent.",
+    });
   };
 
   return (
@@ -128,16 +219,64 @@ const LeadList = ({ leads, currentUser, isAdmin = false }: LeadListProps) => {
                     <TableCell>{lead.address.district}, {lead.address.state}</TableCell>
                     <TableCell>{lead.visitType}</TableCell>
                     <TableCell>{getStatusBadge(lead.status)}</TableCell>
-                    {isAdmin && <TableCell>{assignedAgent?.name || 'Unassigned'}</TableCell>}
+                    {isAdmin && (
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <span>{assignedAgent?.name || 'Unassigned'}</span>
+                          {isAdmin && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleOpenReassignDialog(lead)}
+                              title="Reassign"
+                            >
+                              <UserCheck className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    )}
                     <TableCell>{bank?.name || 'Unknown'}</TableCell>
                     <TableCell>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => handleViewLead(lead.id)}
-                      >
-                        <Eye className="h-4 w-4 mr-1" /> View
-                      </Button>
+                      {isAdmin ? (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handleViewLead(lead.id)}>
+                              <Eye className="h-4 w-4 mr-2" /> View
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEditLead(lead)}>
+                              <Edit className="h-4 w-4 mr-2" /> Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleOpenReassignDialog(lead)}
+                              className="text-blue-600"
+                            >
+                              <UserCheck className="h-4 w-4 mr-2" /> Reassign
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => handleDeleteLead(lead.id)}
+                              className="text-red-600"
+                            >
+                              <Trash className="h-4 w-4 mr-2" /> Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      ) : (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleViewLead(lead.id)}
+                        >
+                          <Eye className="h-4 w-4 mr-1" /> View
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 );
@@ -146,6 +285,56 @@ const LeadList = ({ leads, currentUser, isAdmin = false }: LeadListProps) => {
           </TableBody>
         </Table>
       </div>
+      
+      {/* Reassign Dialog */}
+      <Dialog open={isReassignDialogOpen} onOpenChange={setIsReassignDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reassign Lead</DialogTitle>
+            <DialogDescription>
+              Select a new agent to handle this verification lead.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4 space-y-4">
+            {selectedLead && (
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Lead Details</p>
+                <p className="text-sm">Name: {selectedLead.name}</p>
+                <p className="text-sm">Location: {selectedLead.address.district}, {selectedLead.address.state}</p>
+                <p className="text-sm">Current Agent: {getUserById(selectedLead.assignedTo)?.name || 'Unassigned'}</p>
+              </div>
+            )}
+            
+            <div className="space-y-2">
+              <label htmlFor="agent" className="text-sm font-medium">
+                New Agent
+              </label>
+              <Select value={newAgentId} onValueChange={setNewAgentId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select an agent" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableAgents.map((agent) => (
+                    <SelectItem key={agent.id} value={agent.id}>
+                      {agent.name} ({agent.district || 'No district assigned'})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsReassignDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleReassignLead}>
+              Reassign Lead
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
