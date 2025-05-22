@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -89,9 +90,15 @@ const AdminVerifications = () => {
   // Helper function to safely format dates that could be strings or Date objects
   const formatSafeDate = (date: Date | string | undefined) => {
     if (!date) return '—';
-    // If date is a string, parse it to a Date object
-    const dateObj = typeof date === 'string' ? new Date(date) : date;
-    return format(dateObj, 'MMM d, yyyy h:mm a');
+    
+    try {
+      // If date is a string, parse it to a Date object
+      const dateObj = typeof date === 'string' ? new Date(date) : date;
+      return format(dateObj, 'MMM d, yyyy h:mm a');
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return '—';
+    }
   };
 
   const filteredVerifications = completedVerifications.filter(lead => {

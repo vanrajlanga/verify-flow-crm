@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { User } from '@/utils/mockData';
 import { Button } from "@/components/ui/button";
@@ -35,7 +36,7 @@ const EditAgentForm = ({ agent, onUpdate, onClose, locationData }: EditAgentForm
   const [maxTravelDistance, setMaxTravelDistance] = useState(agent.maxTravelDistance?.toString() || "10");
   const [extraChargePerKm, setExtraChargePerKm] = useState(agent.extraChargePerKm?.toString() || "5");
   const [profilePicture, setProfilePicture] = useState(agent.profilePicture || "");
-  const [documents, setDocuments] = useState(agent.documents || []);
+  const [documents, setDocuments] = useState(agent.kycDocuments || []);
   
   // Find the district options for the selected state
   const availableDistricts = locationData.states.find((s: any) => s.name === state)?.districts || [];
@@ -83,7 +84,7 @@ const EditAgentForm = ({ agent, onUpdate, onClose, locationData }: EditAgentForm
       maxTravelDistance: maxTravelDistance ? parseInt(maxTravelDistance) : 10,
       extraChargePerKm: extraChargePerKm ? parseInt(extraChargePerKm) : 5,
       profilePicture,
-      documents
+      kycDocuments: documents
     };
     
     if (password) {

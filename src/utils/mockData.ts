@@ -8,15 +8,19 @@ export interface User {
   password: string;
   role: 'admin' | 'agent' | 'bank';
   district: string;
+  state?: string;
+  city?: string;
   profilePicture?: string;
   status?: 'Active' | 'Inactive' | 'On Leave';
   verificationCount?: number;
   completedCount?: number;
-  phone?: string; // Added missing field
-  baseLocation?: string; // Added missing field
-  maxTravelDistance?: number; // Added missing field
-  extraChargePerKm?: number; // Added missing field
-  kycDocuments?: Document[]; // Added for KYC documents
+  totalVerifications?: number;
+  completionRate?: number;
+  phone?: string;
+  baseLocation?: string;
+  maxTravelDistance?: number;
+  extraChargePerKm?: number;
+  kycDocuments?: Document[];
 }
 
 export interface Lead {
@@ -30,7 +34,7 @@ export interface Lead {
     city: string;
     district: string;
     state: string;
-    postalCode: string; // Renamed from pincode to postalCode
+    postalCode: string;
     coordinates?: {
       lat: number;
       lng: number;
@@ -38,17 +42,17 @@ export interface Lead {
   };
   bank: string;
   assignedTo: string;
-  status: 'In Progress' | 'Completed' | 'Rejected' | 'Not Started';
+  status: 'In Progress' | 'Completed' | 'Rejected' | 'Not Started' | 'Pending';
   documents: Document[];
   verification?: VerificationData;
   instructions?: string;
-  additionalDetails?: { // Added missing field
+  additionalDetails?: {
     jobDetails?: {
       employer?: string;
       designation?: string;
       yearsEmployed?: number;
       monthlySalary?: number;
-      company?: string; // Added missing field
+      company?: string;
     };
     propertyDetails?: {
       propertyType?: string;
@@ -61,7 +65,7 @@ export interface Lead {
       incomeSource?: string;
     };
   };
-  scheduledDate?: string; // For verification scheduling
+  scheduledDate?: string | Date;
 }
 
 export interface Document {
@@ -70,6 +74,8 @@ export interface Document {
   name: string;
   url: string;
   uploadDate?: Date | string;
+  caption?: string;
+  verified?: boolean;
 }
 
 export interface Bank {
@@ -80,27 +86,28 @@ export interface Bank {
   email: string;
   phone: string;
   logo?: string;
+  totalApplications?: number;
 }
 
 export interface VerificationData {
   id: string;
   agentId: string;
-  status: 'In Progress' | 'Completed' | 'Rejected' | 'Not Started';
+  status: 'In Progress' | 'Completed' | 'Rejected' | 'Not Started' | 'Pending';
   startTime?: Date | string;
-  arrivalTime?: Date | string; // Added missing field
+  arrivalTime?: Date | string;
   completionTime?: Date | string;
-  location?: { // Added missing field
+  location?: {
     latitude: number;
     longitude: number;
   };
   documents?: Document[];
-  photos?: Document[]; // Changed to use Document interface (needs name, url, uploadDate)
+  photos?: Document[];
   notes?: string;
   reviewedBy?: string;
-  reviewedAt?: Date | string; // Added missing field
+  reviewedAt?: Date | string;
   reviewNotes?: string;
-  adminRemarks?: string; // Added missing field
-  leadId?: string; // Added missing field
+  adminRemarks?: string;
+  leadId?: string;
 }
 
 // Mock data for users
@@ -112,6 +119,8 @@ export const mockUsers: User[] = [
     password: "admin123",
     role: "admin",
     district: "All",
+    state: "All",
+    city: "All",
     profilePicture: "https://i.pravatar.cc/150?img=1",
     phone: "+91-9876543210",
     baseLocation: "Bangalore"
@@ -123,10 +132,14 @@ export const mockUsers: User[] = [
     password: "agent123",
     role: "agent",
     district: "Bangalore Urban",
+    state: "Karnataka",
+    city: "Bangalore",
     profilePicture: "https://i.pravatar.cc/150?img=2",
     status: "Active",
     verificationCount: 42,
     completedCount: 38,
+    totalVerifications: 42,
+    completionRate: 90,
     phone: "+91-9876543211",
     baseLocation: "Bangalore",
     maxTravelDistance: 15,
@@ -140,10 +153,14 @@ export const mockUsers: User[] = [
     password: "agent123",
     role: "agent",
     district: "Mumbai",
+    state: "Maharashtra", 
+    city: "Mumbai",
     profilePicture: "https://i.pravatar.cc/150?img=3",
     status: "Active",
     verificationCount: 28,
     completedCount: 26,
+    totalVerifications: 28,
+    completionRate: 92,
     phone: "+91-9876543212",
     baseLocation: "Mumbai",
     maxTravelDistance: 10,
@@ -157,6 +174,8 @@ export const mockUsers: User[] = [
     password: "bank123",
     role: "bank",
     district: "All",
+    state: "All",
+    city: "All",
     profilePicture: "https://i.pravatar.cc/150?img=4",
     phone: "+91-9876543213"
   }
@@ -171,7 +190,8 @@ export const mockBanks: Bank[] = [
     pointOfContact: "Rajesh Kumar",
     email: "contact@hdfc.com",
     phone: "+91-9876543220",
-    logo: "/placeholder.svg"
+    logo: "/placeholder.svg",
+    totalApplications: 24
   },
   {
     id: "2",
@@ -180,7 +200,8 @@ export const mockBanks: Bank[] = [
     pointOfContact: "Priya Sharma",
     email: "contact@icici.com",
     phone: "+91-9876543221",
-    logo: "/placeholder.svg"
+    logo: "/placeholder.svg",
+    totalApplications: 18
   },
   {
     id: "3",
@@ -189,7 +210,8 @@ export const mockBanks: Bank[] = [
     pointOfContact: "Amit Singh",
     email: "contact@sbi.com",
     phone: "+91-9876543222",
-    logo: "/placeholder.svg"
+    logo: "/placeholder.svg",
+    totalApplications: 32
   }
 ];
 
@@ -235,7 +257,8 @@ export const mockLeads: Lead[] = [
       photos: [],
       documents: [],
       notes: "",
-      arrivalTime: null
+      arrivalTime: null,
+      leadId: "1"
     },
     instructions: "Verify residence and collect employment proof. The apartment is on the 4th floor, building has no elevator."
   },
@@ -273,7 +296,8 @@ export const mockLeads: Lead[] = [
       agentId: "2",
       status: "Not Started",
       documents: [],
-      photos: []
+      photos: [],
+      leadId: "2"
     },
     instructions: "Verify business premises and operations. Confirm employee count and business activity."
   },
@@ -346,7 +370,8 @@ export const mockLeads: Lead[] = [
       location: {
         latitude: 19.1136,
         longitude: 72.8697
-      }
+      },
+      leadId: "3"
     }
   },
   {
@@ -403,7 +428,8 @@ export const mockLeads: Lead[] = [
       location: {
         latitude: 12.9784,
         longitude: 77.6408
-      }
+      },
+      leadId: "4"
     }
   }
 ];
@@ -419,4 +445,39 @@ export const getBankById = (id: string): Bank | undefined => {
 
 export const getLeadById = (id: string): Lead | undefined => {
   return mockLeads.find(lead => lead.id === id);
+};
+
+// Function to get leads by agent ID
+export const getLeadsByAgentId = (agentId: string): Lead[] => {
+  return mockLeads.filter(lead => lead.assignedTo === agentId);
+};
+
+// Function to get lead statistics
+export const getLeadStats = () => {
+  const total = mockLeads.length;
+  const completed = mockLeads.filter(lead => lead.status === 'Completed').length;
+  const pending = mockLeads.filter(lead => lead.status === 'Not Started' || lead.status === 'Pending').length;
+  const rejected = mockLeads.filter(lead => lead.status === 'Rejected').length;
+  const inProgress = mockLeads.filter(lead => lead.status === 'In Progress').length;
+  
+  return { total, completed, pending, rejected, inProgress };
+};
+
+// Function to get agent performance data
+export const getAgentPerformance = () => {
+  return mockUsers
+    .filter(user => user.role === 'agent')
+    .map(agent => ({
+      id: agent.id,
+      name: agent.name,
+      district: agent.district,
+      completionRate: agent.completionRate || 0,
+      totalVerifications: agent.totalVerifications || 0,
+    }));
+};
+
+// Login function
+export const loginUser = (email: string, password: string) => {
+  const user = mockUsers.find(u => u.email === email && u.password === password);
+  return user;
 };
