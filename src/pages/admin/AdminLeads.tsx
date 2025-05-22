@@ -91,6 +91,7 @@ const AdminLeads = () => {
     } else {
       const filteredAgents = mockUsers.filter(user => user.role === 'agent');
       setAgents(filteredAgents);
+      localStorage.setItem('mockUsers', JSON.stringify(mockUsers));
     }
 
     // Get location data from localStorage or initialize empty structure
@@ -102,47 +103,51 @@ const AdminLeads = () => {
       } catch (error) {
         console.error("Error parsing stored location data:", error);
         // Initialize with empty structure if parsing fails
-        setLocationData({ states: [] });
-        localStorage.setItem('locationData', JSON.stringify({ states: [] }));
+        initializeDefaultLocationData();
       }
     } else {
-      // First time initialization - create a basic structure with some default locations
-      const defaultLocationData = {
-        states: [
-          {
-            id: 'state-1',
-            name: 'Karnataka',
-            districts: [
-              {
-                id: 'district-1',
-                name: 'Bangalore Urban',
-                cities: [
-                  { id: 'city-1', name: 'Bangalore' },
-                  { id: 'city-2', name: 'Electronic City' }
-                ]
-              }
-            ]
-          },
-          {
-            id: 'state-2',
-            name: 'Maharashtra',
-            districts: [
-              {
-                id: 'district-2',
-                name: 'Mumbai',
-                cities: [
-                  { id: 'city-3', name: 'Mumbai' },
-                  { id: 'city-4', name: 'Navi Mumbai' }
-                ]
-              }
-            ]
-          }
-        ]
-      };
-      setLocationData(defaultLocationData);
-      localStorage.setItem('locationData', JSON.stringify(defaultLocationData));
+      // First time initialization with default locations
+      initializeDefaultLocationData();
     }
   }, [navigate]);
+
+  // Function to initialize default location data
+  const initializeDefaultLocationData = () => {
+    const defaultLocationData = {
+      states: [
+        {
+          id: 'state-1',
+          name: 'Karnataka',
+          districts: [
+            {
+              id: 'district-1',
+              name: 'Bangalore Urban',
+              cities: [
+                { id: 'city-1', name: 'Bangalore' },
+                { id: 'city-2', name: 'Electronic City' }
+              ]
+            }
+          ]
+        },
+        {
+          id: 'state-2',
+          name: 'Maharashtra',
+          districts: [
+            {
+              id: 'district-2',
+              name: 'Mumbai',
+              cities: [
+                { id: 'city-3', name: 'Mumbai' },
+                { id: 'city-4', name: 'Navi Mumbai' }
+              ]
+            }
+          ]
+        }
+      ]
+    };
+    setLocationData(defaultLocationData);
+    localStorage.setItem('locationData', JSON.stringify(defaultLocationData));
+  };
 
   // Save location data to localStorage whenever it changes
   useEffect(() => {
@@ -240,7 +245,7 @@ const AdminLeads = () => {
                     Add New Lead
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
+                <DialogContent className="sm:max-w-[800px]">
                   <DialogHeader>
                     <DialogTitle>Add New Lead</DialogTitle>
                     <DialogDescription>
