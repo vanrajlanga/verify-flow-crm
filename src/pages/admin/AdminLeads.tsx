@@ -157,7 +157,7 @@ const AdminLeads = () => {
   };
 
   const renderLeadStatusBadge = (status: string) => {
-    let badgeVariant = "secondary";
+    let badgeVariant: "default" | "destructive" | "outline" | "secondary" = "secondary";
     if (status === 'Pending') {
       badgeVariant = "secondary";
     } else if (status === 'In Progress') {

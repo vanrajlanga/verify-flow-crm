@@ -1,12 +1,16 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Lead, Document, Photo } from '@/utils/mockData';
+import { Lead, Document, Photo, User } from '@/utils/mockData';
 import { format } from 'date-fns';
 import { toast } from '@/components/ui/use-toast';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Badge } from "@/components/ui/badge";
+import { getUserById, getBankById } from '@/utils/mockData';
+import { FileX, FileCheck, Download } from 'lucide-react';
 
 interface LeadReviewProps {
   lead: Lead;
