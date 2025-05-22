@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -33,24 +32,43 @@ const AdminVerifications = () => {
 
     setCurrentUser(parsedUser);
     
-    // Get leads with verification data from localStorage
+    // Get leads with verification data from localStorage or from the mockData directly
     const storedLeads = localStorage.getItem('mockLeads');
+    let verificationsWithData = [];
+    
     if (storedLeads) {
       try {
         const parsedLeads = JSON.parse(storedLeads);
         // Filter leads that have verification data
-        const verificationsWithData = parsedLeads.filter((lead: Lead) => 
+        verificationsWithData = parsedLeads.filter((lead: Lead) => 
           lead.verification && 
           (lead.verification.status === 'Completed' || 
            lead.verification.status === 'In Progress' || 
            lead.verification.photos?.length > 0 || 
            lead.verification.documents?.length > 0)
         );
-        setCompletedVerifications(verificationsWithData);
       } catch (error) {
-        console.error("Error loading verifications:", error);
-        setCompletedVerifications([]);
+        console.error("Error loading verifications from localStorage:", error);
+        // If there's an error, use the mock data directly
+        verificationsWithData = [];
       }
+    }
+    
+    // If no data from localStorage or it was empty, use the mockData
+    if (verificationsWithData.length === 0) {
+      import('@/utils/mockData').then(({ mockLeads }) => {
+        // Filter leads that have verification data
+        const filteredLeads = mockLeads.filter(lead => 
+          lead.verification && 
+          (lead.verification.status === 'Completed' || 
+           lead.verification.status === 'In Progress' || 
+           lead.verification.photos?.length > 0 || 
+           lead.verification.documents?.length > 0)
+        );
+        setCompletedVerifications(filteredLeads);
+      });
+    } else {
+      setCompletedVerifications(verificationsWithData);
     }
   }, [navigate]);
 

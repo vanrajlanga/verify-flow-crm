@@ -67,6 +67,10 @@ export interface AdditionalDetails {
   monthlyIncome?: string;
   annualIncome?: string;
   otherIncome?: string;
+  phoneNumber?: string;
+  loanAmount?: string;
+  loanType?: string;
+  email?: string;
   addresses?: Array<{
     type: string;
     street: string;
@@ -195,7 +199,11 @@ export const mockLeads: Lead[] = [
       designation: 'Senior Developer',
       workExperience: '5 years',
       monthlyIncome: '120000',
-      annualIncome: '1440000'
+      annualIncome: '1440000',
+      phoneNumber: '+91 9876543210',
+      email: 'rahul.sharma@example.com',
+      loanAmount: '2000000',
+      loanType: 'Home Loan'
     },
     visitType: 'Both',
     status: 'Pending',
@@ -247,7 +255,11 @@ export const mockLeads: Lead[] = [
       designation: 'Senior Manager',
       workExperience: '4 years',
       monthlyIncome: '90000',
-      annualIncome: '1080000'
+      annualIncome: '1080000',
+      phoneNumber: '+91 9876543220',
+      email: 'priya.patel@example.com',
+      loanAmount: '1500000',
+      loanType: 'Personal Loan'
     },
     visitType: 'Residence',
     status: 'In Progress',
