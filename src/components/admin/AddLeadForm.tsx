@@ -29,9 +29,11 @@ import { toast } from "@/components/ui/use-toast";
 import { Address, AdditionalDetails, Bank, Lead, User, VerificationData, mockBanks, mockUsers } from '@/utils/mockData';
 
 interface AddLeadFormProps {
-  onAdd: (newLead: Lead) => void;
+  onAddLead: (newLead: Lead) => void;
   onClose: () => void;
-  locationData: any;
+  locationData: LocationData;
+  agents: User[];
+  banks: Bank[];
 }
 
 const leadFormSchema = z.object({
@@ -100,7 +102,7 @@ const leadFormSchema = z.object({
 
 type LeadFormValues = z.infer<typeof leadFormSchema>;
 
-const AddLeadForm = ({ onAdd, onClose, locationData }: AddLeadFormProps) => {
+const AddLeadForm = ({ onAddLead, onClose, locationData, agents, banks }: AddLeadFormProps) => {
   const [state, setState] = useState("");
   const [district, setDistrict] = useState("");
   const [city, setCity] = useState("");
@@ -292,7 +294,7 @@ const AddLeadForm = ({ onAdd, onClose, locationData }: AddLeadFormProps) => {
     // Store the updated leads back in localStorage
     localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
 
-    onAdd(newLead);
+    onAddLead(newLead);
     toast({
       title: "Lead added",
       description: `${name} has been added successfully.`,
