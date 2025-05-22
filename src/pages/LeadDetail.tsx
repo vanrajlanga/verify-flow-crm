@@ -245,7 +245,7 @@ const LeadDetail = () => {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Contact Number</p>
-                    <p className="font-medium">{lead.phone}</p>
+                    <p className="font-medium">{lead.additionalDetails?.phoneNumber || "Not provided"}</p>
                   </div>
                 </div>
 
@@ -255,8 +255,8 @@ const LeadDetail = () => {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Address</p>
-                    <p className="font-medium">{lead.address}</p>
-                    <p className="text-sm">{lead.city}, {lead.state}</p>
+                    <p className="font-medium">{lead.address.street}</p>
+                    <p className="text-sm">{lead.address.city}, {lead.address.state}</p>
                   </div>
                 </div>
 
@@ -350,30 +350,30 @@ const LeadDetail = () => {
                       <div className="space-y-4">
                         <div>
                           <p className="text-sm text-muted-foreground">Loan Amount</p>
-                          <p className="font-medium">{lead.loanAmount ? `₹${lead.loanAmount.toLocaleString()}` : 'Not specified'}</p>
+                          <p className="font-medium">{lead.additionalDetails?.loanAmount ? `₹${Number(lead.additionalDetails.loanAmount).toLocaleString()}` : 'Not specified'}</p>
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Loan Type</p>
-                          <p className="font-medium">{lead.loanType || 'Not specified'}</p>
+                          <p className="font-medium">{lead.additionalDetails?.loanType || 'Not specified'}</p>
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Income</p>
-                          <p className="font-medium">{lead.income ? `₹${lead.income.toLocaleString()}/month` : 'Not specified'}</p>
+                          <p className="font-medium">{lead.additionalDetails?.monthlyIncome ? `₹${Number(lead.additionalDetails.monthlyIncome).toLocaleString()}/month` : 'Not specified'}</p>
                         </div>
                       </div>
                       <div className="space-y-4">
                         <div>
                           <p className="text-sm text-muted-foreground">Application ID</p>
-                          <p className="font-medium">{lead.applicationId || lead.id}</p>
+                          <p className="font-medium">{lead.id}</p>
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Email</p>
-                          <p className="font-medium">{lead.email || 'Not provided'}</p>
+                          <p className="font-medium">{lead.additionalDetails?.email || 'Not provided'}</p>
                         </div>
-                        {lead.remarks && (
+                        {lead.instructions && (
                           <div>
                             <p className="text-sm text-muted-foreground">Remarks</p>
-                            <p className="font-medium">{lead.remarks}</p>
+                            <p className="font-medium">{lead.instructions}</p>
                           </div>
                         )}
                       </div>
