@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -76,8 +75,8 @@ const formSchema = z.object({
   state: z.string().min(2, {
     message: "State must be at least 2 characters.",
   }),
-  pincode: z.string().min(5, {
-    message: "Pincode must be at least 5 characters.",
+  postalCode: z.string().min(5, {
+    message: "Postal code must be at least 5 characters.",
   }),
   
   // Additional address (office)
@@ -86,7 +85,7 @@ const formSchema = z.object({
   officeCity: z.string().optional(),
   officeDistrict: z.string().optional(),
   officeState: z.string().optional(),
-  officePincode: z.string().optional(),
+  officePostalCode: z.string().optional(),
   
   // Verification details
   bank: z.string().min(1, {
@@ -169,13 +168,13 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
       city: "",
       district: "",
       state: "",
-      pincode: "",
+      postalCode: "",
       hasOfficeAddress: false,
       officeStreet: "",
       officeCity: "",
       officeDistrict: "",
       officeState: "",
-      officePincode: "",
+      officePostalCode: "",
       bank: "",
       visitType: "",
       verificationDate: "",
@@ -277,7 +276,7 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
         city: values.city,
         district: values.district,
         state: values.state,
-        pincode: values.pincode
+        postalCode: values.postalCode
       }
     ];
 
@@ -289,7 +288,7 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
         city: values.officeCity || "",
         district: values.officeDistrict || "",
         state: values.officeState || "",
-        pincode: values.officePincode || ""
+        postalCode: values.officePostalCode || ""
       });
     }
 
@@ -304,23 +303,29 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
         city: values.city,
         district: values.district,
         state: values.state,
-        pincode: values.pincode
+        postalCode: values.postalCode,
       },
       additionalDetails: {
-        company: values.company || "",
-        designation: values.designation || "",
-        workExperience: values.workExperience || "",
-        propertyType: values.propertyType || "",
-        ownershipStatus: values.ownershipStatus || "",
-        propertyAge: values.propertyAge || "",
-        monthlyIncome: values.monthlyIncome || "",
-        annualIncome: values.annualIncome || "",
-        otherIncome: values.otherIncome || "",
+        jobDetails: {
+          employer: values.company || "",
+          designation: values.designation || "",
+          workExperience: values.workExperience || "",
+        },
+        propertyDetails: {
+          propertyType: values.propertyType || "",
+          ownership: values.ownershipStatus || "",
+          propertyAge: values.propertyAge || "",
+        },
+        incomeDetails: {
+          monthlyIncome: values.monthlyIncome || "",
+          annualIncome: values.annualIncome || "",
+          otherIncome: values.otherIncome || "",
+        },
         addresses: addresses
       },
       status: 'Pending',
       bank: values.bank,
-      visitType: values.visitType as "Home" | "Office" | "Both",
+      visitType: values.visitType === 'Home' ? 'Residence' : values.visitType as 'Office' | 'Residence' | 'Both',
       assignedTo: values.assignmentType === 'manual' && values.assignedTo ? values.assignedTo : '',
       verificationDate: values.verificationDate ? new Date(values.verificationDate) : undefined,
       createdAt: new Date(),
@@ -356,7 +361,7 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
       form.setValue("officeCity", "");
       form.setValue("officeDistrict", "");
       form.setValue("officeState", "");
-      form.setValue("officePincode", "");
+      form.setValue("officePostalCode", "");
     }
   }, [hasOfficeAddress, form]);
 
@@ -534,12 +539,12 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
                       
                       <FormField
                         control={form.control}
-                        name="pincode"
+                        name="postalCode"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Pincode</FormLabel>
+                            <FormLabel>Postal Code</FormLabel>
                             <FormControl>
-                              <Input placeholder="Enter pincode" {...field} />
+                              <Input placeholder="Enter postal code" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -702,12 +707,12 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
                         
                         <FormField
                           control={form.control}
-                          name="officePincode"
+                          name="officePostalCode"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Pincode</FormLabel>
+                              <FormLabel>Postal Code</FormLabel>
                               <FormControl>
-                                <Input placeholder="Enter pincode" {...field} />
+                                <Input placeholder="Enter postal code" {...field} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -973,8 +978,8 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="Home">Home</SelectItem>
                                 <SelectItem value="Office">Office</SelectItem>
+                                <SelectItem value="Residence">Residence</SelectItem>
                                 <SelectItem value="Both">Both (Home & Office)</SelectItem>
                               </SelectContent>
                             </Select>

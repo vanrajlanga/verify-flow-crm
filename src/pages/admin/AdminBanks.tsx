@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -63,6 +62,10 @@ const AdminBanks = () => {
       {
         id: newBankId,
         name: newBank.name,
+        headOffice: "Headquarters", // Default value for required field
+        pointOfContact: "Admin", // Default value for required field
+        email: newBank.contactEmail || "contact@bank.com", // Use entered email or default
+        phone: "000-000-0000", // Default value for required field
         totalApplications: 0
       }
     ]);

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -184,6 +183,7 @@ const AdminAgents = () => {
       name: newAgent.name,
       email: newAgent.email,
       phone: newAgent.phone,
+      password: newAgent.password || "defaultPassword123", // Add a default password if none provided
       role: 'agent',
       state: newAgent.state,
       district: newAgent.district,

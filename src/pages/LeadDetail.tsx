@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -454,9 +453,8 @@ const LeadDetail = () => {
                             <span className="text-sm text-muted-foreground">State</span>
                             <span className="text-sm font-medium">{lead.address.state}</span>
                           </div>
-                          <div className="flex justify-between">
-                            <span className="text-sm text-muted-foreground">Pincode</span>
-                            <span className="text-sm font-medium">{lead.address.pincode}</span>
+                          <div className="text-sm mt-1">
+                            {lead.address.street}, {lead.address.city}, {lead.address.district}, {lead.address.state}, {lead.address.postalCode}
                           </div>
                         </div>
                       </div>
