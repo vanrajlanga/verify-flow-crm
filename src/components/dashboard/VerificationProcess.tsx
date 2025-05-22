@@ -35,8 +35,12 @@ const VerificationProcess = ({
   const verification = lead.verification;
   const status = verification?.status || 'Not Started';
 
-  const formatTime = (date?: Date) => {
-    return date ? format(date, 'h:mm a, MMM d, yyyy') : '—';
+  // Helper function to safely format dates that could be strings or Date objects
+  const formatTime = (date?: Date | string) => {
+    if (!date) return '—';
+    // If date is a string, parse it to a Date object
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    return format(dateObj, 'h:mm a, MMM d, yyyy');
   };
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -321,7 +325,7 @@ const VerificationProcess = ({
               ) : (
                 <Button 
                   onClick={onCompleteVerification}
-                  disabled={!verification?.arrivalTime || (!verification?.photos.length && !verification?.documents.length)}
+                  disabled={!verification?.arrivalTime || (!verification?.photos?.length && !verification?.documents?.length)}
                 >
                   Complete Verification
                 </Button>

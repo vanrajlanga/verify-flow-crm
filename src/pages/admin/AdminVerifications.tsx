@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -85,6 +84,14 @@ const AdminVerifications = () => {
       .map(n => n[0])
       .join('')
       .toUpperCase();
+  };
+
+  // Helper function to safely format dates that could be strings or Date objects
+  const formatSafeDate = (date: Date | string | undefined) => {
+    if (!date) return '—';
+    // If date is a string, parse it to a Date object
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    return format(dateObj, 'MMM d, yyyy h:mm a');
   };
 
   const filteredVerifications = completedVerifications.filter(lead => {
@@ -182,12 +189,12 @@ const AdminVerifications = () => {
                               </TableCell>
                               <TableCell>
                                 {verification.startTime 
-                                  ? format(new Date(verification.startTime), 'MMM d, yyyy h:mm a')
+                                  ? formatSafeDate(verification.startTime)
                                   : '—'}
                               </TableCell>
                               <TableCell>
                                 {verification.completionTime
-                                  ? format(new Date(verification.completionTime), 'MMM d, yyyy h:mm a')
+                                  ? formatSafeDate(verification.completionTime)
                                   : '—'}
                               </TableCell>
                               <TableCell>{getStatusBadge(verification.status)}</TableCell>

@@ -1,83 +1,54 @@
-// Types
+
+import { v4 as uuidv4 } from 'uuid';
+
 export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'agent';
-  password?: string;
-  state?: string;
-  district?: string;
-  city?: string;
-  totalVerifications?: number;
-  completionRate?: number;
-  phone?: string;
-  baseLocation?: string;
-  maxTravelDistance?: number;
-  extraChargePerKm?: number;
+  password: string;
+  role: 'admin' | 'agent' | 'bank';
+  district: string;
   profilePicture?: string;
-  documents?: {
-    id: string;
-    type: string;
-    name: string;
-    url: string;
-    verified: boolean;
-  }[];
-  attendance?: {
-    date: string;
-    checkIn: string;
-    checkOut: string | null;
-    status: 'present' | 'absent' | 'half-day';
-  }[];
-  leaveRequests?: {
-    id: string;
-    startDate: string;
-    endDate: string;
-    reason: string;
-    status: 'pending' | 'approved' | 'rejected';
-  }[];
+  status?: 'Active' | 'Inactive' | 'On Leave';
+  verificationCount?: number;
+  completedCount?: number;
+  phone?: string; // Added missing field
+  baseLocation?: string; // Added missing field
+  maxTravelDistance?: number; // Added missing field
+  extraChargePerKm?: number; // Added missing field
+  kycDocuments?: Document[]; // Added for KYC documents
 }
 
 export interface Lead {
   id: string;
   name: string;
-  phone: string;
-  email: string;
+  age: number;
+  job: string;
+  visitType: 'Office' | 'Residence';
   address: {
     street: string;
     city: string;
     district: string;
     state: string;
-    postalCode: string;
+    postalCode: string; // Renamed from pincode to postalCode
     coordinates?: {
       lat: number;
       lng: number;
     };
   };
-  additionalAddresses?: {
-    id: string;
-    type: string;
-    street: string;
-    city: string;
-    district: string;
-    state: string;
-    postalCode: string;
-    coordinates?: {
-      lat: number;
-      lng: number;
-    };
-  }[];
-  visitType: string;
-  leadType: string;
-  status: 'Pending' | 'In Progress' | 'Completed' | 'Rejected';
-  assignedTo: string;
   bank: string;
-  verificationDate?: string; // Added for verification scheduling
-  additionalDetails?: {
+  assignedTo: string;
+  status: 'In Progress' | 'Completed' | 'Rejected' | 'Not Started';
+  documents: Document[];
+  verification?: VerificationData;
+  instructions?: string;
+  additionalDetails?: { // Added missing field
     jobDetails?: {
       employer?: string;
       designation?: string;
       yearsEmployed?: number;
       monthlySalary?: number;
+      company?: string; // Added missing field
     };
     propertyDetails?: {
       propertyType?: string;
@@ -88,554 +59,364 @@ export interface Lead {
     incomeDetails?: {
       annualIncome?: number;
       incomeSource?: string;
-      otherIncome?: number;
-      otherIncomeSource?: string;
     };
   };
-  verification?: {
-    id: string;
-    agentId: string;
-    status: 'Not Started' | 'In Progress' | 'Completed' | 'Rejected';
-    startTime?: string;
-    completionTime?: string;
-    documents?: {
-      id: string;
-      type: string;
-      name: string;
-      url: string;
-    }[];
-    photos?: {
-      id: string;
-      caption: string;
-      url: string;
-    }[];
-    notes?: string;
-    reviewedBy?: string;
-    reviewNotes?: string;
-  };
+  scheduledDate?: string; // For verification scheduling
 }
 
 export interface Document {
   id: string;
+  type: string;
   name: string;
-  type: 'PAN' | 'Aadhar' | 'Voter ID' | 'Rent Agreement' | 'Job ID' | 'Salary Slip' | 'Business License' | 'Photo' | 'Other';
-  uploadedBy: 'bank' | 'agent';
   url: string;
-  uploadDate: Date;
-}
-
-export interface Verification {
-  id: string;
-  leadId: string;
-  agentId: string;
-  startTime?: Date;
-  arrivalTime?: Date;
-  completionTime?: Date;
-  location?: {
-    latitude: number;
-    longitude: number;
-  };
-  photos: Document[];
-  documents: Document[];
-  notes?: string;
-  status: 'Not Started' | 'In Progress' | 'Completed' | 'Rejected';
-  adminRemarks?: string;
-  reviewedBy?: string;
-  reviewedAt?: Date;
+  uploadDate?: Date | string;
 }
 
 export interface Bank {
   id: string;
   name: string;
-  totalApplications: number;
+  headOffice: string;
+  pointOfContact: string;
+  email: string;
+  phone: string;
+  logo?: string;
 }
 
-// Mock Data
+export interface VerificationData {
+  id: string;
+  agentId: string;
+  status: 'In Progress' | 'Completed' | 'Rejected' | 'Not Started';
+  startTime?: Date | string;
+  arrivalTime?: Date | string; // Added missing field
+  completionTime?: Date | string;
+  location?: { // Added missing field
+    latitude: number;
+    longitude: number;
+  };
+  documents?: Document[];
+  photos?: Document[]; // Changed to use Document interface (needs name, url, uploadDate)
+  notes?: string;
+  reviewedBy?: string;
+  reviewedAt?: Date | string; // Added missing field
+  reviewNotes?: string;
+  adminRemarks?: string; // Added missing field
+  leadId?: string; // Added missing field
+}
+
+// Mock data for users
 export const mockUsers: User[] = [
   {
-    id: "a1",
+    id: "1",
     name: "Admin User",
     email: "admin@example.com",
-    password: "password",
+    password: "admin123",
     role: "admin",
-    profilePicture: "https://ui-avatars.com/api/?name=Admin+User&background=0D8ABC&color=fff"
-  },
-  {
-    id: "u1",
-    name: "John Agent",
-    email: "john@example.com",
-    password: "password",
-    role: "agent",
-    state: "Karnataka",
-    district: "Bangalore Urban",
-    city: "Bangalore",
-    totalVerifications: 24,
-    completionRate: 92,
-    phone: "9876543210",
-    baseLocation: "MG Road, Bangalore",
-    maxTravelDistance: 15,
-    extraChargePerKm: 10,
-    profilePicture: "https://ui-avatars.com/api/?name=John+Agent&background=4F46E5&color=fff",
-    documents: [
-      {
-        id: "doc1",
-        type: "panCard",
-        name: "PAN Card",
-        url: "https://placehold.co/600x400?text=PAN+Card",
-        verified: true
-      },
-      {
-        id: "doc2",
-        type: "aadharCard",
-        name: "Aadhar Card",
-        url: "https://placehold.co/600x400?text=Aadhar+Card",
-        verified: true
-      }
-    ],
-    attendance: [
-      {
-        date: "2025-05-20",
-        checkIn: "09:15:00",
-        checkOut: "18:30:00",
-        status: "present"
-      },
-      {
-        date: "2025-05-21",
-        checkIn: "09:30:00",
-        checkOut: "18:00:00",
-        status: "present"
-      }
-    ],
-    leaveRequests: []
-  },
-  {
-    id: "u2",
-    name: "Jane Agent",
-    email: "jane@example.com",
-    password: "password",
-    role: "agent",
-    state: "Maharashtra",
-    district: "Mumbai",
-    city: "Mumbai",
-    totalVerifications: 18,
-    completionRate: 85,
-    phone: "8765432109",
-    baseLocation: "Andheri East, Mumbai",
-    maxTravelDistance: 20,
-    extraChargePerKm: 12,
-    profilePicture: "https://ui-avatars.com/api/?name=Jane+Agent&background=16A34A&color=fff",
-    documents: [
-      {
-        id: "doc3",
-        type: "panCard",
-        name: "PAN Card",
-        url: "https://placehold.co/600x400?text=PAN+Card",
-        verified: true
-      }
-    ],
-    attendance: [
-      {
-        date: "2025-05-20",
-        checkIn: "09:45:00",
-        checkOut: "18:15:00",
-        status: "present"
-      },
-      {
-        date: "2025-05-21",
-        checkIn: "09:20:00",
-        checkOut: null,
-        status: "half-day"
-      }
-    ],
-    leaveRequests: [
-      {
-        id: "leave1",
-        startDate: "2025-06-10",
-        endDate: "2025-06-12",
-        reason: "Family function",
-        status: "pending"
-      }
-    ]
-  }
-];
-
-export const mockBanks: Bank[] = [
-  { id: '1', name: 'HDFC Bank', totalApplications: 120 },
-  { id: '2', name: 'ICICI Bank', totalApplications: 95 },
-  { id: '3', name: 'State Bank of India', totalApplications: 150 },
-  { id: '4', name: 'Axis Bank', totalApplications: 85 },
-  { id: '5', name: 'Bank of Baroda', totalApplications: 65 },
-  { id: '6', name: 'Punjab National Bank', totalApplications: 70 },
-  { id: '7', name: 'Kotak Mahindra Bank', totalApplications: 55 },
-  { id: '8', name: 'IndusInd Bank', totalApplications: 45 },
-  { id: '9', name: 'Yes Bank', totalApplications: 40 },
-  { id: '10', name: 'Canara Bank', totalApplications: 60 }
-];
-
-export const mockLeads: Lead[] = [
-  {
-    id: "1",
-    name: "Rajesh Kumar",
-    phone: "9876543210",
-    email: "rajesh@example.com",
-    address: {
-      street: "123 Main Street",
-      city: "Bangalore",
-      district: "Bangalore Urban",
-      state: "Karnataka",
-      postalCode: "560001",
-      coordinates: {
-        lat: 12.9716,
-        lng: 77.5946
-      }
-    },
-    visitType: "Residence",
-    leadType: "Personal Loan",
-    status: "Pending",
-    assignedTo: "u1",
-    bank: "b1",
-    verificationDate: "2025-05-25",
-    additionalDetails: {
-      jobDetails: {
-        employer: "TechCorp",
-        designation: "Software Engineer",
-        yearsEmployed: 3,
-        monthlySalary: 85000
-      },
-      propertyDetails: {
-        propertyType: "Apartment",
-        ownership: "Self",
-        estimatedValue: 5500000,
-        loanAmount: 3500000
-      }
-    },
-    verification: {
-      id: "v1",
-      agentId: "u1",
-      status: "Not Started",
-      documents: [],
-      photos: []
-    }
+    district: "All",
+    profilePicture: "https://i.pravatar.cc/150?img=1",
+    phone: "+91-9876543210",
+    baseLocation: "Bangalore"
   },
   {
     id: "2",
-    name: "Priya Patel",
-    phone: "8765432109",
-    email: "priya@example.com",
-    address: {
-      street: "456 Park Avenue",
-      city: "Mumbai",
-      district: "Mumbai",
-      state: "Maharashtra",
-      postalCode: "400001",
-      coordinates: {
-        lat: 19.0759,
-        lng: 72.8777
-      }
-    },
-    visitType: "Home",
-    status: "In Progress",
-    assignedTo: "u2",
-    bank: "b2",
-    documents: [
-      {
-        id: "d3",
-        name: "PAN Card",
-        type: "PAN",
-        uploadedBy: "bank",
-        url: "/placeholder.svg",
-        uploadDate: new Date('2023-03-18')
-      }
-    ],
-    verification: {
-      id: "v2",
-      leadId: "2",
-      agentId: "u2",
-      startTime: new Date('2023-03-20T10:30:00'),
-      arrivalTime: new Date('2023-03-20T11:15:00'),
-      status: "In Progress",
-      photos: [],
-      documents: []
-    },
-    createdAt: new Date('2023-03-17')
+    name: "Agent One",
+    email: "agent1@example.com",
+    password: "agent123",
+    role: "agent",
+    district: "Bangalore Urban",
+    profilePicture: "https://i.pravatar.cc/150?img=2",
+    status: "Active",
+    verificationCount: 42,
+    completedCount: 38,
+    phone: "+91-9876543211",
+    baseLocation: "Bangalore",
+    maxTravelDistance: 15,
+    extraChargePerKm: 5,
+    kycDocuments: []
   },
   {
     id: "3",
-    name: "Amit Kumar",
-    phone: "9876543212",
-    email: "amit@example.com",
+    name: "Agent Two",
+    email: "agent2@example.com",
+    password: "agent123",
+    role: "agent",
+    district: "Mumbai",
+    profilePicture: "https://i.pravatar.cc/150?img=3",
+    status: "Active",
+    verificationCount: 28,
+    completedCount: 26,
+    phone: "+91-9876543212",
+    baseLocation: "Mumbai",
+    maxTravelDistance: 10,
+    extraChargePerKm: 7,
+    kycDocuments: []
+  },
+  {
+    id: "4",
+    name: "Bank Admin",
+    email: "bank@example.com",
+    password: "bank123",
+    role: "bank",
+    district: "All",
+    profilePicture: "https://i.pravatar.cc/150?img=4",
+    phone: "+91-9876543213"
+  }
+];
+
+// Mock data for banks
+export const mockBanks: Bank[] = [
+  {
+    id: "1",
+    name: "HDFC Bank",
+    headOffice: "Mumbai",
+    pointOfContact: "Rajesh Kumar",
+    email: "contact@hdfc.com",
+    phone: "+91-9876543220",
+    logo: "/placeholder.svg"
+  },
+  {
+    id: "2",
+    name: "ICICI Bank",
+    headOffice: "Mumbai",
+    pointOfContact: "Priya Sharma",
+    email: "contact@icici.com",
+    phone: "+91-9876543221",
+    logo: "/placeholder.svg"
+  },
+  {
+    id: "3",
+    name: "SBI Bank",
+    headOffice: "Delhi",
+    pointOfContact: "Amit Singh",
+    email: "contact@sbi.com",
+    phone: "+91-9876543222",
+    logo: "/placeholder.svg"
+  }
+];
+
+// Function to generate a verification ID
+const generateVerificationId = () => `ver-${Math.floor(Math.random() * 10000)}`;
+
+// Mock data for leads
+export const mockLeads: Lead[] = [
+  {
+    id: "1",
+    name: "Rajiv Mehta",
+    age: 35,
+    job: "Software Engineer",
+    visitType: "Residence",
     address: {
-      street: "789 Tech Park",
+      street: "123 Main St, Koramangala",
       city: "Bangalore",
-      district: "Bangalore",
+      district: "Bangalore Urban",
       state: "Karnataka",
-      postalCode: "560001",
+      postalCode: "560034",
       coordinates: {
-        lat: 12.9716,
-        lng: 77.5946
+        lat: 12.9352,
+        lng: 77.6245
       }
     },
-    visitType: "Office",
-    status: "Completed",
-    assignedTo: "u1",
-    bank: "b3",
+    bank: "1", // References HDFC Bank
+    assignedTo: "2", // References Agent One
+    status: "In Progress",
     documents: [
       {
-        id: "d4",
+        id: "doc1",
+        type: "PAN Card",
         name: "PAN Card",
-        type: "PAN",
-        uploadedBy: "bank",
         url: "/placeholder.svg",
-        uploadDate: new Date('2023-03-10')
-      },
-      {
-        id: "d5",
-        name: "Business License",
-        type: "Business License",
-        uploadedBy: "bank",
-        url: "/placeholder.svg",
-        uploadDate: new Date('2023-03-10')
+        uploadDate: new Date("2023-04-15")
       }
     ],
     verification: {
-      id: "v3",
-      leadId: "3",
-      agentId: "u1",
-      startTime: new Date('2023-03-12T09:00:00'),
-      arrivalTime: new Date('2023-03-12T09:45:00'),
-      completionTime: new Date('2023-03-12T10:30:00'),
-      location: {
-        latitude: 12.9716,
-        longitude: 77.5946
-      },
+      id: generateVerificationId(),
+      agentId: "2",
+      status: "In Progress",
+      startTime: new Date("2023-04-18T10:30:00"),
+      photos: [],
+      documents: [],
+      notes: "",
+      arrivalTime: null
+    },
+    instructions: "Verify residence and collect employment proof. The apartment is on the 4th floor, building has no elevator."
+  },
+  {
+    id: "2",
+    name: "Priya Sharma",
+    age: 42,
+    job: "Business Owner",
+    visitType: "Office",
+    address: {
+      street: "456 Business Park, Whitefield",
+      city: "Bangalore",
+      district: "Bangalore Urban",
+      state: "Karnataka",
+      postalCode: "560066",
+      coordinates: {
+        lat: 12.9698,
+        lng: 77.7499
+      }
+    },
+    bank: "2", // References ICICI Bank
+    assignedTo: "2", // References Agent One
+    status: "Not Started",
+    documents: [
+      {
+        id: "doc2",
+        type: "Business Registration",
+        name: "Business Registration Certificate",
+        url: "/placeholder.svg",
+        uploadDate: new Date("2023-04-14")
+      }
+    ],
+    verification: {
+      id: generateVerificationId(),
+      agentId: "2",
+      status: "Not Started",
+      documents: [],
+      photos: []
+    },
+    instructions: "Verify business premises and operations. Confirm employee count and business activity."
+  },
+  {
+    id: "3",
+    name: "Ankit Patel",
+    age: 28,
+    job: "Teacher",
+    visitType: "Residence",
+    address: {
+      street: "789 Apartment Complex, Andheri",
+      city: "Mumbai",
+      district: "Mumbai",
+      state: "Maharashtra",
+      postalCode: "400053",
+      coordinates: {
+        lat: 19.1136,
+        lng: 72.8697
+      }
+    },
+    bank: "3", // References SBI Bank
+    assignedTo: "3", // References Agent Two
+    status: "Completed",
+    documents: [
+      {
+        id: "doc3",
+        type: "Salary Slip",
+        name: "Salary Slip March 2023",
+        url: "/placeholder.svg",
+        uploadDate: new Date("2023-04-10")
+      }
+    ],
+    verification: {
+      id: generateVerificationId(),
+      agentId: "3",
       status: "Completed",
-      notes: "Verified business premises. All documents authentic. Business appears operational with 10 employees present.",
+      startTime: new Date("2023-04-12T11:00:00"),
+      completionTime: new Date("2023-04-12T11:35:00"),
+      arrivalTime: new Date("2023-04-12T11:10:00"),
       photos: [
         {
-          id: "p1",
-          name: "Office Entrance",
+          id: "photo1",
           type: "Photo",
-          uploadedBy: "agent",
+          name: "Building Entrance",
           url: "/placeholder.svg",
-          uploadDate: new Date('2023-03-12T09:50:00')
+          uploadDate: new Date("2023-04-12")
         },
         {
-          id: "p2",
-          name: "Applicant Photo",
+          id: "photo2",
           type: "Photo",
-          uploadedBy: "agent",
+          name: "Apartment Door",
           url: "/placeholder.svg",
-          uploadDate: new Date('2023-03-12T10:00:00')
+          uploadDate: new Date("2023-04-12")
         }
       ],
       documents: [
         {
-          id: "d6",
-          name: "Business License Copy",
-          type: "Business License",
-          uploadedBy: "agent",
+          id: "vdoc1",
+          type: "ID Proof",
+          name: "Aadhar Card",
           url: "/placeholder.svg",
-          uploadDate: new Date('2023-03-12T10:10:00')
+          uploadDate: new Date("2023-04-12")
         }
       ],
-      adminRemarks: "All documents and verification complete. Approved for banking services.",
+      notes: "Verified residence. Apartment exists and applicant was present. Collected ID proof and salary documentation.",
       reviewedBy: "1",
-      reviewedAt: new Date('2023-03-13T14:30:00')
-    },
-    createdAt: new Date('2023-03-09')
+      reviewedAt: new Date("2023-04-13T09:15:00"),
+      reviewNotes: "All documentation in order. Address verified successfully.",
+      adminRemarks: "Approved. Documentation is complete.",
+      location: {
+        latitude: 19.1136,
+        longitude: 72.8697
+      }
+    }
   },
   {
     id: "4",
-    name: "Sneha Gupta",
-    phone: "9876543213",
-    email: "sneha@example.com",
-    address: {
-      street: "321 Hospital Road",
-      city: "New Delhi",
-      district: "Delhi",
-      state: "Delhi",
-      postalCode: "110005",
-      coordinates: {
-        lat: 28.6139,
-        lng: 77.2090
-      }
-    },
-    visitType: "Both",
-    status: "Pending",
-    assignedTo: "u1",
-    bank: "b4",
-    documents: [
-      {
-        id: "d7",
-        name: "PAN Card",
-        type: "PAN",
-        uploadedBy: "bank",
-        url: "/placeholder.svg",
-        uploadDate: new Date('2023-03-19')
-      },
-      {
-        id: "d8",
-        name: "Medical License",
-        type: "Job ID",
-        uploadedBy: "bank",
-        url: "/placeholder.svg",
-        uploadDate: new Date('2023-03-19')
-      }
-    ],
-    instructions: "Verify hospital employment and residence. Collect proof of income.",
-    createdAt: new Date('2023-03-18')
-  },
-  {
-    id: "5",
-    name: "Vikram Singh",
-    phone: "9876543214",
-    email: "vikram@example.com",
-    address: {
-      street: "567 Civil Lines",
-      city: "Mumbai",
-      district: "Mumbai",
-      state: "Maharashtra",
-      postalCode: "400010",
-      coordinates: {
-        lat: 19.0759,
-        lng: 72.8777
-      }
-    },
-    visitType: "Home",
-    status: "Pending",
-    assignedTo: "u2",
-    bank: "b5",
-    documents: [
-      {
-        id: "d9",
-        name: "PAN Card",
-        type: "PAN",
-        uploadedBy: "bank",
-        url: "/placeholder.svg",
-        uploadDate: new Date('2023-03-20')
-      },
-      {
-        id: "d10",
-        name: "Government ID",
-        type: "Job ID",
-        uploadedBy: "bank",
-        url: "/placeholder.svg",
-        uploadDate: new Date('2023-03-20')
-      }
-    ],
-    createdAt: new Date('2023-03-19')
-  },
-  {
-    id: "6",
-    name: "Meena Reddy",
-    phone: "9876543215",
-    email: "meena@example.com",
-    address: {
-      street: "890 Finance Street",
-      city: "Bangalore",
-      district: "Bangalore",
-      state: "Karnataka",
-      postalCode: "560010",
-      coordinates: {
-        lat: 12.9716,
-        lng: 77.5946
-      }
-    },
+    name: "Sanjay Mishra",
+    age: 52,
+    job: "Government Employee",
     visitType: "Office",
+    address: {
+      street: "101 Government Complex, Indiranagar",
+      city: "Bangalore",
+      district: "Bangalore Urban",
+      state: "Karnataka",
+      postalCode: "560038",
+      coordinates: {
+        lat: 12.9784,
+        lng: 77.6408
+      }
+    },
+    bank: "1", // References HDFC Bank
+    assignedTo: "2", // References Agent One
     status: "Rejected",
-    assignedTo: "u1",
-    bank: "b6",
     documents: [
       {
-        id: "d11",
-        name: "PAN Card",
-        type: "PAN",
-        uploadedBy: "bank",
+        id: "doc4",
+        type: "Employment Certificate",
+        name: "Government Service Certificate",
         url: "/placeholder.svg",
-        uploadDate: new Date('2023-03-05')
+        uploadDate: new Date("2023-04-08")
       }
     ],
     verification: {
-      id: "v4",
-      leadId: "6",
-      agentId: "u1",
-      startTime: new Date('2023-03-07T11:00:00'),
-      arrivalTime: new Date('2023-03-07T11:30:00'),
-      completionTime: new Date('2023-03-07T12:15:00'),
-      location: {
-        latitude: 12.9716,
-        longitude: 77.5946
-      },
+      id: generateVerificationId(),
+      agentId: "2",
       status: "Rejected",
-      notes: "Unable to verify employment. Office address does not exist as stated.",
+      startTime: new Date("2023-04-10T14:30:00"),
+      completionTime: new Date("2023-04-10T15:15:00"),
+      arrivalTime: new Date("2023-04-10T14:40:00"),
       photos: [
         {
-          id: "p3",
-          name: "Location Photo",
+          id: "photo3",
           type: "Photo",
-          uploadedBy: "agent",
+          name: "Office Building",
           url: "/placeholder.svg",
-          uploadDate: new Date('2023-03-07T11:45:00')
+          uploadDate: new Date("2023-04-10")
         }
       ],
       documents: [],
-      adminRemarks: "Application rejected due to false employment information.",
+      notes: "Office exists but applicant was not present at the time of visit. Unable to verify personal identity.",
       reviewedBy: "1",
-      reviewedAt: new Date('2023-03-08T10:00:00')
-    },
-    createdAt: new Date('2023-03-04')
+      reviewedAt: new Date("2023-04-11T10:20:00"),
+      reviewNotes: "Verification rejected due to applicant's absence.",
+      adminRemarks: "Rejected. Applicant not available for verification.",
+      location: {
+        latitude: 12.9784,
+        longitude: 77.6408
+      }
+    }
   }
 ];
 
-// Authentication helper functions
-export const loginUser = (email: string, password: string): User | null => {
-  // In a real app, this would validate against a backend
-  // For demo, we'll accept any email that matches our mock users and any password
-  const user = mockUsers.find(u => u.email === email);
-  return user || null;
+// Utility functions
+export const getUserById = (id: string): User | undefined => {
+  return mockUsers.find(user => user.id === id);
 };
 
-export const getLeadsByAgentId = (agentId: string): Lead[] => {
-  return mockLeads.filter(lead => lead.assignedTo === agentId);
+export const getBankById = (id: string): Bank | undefined => {
+  return mockBanks.find(bank => bank.id === id);
 };
 
-export const getLeadById = (leadId: string): Lead | undefined => {
-  return mockLeads.find(lead => lead.id === leadId);
-};
-
-export const getUserById = (userId: string): User | undefined => {
-  return mockUsers.find(user => user.id === userId);
-};
-
-export const getBankById = (bankId: string): Bank | undefined => {
-  return mockBanks.find(bank => bank.id === bankId);
-};
-
-export const updateLeadStatus = (leadId: string, status: Lead['status']): void => {
-  const lead = mockLeads.find(lead => lead.id === leadId);
-  if (lead) {
-    lead.status = status;
-  }
-};
-
-export const getLeadStats = () => {
-  const total = mockLeads.length;
-  const pending = mockLeads.filter(lead => lead.status === 'Pending').length;
-  const inProgress = mockLeads.filter(lead => lead.status === 'In Progress').length;
-  const completed = mockLeads.filter(lead => lead.status === 'Completed').length;
-  const rejected = mockLeads.filter(lead => lead.status === 'Rejected').length;
-  
-  return { total, pending, inProgress, completed, rejected };
-};
-
-export const getAgentPerformance = () => {
-  return mockUsers
-    .filter(user => user.role === 'agent')
-    .map(agent => ({
-      id: agent.id,
-      name: agent.name,
-      district: agent.district,
-      totalVerifications: agent.totalVerifications,
-      completionRate: agent.completionRate
-    }));
+export const getLeadById = (id: string): Lead | undefined => {
+  return mockLeads.find(lead => lead.id === id);
 };

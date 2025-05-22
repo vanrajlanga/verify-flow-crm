@@ -1,8 +1,9 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, Lead, getLeadById, getUserById, getBankById } from '@/utils/mockData';
+import { User, Lead, getLeadById, getUserById, getBankById, Document } from '@/utils/mockData';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
 import LeadReview from '@/components/dashboard/LeadReview';
@@ -84,9 +85,10 @@ const LeadDetail = () => {
   const handleStartVerification = () => {
     if (lead && lead.verification) {
       const updatedLead = { ...lead };
+      const currentDate = new Date();
       updatedLead.verification = {
         ...updatedLead.verification,
-        startTime: new Date(),
+        startTime: currentDate,
         status: 'In Progress'
       };
       updatedLead.status = 'In Progress';
@@ -118,9 +120,10 @@ const LeadDetail = () => {
   const handleMarkArrival = () => {
     if (lead && lead.verification) {
       const updatedLead = { ...lead };
+      const currentDate = new Date();
       updatedLead.verification = {
         ...updatedLead.verification,
-        arrivalTime: new Date(),
+        arrivalTime: currentDate,
       };
       setLead(updatedLead);
       
@@ -145,18 +148,18 @@ const LeadDetail = () => {
   const handleUploadPhoto = (files: FileList) => {
     if (lead && lead.verification) {
       const updatedLead = { ...lead };
-      const newPhotos = Array.from(files).map((file, index) => ({
+      const newPhotos: Document[] = Array.from(files).map((file, index) => ({
         id: `newphoto${Date.now()}${index}`,
         name: file.name,
-        type: 'Photo' as const,
-        uploadedBy: 'agent' as const,
+        type: 'Photo',
+        uploadedBy: 'agent',
         url: '/placeholder.svg', // In a real app, we would upload to storage
         uploadDate: new Date()
       }));
       
       updatedLead.verification = {
         ...updatedLead.verification,
-        photos: [...updatedLead.verification.photos, ...newPhotos]
+        photos: [...(updatedLead.verification.photos || []), ...newPhotos]
       };
       
       setLead(updatedLead);
@@ -179,21 +182,20 @@ const LeadDetail = () => {
     }
   };
 
-  const handleUploadDocument = (files: FileList, type: any) => {
+  const handleUploadDocument = (files: FileList, type: string) => {
     if (lead && lead.verification) {
       const updatedLead = { ...lead };
-      const newDocs = Array.from(files).map((file, index) => ({
+      const newDocs: Document[] = Array.from(files).map((file, index) => ({
         id: `newdoc${Date.now()}${index}`,
         name: file.name,
         type,
-        uploadedBy: 'agent' as const,
         url: '/placeholder.svg', // In a real app, we would upload to storage
         uploadDate: new Date()
       }));
       
       updatedLead.verification = {
         ...updatedLead.verification,
-        documents: [...updatedLead.verification.documents, ...newDocs]
+        documents: [...(updatedLead.verification.documents || []), ...newDocs]
       };
       
       setLead(updatedLead);
@@ -241,9 +243,10 @@ const LeadDetail = () => {
   const handleCompleteVerification = () => {
     if (lead && lead.verification) {
       const updatedLead = { ...lead };
+      const currentDate = new Date();
       updatedLead.verification = {
         ...updatedLead.verification,
-        completionTime: new Date(),
+        completionTime: currentDate,
         status: 'Completed'
       };
       updatedLead.status = 'Completed';
@@ -271,11 +274,12 @@ const LeadDetail = () => {
   const handleApproveVerification = (remarks: string) => {
     if (lead && lead.verification && currentUser) {
       const updatedLead = { ...lead };
+      const currentDate = new Date();
       updatedLead.verification = {
         ...updatedLead.verification,
         adminRemarks: remarks,
         reviewedBy: currentUser.id,
-        reviewedAt: new Date(),
+        reviewedAt: currentDate,
         status: 'Completed'
       };
       
@@ -302,11 +306,12 @@ const LeadDetail = () => {
   const handleRejectVerification = (remarks: string) => {
     if (lead && lead.verification && currentUser) {
       const updatedLead = { ...lead };
+      const currentDate = new Date();
       updatedLead.verification = {
         ...updatedLead.verification,
         adminRemarks: remarks,
         reviewedBy: currentUser.id,
-        reviewedAt: new Date(),
+        reviewedAt: currentDate,
         status: 'Rejected'
       };
       updatedLead.status = 'Rejected';

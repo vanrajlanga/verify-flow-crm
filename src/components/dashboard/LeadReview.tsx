@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,8 +28,12 @@ const LeadReview = ({
   const bank = getBankById(lead.bank);
   const verification = lead.verification;
 
-  const formatDateTime = (date?: Date) => {
-    return date ? format(date, 'h:mm a, MMM d, yyyy') : '—';
+  // Helper function to safely format dates that could be strings or Date objects
+  const formatDateTime = (date?: Date | string) => {
+    if (!date) return '—';
+    // If date is a string, parse it to a Date object
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    return format(dateObj, 'h:mm a, MMM d, yyyy');
   };
 
   const getStatusBadge = (status: string) => {
@@ -139,7 +144,7 @@ const LeadReview = ({
                       <div className="p-2">
                         <p className="text-xs">{photo.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {format(photo.uploadDate, 'MMM d, yyyy')}
+                          {photo.uploadDate ? formatDateTime(photo.uploadDate) : ''}
                         </p>
                       </div>
                     </div>
@@ -166,7 +171,7 @@ const LeadReview = ({
                       <div className="p-2">
                         <p className="text-xs">{doc.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {format(doc.uploadDate, 'MMM d, yyyy')}
+                          {doc.uploadDate ? formatDateTime(doc.uploadDate) : ''}
                         </p>
                       </div>
                     </div>
