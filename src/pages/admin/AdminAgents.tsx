@@ -30,7 +30,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const AdminAgents = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -44,8 +43,7 @@ const AdminAgents = () => {
     state: '',
     district: '',
     city: '',
-    password: '',
-    phone: '',
+    password: ''
   });
   const [editingAgent, setEditingAgent] = useState<User | null>(null);
   const [locationData, setLocationData] = useState({
@@ -151,14 +149,6 @@ const AdminAgents = () => {
     navigate('/');
   };
 
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
-      .toUpperCase();
-  };
-
   const filteredAgents = agents.filter(agent =>
     agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     agent.district?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -182,15 +172,12 @@ const AdminAgents = () => {
       id: newAgentId,
       name: newAgent.name,
       email: newAgent.email,
-      phone: newAgent.phone,
-      password: newAgent.password || "defaultPassword123", // Add a default password if none provided
       role: 'agent',
       state: newAgent.state,
       district: newAgent.district,
       city: newAgent.city,
       totalVerifications: 0,
-      completionRate: 0,
-      profilePicture: `https://ui-avatars.com/api/?name=${encodeURIComponent(newAgent.name)}&background=4F46E5&color=fff`
+      completionRate: 0
     };
     
     const updatedAgents = [...agents, agentToAdd];
@@ -213,8 +200,7 @@ const AdminAgents = () => {
       state: '',
       district: '',
       city: '',
-      password: '',
-      phone: '',
+      password: ''
     });
   };
 
@@ -320,18 +306,6 @@ const AdminAgents = () => {
                           type="email"
                           value={newAgent.email}
                           onChange={(e) => setNewAgent({...newAgent, email: e.target.value})}
-                          className="col-span-3"
-                        />
-                      </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="phone" className="text-right">
-                          Phone
-                        </Label>
-                        <Input
-                          id="phone"
-                          type="tel"
-                          value={newAgent.phone}
-                          onChange={(e) => setNewAgent({...newAgent, phone: e.target.value})}
                           className="col-span-3"
                         />
                       </div>
@@ -460,11 +434,11 @@ const AdminAgents = () => {
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Agent</TableHead>
+                            <TableHead>Name</TableHead>
                             <TableHead>Email</TableHead>
-                            <TableHead>Phone</TableHead>
                             <TableHead>State</TableHead>
                             <TableHead>District</TableHead>
+                            <TableHead>City</TableHead>
                             <TableHead>Verifications</TableHead>
                             <TableHead>Completion Rate</TableHead>
                             <TableHead className="w-[100px]">Actions</TableHead>
@@ -480,19 +454,11 @@ const AdminAgents = () => {
                           ) : (
                             filteredAgents.map((agent) => (
                               <TableRow key={agent.id}>
-                                <TableCell>
-                                  <div className="flex items-center space-x-3">
-                                    <Avatar className="h-9 w-9">
-                                      <AvatarImage src={agent.profilePicture} alt={agent.name} />
-                                      <AvatarFallback>{getInitials(agent.name)}</AvatarFallback>
-                                    </Avatar>
-                                    <span className="font-medium">{agent.name}</span>
-                                  </div>
-                                </TableCell>
+                                <TableCell className="font-medium">{agent.name}</TableCell>
                                 <TableCell>{agent.email}</TableCell>
-                                <TableCell>{agent.phone || 'N/A'}</TableCell>
                                 <TableCell>{agent.state || 'N/A'}</TableCell>
                                 <TableCell>{agent.district || 'N/A'}</TableCell>
+                                <TableCell>{agent.city || 'N/A'}</TableCell>
                                 <TableCell>{agent.totalVerifications}</TableCell>
                                 <TableCell>
                                   {agent.completionRate}%
@@ -543,7 +509,7 @@ const AdminAgents = () => {
       
       {/* Edit Agent Dialog */}
       <Dialog open={!!editingAgent} onOpenChange={(open) => !open && setEditingAgent(null)}>
-        <DialogContent className="sm:max-w-[625px]">
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Edit Agent</DialogTitle>
             <DialogDescription>

@@ -1,88 +1,19 @@
-import { format } from 'date-fns';
-import { v4 as uuidv4 } from 'uuid';
-
-// Type Definitions
-export interface Address {
-  street: string;
-  city: string;
-  district: string;
-  state: string;
-  postalCode: string;
-  coordinates?: {
-    lat: number;
-    lng: number;
-  };
-}
-
-export interface AdditionalDetails {
-  jobDetails?: {
-    employer?: string;
-    designation?: string;
-    yearsEmployed?: number;
-    monthlySalary?: number;
-    workExperience?: string;
-    company?: string;
-  };
-  propertyDetails?: {
-    propertyType?: string;
-    ownership?: string;
-    estimatedValue?: number;
-    loanAmount?: number;
-    propertyAge?: string;
-  };
-  incomeDetails?: {
-    monthlyIncome?: string;
-    annualIncome?: string;
-    otherIncome?: string;
-  };
-  addresses?: {
-    type: string;
-    street: string;
-    city: string;
-    district: string;
-    state: string;
-    postalCode: string;
-  }[];
-}
-
-export interface Document {
+// Types
+export interface User {
   id: string;
-  type: string;
   name: string;
-  url: string;
-  uploadDate?: Date | string;
-  uploadedBy?: 'agent' | 'bank' | 'admin';
-  verified?: boolean;
-}
-
-export interface Photo {
-  id: string;
-  caption: string;
-  url: string;
-  name?: string;
-  uploadDate?: Date | string;
-}
-
-export interface VerificationData {
-  id: string;
-  agentId: string;
-  leadId?: string;
-  status: 'In Progress' | 'Completed' | 'Rejected' | 'Not Started' | 'Pending';
-  startTime?: string;
-  completionTime?: string;
-  arrivalTime?: string | Date;
-  documents?: Document[];
-  photos?: Photo[];
-  notes?: string;
-  reviewedBy?: string;
-  reviewedAt?: string | Date;
-  reviewNotes?: string;
-  location?: {
-    latitude: number;
-    longitude: number;
-    address: string;
-  };
-  adminRemarks?: string;
+  email: string;
+  role: 'admin' | 'agent';
+  district?: string;
+  state?: string;
+  city?: string;
+  password?: string;
+  phone?: string;
+  baseLocation?: string;
+  maxTravelDistance?: number;
+  extraChargePerKm?: number;
+  totalVerifications?: number;
+  completionRate?: number;
 }
 
 export interface Lead {
@@ -90,678 +21,470 @@ export interface Lead {
   name: string;
   age: number;
   job: string;
-  address: Address;
-  additionalDetails: AdditionalDetails;
-  status: 'Pending' | 'In Progress' | 'Completed' | 'Rejected' | 'Not Started';
-  bank: string;
-  visitType: 'Office' | 'Residence' | 'Both' | 'Home';
+  address: {
+    street: string;
+    city: string;
+    district: string;
+    state: string;
+    pincode: string;
+  };
+  additionalDetails?: {
+    company?: string;
+    designation?: string;
+    workExperience?: string;
+    propertyType?: string;
+    ownershipStatus?: string;
+    propertyAge?: string;
+    monthlyIncome?: string;
+    annualIncome?: string;
+    otherIncome?: string;
+    addresses?: Array<{
+      type: string;
+      street: string;
+      city: string;
+      district: string;
+      state: string;
+      pincode: string;
+    }>;
+  };
+  visitType: 'Home' | 'Office' | 'Both';
+  status: 'Pending' | 'In Progress' | 'Completed' | 'Rejected';
   assignedTo: string;
-  verificationDate?: Date | string;
-  createdAt: Date | string;
+  bank: string;
   documents: Document[];
   instructions?: string;
-  verification?: VerificationData;
+  verification?: Verification;
+  createdAt: Date;
+  verificationDate?: Date;
 }
 
-export interface User {
+export interface Document {
   id: string;
   name: string;
-  email: string;
-  password: string;
-  phone?: string;
-  role: 'admin' | 'agent';
-  district?: string;
-  state?: string;
-  city?: string;
-  totalVerifications?: number;
-  completionRate?: number;
-  profilePicture?: string;
-  kycDocuments?: Document[];
-  baseLocation?: string;
-  maxTravelDistance?: number;
-  extraChargePerKm?: number;
+  type: 'PAN' | 'Aadhar' | 'Voter ID' | 'Rent Agreement' | 'Job ID' | 'Salary Slip' | 'Business License' | 'Photo' | 'Other';
+  uploadedBy: 'bank' | 'agent';
+  url: string;
+  uploadDate: Date;
+}
+
+export interface Verification {
+  id: string;
+  leadId: string;
+  agentId: string;
+  startTime?: Date;
+  arrivalTime?: Date;
+  completionTime?: Date;
+  location?: {
+    latitude: number;
+    longitude: number;
+  };
+  photos: Document[];
+  documents: Document[];
+  notes?: string;
+  status: 'Not Started' | 'In Progress' | 'Completed' | 'Rejected';
+  adminRemarks?: string;
+  reviewedBy?: string;
+  reviewedAt?: Date;
 }
 
 export interface Bank {
   id: string;
   name: string;
-  headOffice: string;
-  pointOfContact: string;
-  email: string;
-  phone: string;
-  totalApplications?: number;
+  totalApplications: number;
 }
 
-// Mock data and helper functions
+// Mock Data
 export const mockUsers: User[] = [
   {
-    id: 'u1',
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    password: 'password123',
+    id: '1',
+    name: 'Admin User',
+    email: 'admin@bankkyc.com',
     role: 'admin',
-    profilePicture: 'https://i.pravatar.cc/150?img=1'
+    phone: '+91 9876543210',
+    totalVerifications: 0,
+    completionRate: 0
   },
   {
-    id: 'u2',
-    name: 'Alice Smith',
-    email: 'alice.smith@example.com',
-    password: 'password456',
+    id: '2',
+    name: 'Agent Delhi',
+    email: 'agent.delhi@bankkyc.com',
+    role: 'agent',
+    district: 'Delhi',
+    phone: '+91 9876543211',
+    baseLocation: 'Central Delhi, New Delhi',
+    maxTravelDistance: 15,
+    extraChargePerKm: 10,
+    totalVerifications: 45,
+    completionRate: 92
+  },
+  {
+    id: '3',
+    name: 'Agent Mumbai',
+    email: 'agent.mumbai@bankkyc.com',
     role: 'agent',
     district: 'Mumbai',
-    state: 'Maharashtra',
-    city: 'Mumbai City',
-    totalVerifications: 25,
-    completionRate: 85,
-    profilePicture: 'https://i.pravatar.cc/150?img=2'
+    phone: '+91 9876543212',
+    baseLocation: 'Andheri, Mumbai',
+    maxTravelDistance: 20,
+    extraChargePerKm: 8,
+    totalVerifications: 38,
+    completionRate: 89
   },
   {
-    id: 'u3',
-    name: 'Bob Johnson',
-    email: 'bob.johnson@example.com',
-    password: 'password789',
-    role: 'agent',
-    district: 'Pune',
-    state: 'Maharashtra',
-    city: 'Pune City',
-    totalVerifications: 30,
-    completionRate: 92,
-    profilePicture: 'https://i.pravatar.cc/150?img=3'
-  },
-  {
-    id: 'u4',
-    name: 'Eva Williams',
-    email: 'eva.williams@example.com',
-    password: 'passwordabc',
+    id: '4',
+    name: 'Agent Bangalore',
+    email: 'agent.bangalore@bankkyc.com',
     role: 'agent',
     district: 'Bangalore',
-    state: 'Karnataka',
-    city: 'Bangalore City',
-    totalVerifications: 22,
-    completionRate: 78,
-    profilePicture: 'https://i.pravatar.cc/150?img=4'
-  },
-  {
-    id: 'u5',
-    name: 'Charlie Brown',
-    email: 'charlie.brown@example.com',
-    password: 'passwordxyz',
-    role: 'agent',
-    district: 'Mumbai',
-    state: 'Maharashtra',
-    city: 'Navi Mumbai',
-    totalVerifications: 18,
-    completionRate: 68,
-    profilePicture: 'https://i.pravatar.cc/150?img=5'
-  },
-  {
-    id: 'u6',
-    name: 'Diana Miller',
-    email: 'diana.miller@example.com',
-    password: 'passworddef',
-    role: 'agent',
-    district: 'Pune',
-    state: 'Maharashtra',
-    city: 'Pimpri-Chinchwad',
-    totalVerifications: 28,
-    completionRate: 88,
-    profilePicture: 'https://i.pravatar.cc/150?img=6'
-  },
-  {
-    id: 'u7',
-    name: 'George Taylor',
-    email: 'george.taylor@example.com',
-    password: 'passwordghi',
-    role: 'agent',
-    district: 'Bangalore',
-    state: 'Karnataka',
-    city: 'Electronic City',
-    totalVerifications: 24,
-    completionRate: 75,
-    profilePicture: 'https://i.pravatar.cc/150?img=7'
-  }
-];
-
-export const mockLeads: Lead[] = [
-  {
-    id: 'l1',
-    name: 'Amit Kumar',
-    age: 32,
-    job: 'Software Engineer',
-    address: {
-      street: '123 Main St',
-      city: 'Mumbai',
-      district: 'Mumbai',
-      state: 'Maharashtra',
-      postalCode: '400001'
-    },
-    additionalDetails: {
-      jobDetails: {
-        employer: 'Tech Corp',
-        designation: 'Senior Developer',
-        workExperience: '5 years'
-      },
-      propertyDetails: {
-        propertyType: 'Apartment',
-        ownership: 'Owned',
-        propertyAge: '5-10 years'
-      },
-      incomeDetails: {
-        monthlyIncome: '80000',
-        annualIncome: '960000',
-        otherIncome: '20000'
-      },
-      addresses: [
-        {
-          type: "Home",
-          street: '123 Main St',
-          city: 'Mumbai',
-          district: 'Mumbai',
-          state: 'Maharashtra',
-          postalCode: '400001'
-        }
-      ]
-    },
-    status: 'In Progress',
-    bank: 'b1',
-    visitType: 'Residence',
-    assignedTo: 'u2',
-    verificationDate: new Date(),
-    createdAt: new Date(),
-    documents: [
-      {
-        id: 'doc1',
-        type: 'ID Proof',
-        name: 'Aadhar Card',
-        url: '/placeholder.svg',
-        uploadedBy: 'agent',
-        uploadDate: new Date()
-      }
-    ],
-    instructions: 'Verify address and employment details.',
-    verification: {
-      id: 'v1',
-      agentId: 'u2',
-      status: 'In Progress',
-      startTime: format(new Date(), 'MMM d, yyyy h:mm a'),
-      completionTime: format(new Date(), 'MMM d, yyyy h:mm a'),
-      documents: [
-        {
-          id: 'doc1',
-          type: 'ID Proof',
-          name: 'Aadhar Card',
-          url: '/placeholder.svg',
-          uploadedBy: 'agent',
-          uploadDate: new Date()
-        }
-      ],
-      photos: [
-        {
-          id: 'photo1',
-          caption: 'Front view of the house',
-          url: '/placeholder.svg'
-        }
-      ],
-      notes: 'Address verified, awaiting employment verification.'
-    }
-  },
-  {
-    id: 'l2',
-    name: 'Priya Sharma',
-    age: 28,
-    job: 'Marketing Manager',
-    address: {
-      street: '456 Park Ave',
-      city: 'Pune',
-      district: 'Pune',
-      state: 'Maharashtra',
-      postalCode: '411001'
-    },
-    additionalDetails: {
-      jobDetails: {
-        employer: 'Global Marketing Ltd',
-        designation: 'Team Lead',
-        workExperience: '3 years'
-      },
-      propertyDetails: {
-        propertyType: 'House',
-        ownership: 'Rented',
-        propertyAge: '10-20 years'
-      },
-      incomeDetails: {
-        monthlyIncome: '65000',
-        annualIncome: '780000',
-        otherIncome: '15000'
-      },
-      addresses: [
-        {
-          type: "Home",
-          street: '456 Park Ave',
-          city: 'Pune',
-          district: 'Pune',
-          state: 'Maharashtra',
-          postalCode: '411001'
-        }
-      ]
-    },
-    status: 'Completed',
-    bank: 'b2',
-    visitType: 'Residence',
-    assignedTo: 'u3',
-    verificationDate: new Date(),
-    createdAt: new Date(),
-    documents: [
-      {
-        id: 'doc2',
-        type: 'Address Proof',
-        name: 'Passport',
-        url: '/placeholder.svg',
-        uploadedBy: 'agent',
-        uploadDate: new Date()
-      }
-    ],
-    instructions: 'Confirm rental agreement and employment details.',
-    verification: {
-      id: 'v2',
-      agentId: 'u3',
-      status: 'Completed',
-      startTime: format(new Date(), 'MMM d, yyyy h:mm a'),
-      completionTime: format(new Date(), 'MMM d, yyyy h:mm a'),
-      documents: [
-        {
-          id: 'doc2',
-          type: 'Address Proof',
-          name: 'Passport',
-          url: '/placeholder.svg',
-          uploadedBy: 'agent',
-          uploadDate: new Date()
-        }
-      ],
-      photos: [
-        {
-          id: 'photo2',
-          caption: 'External view of the property',
-          url: '/placeholder.svg'
-        }
-      ],
-      notes: 'Rental agreement and employment details verified.'
-    }
-  },
-  {
-    id: 'l3',
-    name: 'Rajesh Patel',
-    age: 45,
-    job: 'Business Owner',
-    address: {
-      street: '789 Market St',
-      city: 'Bangalore',
-      district: 'Bangalore',
-      state: 'Karnataka',
-      postalCode: '560001'
-    },
-    additionalDetails: {
-      jobDetails: {
-        employer: 'Self-employed',
-        designation: 'Owner',
-        workExperience: '15 years'
-      },
-      propertyDetails: {
-        propertyType: 'Commercial',
-        ownership: 'Owned',
-        propertyAge: '20+ years'
-      },
-      incomeDetails: {
-        monthlyIncome: '120000',
-        annualIncome: '1440000',
-        otherIncome: '50000'
-      },
-      addresses: [
-        {
-          type: "Home",
-          street: '789 Market St',
-          city: 'Bangalore',
-          district: 'Bangalore',
-          state: 'Karnataka',
-          postalCode: '560001'
-        }
-      ]
-    },
-    status: 'Pending',
-    bank: 'b3',
-    visitType: 'Office',
-    assignedTo: 'u4',
-    verificationDate: new Date(),
-    createdAt: new Date(),
-    documents: [
-      {
-        id: 'doc3',
-        type: 'Business License',
-        name: 'Trade License',
-        url: '/placeholder.svg',
-        uploadedBy: 'agent',
-        uploadDate: new Date()
-      }
-    ],
-    instructions: 'Verify business ownership and financial records.',
-    verification: {
-      id: 'v3',
-      agentId: 'u4',
-      status: 'Not Started',
-      startTime: format(new Date(), 'MMM d, yyyy h:mm a'),
-      completionTime: format(new Date(), 'MMM d, yyyy h:mm a'),
-      documents: [
-        {
-          id: 'doc3',
-          type: 'Business License',
-          name: 'Trade License',
-          url: '/placeholder.svg',
-          uploadedBy: 'agent',
-          uploadDate: new Date()
-        }
-      ],
-      photos: [
-        {
-          id: 'photo3',
-          caption: 'Exterior of the business premises',
-          url: '/placeholder.svg'
-        }
-      ],
-      notes: 'Awaiting agent visit to verify business details.'
-    }
-  },
-  {
-    id: 'l4',
-    name: 'Sunita Reddy',
-    age: 38,
-    job: 'Teacher',
-    address: {
-      street: '101 Gandhi Rd',
-      city: 'Mumbai',
-      district: 'Mumbai',
-      state: 'Maharashtra',
-      postalCode: '400002'
-    },
-    additionalDetails: {
-      jobDetails: {
-        employer: 'Local School',
-        designation: 'Senior Teacher',
-        workExperience: '10 years'
-      },
-      propertyDetails: {
-        propertyType: 'Apartment',
-        ownership: 'Owned',
-        propertyAge: '10-20 years'
-      },
-      incomeDetails: {
-        monthlyIncome: '55000',
-        annualIncome: '660000',
-        otherIncome: '10000'
-      },
-      addresses: [
-        {
-          type: "Home",
-          street: '101 Gandhi Rd',
-          city: 'Mumbai',
-          district: 'Mumbai',
-          state: 'Maharashtra',
-          postalCode: '400002'
-        }
-      ]
-    },
-    status: 'Rejected',
-    bank: 'b1',
-    visitType: 'Residence',
-    assignedTo: 'u5',
-    verificationDate: new Date(),
-    createdAt: new Date(),
-    documents: [
-      {
-        id: 'doc4',
-        type: 'Employment Proof',
-        name: 'School ID',
-        url: '/placeholder.svg',
-        uploadedBy: 'agent',
-        uploadDate: new Date()
-      }
-    ],
-    instructions: 'Verify employment and address details.',
-    verification: {
-      id: 'v4',
-      agentId: 'u5',
-      status: 'Rejected',
-      startTime: format(new Date(), 'MMM d, yyyy h:mm a'),
-      completionTime: format(new Date(), 'MMM d, yyyy h:mm a'),
-      documents: [
-        {
-          id: 'doc4',
-          type: 'Employment Proof',
-          name: 'School ID',
-          url: '/placeholder.svg',
-          uploadedBy: 'agent',
-          uploadDate: new Date()
-        }
-      ],
-      photos: [
-        {
-          id: 'photo4',
-          caption: 'Residence entrance',
-          url: '/placeholder.svg'
-        }
-      ],
-      notes: 'Verification failed due to mismatch in address details.'
-    }
-  },
-  {
-    id: 'l5',
-    name: 'Vikram Singh',
-    age: 29,
-    job: 'Accountant',
-    address: {
-      street: '222 Nehru St',
-      city: 'Pune',
-      district: 'Pune',
-      state: 'Maharashtra',
-      postalCode: '411002'
-    },
-    additionalDetails: {
-      jobDetails: {
-        employer: 'Finance Corp',
-        designation: 'Junior Accountant',
-        workExperience: '2 years'
-      },
-      propertyDetails: {
-        propertyType: 'Apartment',
-        ownership: 'Rented',
-        propertyAge: '5-10 years'
-      },
-      incomeDetails: {
-        monthlyIncome: '48000',
-        annualIncome: '576000',
-        otherIncome: '8000'
-      },
-      addresses: [
-        {
-          type: "Home",
-          street: '222 Nehru St',
-          city: 'Pune',
-          district: 'Pune',
-          state: 'Maharashtra',
-          postalCode: '411002'
-        }
-      ]
-    },
-    status: 'Completed',
-    bank: 'b2',
-    visitType: 'Residence',
-    assignedTo: 'u6',
-    verificationDate: new Date(),
-    createdAt: new Date(),
-    documents: [
-      {
-        id: 'doc5',
-        type: 'Salary Slip',
-        name: 'Latest Payslip',
-        url: '/placeholder.svg',
-        uploadedBy: 'agent',
-        uploadDate: new Date()
-      }
-    ],
-    instructions: 'Verify employment and income details.',
-    verification: {
-      id: 'v5',
-      agentId: 'u6',
-      status: 'Completed',
-      startTime: format(new Date(), 'MMM d, yyyy h:mm a'),
-      completionTime: format(new Date(), 'MMM d, yyyy h:mm a'),
-      documents: [
-        {
-          id: 'doc5',
-          type: 'Salary Slip',
-          name: 'Latest Payslip',
-          url: '/placeholder.svg',
-          uploadedBy: 'agent',
-          uploadDate: new Date()
-        }
-      ],
-      photos: [
-        {
-          id: 'photo5',
-          caption: 'Apartment balcony view',
-          url: '/placeholder.svg'
-        }
-      ],
-      notes: 'Employment and income details verified successfully.'
-    }
-  },
-  {
-    id: 'l6',
-    name: 'Ananya Iyer',
-    age: 31,
-    job: 'Doctor',
-    address: {
-      street: '333 MG Road',
-      city: 'Bangalore',
-      district: 'Bangalore',
-      state: 'Karnataka',
-      postalCode: '560003'
-    },
-    additionalDetails: {
-      jobDetails: {
-        employer: 'City Hospital',
-        designation: 'Senior Resident',
-        workExperience: '6 years'
-      },
-      propertyDetails: {
-        propertyType: 'House',
-        ownership: 'Owned',
-        propertyAge: '5-10 years'
-      },
-      incomeDetails: {
-        monthlyIncome: '90000',
-        annualIncome: '1080000',
-        otherIncome: '30000'
-      },
-      addresses: [
-        {
-          type: "Home",
-          street: '333 MG Road',
-          city: 'Bangalore',
-          district: 'Bangalore',
-          state: 'Karnataka',
-          postalCode: '560003'
-        }
-      ]
-    },
-    status: 'In Progress',
-    bank: 'b3',
-    visitType: 'Residence',
-    assignedTo: 'u7',
-    verificationDate: new Date(),
-    createdAt: new Date(),
-    documents: [
-      {
-        id: 'doc6',
-        type: 'Professional License',
-        name: 'Medical License',
-        url: '/placeholder.svg',
-        uploadedBy: 'agent',
-        uploadDate: new Date()
-      }
-    ],
-    instructions: 'Verify professional license and address details.',
-    verification: {
-      id: 'v6',
-      agentId: 'u7',
-      status: 'In Progress',
-      startTime: format(new Date(), 'MMM d, yyyy h:mm a'),
-      completionTime: format(new Date(), 'MMM d, yyyy h:mm a'),
-      documents: [
-        {
-          id: 'doc6',
-          type: 'Professional License',
-          name: 'Medical License',
-          url: '/placeholder.svg',
-          uploadedBy: 'agent',
-          uploadDate: new Date()
-        }
-      ],
-      photos: [
-        {
-          id: 'photo6',
-          caption: 'Front view of the house',
-          url: '/placeholder.svg'
-        }
-      ],
-      notes: 'Address verified, awaiting professional license verification.'
-    }
+    phone: '+91 9876543213',
+    baseLocation: 'Koramangala, Bangalore',
+    maxTravelDistance: 12,
+    extraChargePerKm: 12,
+    totalVerifications: 52,
+    completionRate: 95
   }
 ];
 
 export const mockBanks: Bank[] = [
+  { id: '1', name: 'HDFC Bank', totalApplications: 120 },
+  { id: '2', name: 'ICICI Bank', totalApplications: 95 },
+  { id: '3', name: 'State Bank of India', totalApplications: 150 },
+  { id: '4', name: 'Axis Bank', totalApplications: 85 },
+  { id: '5', name: 'Bank of Baroda', totalApplications: 65 },
+  { id: '6', name: 'Punjab National Bank', totalApplications: 70 },
+  { id: '7', name: 'Kotak Mahindra Bank', totalApplications: 55 },
+  { id: '8', name: 'IndusInd Bank', totalApplications: 45 },
+  { id: '9', name: 'Yes Bank', totalApplications: 40 },
+  { id: '10', name: 'Canara Bank', totalApplications: 60 }
+];
+
+export const mockLeads: Lead[] = [
   {
-    id: 'b1',
-    name: 'State Bank of India',
-    headOffice: 'Mumbai',
-    pointOfContact: 'Ramesh Kumar',
-    email: 'ramesh.kumar@sbi.co.in',
-    phone: '9876543210',
-    totalApplications: 120
+    id: '1',
+    name: 'Rahul Sharma',
+    age: 32,
+    job: 'Software Engineer',
+    address: {
+      street: '123 Main Street',
+      city: 'New Delhi',
+      district: 'Delhi',
+      state: 'Delhi',
+      pincode: '110001'
+    },
+    visitType: 'Both',
+    status: 'Pending',
+    assignedTo: '2',
+    bank: '1',
+    documents: [
+      {
+        id: 'd1',
+        name: 'PAN Card',
+        type: 'PAN',
+        uploadedBy: 'bank',
+        url: '/placeholder.svg',
+        uploadDate: new Date('2023-03-15')
+      },
+      {
+        id: 'd2',
+        name: 'Aadhar Card',
+        type: 'Aadhar',
+        uploadedBy: 'bank',
+        url: '/placeholder.svg',
+        uploadDate: new Date('2023-03-15')
+      }
+    ],
+    instructions: 'Verify both home and office addresses. Confirm employment details with HR.',
+    createdAt: new Date('2023-03-14')
   },
   {
-    id: 'b2',
-    name: 'HDFC Bank',
-    headOffice: 'Mumbai',
-    pointOfContact: 'Priya Sharma',
-    email: 'priya.sharma@hdfc.com',
-    phone: '8765432109',
-    totalApplications: 150
+    id: '2',
+    name: 'Priya Patel',
+    age: 28,
+    job: 'Marketing Manager',
+    address: {
+      street: '456 Park Avenue',
+      city: 'Mumbai',
+      district: 'Mumbai',
+      state: 'Maharashtra',
+      pincode: '400001'
+    },
+    visitType: 'Home',
+    status: 'In Progress',
+    assignedTo: '3',
+    bank: '2',
+    documents: [
+      {
+        id: 'd3',
+        name: 'PAN Card',
+        type: 'PAN',
+        uploadedBy: 'bank',
+        url: '/placeholder.svg',
+        uploadDate: new Date('2023-03-18')
+      }
+    ],
+    verification: {
+      id: 'v1',
+      leadId: '2',
+      agentId: '3',
+      startTime: new Date('2023-03-20T10:30:00'),
+      arrivalTime: new Date('2023-03-20T11:15:00'),
+      status: 'In Progress',
+      photos: [],
+      documents: []
+    },
+    createdAt: new Date('2023-03-17')
   },
   {
-    id: 'b3',
-    name: 'ICICI Bank',
-    headOffice: 'Mumbai',
-    pointOfContact: 'Amit Patel',
-    email: 'amit.patel@icici.com',
-    phone: '7654321098',
-    totalApplications: 100
+    id: '3',
+    name: 'Amit Kumar',
+    age: 35,
+    job: 'Business Owner',
+    address: {
+      street: '789 Tech Park',
+      city: 'Bangalore',
+      district: 'Bangalore',
+      state: 'Karnataka',
+      pincode: '560001'
+    },
+    visitType: 'Office',
+    status: 'Completed',
+    assignedTo: '4',
+    bank: '3',
+    documents: [
+      {
+        id: 'd4',
+        name: 'PAN Card',
+        type: 'PAN',
+        uploadedBy: 'bank',
+        url: '/placeholder.svg',
+        uploadDate: new Date('2023-03-10')
+      },
+      {
+        id: 'd5',
+        name: 'Business License',
+        type: 'Business License',
+        uploadedBy: 'bank',
+        url: '/placeholder.svg',
+        uploadDate: new Date('2023-03-10')
+      }
+    ],
+    verification: {
+      id: 'v2',
+      leadId: '3',
+      agentId: '4',
+      startTime: new Date('2023-03-12T09:00:00'),
+      arrivalTime: new Date('2023-03-12T09:45:00'),
+      completionTime: new Date('2023-03-12T10:30:00'),
+      location: {
+        latitude: 12.9716,
+        longitude: 77.5946
+      },
+      status: 'Completed',
+      notes: 'Verified business premises. All documents authentic. Business appears operational with 10 employees present.',
+      photos: [
+        {
+          id: 'p1',
+          name: 'Office Entrance',
+          type: 'Photo',
+          uploadedBy: 'agent',
+          url: '/placeholder.svg',
+          uploadDate: new Date('2023-03-12T09:50:00')
+        },
+        {
+          id: 'p2',
+          name: 'Applicant Photo',
+          type: 'Photo',
+          uploadedBy: 'agent',
+          url: '/placeholder.svg',
+          uploadDate: new Date('2023-03-12T10:00:00')
+        }
+      ],
+      documents: [
+        {
+          id: 'd6',
+          name: 'Business License Copy',
+          type: 'Business License',
+          uploadedBy: 'agent',
+          url: '/placeholder.svg',
+          uploadDate: new Date('2023-03-12T10:10:00')
+        }
+      ],
+      adminRemarks: 'All documents and verification complete. Approved for banking services.',
+      reviewedBy: '1',
+      reviewedAt: new Date('2023-03-13T14:30:00')
+    },
+    createdAt: new Date('2023-03-09')
+  },
+  {
+    id: '4',
+    name: 'Sneha Gupta',
+    age: 29,
+    job: 'Doctor',
+    address: {
+      street: '321 Hospital Road',
+      city: 'New Delhi',
+      district: 'Delhi',
+      state: 'Delhi',
+      pincode: '110005'
+    },
+    visitType: 'Both',
+    status: 'Pending',
+    assignedTo: '2',
+    bank: '4',
+    documents: [
+      {
+        id: 'd7',
+        name: 'PAN Card',
+        type: 'PAN',
+        uploadedBy: 'bank',
+        url: '/placeholder.svg',
+        uploadDate: new Date('2023-03-19')
+      },
+      {
+        id: 'd8',
+        name: 'Medical License',
+        type: 'Job ID',
+        uploadedBy: 'bank',
+        url: '/placeholder.svg',
+        uploadDate: new Date('2023-03-19')
+      }
+    ],
+    instructions: 'Verify hospital employment and residence. Collect proof of income.',
+    createdAt: new Date('2023-03-18')
+  },
+  {
+    id: '5',
+    name: 'Vikram Singh',
+    age: 45,
+    job: 'Government Officer',
+    address: {
+      street: '567 Civil Lines',
+      city: 'Mumbai',
+      district: 'Mumbai',
+      state: 'Maharashtra',
+      pincode: '400010'
+    },
+    visitType: 'Home',
+    status: 'Pending',
+    assignedTo: '3',
+    bank: '5',
+    documents: [
+      {
+        id: 'd9',
+        name: 'PAN Card',
+        type: 'PAN',
+        uploadedBy: 'bank',
+        url: '/placeholder.svg',
+        uploadDate: new Date('2023-03-20')
+      },
+      {
+        id: 'd10',
+        name: 'Government ID',
+        type: 'Job ID',
+        uploadedBy: 'bank',
+        url: '/placeholder.svg',
+        uploadDate: new Date('2023-03-20')
+      }
+    ],
+    createdAt: new Date('2023-03-19')
+  },
+  {
+    id: '6',
+    name: 'Meena Reddy',
+    age: 33,
+    job: 'Accountant',
+    address: {
+      street: '890 Finance Street',
+      city: 'Bangalore',
+      district: 'Bangalore',
+      state: 'Karnataka',
+      pincode: '560010'
+    },
+    visitType: 'Office',
+    status: 'Rejected',
+    assignedTo: '4',
+    bank: '6',
+    documents: [
+      {
+        id: 'd11',
+        name: 'PAN Card',
+        type: 'PAN',
+        uploadedBy: 'bank',
+        url: '/placeholder.svg',
+        uploadDate: new Date('2023-03-05')
+      }
+    ],
+    verification: {
+      id: 'v3',
+      leadId: '6',
+      agentId: '4',
+      startTime: new Date('2023-03-07T11:00:00'),
+      arrivalTime: new Date('2023-03-07T11:30:00'),
+      completionTime: new Date('2023-03-07T12:15:00'),
+      location: {
+        latitude: 12.9716,
+        longitude: 77.5946
+      },
+      status: 'Rejected',
+      notes: 'Unable to verify employment. Office address does not exist as stated.',
+      photos: [
+        {
+          id: 'p3',
+          name: 'Location Photo',
+          type: 'Photo',
+          uploadedBy: 'agent',
+          url: '/placeholder.svg',
+          uploadDate: new Date('2023-03-07T11:45:00')
+        }
+      ],
+      documents: [],
+      adminRemarks: 'Application rejected due to false employment information.',
+      reviewedBy: '1',
+      reviewedAt: new Date('2023-03-08T10:00:00')
+    },
+    createdAt: new Date('2023-03-04')
   }
 ];
 
-export const getLeadById = (leadId: string): Lead | undefined => {
-  return mockLeads.find(lead => lead.id === leadId);
+// Authentication helper functions
+export const loginUser = (email: string, password: string): User | null => {
+  // In a real app, this would validate against a backend
+  // For demo, we'll accept any email that matches our mock users and any password
+  const user = mockUsers.find(u => u.email === email);
+  return user || null;
 };
 
 export const getLeadsByAgentId = (agentId: string): Lead[] => {
   return mockLeads.filter(lead => lead.assignedTo === agentId);
 };
 
+export const getLeadById = (leadId: string): Lead | undefined => {
+  return mockLeads.find(lead => lead.id === leadId);
+};
+
+export const getUserById = (userId: string): User | undefined => {
+  return mockUsers.find(user => user.id === userId);
+};
+
+export const getBankById = (bankId: string): Bank | undefined => {
+  return mockBanks.find(bank => bank.id === bankId);
+};
+
+export const updateLeadStatus = (leadId: string, status: Lead['status']): void => {
+  const lead = mockLeads.find(lead => lead.id === leadId);
+  if (lead) {
+    lead.status = status;
+  }
+};
+
 export const getLeadStats = () => {
-  return {
-    total: mockLeads.length,
-    pending: mockLeads.filter(l => l.status === 'Pending').length,
-    completed: mockLeads.filter(l => l.verification?.status === 'Completed').length,
-    inProgress: mockLeads.filter(l => l.verification?.status === 'In Progress').length
-  };
+  const total = mockLeads.length;
+  const pending = mockLeads.filter(lead => lead.status === 'Pending').length;
+  const inProgress = mockLeads.filter(lead => lead.status === 'In Progress').length;
+  const completed = mockLeads.filter(lead => lead.status === 'Completed').length;
+  const rejected = mockLeads.filter(lead => lead.status === 'Rejected').length;
+  
+  return { total, pending, inProgress, completed, rejected };
 };
 
 export const getAgentPerformance = () => {
@@ -770,35 +493,8 @@ export const getAgentPerformance = () => {
     .map(agent => ({
       id: agent.id,
       name: agent.name,
-      totalVerifications: agent.totalVerifications || 0,
-      completionRate: agent.completionRate || 0,
-      district: agent.district
+      district: agent.district,
+      totalVerifications: agent.totalVerifications,
+      completionRate: agent.completionRate
     }));
-};
-
-// Helper function for login
-export const loginUser = (email: string, password: string): User | null => {
-  const user = mockUsers.find(u => u.email === email && u.password === password);
-  return user || null;
-};
-
-export const getBankById = (bankId: string): Bank | undefined => {
-  return mockBanks.find(bank => bank.id === bankId);
-};
-
-export const getUserById = (userId: string): User | undefined => {
-  return mockUsers.find(user => user.id === userId);
-};
-
-// Helper to convert Date objects to strings for consistency
-export const dateToString = (date: Date | string): string => {
-  if (typeof date === 'string') return date;
-  return format(date, 'yyyy-MM-dd HH:mm:ss');
-};
-
-// Helper to ensure dates can be compared regardless of type
-export const compareDates = (dateA: Date | string, dateB: Date | string): number => {
-  const dateObjA = typeof dateA === 'string' ? new Date(dateA) : dateA;
-  const dateObjB = typeof dateB === 'string' ? new Date(dateB) : dateB;
-  return dateObjA.getTime() - dateObjB.getTime();
 };

@@ -1,20 +1,18 @@
+
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Lead, Photo, Document } from '@/utils/mockData';
-import { Upload } from 'lucide-react';
+import { Lead, Document } from '@/utils/mockData';
+import { Checkbox } from "@/components/ui/checkbox";
+import { Camera, Clock, MapPin, Upload } from 'lucide-react';
 import { format } from 'date-fns';
-import { toast } from '@/components/ui/use-toast';
 
 interface VerificationProcessProps {
   lead: Lead;
   onStartVerification: () => void;
   onMarkArrival: () => void;
   onUploadPhoto: (files: FileList) => void;
-  onUploadDocument: (files: FileList, type: string) => void;
+  onUploadDocument: (files: FileList, type: Document['type']) => void;
   onAddNotes: (notes: string) => void;
   onCompleteVerification: () => void;
 }
@@ -29,180 +27,310 @@ const VerificationProcess = ({
   onCompleteVerification
 }: VerificationProcessProps) => {
   const [notes, setNotes] = useState(lead.verification?.notes || '');
+  const [location, setLocation] = useState<{latitude: number, longitude: number} | null>(
+    lead.verification?.location || null
+  );
+  const [locationPermission, setLocationPermission] = useState(false);
+
+  const verification = lead.verification;
+  const status = verification?.status || 'Not Started';
+
+  const formatTime = (date?: Date) => {
+    return date ? format(date, 'h:mm a, MMM d, yyyy') : '—';
+  };
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
+    if (e.target.files && e.target.files.length > 0) {
       onUploadPhoto(e.target.files);
     }
   };
-
-  const handleDocumentUpload = (e: React.ChangeEvent<HTMLInputElement>, type: string) => {
-    if (e.target.files) {
+  
+  const handleDocumentUpload = (e: React.ChangeEvent<HTMLInputElement>, type: Document['type']) => {
+    if (e.target.files && e.target.files.length > 0) {
       onUploadDocument(e.target.files, type);
     }
   };
 
-  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setNotes(e.target.value);
-  };
-
-  const handleSaveNotes = () => {
-    onAddNotes(notes);
-    toast({
-      title: "Notes Saved",
-      description: "Your notes have been saved successfully.",
-    });
-  };
-
-  const renderPhotos = (photos?: Photo[]) => {
-    if (!photos || photos.length === 0) {
-      return null;
+  const handleMarkArrival = () => {
+    if (locationPermission) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const location = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          };
+          setLocation(location);
+          onMarkArrival();
+        },
+        (error) => {
+          console.error("Error getting location:", error);
+          // Still allow marking arrival without location
+          onMarkArrival();
+        }
+      );
+    } else {
+      onMarkArrival();
     }
-
-    return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-        {photos.map(photo => (
-          <div key={photo.id} className="border rounded-md p-3">
-            <div className="flex justify-between items-start mb-2">
-              <span className="text-sm font-medium">{photo.caption}</span>
-              <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
-                Photo
-              </span>
-            </div>
-            <img 
-              src={photo.url} 
-              alt={photo.caption}
-              className="w-full h-32 object-cover rounded-md mb-2" 
-            />
-          </div>
-        ))}
-      </div>
-    );
   };
 
-  const renderDocuments = (documents?: Document[]) => {
-    if (!documents || documents.length === 0) {
-      return null;
+  const isStepCompleted = (step: string) => {
+    switch (step) {
+      case 'start':
+        return !!verification?.startTime;
+      case 'arrival':
+        return !!verification?.arrivalTime;
+      case 'documents':
+        return verification?.photos?.length! > 0 || verification?.documents?.length! > 0;
+      case 'complete':
+        return !!verification?.completionTime;
+      default:
+        return false;
     }
-
-    return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-        {documents.map(doc => (
-          <div key={doc.id} className="border rounded-md p-3">
-            <div className="flex justify-between items-start mb-2">
-              <span className="text-sm font-medium">{doc.name}</span>
-              <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
-                {doc.type}
-              </span>
-            </div>
-            <img 
-              src={doc.url} 
-              alt={doc.name}
-              className="w-full h-32 object-cover rounded-md mb-2" 
-            />
-          </div>
-        ))}
-      </div>
-    );
   };
+
+  // Check if verification photos and documents exist and have elements
+  const hasVerificationPhotos = verification?.photos && verification.photos.length > 0;
+  const hasVerificationDocuments = verification?.documents && verification.documents.length > 0;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Verification Process</CardTitle>
-        <CardDescription>
-          Perform verification steps and record findings
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <h3 className="text-md font-semibold">Verification Status</h3>
-            <p>{lead.verification?.status || 'Not Started'}</p>
+    <div className="space-y-6">
+      <div className="bg-white rounded-lg border p-6">
+        <h2 className="text-xl font-semibold mb-4">Verification Process</h2>
+        
+        {/* Step 1: Start Verification */}
+        <div className={`verification-step ${isStepCompleted('start') ? 'verification-step-completed' : ''}`}>
+          <div className="flex items-start">
+            <div className={`timeline-dot ${isStepCompleted('start') ? 'bg-green-100 text-green-600' : 'bg-muted text-muted-foreground'}`}>
+              {isStepCompleted('start') ? (
+                <Clock className="h-5 w-5" />
+              ) : (
+                <span className="text-sm">1</span>
+              )}
+            </div>
+            <div className="ml-4 space-y-2">
+              <h3 className="font-medium">Start Verification</h3>
+              {verification?.startTime ? (
+                <p className="text-sm text-muted-foreground">
+                  Started at {formatTime(verification.startTime)}
+                </p>
+              ) : (
+                <Button onClick={onStartVerification}>Start Verification</Button>
+              )}
+            </div>
           </div>
-          <div>
-            <h3 className="text-md font-semibold">Assigned Agent</h3>
-            <p>{lead.assignedTo}</p>
+        </div>
+
+        {/* Step 2: Mark Arrival */}
+        <div className={`verification-step ${isStepCompleted('arrival') ? 'verification-step-completed' : ''}`}>
+          <div className="flex items-start">
+            <div className={`timeline-dot ${isStepCompleted('arrival') ? 'bg-green-100 text-green-600' : 'bg-muted text-muted-foreground'}`}>
+              {isStepCompleted('arrival') ? (
+                <MapPin className="h-5 w-5" />
+              ) : (
+                <span className="text-sm">2</span>
+              )}
+            </div>
+            <div className="ml-4 space-y-2">
+              <h3 className="font-medium">Mark Arrival at Location</h3>
+              {verification?.arrivalTime ? (
+                <div>
+                  <p className="text-sm text-muted-foreground">
+                    Arrived at {formatTime(verification.arrivalTime)}
+                  </p>
+                  {location && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Location: {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {verification?.startTime && (
+                    <>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox 
+                          id="location-permission" 
+                          checked={locationPermission}
+                          onCheckedChange={(checked) => setLocationPermission(checked as boolean)}
+                        />
+                        <label 
+                          htmlFor="location-permission"
+                          className="text-sm cursor-pointer"
+                        >
+                          Allow location access
+                        </label>
+                      </div>
+                      <Button onClick={handleMarkArrival} disabled={!verification?.startTime}>
+                        Mark Arrival
+                      </Button>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {lead.verification?.startTime && (
-          <div>
-            <h3 className="text-md font-semibold">Start Time</h3>
-            <p>{typeof lead.verification.startTime === 'string' ? lead.verification.startTime : format(new Date(lead.verification.startTime), 'MMM d, yyyy h:mm a')}</p>
+        {/* Step 3: Upload Photos & Documents */}
+        <div className={`verification-step ${isStepCompleted('documents') ? 'verification-step-completed' : ''}`}>
+          <div className="flex items-start">
+            <div className={`timeline-dot ${verification?.photos?.length! > 0 || verification?.documents?.length! > 0 ? 'bg-green-100 text-green-600' : 'bg-muted text-muted-foreground'}`}>
+              {verification?.photos?.length! > 0 || verification?.documents?.length! > 0 ? (
+                <Camera className="h-5 w-5" />
+              ) : (
+                <span className="text-sm">3</span>
+              )}
+            </div>
+            <div className="ml-4 space-y-4">
+              <h3 className="font-medium">Upload Photos & Documents</h3>
+              
+              {verification?.arrivalTime && (
+                <div className="space-y-4">
+                  {/* Photos Section */}
+                  <div>
+                    <h4 className="text-sm font-medium mb-2">Photos</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                      {hasVerificationPhotos ? (
+                        verification.photos.map((photo) => (
+                          <div key={photo.id} className="border rounded-md p-2">
+                            <div className="w-full h-32 bg-gray-200 rounded overflow-hidden">
+                              <img 
+                                src={photo.url} 
+                                alt={photo.name} 
+                                className="w-full h-full object-cover" 
+                                onError={(e) => {
+                                  // If image fails to load, show backup placeholder
+                                  e.currentTarget.src = '/placeholder.svg';
+                                }}
+                              />
+                            </div>
+                            <p className="text-xs mt-2 break-words">{photo.name}</p>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No photos uploaded yet</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-sm">Take photos of:</p>
+                      <ul className="list-disc list-inside text-sm space-y-1 ml-2">
+                        <li>Applicant's residence/office front</li>
+                        <li>Applicant with agent (selfie if possible)</li>
+                      </ul>
+                      <div className="mt-3">
+                        <Button variant="outline" className="w-full" asChild>
+                          <label className="cursor-pointer">
+                            <Camera className="h-4 w-4 mr-2" />
+                            <span>Upload Photos</span>
+                            <input 
+                              type="file" 
+                              accept="image/*" 
+                              multiple 
+                              className="hidden" 
+                              onChange={handlePhotoUpload}
+                            />
+                          </label>
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Documents Section */}
+                  <div>
+                    <h4 className="text-sm font-medium mb-2">KYC Documents</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                      {hasVerificationDocuments ? (
+                        verification.documents.map((doc) => (
+                          <div key={doc.id} className="border rounded-md p-2">
+                            <div className="w-full h-32 bg-gray-200 rounded overflow-hidden">
+                              <img 
+                                src={doc.url} 
+                                alt={doc.name} 
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  // If document image fails to load, show backup placeholder
+                                  e.currentTarget.src = '/placeholder.svg';
+                                }}
+                              />
+                            </div>
+                            <p className="text-xs mt-2 break-words">{doc.name} ({doc.type})</p>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No documents uploaded yet</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-sm">Collect and upload:</p>
+                      <ul className="list-disc list-inside text-sm space-y-1 ml-2">
+                        <li>PAN Card, Aadhar, Voter ID</li>
+                        <li>Rent Agreement (if applicable)</li>
+                        <li>Job ID / Salary Slip / Business License</li>
+                      </ul>
+                      <div className="mt-3">
+                        <Button variant="outline" className="w-full" asChild>
+                          <label className="cursor-pointer">
+                            <Upload className="h-4 w-4 mr-2" />
+                            <span>Upload Documents</span>
+                            <input 
+                              type="file" 
+                              accept="image/*,.pdf" 
+                              multiple 
+                              className="hidden" 
+                              onChange={(e) => handleDocumentUpload(e, 'Other')}
+                            />
+                          </label>
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Notes Section */}
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium">Agent Comments or Notes</h4>
+                    <Textarea 
+                      placeholder="Add your verification notes and observations here..."
+                      className="min-h-24"
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      onBlur={() => onAddNotes(notes)}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-        )}
+        </div>
 
-        {lead.verification?.arrivalTime && (
-          <div>
-            <h3 className="text-md font-semibold">Arrival Time</h3>
-            <p>{typeof lead.verification.arrivalTime === 'string' ? lead.verification.arrivalTime : format(new Date(lead.verification.arrivalTime), 'MMM d, yyyy h:mm a')}</p>
+        {/* Step 4: Complete Verification */}
+        <div className="verification-step">
+          <div className="flex items-start">
+            <div className={`timeline-dot ${isStepCompleted('complete') ? 'bg-green-100 text-green-600' : 'bg-muted text-muted-foreground'}`}>
+              {isStepCompleted('complete') ? (
+                <Clock className="h-5 w-5" />
+              ) : (
+                <span className="text-sm">4</span>
+              )}
+            </div>
+            <div className="ml-4 space-y-2">
+              <h3 className="font-medium">Complete Verification</h3>
+              {verification?.completionTime ? (
+                <p className="text-sm text-muted-foreground">
+                  Completed at {formatTime(verification.completionTime)}
+                </p>
+              ) : (
+                <Button 
+                  onClick={onCompleteVerification}
+                  disabled={!verification?.arrivalTime || (!verification?.photos.length && !verification?.documents.length)}
+                >
+                  Complete Verification
+                </Button>
+              )}
+            </div>
           </div>
-        )}
-
-        <div className="flex space-x-4">
-          {lead.verification?.status === 'In Progress' && !lead.verification?.arrivalTime && (
-            <Button onClick={onMarkArrival}>Mark Arrival</Button>
-          )}
-          {lead.verification?.status !== 'Completed' && lead.verification?.status !== 'In Progress' && (
-            <Button onClick={onStartVerification}>Start Verification</Button>
-          )}
         </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="photos">Upload Photos</Label>
-          <Input
-            id="photos"
-            type="file"
-            multiple
-            onChange={handlePhotoUpload}
-            accept="image/*"
-          />
-          {renderPhotos(lead.verification?.photos)}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="idProof">Upload ID Proof</Label>
-          <Input
-            id="idProof"
-            type="file"
-            onChange={e => handleDocumentUpload(e, 'ID Proof')}
-            accept="image/*"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="addressProof">Upload Address Proof</Label>
-          <Input
-            id="addressProof"
-            type="file"
-            onChange={e => handleDocumentUpload(e, 'Address Proof')}
-            accept="image/*"
-          />
-        </div>
-
-        {renderDocuments(lead.verification?.documents)}
-
-        <div className="space-y-2">
-          <Label htmlFor="notes">Verification Notes</Label>
-          <Textarea
-            id="notes"
-            placeholder="Record your observations and findings"
-            value={notes}
-            onChange={handleNotesChange}
-          />
-        </div>
-
-        <div className="flex justify-end space-x-2">
-          <Button type="button" variant="secondary" onClick={handleSaveNotes}>
-            Save Notes
-          </Button>
-          {lead.verification?.status === 'In Progress' && (
-            <Button onClick={onCompleteVerification}>Complete Verification</Button>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
 

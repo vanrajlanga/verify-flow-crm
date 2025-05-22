@@ -1,16 +1,11 @@
-
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Lead, Document, Photo, User } from '@/utils/mockData';
-import { format } from 'date-fns';
-import { toast } from '@/components/ui/use-toast';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Badge } from "@/components/ui/badge";
-import { getUserById, getBankById } from '@/utils/mockData';
-import { FileX, FileCheck, Download } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Lead, User, getUserById, getBankById } from '@/utils/mockData';
+import { Download, FileCheck, FileX } from 'lucide-react';
+import { format } from 'date-fns';
 
 interface LeadReviewProps {
   lead: Lead;
@@ -32,12 +27,8 @@ const LeadReview = ({
   const bank = getBankById(lead.bank);
   const verification = lead.verification;
 
-  // Helper function to safely format dates that could be strings or Date objects
-  const formatDateTime = (date?: Date | string) => {
-    if (!date) return '—';
-    // If date is a string, parse it to a Date object
-    const dateObj = typeof date === 'string' ? new Date(date) : date;
-    return format(dateObj, 'h:mm a, MMM d, yyyy');
+  const formatDateTime = (date?: Date) => {
+    return date ? format(date, 'h:mm a, MMM d, yyyy') : '—';
   };
 
   const getStatusBadge = (status: string) => {
@@ -56,37 +47,6 @@ const LeadReview = ({
   };
 
   const isReviewed = verification?.reviewedBy !== undefined;
-
-  // For the Photo rendering section, update it to use caption instead of name
-  const renderPhotos = (photos?: Photo[]) => {
-    if (!photos || photos.length === 0) {
-      return (
-        <div className="text-center p-4 text-muted-foreground">
-          No photos uploaded
-        </div>
-      );
-    }
-
-    return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {photos.map(photo => (
-          <div key={photo.id} className="relative border rounded-md p-3">
-            <img 
-              src={photo.url} 
-              alt={photo.caption} // Use caption instead of name 
-              className="w-full h-40 object-cover rounded-md mb-2"
-            />
-            <div className="text-sm font-medium mt-2">{photo.caption}</div> // Use caption instead of name
-            {photo.uploadDate && (
-              <div className="text-xs text-muted-foreground">
-                Uploaded on: {typeof photo.uploadDate === 'string' ? photo.uploadDate : format(photo.uploadDate, 'MMM d, yyyy')}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    );
-  };
 
   return (
     <div className="space-y-6">
@@ -168,7 +128,23 @@ const LeadReview = ({
             <div>
               <h3 className="text-sm font-medium mb-3">Uploaded Photos</h3>
               {verification?.photos && verification.photos.length > 0 ? (
-                renderPhotos(verification.photos)
+                <div className="grid grid-cols-2 gap-4">
+                  {verification.photos.map((photo) => (
+                    <div key={photo.id} className="border rounded-md overflow-hidden">
+                      <img 
+                        src={photo.url} 
+                        alt={photo.name} 
+                        className="w-full h-32 object-cover" 
+                      />
+                      <div className="p-2">
+                        <p className="text-xs">{photo.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {format(photo.uploadDate, 'MMM d, yyyy')}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               ) : (
                 <div className="border rounded-md p-4 bg-muted/30 flex items-center justify-center h-32">
                   <p className="text-sm text-muted-foreground">No photos uploaded</p>
@@ -190,7 +166,7 @@ const LeadReview = ({
                       <div className="p-2">
                         <p className="text-xs">{doc.name}</p>
                         <p className="text-xs text-muted-foreground">
-                          {doc.uploadDate ? formatDateTime(doc.uploadDate) : ''}
+                          {format(doc.uploadDate, 'MMM d, yyyy')}
                         </p>
                       </div>
                     </div>

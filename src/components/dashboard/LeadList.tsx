@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,8 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
 
 interface LeadListProps {
   leads: Lead[];
@@ -62,9 +65,6 @@ const LeadList = ({
   const [newAgentId, setNewAgentId] = useState('');
   
   const navigate = useNavigate();
-  
-  // Log available agents to debug
-  console.log("Available agents:", availableAgents);
 
   const filteredLeads = leads.filter(lead => {
     const matchesSearch = lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -116,29 +116,22 @@ const LeadList = ({
     const agent = getUserById(lead.assignedTo);
     if (agent) {
       setNewAgentId(agent.id);
-    } else {
-      setNewAgentId('');
     }
     setIsReassignDialogOpen(true);
   };
   
   const handleReassignLead = () => {
     if (!selectedLead || !newAgentId || !onUpdate) {
-      toast({
-        title: "Error",
-        description: "Please select an agent to reassign this lead.",
-        variant: "destructive"
-      });
       return;
     }
     
     const updatedLead = {
       ...selectedLead,
       assignedTo: newAgentId,
-      verification: selectedLead.verification ? {
+      verification: {
         ...selectedLead.verification,
         agentId: newAgentId
-      } : undefined
+      }
     };
     
     onUpdate(updatedLead);
@@ -322,15 +315,11 @@ const LeadList = ({
                   <SelectValue placeholder="Select an agent" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableAgents && availableAgents.length > 0 ? (
-                    availableAgents.map((agent) => (
-                      <SelectItem key={agent.id} value={agent.id}>
-                        {agent.name} {agent.district ? `(${agent.district})` : ''}
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <SelectItem value="no-agents" disabled>No agents available</SelectItem>
-                  )}
+                  {availableAgents.map((agent) => (
+                    <SelectItem key={agent.id} value={agent.id}>
+                      {agent.name} ({agent.district || 'No district assigned'})
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

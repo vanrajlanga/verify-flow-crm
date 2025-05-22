@@ -10,15 +10,11 @@ import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
 import { format } from 'date-fns';
 import { Eye } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
 
 const AdminVerifications = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [completedVerifications, setCompletedVerifications] = useState<Lead[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -78,38 +74,6 @@ const AdminVerifications = () => {
         return <Badge variant="outline">{status}</Badge>;
     }
   };
-  
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
-      .toUpperCase();
-  };
-
-  // Helper function to safely format dates that could be strings or Date objects
-  const formatSafeDate = (date: Date | string | undefined) => {
-    if (!date) return '—';
-    
-    try {
-      // If date is a string, parse it to a Date object
-      const dateObj = typeof date === 'string' ? new Date(date) : date;
-      return format(dateObj, 'MMM d, yyyy h:mm a');
-    } catch (error) {
-      console.error("Error formatting date:", error);
-      return '—';
-    }
-  };
-
-  const filteredVerifications = completedVerifications.filter(lead => {
-    const agent = getUserById(lead.assignedTo);
-    const matchesSearch = 
-      lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (agent && agent.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      lead.address.district.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    return matchesSearch;
-  });
 
   if (!currentUser) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
@@ -143,15 +107,6 @@ const AdminVerifications = () => {
                 <CardDescription>
                   List of all verification submissions by agents
                 </CardDescription>
-                <div className="relative max-w-sm">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search by name or agent..."
-                    className="pl-8"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
               </CardHeader>
               <CardContent>
                 <div className="rounded-md border bg-white overflow-hidden">
@@ -168,40 +123,29 @@ const AdminVerifications = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredVerifications.length === 0 ? (
+                      {completedVerifications.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={7} className="h-24 text-center">
                             No verifications found.
                           </TableCell>
                         </TableRow>
                       ) : (
-                        filteredVerifications.map((lead) => {
+                        completedVerifications.map((lead) => {
                           const agent = getUserById(lead.assignedTo);
                           const verification = lead.verification!;
                           
                           return (
                             <TableRow key={verification.id}>
                               <TableCell className="font-medium">{lead.name}</TableCell>
-                              <TableCell>
-                                {agent && (
-                                  <div className="flex items-center space-x-2">
-                                    <Avatar className="h-7 w-7">
-                                      <AvatarImage src={agent.profilePicture} alt={agent.name} />
-                                      <AvatarFallback>{getInitials(agent.name)}</AvatarFallback>
-                                    </Avatar>
-                                    <span>{agent.name}</span>
-                                  </div>
-                                )}
-                                {!agent && <span>Unknown</span>}
-                              </TableCell>
+                              <TableCell>{agent?.name || 'Unknown'}</TableCell>
                               <TableCell>
                                 {verification.startTime 
-                                  ? formatSafeDate(verification.startTime)
+                                  ? format(new Date(verification.startTime), 'MMM d, yyyy h:mm a')
                                   : '—'}
                               </TableCell>
                               <TableCell>
                                 {verification.completionTime
-                                  ? formatSafeDate(verification.completionTime)
+                                  ? format(new Date(verification.completionTime), 'MMM d, yyyy h:mm a')
                                   : '—'}
                               </TableCell>
                               <TableCell>{getStatusBadge(verification.status)}</TableCell>

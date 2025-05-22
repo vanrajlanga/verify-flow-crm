@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, Lead, getUserById, getBankById, Document, Photo, getLeadById, dateToString } from '@/utils/mockData';
+import { User, Lead, getLeadById, getUserById, getBankById } from '@/utils/mockData';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
 import LeadReview from '@/components/dashboard/LeadReview';
@@ -84,10 +84,9 @@ const LeadDetail = () => {
   const handleStartVerification = () => {
     if (lead && lead.verification) {
       const updatedLead = { ...lead };
-      const currentDate = new Date();
       updatedLead.verification = {
         ...updatedLead.verification,
-        startTime: dateToString(currentDate),
+        startTime: new Date(),
         status: 'In Progress'
       };
       updatedLead.status = 'In Progress';
@@ -119,10 +118,9 @@ const LeadDetail = () => {
   const handleMarkArrival = () => {
     if (lead && lead.verification) {
       const updatedLead = { ...lead };
-      const currentDate = new Date();
       updatedLead.verification = {
         ...updatedLead.verification,
-        arrivalTime: dateToString(currentDate),
+        arrivalTime: new Date(),
       };
       setLead(updatedLead);
       
@@ -147,17 +145,18 @@ const LeadDetail = () => {
   const handleUploadPhoto = (files: FileList) => {
     if (lead && lead.verification) {
       const updatedLead = { ...lead };
-      const newPhotos: Photo[] = Array.from(files).map((file, index) => ({
+      const newPhotos = Array.from(files).map((file, index) => ({
         id: `newphoto${Date.now()}${index}`,
         name: file.name,
-        caption: file.name, // Set caption to file name for Photo type compatibility
+        type: 'Photo' as const,
+        uploadedBy: 'agent' as const,
         url: '/placeholder.svg', // In a real app, we would upload to storage
-        uploadDate: dateToString(new Date())
+        uploadDate: new Date()
       }));
       
       updatedLead.verification = {
         ...updatedLead.verification,
-        photos: [...(updatedLead.verification.photos || []), ...newPhotos]
+        photos: [...updatedLead.verification.photos, ...newPhotos]
       };
       
       setLead(updatedLead);
@@ -180,21 +179,21 @@ const LeadDetail = () => {
     }
   };
 
-  const handleUploadDocument = (files: FileList, type: string) => {
+  const handleUploadDocument = (files: FileList, type: any) => {
     if (lead && lead.verification) {
       const updatedLead = { ...lead };
-      const newDocs: Document[] = Array.from(files).map((file, index) => ({
+      const newDocs = Array.from(files).map((file, index) => ({
         id: `newdoc${Date.now()}${index}`,
         name: file.name,
         type,
+        uploadedBy: 'agent' as const,
         url: '/placeholder.svg', // In a real app, we would upload to storage
-        uploadDate: new Date(),
-        verified: false
+        uploadDate: new Date()
       }));
       
       updatedLead.verification = {
         ...updatedLead.verification,
-        documents: [...(updatedLead.verification.documents || []), ...newDocs]
+        documents: [...updatedLead.verification.documents, ...newDocs]
       };
       
       setLead(updatedLead);
@@ -242,10 +241,9 @@ const LeadDetail = () => {
   const handleCompleteVerification = () => {
     if (lead && lead.verification) {
       const updatedLead = { ...lead };
-      const currentDate = new Date();
       updatedLead.verification = {
         ...updatedLead.verification,
-        completionTime: dateToString(currentDate),
+        completionTime: new Date(),
         status: 'Completed'
       };
       updatedLead.status = 'Completed';
@@ -273,12 +271,11 @@ const LeadDetail = () => {
   const handleApproveVerification = (remarks: string) => {
     if (lead && lead.verification && currentUser) {
       const updatedLead = { ...lead };
-      const currentDate = new Date();
       updatedLead.verification = {
         ...updatedLead.verification,
         adminRemarks: remarks,
         reviewedBy: currentUser.id,
-        reviewedAt: dateToString(currentDate),
+        reviewedAt: new Date(),
         status: 'Completed'
       };
       
@@ -305,12 +302,11 @@ const LeadDetail = () => {
   const handleRejectVerification = (remarks: string) => {
     if (lead && lead.verification && currentUser) {
       const updatedLead = { ...lead };
-      const currentDate = new Date();
       updatedLead.verification = {
         ...updatedLead.verification,
         adminRemarks: remarks,
         reviewedBy: currentUser.id,
-        reviewedAt: dateToString(currentDate),
+        reviewedAt: new Date(),
         status: 'Rejected'
       };
       updatedLead.status = 'Rejected';
@@ -453,8 +449,9 @@ const LeadDetail = () => {
                             <span className="text-sm text-muted-foreground">State</span>
                             <span className="text-sm font-medium">{lead.address.state}</span>
                           </div>
-                          <div className="text-sm mt-1">
-                            {lead.address.street}, {lead.address.city}, {lead.address.district}, {lead.address.state}, {lead.address.postalCode}
+                          <div className="flex justify-between">
+                            <span className="text-sm text-muted-foreground">Pincode</span>
+                            <span className="text-sm font-medium">{lead.address.pincode}</span>
                           </div>
                         </div>
                       </div>
