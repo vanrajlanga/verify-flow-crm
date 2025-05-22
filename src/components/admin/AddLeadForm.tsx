@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
@@ -27,6 +28,23 @@ import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "@/components/ui/use-toast";
 import { Address, AdditionalDetails, Bank, Lead, User, VerificationData, mockBanks, mockUsers } from '@/utils/mockData';
+
+// Define LocationData interface since it's missing
+interface LocationData {
+  states: Array<{
+    id: string;
+    name: string;
+    districts: Array<{
+      id: string;
+      name: string;
+      cities: Array<{
+        id: string;
+        name: string;
+      }>;
+    }>;
+  }>;
+  cities: Record<string, string>;
+}
 
 interface AddLeadFormProps {
   onAddLead: (newLead: Lead) => void;
@@ -102,54 +120,64 @@ const leadFormSchema = z.object({
 
 type LeadFormValues = z.infer<typeof leadFormSchema>;
 
-const AddLeadForm = ({ onAddLead, onClose, locationData, agents, banks }: AddLeadFormProps) => {
+const AddLeadForm = ({ onAddLead, onClose, locationData, agents: propAgents, banks: propBanks }: AddLeadFormProps) => {
   const [state, setState] = useState("");
   const [district, setDistrict] = useState("");
   const [city, setCity] = useState("");
-  const [banks, setBanks] = useState<Bank[]>([]);
-  const [agents, setAgents] = useState<User[]>([]);
+  const [banksList, setBanksList] = useState<Bank[]>(propBanks);
+  const [agentsList, setAgentsList] = useState<User[]>(propAgents);
   const navigate = useNavigate();
 
   // Find the district options for the selected state
-  const availableDistricts = locationData.states.find((s: any) => s.name === state)?.districts || [];
+  const availableDistricts = locationData?.states?.find((s: any) => s.name === state)?.districts || [];
   
   // Find the city options for the selected district
   const availableCities = availableDistricts.find((d: any) => d.name === district)?.cities || [];
 
   useEffect(() => {
-    // Fetch banks from localStorage
-    const storedBanks = localStorage.getItem('mockBanks');
-    if (storedBanks) {
-      try {
-        const parsedBanks = JSON.parse(storedBanks);
-        setBanks(parsedBanks);
-      } catch (error) {
-        console.error("Error loading banks:", error);
-        setBanks(mockBanks);
+    // Use provided props first, then fallback to localStorage if needed
+    if (propBanks && propBanks.length > 0) {
+      setBanksList(propBanks);
+    } else {
+      // Fetch banks from localStorage
+      const storedBanks = localStorage.getItem('mockBanks');
+      if (storedBanks) {
+        try {
+          const parsedBanks = JSON.parse(storedBanks);
+          setBanksList(parsedBanks);
+        } catch (error) {
+          console.error("Error loading banks:", error);
+          setBanksList(mockBanks);
+          localStorage.setItem('mockBanks', JSON.stringify(mockBanks));
+        }
+      } else {
+        setBanksList(mockBanks);
         localStorage.setItem('mockBanks', JSON.stringify(mockBanks));
       }
-    } else {
-      setBanks(mockBanks);
-      localStorage.setItem('mockBanks', JSON.stringify(mockBanks));
     }
 
-    // Fetch agents from localStorage
-    const storedAgents = localStorage.getItem('mockUsers');
-    if (storedAgents) {
-      try {
-        const parsedAgents = JSON.parse(storedAgents);
-        const agentUsers = parsedAgents.filter((user: User) => user.role === 'agent');
-        setAgents(agentUsers);
-      } catch (error) {
-        console.error("Error loading agents:", error);
-        setAgents(mockUsers.filter(user => user.role === 'agent'));
+    // Use provided props first, then fallback to localStorage if needed
+    if (propAgents && propAgents.length > 0) {
+      setAgentsList(propAgents);
+    } else {
+      // Fetch agents from localStorage
+      const storedAgents = localStorage.getItem('mockUsers');
+      if (storedAgents) {
+        try {
+          const parsedAgents = JSON.parse(storedAgents);
+          const agentUsers = parsedAgents.filter((user: User) => user.role === 'agent');
+          setAgentsList(agentUsers);
+        } catch (error) {
+          console.error("Error loading agents:", error);
+          setAgentsList(mockUsers.filter(user => user.role === 'agent'));
+          localStorage.setItem('mockUsers', JSON.stringify(mockUsers));
+        }
+      } else {
+        setAgentsList(mockUsers.filter(user => user.role === 'agent'));
         localStorage.setItem('mockUsers', JSON.stringify(mockUsers));
       }
-    } else {
-      setAgents(mockUsers.filter(user => user.role === 'agent'));
-      localStorage.setItem('mockUsers', JSON.stringify(mockUsers));
     }
-  }, []);
+  }, [propBanks, propAgents]);
 
   const form = useForm<LeadFormValues>({
     resolver: zodResolver(leadFormSchema),
@@ -643,7 +671,7 @@ const AddLeadForm = ({ onAddLead, onClose, locationData, agents, banks }: AddLea
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {banks.map((bank) => (
+                      {banksList.map((bank) => (
                         <SelectItem key={bank.id} value={bank.id}>
                           {bank.name}
                         </SelectItem>
@@ -697,7 +725,7 @@ const AddLeadForm = ({ onAddLead, onClose, locationData, agents, banks }: AddLea
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {agents.map((agent) => (
+                      {agentsList.map((agent) => (
                         <SelectItem key={agent.id} value={agent.id}>
                           {agent.name}
                         </SelectItem>

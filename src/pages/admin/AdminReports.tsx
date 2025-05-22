@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { User, Lead, getAgentPerformance } from '@/utils/mockData';
+import { getAgentPerformance } from '@/utils/mockData';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
 import { DateRangePicker } from "@/components/ui/date-range-picker";
@@ -13,15 +13,15 @@ import { format, subDays } from 'date-fns';
 import { Bar, BarChart as RechartsBarChart, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell } from 'recharts';
 
 const AdminReports = () => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState("performance");
   const [dateRange, setDateRange] = useState({
     from: subDays(new Date(), 30),
-    to: new Date(),
+    to: new Date()
   });
-  const [agentPerformance, setAgentPerformance] = useState<any[]>([]);
-  const [leads, setLeads] = useState<Lead[]>([]);
+  const [agentPerformance, setAgentPerformance] = useState([]);
+  const [leads, setLeads] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -60,6 +60,11 @@ const AdminReports = () => {
   const handleLogout = () => {
     localStorage.removeItem('kycUser');
     navigate('/');
+  };
+
+  // Update the DateRangePicker to use the correct type
+  const handleDateRangeChange = (range: any) => {
+    setDateRange(range);
   };
 
   // Calculate statistics for the selected date range
@@ -160,7 +165,7 @@ const AdminReports = () => {
               
               <DateRangePicker
                 date={dateRange}
-                onDateChange={setDateRange}
+                onDateChange={handleDateRangeChange}
               />
             </div>
             

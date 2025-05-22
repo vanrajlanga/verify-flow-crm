@@ -1,13 +1,14 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { User, Lead, LocationData, Bank, getLeads, getAgents, getLocationData, getBanks } from '@/utils/mockData';
+import { Lead, User, Bank, mockLeads, mockUsers, mockBanks } from '@/utils/mockData';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
-import { MoreVertical, Edit, Trash } from "lucide-react";
+import { MoreVertical, Edit, Trash, Search } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,10 +19,26 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { AddLeadForm } from '@/components/admin/AddLeadForm';
-import { Search } from 'lucide-react';
+import AddLeadForm from '@/components/admin/AddLeadForm';
 import { useToast } from "@/components/ui/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
+
+// Define LocationData interface since it's missing
+interface LocationData {
+  states: Array<{
+    id: string;
+    name: string;
+    districts: Array<{
+      id: string;
+      name: string;
+      cities: Array<{
+        id: string;
+        name: string;
+      }>;
+    }>;
+  }>;
+  cities: Record<string, string>;
+}
 
 const AdminLeads = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -56,17 +73,55 @@ const AdminLeads = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const leadsData = getLeads();
-      setLeads(leadsData);
+      // Get leads from localStorage
+      const storedLeads = localStorage.getItem('mockLeads');
+      if (storedLeads) {
+        const parsedLeads = JSON.parse(storedLeads);
+        setLeads(parsedLeads);
+      } else {
+        // If no leads in localStorage, use mock data
+        setLeads(mockLeads);
+        localStorage.setItem('mockLeads', JSON.stringify(mockLeads));
+      }
 
-      const location = getLocationData();
-      setLocationData(location);
+      // Get location data from localStorage
+      const storedLocationData = localStorage.getItem('locationData');
+      if (storedLocationData) {
+        const parsedLocationData = JSON.parse(storedLocationData);
+        setLocationData(parsedLocationData);
+      } else {
+        // Default location data structure if none exists
+        const defaultLocationData = {
+          states: [],
+          cities: {}
+        };
+        setLocationData(defaultLocationData);
+        localStorage.setItem('locationData', JSON.stringify(defaultLocationData));
+      }
 
-      const agentsData = getAgents();
-      setAgents(agentsData);
+      // Get agents from localStorage
+      const storedUsers = localStorage.getItem('mockUsers');
+      if (storedUsers) {
+        const parsedUsers = JSON.parse(storedUsers);
+        const agentUsers = parsedUsers.filter((user: User) => user.role === 'agent');
+        setAgents(agentUsers);
+      } else {
+        // If no users in localStorage, use mock data
+        const agentUsers = mockUsers.filter(user => user.role === 'agent');
+        setAgents(agentUsers);
+        localStorage.setItem('mockUsers', JSON.stringify(mockUsers));
+      }
 
-      const banksData = getBanks();
-      setBanks(banksData);
+      // Get banks from localStorage
+      const storedBanks = localStorage.getItem('mockBanks');
+      if (storedBanks) {
+        const parsedBanks = JSON.parse(storedBanks);
+        setBanks(parsedBanks);
+      } else {
+        // If no banks in localStorage, use mock data
+        setBanks(mockBanks);
+        localStorage.setItem('mockBanks', JSON.stringify(mockBanks));
+      }
     } catch (error) {
       console.error("Error fetching data:", error);
       toast({
@@ -102,19 +157,19 @@ const AdminLeads = () => {
   };
 
   const renderLeadStatusBadge = (status: string) => {
-    let badgeColor = "secondary";
+    let badgeVariant = "secondary";
     if (status === 'Pending') {
-      badgeColor = "yellow";
+      badgeVariant = "secondary";
     } else if (status === 'In Progress') {
-      badgeColor = "blue";
+      badgeVariant = "secondary";
     } else if (status === 'Completed') {
-      badgeColor = "green";
+      badgeVariant = "secondary";
     } else if (status === 'Rejected') {
-      badgeColor = "red";
+      badgeVariant = "secondary";
     }
 
     return (
-      <Badge variant={badgeColor}>
+      <Badge variant={badgeVariant}>
         {status}
       </Badge>
     );
@@ -150,7 +205,7 @@ const AdminLeads = () => {
               </div>
             </div>
 
-            {showAddLeadForm && (
+            {showAddLeadForm && locationData && (
               <AddLeadForm
                 onAddLead={handleAddLead}
                 onClose={() => setShowAddLeadForm(false)}
@@ -196,10 +251,10 @@ const AdminLeads = () => {
                       <TableBody>
                         {leads.map((lead) => (
                           <TableRow key={lead.id}>
-                            <TableCell className="font-medium">{lead.firstName} {lead.lastName}</TableCell>
-                            <TableCell>{lead.email}</TableCell>
-                            <TableCell>{lead.phone}</TableCell>
-                            <TableCell>{locationData?.cities[lead.locationId]}</TableCell>
+                            <TableCell className="font-medium">{lead.name}</TableCell>
+                            <TableCell>{lead.address?.city || 'N/A'}</TableCell>
+                            <TableCell>{lead.bank || 'N/A'}</TableCell>
+                            <TableCell>{lead.address?.city || lead.address?.state || 'N/A'}</TableCell>
                             <TableCell>{renderLeadStatusBadge(lead.status)}</TableCell>
                             <TableCell className="text-right">
                               <DropdownMenu>
