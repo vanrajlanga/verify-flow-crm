@@ -36,7 +36,8 @@ const VerificationProcess = ({
   const status = verification?.status || 'Not Started';
 
   const formatTime = (date?: Date) => {
-    return date ? format(date, 'h:mm a, MMM d, yyyy') : '—';
+    if (!date) return '—';
+    return format(new Date(date), 'h:mm a, MMM d, yyyy');
   };
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -321,7 +322,7 @@ const VerificationProcess = ({
               ) : (
                 <Button 
                   onClick={onCompleteVerification}
-                  disabled={!verification?.arrivalTime || (!verification?.photos.length && !verification?.documents.length)}
+                  disabled={!verification?.arrivalTime || (!verification?.photos?.length && !verification?.documents?.length)}
                 >
                   Complete Verification
                 </Button>

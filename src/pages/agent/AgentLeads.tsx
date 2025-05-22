@@ -56,13 +56,22 @@ const AgentLeads = () => {
                 documents: [],
                 notes: ""
               };
-            } else if (typeof lead.verification.status === 'string') {
+            } else {
               // Normalize verification status to one of the allowed types
               if (!["Not Started", "In Progress", "Completed", "Rejected"].includes(lead.verification.status)) {
                 lead.verification.status = "Not Started";
               }
               // Explicit type assertion for the status
               lead.verification.status = lead.verification.status as "Not Started" | "In Progress" | "Completed" | "Rejected";
+              
+              // Ensure photos and documents arrays exist
+              if (!lead.verification.photos) {
+                lead.verification.photos = [];
+              }
+              
+              if (!lead.verification.documents) {
+                lead.verification.documents = [];
+              }
             }
             
             // Ensure lead status is one of the allowed types
@@ -95,13 +104,23 @@ const AgentLeads = () => {
                 documents: [],
                 notes: ""
               };
-            } else if (typeof lead.verification.status === 'string') {
+            } else {
               // Normalize verification status
               if (!["Not Started", "In Progress", "Completed", "Rejected"].includes(lead.verification.status)) {
                 lead.verification.status = "Not Started";
               }
+              
               // Explicit type assertion
               lead.verification.status = lead.verification.status as "Not Started" | "In Progress" | "Completed" | "Rejected";
+              
+              // Ensure photos and documents arrays exist
+              if (!lead.verification.photos) {
+                lead.verification.photos = [];
+              }
+              
+              if (!lead.verification.documents) {
+                lead.verification.documents = [];
+              }
             }
             
             if (!["Pending", "In Progress", "Completed", "Rejected"].includes(lead.status)) {

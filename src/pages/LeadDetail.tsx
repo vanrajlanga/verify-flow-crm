@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { FileText, Download, ArrowLeft, MapPin, User, Building, Phone, Calendar, Clock } from 'lucide-react';
+import { FileText, Download, ArrowLeft, MapPin, User, Building, Phone, Calendar, Clock, Home, Briefcase, DollarSign } from 'lucide-react';
 import { getLeadById, getUserById, getBankById, mockLeads } from '@/utils/mockData';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -109,6 +109,23 @@ const LeadDetail = () => {
     setLoading(false);
   }, [navigate, leadId]);
 
+  // Function to update lead data in localStorage
+  const updateLeadInStorage = (updatedLead: any) => {
+    const storedLeads = localStorage.getItem('mockLeads');
+    if (storedLeads) {
+      try {
+        const allLeads = JSON.parse(storedLeads);
+        const updatedLeads = allLeads.map((l: any) => 
+          l.id === updatedLead.id ? updatedLead : l
+        );
+        localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+      } catch (error) {
+        console.error("Error updating lead in storage:", error);
+      }
+    }
+    setLead({...updatedLead});
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -142,7 +159,24 @@ const LeadDetail = () => {
   
   // Handle verification actions for agents
   const handleStartVerification = () => {
-    // Implementation would update the lead's verification status
+    if (!lead.verification) {
+      lead.verification = {
+        id: `verification-${lead.id}`,
+        leadId: lead.id,
+        agentId: currentUser.id,
+        status: 'In Progress',
+        photos: [],
+        documents: [],
+        notes: ''
+      };
+    }
+    
+    lead.verification.startTime = new Date();
+    lead.verification.status = 'In Progress';
+    lead.status = 'In Progress';
+    
+    updateLeadInStorage(lead);
+    
     toast({
       title: "Verification Started",
       description: "You've started the verification process.",
@@ -150,7 +184,11 @@ const LeadDetail = () => {
   };
 
   const handleMarkArrival = () => {
-    // Implementation would mark agent arrival at location
+    if (lead.verification) {
+      lead.verification.arrivalTime = new Date();
+      updateLeadInStorage(lead);
+    }
+    
     toast({
       title: "Arrival Marked",
       description: "Your arrival at the verification location has been recorded.",
@@ -158,7 +196,25 @@ const LeadDetail = () => {
   };
 
   const handleUploadPhoto = (files: FileList) => {
-    // Implementation would handle photo upload
+    if (!lead.verification.photos) {
+      lead.verification.photos = [];
+    }
+    
+    // Convert FileList to array and create photo objects
+    Array.from(files).forEach((file, index) => {
+      const photoId = `photo-${new Date().getTime()}-${index}`;
+      lead.verification.photos.push({
+        id: photoId,
+        name: file.name,
+        type: 'Photo',
+        uploadedBy: 'agent',
+        url: '/placeholder.svg', // In a real app, would upload to server
+        uploadDate: new Date()
+      });
+    });
+    
+    updateLeadInStorage(lead);
+    
     toast({
       title: "Photos Uploaded",
       description: `${files.length} photo(s) have been uploaded.`,
@@ -166,7 +222,25 @@ const LeadDetail = () => {
   };
 
   const handleUploadDocument = (files: FileList, type: string) => {
-    // Implementation would handle document upload
+    if (!lead.verification.documents) {
+      lead.verification.documents = [];
+    }
+    
+    // Convert FileList to array and create document objects
+    Array.from(files).forEach((file, index) => {
+      const docId = `doc-${new Date().getTime()}-${index}`;
+      lead.verification.documents.push({
+        id: docId,
+        name: file.name,
+        type: type as any,
+        uploadedBy: 'agent',
+        url: '/placeholder.svg', // In a real app, would upload to server
+        uploadDate: new Date()
+      });
+    });
+    
+    updateLeadInStorage(lead);
+    
     toast({
       title: "Documents Uploaded",
       description: `${files.length} ${type} document(s) have been uploaded.`,
@@ -174,7 +248,11 @@ const LeadDetail = () => {
   };
 
   const handleAddNotes = (notes: string) => {
-    // Implementation would save agent notes
+    if (lead.verification) {
+      lead.verification.notes = notes;
+      updateLeadInStorage(lead);
+    }
+    
     toast({
       title: "Notes Saved",
       description: "Your verification notes have been saved.",
@@ -182,7 +260,13 @@ const LeadDetail = () => {
   };
 
   const handleCompleteVerification = () => {
-    // Implementation would complete the verification process
+    if (lead.verification) {
+      lead.verification.completionTime = new Date();
+      lead.verification.status = 'Completed';
+      lead.status = 'Completed';
+      updateLeadInStorage(lead);
+    }
+    
     toast({
       title: "Verification Completed",
       description: "The verification process has been marked as complete.",
@@ -191,7 +275,14 @@ const LeadDetail = () => {
 
   // Handle review actions for admins
   const handleApproveVerification = (remarks: string) => {
-    // Implementation would approve the verification
+    if (lead.verification) {
+      lead.verification.adminRemarks = remarks;
+      lead.verification.reviewedBy = currentUser.id;
+      lead.verification.reviewedAt = new Date();
+      lead.status = 'Completed';
+      updateLeadInStorage(lead);
+    }
+    
     toast({
       title: "Verification Approved",
       description: "The verification has been approved.",
@@ -199,7 +290,15 @@ const LeadDetail = () => {
   };
 
   const handleRejectVerification = (remarks: string) => {
-    // Implementation would reject the verification
+    if (lead.verification) {
+      lead.verification.adminRemarks = remarks;
+      lead.verification.reviewedBy = currentUser.id;
+      lead.verification.reviewedAt = new Date();
+      lead.verification.status = 'Rejected';
+      lead.status = 'Rejected';
+      updateLeadInStorage(lead);
+    }
+    
     toast({
       title: "Verification Rejected",
       description: "The verification has been rejected.",
@@ -248,6 +347,11 @@ const LeadDetail = () => {
   ));
 
   const isAdmin = currentUser?.role === 'admin';
+
+  // Format addresses from additionalDetails if available
+  const additionalAddresses = lead.additionalDetails?.addresses || [];
+  const homeAddress = additionalAddresses.find((a: any) => a?.type === 'Home');
+  const officeAddress = additionalAddresses.find((a: any) => a?.type === 'Office');
 
   return (
     <div className="p-6 bg-muted/30 min-h-screen">
@@ -301,7 +405,7 @@ const LeadDetail = () => {
                     <MapPin className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Address</p>
+                    <p className="text-sm text-muted-foreground">Primary Address</p>
                     <p className="font-medium">{lead.address?.street}</p>
                     <p className="text-sm">{lead.address?.city}, {lead.address?.state}</p>
                   </div>
@@ -354,6 +458,20 @@ const LeadDetail = () => {
                     </div>
                   </div>
                 )}
+                
+                {lead.verificationDate && (
+                  <div className="flex items-center space-x-3">
+                    <div className="bg-primary/10 p-2 rounded-full">
+                      <Calendar className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Scheduled Verification</p>
+                      <p className="font-medium">
+                        {format(new Date(lead.verificationDate), 'MMM d, yyyy')}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -387,10 +505,50 @@ const LeadDetail = () => {
               </TabsList>
               
               <TabsContent value="details" className="pt-4 space-y-6">
+                {/* Professional Details */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>Additional Details</CardTitle>
-                    <CardDescription>Comprehensive information about the lead</CardDescription>
+                    <CardTitle>Professional Details</CardTitle>
+                    <CardDescription>Employment and business information</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Job Title</p>
+                          <p className="font-medium">{lead.job || 'Not specified'}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Company</p>
+                          <p className="font-medium">{lead.additionalDetails?.company || 'Not specified'}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Designation</p>
+                          <p className="font-medium">{lead.additionalDetails?.designation || 'Not specified'}</p>
+                        </div>
+                      </div>
+                      <div className="space-y-4">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Work Experience</p>
+                          <p className="font-medium">{lead.additionalDetails?.workExperience || 'Not specified'}</p>
+                        </div>
+                        {officeAddress && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Office Address</p>
+                            <p className="font-medium">{officeAddress.street}</p>
+                            <p className="text-sm">{officeAddress.city}, {officeAddress.state} - {officeAddress.pincode}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Financial & Property Details */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Financial & Property Details</CardTitle>
+                    <CardDescription>Income and property information</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -404,10 +562,59 @@ const LeadDetail = () => {
                           <p className="font-medium">{lead.additionalDetails?.loanType || 'Not specified'}</p>
                         </div>
                         <div>
-                          <p className="text-sm text-muted-foreground">Income</p>
+                          <p className="text-sm text-muted-foreground">Monthly Income</p>
                           <p className="font-medium">{lead.additionalDetails?.monthlyIncome ? `₹${Number(lead.additionalDetails.monthlyIncome).toLocaleString()}/month` : 'Not specified'}</p>
                         </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Annual Income</p>
+                          <p className="font-medium">{lead.additionalDetails?.annualIncome ? `₹${Number(lead.additionalDetails.annualIncome).toLocaleString()}/year` : 'Not specified'}</p>
+                        </div>
+                        {lead.additionalDetails?.otherIncome && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Other Income</p>
+                            <p className="font-medium">{`₹${Number(lead.additionalDetails.otherIncome).toLocaleString()}`}</p>
+                          </div>
+                        )}
                       </div>
+                      <div className="space-y-4">
+                        {lead.additionalDetails?.propertyType && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Property Type</p>
+                            <p className="font-medium">{lead.additionalDetails.propertyType}</p>
+                          </div>
+                        )}
+                        {lead.additionalDetails?.ownershipStatus && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Ownership Status</p>
+                            <p className="font-medium">{lead.additionalDetails.ownershipStatus}</p>
+                          </div>
+                        )}
+                        {lead.additionalDetails?.propertyAge && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Property Age</p>
+                            <p className="font-medium">{lead.additionalDetails.propertyAge} years</p>
+                          </div>
+                        )}
+                        {homeAddress && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Home Address</p>
+                            <p className="font-medium">{homeAddress.street}</p>
+                            <p className="text-sm">{homeAddress.city}, {homeAddress.state} - {homeAddress.pincode}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Additional Information */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Additional Information</CardTitle>
+                    <CardDescription>Other important details</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-4">
                         <div>
                           <p className="text-sm text-muted-foreground">Application ID</p>
@@ -417,18 +624,22 @@ const LeadDetail = () => {
                           <p className="text-sm text-muted-foreground">Email</p>
                           <p className="font-medium">{lead.additionalDetails?.email || 'Not provided'}</p>
                         </div>
+                      </div>
+                      <div className="space-y-4">
                         {lead.instructions && (
                           <div>
-                            <p className="text-sm text-muted-foreground">Remarks</p>
+                            <p className="text-sm text-muted-foreground">Special Instructions</p>
                             <p className="font-medium">{lead.instructions}</p>
                           </div>
                         )}
+                        <div>
+                          <p className="text-sm text-muted-foreground">Age</p>
+                          <p className="font-medium">{lead.age || 'Not specified'}</p>
+                        </div>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
-
-                {/* Timeline or Recent Activity could go here */}
               </TabsContent>
               
               <TabsContent value="verification" className="pt-4">
