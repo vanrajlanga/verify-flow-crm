@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { User, mockLeads, getUserById } from '@/utils/mockData';
+import { User, Lead, getUserById } from '@/utils/mockData';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
 import { format } from 'date-fns';
@@ -14,6 +14,7 @@ import { Eye } from 'lucide-react';
 const AdminVerifications = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [completedVerifications, setCompletedVerifications] = useState<Lead[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -31,15 +32,32 @@ const AdminVerifications = () => {
     }
 
     setCurrentUser(parsedUser);
+    
+    // Get leads with verification data from localStorage
+    const storedLeads = localStorage.getItem('mockLeads');
+    if (storedLeads) {
+      try {
+        const parsedLeads = JSON.parse(storedLeads);
+        // Filter leads that have verification data
+        const verificationsWithData = parsedLeads.filter((lead: Lead) => 
+          lead.verification && 
+          (lead.verification.status === 'Completed' || 
+           lead.verification.status === 'In Progress' || 
+           lead.verification.photos?.length > 0 || 
+           lead.verification.documents?.length > 0)
+        );
+        setCompletedVerifications(verificationsWithData);
+      } catch (error) {
+        console.error("Error loading verifications:", error);
+        setCompletedVerifications([]);
+      }
+    }
   }, [navigate]);
 
   const handleLogout = () => {
     localStorage.removeItem('kycUser');
     navigate('/');
   };
-
-  // Filter leads with verification data
-  const verificationLeads = mockLeads.filter(lead => lead.verification);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -105,14 +123,14 @@ const AdminVerifications = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {verificationLeads.length === 0 ? (
+                      {completedVerifications.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={7} className="h-24 text-center">
                             No verifications found.
                           </TableCell>
                         </TableRow>
                       ) : (
-                        verificationLeads.map((lead) => {
+                        completedVerifications.map((lead) => {
                           const agent = getUserById(lead.assignedTo);
                           const verification = lead.verification!;
                           
@@ -122,12 +140,12 @@ const AdminVerifications = () => {
                               <TableCell>{agent?.name || 'Unknown'}</TableCell>
                               <TableCell>
                                 {verification.startTime 
-                                  ? format(verification.startTime, 'MMM d, yyyy h:mm a')
+                                  ? format(new Date(verification.startTime), 'MMM d, yyyy h:mm a')
                                   : '—'}
                               </TableCell>
                               <TableCell>
                                 {verification.completionTime
-                                  ? format(verification.completionTime, 'MMM d, yyyy h:mm a')
+                                  ? format(new Date(verification.completionTime), 'MMM d, yyyy h:mm a')
                                   : '—'}
                               </TableCell>
                               <TableCell>{getStatusBadge(verification.status)}</TableCell>

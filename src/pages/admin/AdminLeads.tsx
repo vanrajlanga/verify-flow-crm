@@ -244,7 +244,7 @@ const AdminLeads = () => {
                     Add New Lead
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[800px]">
+                <DialogContent className="sm:max-w-5xl w-full">
                   <DialogHeader>
                     <DialogTitle>Add New Lead</DialogTitle>
                     <DialogDescription>

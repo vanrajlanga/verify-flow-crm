@@ -136,6 +136,20 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [activeTab, setActiveTab] = useState("personal");
   
+  // Add Google Maps script
+  useEffect(() => {
+    const existingScript = document.getElementById('google-maps-script');
+    
+    if (!existingScript) {
+      const script = document.createElement('script');
+      script.id = 'google-maps-script';
+      script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyDUTx27s3q3rikbNg1cA-OdJyKb15DZchk&libraries=places`;
+      script.async = true;
+      script.defer = true;
+      document.head.appendChild(script);
+    }
+  }, []);
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -177,15 +191,27 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
   const assignmentType = form.watch("assignmentType");
   const hasOfficeAddress = form.watch("hasOfficeAddress");
   
-  // Find selected state and district objects
+  // Office address form fields
+  const officeStateName = form.watch("officeState");
+  const officeDistrictName = form.watch("officeDistrict");
+  
+  // Find selected state and district objects (for home address)
   const selectedState = locationData.states.find(state => state.name === selectedStateName);
   const availableDistricts = selectedState?.districts || [];
   const selectedDistrict = selectedState?.districts.find(district => district.name === selectedDistrictName);
   const availableCities = selectedDistrict?.cities || [];
   
+  // Find selected state and district objects (for office address)
+  const selectedOfficeState = locationData.states.find(state => state.name === officeStateName);
+  const availableOfficeDistricts = selectedOfficeState?.districts || [];
+  const selectedOfficeDistrict = selectedOfficeState?.districts.find(
+    district => district.name === officeDistrictName
+  );
+  const availableOfficeCities = selectedOfficeDistrict?.cities || [];
+  
   // Filter agents based on selected district
   const filteredAgents = agents.filter(agent => 
-    agent.district === selectedDistrictName || !agent.district
+    !selectedDistrictName || agent.district === selectedDistrictName || !agent.district
   );
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -300,16 +326,20 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
       createdAt: new Date(),
       documents: uploadedDocuments,
       instructions: values.instructions || '',
-      verification: {
+    };
+    
+    // Only add verification if assigned to an agent
+    if (newLead.assignedTo) {
+      newLead.verification = {
         status: 'Not Started',
-        agentId: values.assignmentType === 'manual' && values.assignedTo ? values.assignedTo : '',
-        leadId: `lead-${Date.now()}`,
+        agentId: newLead.assignedTo,
+        leadId: newLead.id,
         id: `verification-${Date.now()}`,
         photos: [],
         documents: [],
         notes: ''
-      }
-    };
+      };
+    }
     
     onAddLead(newLead);
     toast({
@@ -331,7 +361,7 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
   }, [hasOfficeAddress, form]);
 
   return (
-    <div className="space-y-6 max-h-[80vh] overflow-y-auto p-1">
+    <div className="space-y-6 max-h-[80vh] overflow-y-auto p-1 w-full max-w-5xl mx-auto">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -574,7 +604,11 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
                             <FormItem>
                               <FormLabel>State</FormLabel>
                               <Select 
-                                onValueChange={field.onChange}
+                                onValueChange={(value) => {
+                                  field.onChange(value);
+                                  form.setValue('officeDistrict', '');
+                                  form.setValue('officeCity', '');
+                                }}
                                 value={field.value || ''}
                               >
                                 <FormControl>
@@ -601,9 +635,31 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>District</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Enter district" {...field} />
-                              </FormControl>
+                              <Select 
+                                onValueChange={(value) => {
+                                  field.onChange(value);
+                                  form.setValue('officeCity', '');
+                                }}
+                                value={field.value || ''}
+                                disabled={availableOfficeDistricts.length === 0}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder={
+                                      availableOfficeDistricts.length === 0 
+                                        ? "Select a state first" 
+                                        : "Select district"
+                                    } />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {availableOfficeDistricts.map((district) => (
+                                    <SelectItem key={district.id} value={district.name}>
+                                      {district.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -617,9 +673,28 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>City</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Enter city" {...field} />
-                              </FormControl>
+                              <Select 
+                                onValueChange={field.onChange}
+                                value={field.value || ''}
+                                disabled={availableOfficeCities.length === 0}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder={
+                                      availableOfficeCities.length === 0 
+                                        ? "Select a district first" 
+                                        : "Select city"
+                                    } />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {availableOfficeCities.map((city) => (
+                                    <SelectItem key={city.id} value={city.name}>
+                                      {city.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                               <FormMessage />
                             </FormItem>
                           )}

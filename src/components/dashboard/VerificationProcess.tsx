@@ -80,13 +80,17 @@ const VerificationProcess = ({
       case 'arrival':
         return !!verification?.arrivalTime;
       case 'documents':
-        return verification?.photos.length! > 0 || verification?.documents.length! > 0;
+        return verification?.photos?.length! > 0 || verification?.documents?.length! > 0;
       case 'complete':
         return !!verification?.completionTime;
       default:
         return false;
     }
   };
+
+  // Check if verification photos and documents exist and have elements
+  const hasVerificationPhotos = verification?.photos && verification.photos.length > 0;
+  const hasVerificationDocuments = verification?.documents && verification.documents.length > 0;
 
   return (
     <div className="space-y-6">
@@ -170,8 +174,8 @@ const VerificationProcess = ({
         {/* Step 3: Upload Photos & Documents */}
         <div className={`verification-step ${isStepCompleted('documents') ? 'verification-step-completed' : ''}`}>
           <div className="flex items-start">
-            <div className={`timeline-dot ${verification?.photos.length! > 0 || verification?.documents.length! > 0 ? 'bg-green-100 text-green-600' : 'bg-muted text-muted-foreground'}`}>
-              {verification?.photos.length! > 0 || verification?.documents.length! > 0 ? (
+            <div className={`timeline-dot ${verification?.photos?.length! > 0 || verification?.documents?.length! > 0 ? 'bg-green-100 text-green-600' : 'bg-muted text-muted-foreground'}`}>
+              {verification?.photos?.length! > 0 || verification?.documents?.length! > 0 ? (
                 <Camera className="h-5 w-5" />
               ) : (
                 <span className="text-sm">3</span>
@@ -186,15 +190,21 @@ const VerificationProcess = ({
                   <div>
                     <h4 className="text-sm font-medium mb-2">Photos</h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                      {verification.photos && verification.photos.length > 0 ? (
+                      {hasVerificationPhotos ? (
                         verification.photos.map((photo) => (
                           <div key={photo.id} className="border rounded-md p-2">
-                            <img 
-                              src={photo.url} 
-                              alt={photo.name} 
-                              className="w-full h-32 object-cover rounded" 
-                            />
-                            <p className="text-xs mt-2">{photo.name}</p>
+                            <div className="w-full h-32 bg-gray-200 rounded overflow-hidden">
+                              <img 
+                                src={photo.url} 
+                                alt={photo.name} 
+                                className="w-full h-full object-cover" 
+                                onError={(e) => {
+                                  // If image fails to load, show backup placeholder
+                                  e.currentTarget.src = '/placeholder.svg';
+                                }}
+                              />
+                            </div>
+                            <p className="text-xs mt-2 break-words">{photo.name}</p>
                           </div>
                         ))
                       ) : (
@@ -229,15 +239,21 @@ const VerificationProcess = ({
                   <div>
                     <h4 className="text-sm font-medium mb-2">KYC Documents</h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                      {verification.documents && verification.documents.length > 0 ? (
+                      {hasVerificationDocuments ? (
                         verification.documents.map((doc) => (
                           <div key={doc.id} className="border rounded-md p-2">
-                            <img 
-                              src={doc.url} 
-                              alt={doc.name} 
-                              className="w-full h-32 object-cover rounded" 
-                            />
-                            <p className="text-xs mt-2">{doc.name} ({doc.type})</p>
+                            <div className="w-full h-32 bg-gray-200 rounded overflow-hidden">
+                              <img 
+                                src={doc.url} 
+                                alt={doc.name} 
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  // If document image fails to load, show backup placeholder
+                                  e.currentTarget.src = '/placeholder.svg';
+                                }}
+                              />
+                            </div>
+                            <p className="text-xs mt-2 break-words">{doc.name} ({doc.type})</p>
                           </div>
                         ))
                       ) : (
