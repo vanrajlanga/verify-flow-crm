@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -120,6 +121,8 @@ const LeadList = ({
   };
 
   const handleViewLead = (leadId: string) => {
+    console.log("Viewing lead with ID:", leadId);
+    // Route to the proper page based on user role
     if (isAdmin) {
       navigate(`/admin/leads/${leadId}`);
     } else {

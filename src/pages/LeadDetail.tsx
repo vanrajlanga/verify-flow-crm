@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { FileText, Download, ArrowLeft, MapPin, User, Building, Phone, Calendar, Clock } from 'lucide-react';
-import { getLeadById, getUserById, getBankById } from '@/utils/mockData';
+import { getLeadById, getUserById, getBankById, mockLeads } from '@/utils/mockData';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -55,7 +56,8 @@ const LeadDetail = () => {
   const { leadId } = useParams<{ leadId: string }>();
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<any>(null);
-  const lead = getLeadById(leadId || '');
+  const [lead, setLead] = useState<any>(null);
+  const [loading, setLoading] = useState<boolean>(true);
   
   useEffect(() => {
     // Check if user is logged in
@@ -67,7 +69,53 @@ const LeadDetail = () => {
 
     const parsedUser = JSON.parse(storedUser);
     setCurrentUser(parsedUser);
-  }, [navigate]);
+    
+    // Get leads from localStorage or use mockLeads if not available
+    const storedLeads = localStorage.getItem('mockLeads');
+    let allLeads = [];
+    
+    if (storedLeads) {
+      try {
+        allLeads = JSON.parse(storedLeads);
+      } catch (error) {
+        console.error("Error parsing stored leads:", error);
+        allLeads = mockLeads;
+      }
+    } else {
+      allLeads = mockLeads;
+    }
+    
+    // Try finding the lead directly using ID
+    let foundLead = getLeadById(leadId || '');
+    
+    // If not found with getLeadById, search manually in all leads
+    if (!foundLead && allLeads && allLeads.length > 0) {
+      foundLead = allLeads.find((l: any) => l.id === leadId);
+      
+      // If still not found, try with different ID formats
+      if (!foundLead) {
+        // Try partial match if the ID might be stored differently
+        foundLead = allLeads.find((l: any) => 
+          leadId?.includes(l.id) || 
+          l.id.includes(leadId || '')
+        );
+      }
+    }
+    
+    console.log("Looking for lead with ID:", leadId);
+    console.log("Found lead:", foundLead);
+    
+    setLead(foundLead);
+    setLoading(false);
+  }, [navigate, leadId]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   if (!lead) {
     return (
@@ -167,7 +215,7 @@ const LeadDetail = () => {
   };
 
   // Document list rendering
-  const documentsList = lead.documents?.map((doc, index) => (
+  const documentsList = lead.documents?.map((doc: any, index: number) => (
     <li key={typeof doc === 'string' ? `${doc}-${index}` : doc.id} className="mb-4 flex items-center justify-between p-3 bg-white rounded-md shadow-sm border">
       <div className="flex items-center">
         <div className={`h-10 w-10 rounded-full flex items-center justify-center ${getBadgeColor('default')}`}>
@@ -254,8 +302,8 @@ const LeadDetail = () => {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Address</p>
-                    <p className="font-medium">{lead.address.street}</p>
-                    <p className="text-sm">{lead.address.city}, {lead.address.state}</p>
+                    <p className="font-medium">{lead.address?.street}</p>
+                    <p className="text-sm">{lead.address?.city}, {lead.address?.state}</p>
                   </div>
                 </div>
 
