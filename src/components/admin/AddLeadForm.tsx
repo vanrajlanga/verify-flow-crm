@@ -297,6 +297,12 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
       });
     }
 
+    // Convert visit type from "Home" to "Residence" if needed
+    let visitType: "Office" | "Residence" | "Both" = values.visitType as any;
+    if (visitType === "Home") {
+      visitType = "Residence";
+    }
+
     // Create a new lead object
     const newLead: Lead = {
       id: `lead-${Date.now()}`,
@@ -324,9 +330,8 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
       },
       status: 'Pending',
       bank: values.bank,
-      visitType: values.visitType === 'Home' ? 'Residence' : values.visitType as "Office" | "Residence" | "Both",
+      visitType: visitType,
       assignedTo: values.assignmentType === 'manual' && values.assignedTo ? values.assignedTo : '',
-      verificationDate: values.verificationDate ? new Date(values.verificationDate) : undefined,
       createdAt: new Date(),
       documents: uploadedDocuments,
       instructions: values.instructions || '',
@@ -339,6 +344,11 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
         documents: []
       }
     };
+    
+    // Store verification date if provided
+    if (values.verificationDate) {
+      newLead.verificationDate = new Date(values.verificationDate);
+    }
     
     // Only add verification if assigned to an agent
     if (newLead.assignedTo) {

@@ -46,6 +46,7 @@ export interface Lead {
   documents?: Document[] | string[];
   instructions?: string;
   verification: VerificationData;
+  verificationDate?: Date;  // Added this field to support the form
 }
 
 export interface Address {
@@ -558,7 +559,7 @@ updateMockDataDocumentReferences();
 
 // Convert "Home" to "Residence" in visitType properties
 mockLeads.forEach(lead => {
-  if (lead.visitType === 'Home') {
+  if (lead.visitType === 'Home' as any) {
     lead.visitType = 'Residence';
   }
 });
