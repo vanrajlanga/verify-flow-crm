@@ -12,7 +12,8 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MapPin } from 'lucide-react';
+import { MapPin, Upload, X, Image, FileText } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface EditAgentFormProps {
   agent: User;
@@ -33,6 +34,8 @@ const EditAgentForm = ({ agent, onUpdate, onClose, locationData }: EditAgentForm
   const [baseLocation, setBaseLocation] = useState(agent.baseLocation || "");
   const [maxTravelDistance, setMaxTravelDistance] = useState(agent.maxTravelDistance?.toString() || "10");
   const [extraChargePerKm, setExtraChargePerKm] = useState(agent.extraChargePerKm?.toString() || "5");
+  const [profilePicture, setProfilePicture] = useState(agent.profilePicture || "");
+  const [documents, setDocuments] = useState(agent.documents || []);
   
   // Find the district options for the selected state
   const availableDistricts = locationData.states.find((s: any) => s.name === state)?.districts || [];
@@ -78,7 +81,9 @@ const EditAgentForm = ({ agent, onUpdate, onClose, locationData }: EditAgentForm
       city,
       baseLocation,
       maxTravelDistance: maxTravelDistance ? parseInt(maxTravelDistance) : 10,
-      extraChargePerKm: extraChargePerKm ? parseInt(extraChargePerKm) : 5
+      extraChargePerKm: extraChargePerKm ? parseInt(extraChargePerKm) : 5,
+      profilePicture,
+      documents
     };
     
     if (password) {
@@ -93,15 +98,97 @@ const EditAgentForm = ({ agent, onUpdate, onClose, locationData }: EditAgentForm
     onClose();
   };
 
+  // Handle profile picture upload
+  const handleProfilePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // In a real app, you would upload this file to a server
+      // For now, we'll create a data URL
+      const reader = new FileReader();
+      reader.onload = () => {
+        setProfilePicture(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle document upload
+  const handleDocumentUpload = (e: React.ChangeEvent<HTMLInputElement>, type: string) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // In a real app, you would upload this file to a server
+      // For now, we'll create a data URL
+      const reader = new FileReader();
+      reader.onload = () => {
+        const newDocument = {
+          id: `doc-${Date.now()}`,
+          type,
+          name: file.name,
+          url: reader.result as string,
+          verified: false
+        };
+        
+        // Remove any existing document of the same type
+        const updatedDocuments = documents.filter(doc => doc.type !== type);
+        setDocuments([...updatedDocuments, newDocument]);
+        
+        toast({
+          title: "Document uploaded",
+          description: `${file.name} has been uploaded successfully.`,
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Remove document
+  const handleRemoveDocument = (docId: string) => {
+    setDocuments(documents.filter(doc => doc.id !== docId));
+    toast({
+      title: "Document removed",
+    });
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase();
+  };
+
   return (
     <div className="space-y-6 max-h-[70vh] overflow-y-auto p-1">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="w-full">
           <TabsTrigger value="basic" className="flex-1">Basic Info</TabsTrigger>
           <TabsTrigger value="location" className="flex-1">Location & Travel</TabsTrigger>
+          <TabsTrigger value="documents" className="flex-1">KYC Documents</TabsTrigger>
         </TabsList>
         
         <TabsContent value="basic" className="space-y-4 pt-4">
+          <div className="flex flex-col items-center space-y-4 mb-6">
+            <Avatar className="w-24 h-24">
+              <AvatarImage src={profilePicture} alt={name} />
+              <AvatarFallback className="text-2xl">{getInitials(name)}</AvatarFallback>
+            </Avatar>
+            <div className="flex items-center">
+              <label htmlFor="profilePicture" className="cursor-pointer">
+                <div className="flex items-center space-x-2 bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90">
+                  <Image className="h-4 w-4" />
+                  <span>Change Photo</span>
+                </div>
+                <input
+                  id="profilePicture"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleProfilePictureChange}
+                />
+              </label>
+            </div>
+          </div>
+
           <div className="space-y-2">
             <label htmlFor="name" className="text-sm font-medium">
               Name
@@ -284,6 +371,185 @@ const EditAgentForm = ({ agent, onUpdate, onClose, locationData }: EditAgentForm
                     value={extraChargePerKm}
                     onChange={(e) => setExtraChargePerKm(e.target.value)}
                   />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="documents" className="space-y-6 pt-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Identity Documents</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* PAN Card Upload */}
+                <div className="border rounded-lg p-4 space-y-3">
+                  <h3 className="font-medium">PAN Card</h3>
+                  {documents.find(doc => doc.type === 'panCard') ? (
+                    <div className="relative">
+                      <img 
+                        src={documents.find(doc => doc.type === 'panCard')?.url} 
+                        alt="PAN Card" 
+                        className="w-full h-32 object-cover rounded-md"
+                      />
+                      <Button 
+                        variant="destructive" 
+                        size="icon"
+                        className="absolute top-1 right-1 h-6 w-6"
+                        onClick={() => handleRemoveDocument(documents.find(doc => doc.type === 'panCard')?.id || '')}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                      {documents.find(doc => doc.type === 'panCard')?.verified && (
+                        <div className="absolute bottom-1 right-1 bg-green-500 text-white px-2 py-0.5 rounded-md text-xs">
+                          Verified
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg h-32 cursor-pointer hover:bg-muted/50">
+                      <div className="flex flex-col items-center p-4">
+                        <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+                        <span className="text-sm text-center text-muted-foreground">
+                          Click to upload PAN Card
+                        </span>
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={e => handleDocumentUpload(e, 'panCard')}
+                      />
+                    </label>
+                  )}
+                </div>
+
+                {/* Aadhar Card Upload */}
+                <div className="border rounded-lg p-4 space-y-3">
+                  <h3 className="font-medium">Aadhar Card</h3>
+                  {documents.find(doc => doc.type === 'aadharCard') ? (
+                    <div className="relative">
+                      <img 
+                        src={documents.find(doc => doc.type === 'aadharCard')?.url} 
+                        alt="Aadhar Card" 
+                        className="w-full h-32 object-cover rounded-md"
+                      />
+                      <Button 
+                        variant="destructive" 
+                        size="icon"
+                        className="absolute top-1 right-1 h-6 w-6"
+                        onClick={() => handleRemoveDocument(documents.find(doc => doc.type === 'aadharCard')?.id || '')}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                      {documents.find(doc => doc.type === 'aadharCard')?.verified && (
+                        <div className="absolute bottom-1 right-1 bg-green-500 text-white px-2 py-0.5 rounded-md text-xs">
+                          Verified
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg h-32 cursor-pointer hover:bg-muted/50">
+                      <div className="flex flex-col items-center p-4">
+                        <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+                        <span className="text-sm text-center text-muted-foreground">
+                          Click to upload Aadhar Card
+                        </span>
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={e => handleDocumentUpload(e, 'aadharCard')}
+                      />
+                    </label>
+                  )}
+                </div>
+
+                {/* Driving License Upload */}
+                <div className="border rounded-lg p-4 space-y-3">
+                  <h3 className="font-medium">Driving License</h3>
+                  {documents.find(doc => doc.type === 'drivingLicense') ? (
+                    <div className="relative">
+                      <img 
+                        src={documents.find(doc => doc.type === 'drivingLicense')?.url} 
+                        alt="Driving License" 
+                        className="w-full h-32 object-cover rounded-md"
+                      />
+                      <Button 
+                        variant="destructive" 
+                        size="icon"
+                        className="absolute top-1 right-1 h-6 w-6"
+                        onClick={() => handleRemoveDocument(documents.find(doc => doc.type === 'drivingLicense')?.id || '')}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                      {documents.find(doc => doc.type === 'drivingLicense')?.verified && (
+                        <div className="absolute bottom-1 right-1 bg-green-500 text-white px-2 py-0.5 rounded-md text-xs">
+                          Verified
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg h-32 cursor-pointer hover:bg-muted/50">
+                      <div className="flex flex-col items-center p-4">
+                        <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+                        <span className="text-sm text-center text-muted-foreground">
+                          Click to upload Driving License
+                        </span>
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={e => handleDocumentUpload(e, 'drivingLicense')}
+                      />
+                    </label>
+                  )}
+                </div>
+
+                {/* Other Documents Upload */}
+                <div className="border rounded-lg p-4 space-y-3">
+                  <h3 className="font-medium">Other Document</h3>
+                  {documents.find(doc => doc.type === 'otherDocument') ? (
+                    <div className="relative">
+                      <img 
+                        src={documents.find(doc => doc.type === 'otherDocument')?.url} 
+                        alt="Other Document" 
+                        className="w-full h-32 object-cover rounded-md"
+                      />
+                      <Button 
+                        variant="destructive" 
+                        size="icon"
+                        className="absolute top-1 right-1 h-6 w-6"
+                        onClick={() => handleRemoveDocument(documents.find(doc => doc.type === 'otherDocument')?.id || '')}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                      {documents.find(doc => doc.type === 'otherDocument')?.verified && (
+                        <div className="absolute bottom-1 right-1 bg-green-500 text-white px-2 py-0.5 rounded-md text-xs">
+                          Verified
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg h-32 cursor-pointer hover:bg-muted/50">
+                      <div className="flex flex-col items-center p-4">
+                        <FileText className="h-8 w-8 text-muted-foreground mb-2" />
+                        <span className="text-sm text-center text-muted-foreground">
+                          Click to upload Other Document
+                        </span>
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*,.pdf"
+                        className="hidden"
+                        onChange={e => handleDocumentUpload(e, 'otherDocument')}
+                      />
+                    </label>
+                  )}
                 </div>
               </div>
             </CardContent>
