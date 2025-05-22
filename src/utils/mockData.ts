@@ -189,6 +189,13 @@ export const mockLeads: Lead[] = [
       state: 'Delhi',
       pincode: '110001'
     },
+    additionalDetails: {
+      company: 'Tech Solutions',
+      designation: 'Senior Developer',
+      workExperience: '5 years',
+      monthlyIncome: '120000',
+      annualIncome: '1440000'
+    },
     visitType: 'Both',
     status: 'Pending',
     assignedTo: '2',
@@ -212,7 +219,15 @@ export const mockLeads: Lead[] = [
       }
     ],
     instructions: 'Verify both home and office addresses. Confirm employment details with HR.',
-    createdAt: new Date('2023-03-14')
+    createdAt: new Date('2023-03-14'),
+    verification: {
+      id: 'v-pending-1',
+      agentId: '2',
+      leadId: '1',
+      status: 'Not Started',
+      photos: [],
+      documents: []
+    }
   },
   {
     id: '2',
@@ -226,7 +241,14 @@ export const mockLeads: Lead[] = [
       state: 'Maharashtra',
       pincode: '400001'
     },
-    visitType: 'Home',
+    additionalDetails: {
+      company: 'Creative Marketing',
+      designation: 'Senior Manager',
+      workExperience: '4 years',
+      monthlyIncome: '90000',
+      annualIncome: '1080000'
+    },
+    visitType: 'Residence',
     status: 'In Progress',
     assignedTo: '3',
     bank: '2',
@@ -263,6 +285,13 @@ export const mockLeads: Lead[] = [
       district: 'Bangalore',
       state: 'Karnataka',
       pincode: '560001'
+    },
+    additionalDetails: {
+      company: 'Kumar Enterprises',
+      designation: 'CEO',
+      workExperience: '10 years',
+      monthlyIncome: '250000',
+      annualIncome: '3000000'
     },
     visitType: 'Office',
     status: 'Completed',
@@ -345,6 +374,13 @@ export const mockLeads: Lead[] = [
       state: 'Delhi',
       pincode: '110005'
     },
+    additionalDetails: {
+      company: 'City Hospital',
+      designation: 'Senior Doctor',
+      workExperience: '6 years',
+      monthlyIncome: '150000',
+      annualIncome: '1800000'
+    },
     visitType: 'Both',
     status: 'Pending',
     assignedTo: '2',
@@ -368,7 +404,15 @@ export const mockLeads: Lead[] = [
       }
     ],
     instructions: 'Verify hospital employment and residence. Collect proof of income.',
-    createdAt: new Date('2023-03-18')
+    createdAt: new Date('2023-03-18'),
+    verification: {
+      id: 'v-pending-2',
+      agentId: '2',
+      leadId: '4',
+      status: 'Not Started',
+      photos: [],
+      documents: []
+    }
   },
   {
     id: '5',
@@ -382,7 +426,14 @@ export const mockLeads: Lead[] = [
       state: 'Maharashtra',
       pincode: '400010'
     },
-    visitType: 'Home',
+    additionalDetails: {
+      company: 'Government of Maharashtra',
+      designation: 'Senior Officer',
+      workExperience: '15 years',
+      monthlyIncome: '80000',
+      annualIncome: '960000'
+    },
+    visitType: 'Residence',
     status: 'Pending',
     assignedTo: '3',
     bank: '5',
@@ -404,7 +455,15 @@ export const mockLeads: Lead[] = [
         uploadDate: new Date('2023-03-20')
       }
     ],
-    createdAt: new Date('2023-03-19')
+    createdAt: new Date('2023-03-19'),
+    verification: {
+      id: 'v-pending-3',
+      agentId: '3',
+      leadId: '5',
+      status: 'Not Started',
+      photos: [],
+      documents: []
+    }
   },
   {
     id: '6',
@@ -417,6 +476,13 @@ export const mockLeads: Lead[] = [
       district: 'Bangalore',
       state: 'Karnataka',
       pincode: '560010'
+    },
+    additionalDetails: {
+      company: 'Financial Solutions Ltd',
+      designation: 'Senior Accountant',
+      workExperience: '8 years',
+      monthlyIncome: '75000',
+      annualIncome: '900000'
     },
     visitType: 'Office',
     status: 'Rejected',
