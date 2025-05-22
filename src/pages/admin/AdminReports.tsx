@@ -1,37 +1,27 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  User, 
-  mockLeads, 
-  mockUsers, 
-  mockBanks,
-  getAgentPerformance 
-} from '@/utils/mockData';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { User, Lead, getAgentPerformance } from '@/utils/mockData';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
-import { 
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell
-} from 'recharts';
+import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { BarChart, PieChart, LineChart } from 'lucide-react';
 import { format, subDays } from 'date-fns';
+import { Bar, BarChart as RechartsBarChart, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell } from 'recharts';
 
 const AdminReports = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [activeTab, setActiveTab] = useState("performance");
+  const [dateRange, setDateRange] = useState({
+    from: subDays(new Date(), 30),
+    to: new Date(),
+  });
+  const [agentPerformance, setAgentPerformance] = useState<any[]>([]);
+  const [leads, setLeads] = useState<Lead[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -49,6 +39,22 @@ const AdminReports = () => {
     }
 
     setCurrentUser(parsedUser);
+    
+    // Fetch agent performance
+    const performance = getAgentPerformance();
+    setAgentPerformance(performance);
+    
+    // Get leads from localStorage
+    const storedLeads = localStorage.getItem('mockLeads');
+    if (storedLeads) {
+      try {
+        const parsedLeads = JSON.parse(storedLeads);
+        setLeads(parsedLeads);
+      } catch (error) {
+        console.error("Error loading leads:", error);
+        setLeads([]);
+      }
+    }
   }, [navigate]);
 
   const handleLogout = () => {
@@ -56,32 +62,76 @@ const AdminReports = () => {
     navigate('/');
   };
 
-  // Prepare data for charts
-  const agents = getAgentPerformance();
-  
-  const statusData = [
-    { name: 'Pending', value: mockLeads.filter(l => l.status === 'Pending').length },
-    { name: 'In Progress', value: mockLeads.filter(l => l.status === 'In Progress').length },
-    { name: 'Completed', value: mockLeads.filter(l => l.status === 'Completed').length },
-    { name: 'Rejected', value: mockLeads.filter(l => l.status === 'Rejected').length },
-  ];
+  // Calculate statistics for the selected date range
+  const getFilteredLeads = () => {
+    return leads.filter(lead => {
+      const leadDate = new Date(lead.createdAt);
+      return leadDate >= dateRange.from && leadDate <= dateRange.to;
+    });
+  };
 
-  const bankData = mockBanks.slice(0, 5).map(bank => ({
-    name: bank.name,
-    applications: bank.totalApplications
-  }));
-
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#A28FEF'];
-
-  // Generate daily verification data (mock data)
-  const today = new Date();
-  const dailyData = Array.from({ length: 7 }, (_, i) => {
-    const date = subDays(today, 6 - i);
-    return {
-      date: format(date, 'MMM d'),
-      verifications: Math.floor(Math.random() * 10) + 1
+  const getStatusDistribution = () => {
+    const filteredLeads = getFilteredLeads();
+    const statusCounts = {
+      Pending: 0,
+      'In Progress': 0,
+      Completed: 0,
+      Rejected: 0
     };
-  });
+    
+    filteredLeads.forEach(lead => {
+      if (statusCounts.hasOwnProperty(lead.status)) {
+        statusCounts[lead.status as keyof typeof statusCounts]++;
+      }
+    });
+    
+    return Object.entries(statusCounts).map(([name, value]) => ({ name, value }));
+  };
+
+  const getAgentCompletions = () => {
+    const filteredLeads = getFilteredLeads();
+    const agentCounts: Record<string, { completed: number, inProgress: number, name: string }> = {};
+    
+    filteredLeads.forEach(lead => {
+      if (!lead.assignedTo) return;
+      
+      if (!agentCounts[lead.assignedTo]) {
+        const agent = agentPerformance.find(a => a.id === lead.assignedTo);
+        agentCounts[lead.assignedTo] = {
+          completed: 0,
+          inProgress: 0,
+          name: agent ? agent.name : 'Unknown Agent'
+        };
+      }
+      
+      if (lead.status === 'Completed') {
+        agentCounts[lead.assignedTo].completed++;
+      } else if (lead.status === 'In Progress') {
+        agentCounts[lead.assignedTo].inProgress++;
+      }
+    });
+    
+    return Object.values(agentCounts);
+  };
+
+  const getDailyVerifications = () => {
+    const filteredLeads = getFilteredLeads();
+    const dailyCounts: Record<string, number> = {};
+    
+    filteredLeads.forEach(lead => {
+      const dateStr = format(new Date(lead.createdAt), 'yyyy-MM-dd');
+      dailyCounts[dateStr] = (dailyCounts[dateStr] || 0) + 1;
+    });
+    
+    return Object.entries(dailyCounts)
+      .map(([date, count]) => ({
+        date: format(new Date(date), 'MMM dd'),
+        count
+      }))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  };
+
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
   if (!currentUser) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
@@ -100,143 +150,235 @@ const AdminReports = () => {
         
         <main className="flex-1 p-4 md:p-6">
           <div className="max-w-7xl mx-auto space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div>
-                <h1 className="text-2xl font-bold tracking-tight">Reports</h1>
+                <h1 className="text-2xl font-bold tracking-tight">Reports & Analytics</h1>
                 <p className="text-muted-foreground">
-                  Analytics and insights for verification activities
+                  View performance metrics and verification statistics
                 </p>
               </div>
-              <div className="space-x-2">
-                <Button variant="outline" onClick={() => window.print()}>
-                  Export Report
-                </Button>
-              </div>
+              
+              <DateRangePicker
+                date={dateRange}
+                onDateChange={setDateRange}
+              />
             </div>
             
-            <Tabs defaultValue="overview" className="space-y-4">
-              <TabsList>
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="agents">Agent Performance</TabsTrigger>
-                <TabsTrigger value="banks">Bank Analysis</TabsTrigger>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="performance" className="flex items-center gap-2">
+                  <BarChart className="h-4 w-4" />
+                  <span>Agent Performance</span>
+                </TabsTrigger>
+                <TabsTrigger value="status" className="flex items-center gap-2">
+                  <PieChart className="h-4 w-4" />
+                  <span>Status Distribution</span>
+                </TabsTrigger>
+                <TabsTrigger value="trends" className="flex items-center gap-2">
+                  <LineChart className="h-4 w-4" />
+                  <span>Verification Trends</span>
+                </TabsTrigger>
               </TabsList>
               
-              <TabsContent value="overview" className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Verification Status</CardTitle>
-                      <CardDescription>
-                        Distribution of verification requests by status
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="h-80">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                            <Pie
-                              data={statusData}
-                              cx="50%"
-                              cy="50%"
-                              labelLine={false}
-                              label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                              outerRadius={80}
-                              fill="#8884d8"
-                              dataKey="value"
-                            >
-                              {statusData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                              ))}
-                            </Pie>
-                            <Legend />
-                            <Tooltip />
-                          </PieChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Daily Verifications</CardTitle>
-                      <CardDescription>
-                        Number of verifications completed per day
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="h-80">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={dailyData}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="date" />
-                            <YAxis />
-                            <Tooltip />
-                            <Bar dataKey="verifications" fill="#8884d8" name="Verifications" />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="agents" className="space-y-4">
+              <TabsContent value="performance" className="space-y-4">
                 <Card>
                   <CardHeader>
                     <CardTitle>Agent Performance</CardTitle>
                     <CardDescription>
-                      Verification completion rates and metrics by agent
+                      Verification completion rates by agent for the selected period
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-8">
-                      {agents.map((agent) => (
-                        <div key={agent.id} className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <div className="space-y-0.5">
-                              <h3 className="font-medium">{agent.name}</h3>
-                              <p className="text-sm text-muted-foreground">{agent.district}</p>
-                            </div>
-                            <div className="text-sm font-medium">{agent.completionRate}%</div>
-                          </div>
-                          <div className="h-2 relative rounded-full overflow-hidden">
-                            <Progress value={agent.completionRate} className="h-full" />
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            {agent.totalVerifications} verifications completed
-                          </p>
-                        </div>
+                    <div className="h-80 mb-6">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <RechartsBarChart
+                          data={getAgentCompletions()}
+                          margin={{
+                            top: 20,
+                            right: 30,
+                            left: 20,
+                            bottom: 5,
+                          }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="name" />
+                          <YAxis />
+                          <Tooltip />
+                          <Legend />
+                          <Bar dataKey="completed" name="Completed" fill="#4ade80" />
+                          <Bar dataKey="inProgress" name="In Progress" fill="#60a5fa" />
+                        </RechartsBarChart>
+                      </ResponsiveContainer>
+                    </div>
+                    
+                    <div className="rounded-md border bg-white overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Agent</TableHead>
+                            <TableHead>District</TableHead>
+                            <TableHead>Completed</TableHead>
+                            <TableHead>In Progress</TableHead>
+                            <TableHead>Rate</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {getAgentCompletions().map((agent) => {
+                            const agentData = agentPerformance.find(a => a.name === agent.name);
+                            const total = agent.completed + agent.inProgress;
+                            const rate = total > 0 ? Math.round((agent.completed / total) * 100) : 0;
+                            
+                            return (
+                              <TableRow key={agent.name}>
+                                <TableCell className="font-medium">{agent.name}</TableCell>
+                                <TableCell>{agentData?.district || 'Not Assigned'}</TableCell>
+                                <TableCell>{agent.completed}</TableCell>
+                                <TableCell>{agent.inProgress}</TableCell>
+                                <TableCell>{rate}%</TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              
+              <TabsContent value="status" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Verification Status Distribution</CardTitle>
+                    <CardDescription>
+                      Distribution of verification statuses for the selected period
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-80 mb-6">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <RechartsPieChart>
+                          <Pie
+                            data={getStatusDistribution()}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={false}
+                            outerRadius={120}
+                            fill="#8884d8"
+                            dataKey="value"
+                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                          >
+                            {getStatusDistribution().map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <Tooltip />
+                          <Legend />
+                        </RechartsPieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {getStatusDistribution().map((status, index) => (
+                        <Card key={status.name}>
+                          <CardContent className="p-4 flex flex-col items-center justify-center">
+                            <div 
+                              className="w-4 h-4 rounded-full mb-2"
+                              style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                            />
+                            <div className="text-2xl font-bold">{status.value}</div>
+                            <div className="text-sm text-muted-foreground">{status.name}</div>
+                          </CardContent>
+                        </Card>
                       ))}
                     </div>
                   </CardContent>
                 </Card>
               </TabsContent>
               
-              <TabsContent value="banks" className="space-y-4">
+              <TabsContent value="trends" className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Bank Applications</CardTitle>
+                    <CardTitle>Daily Verification Trends</CardTitle>
                     <CardDescription>
-                      Total verification applications by bank
+                      Number of verifications initiated per day
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="h-80">
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={bankData} layout="vertical">
+                        <RechartsBarChart
+                          data={getDailyVerifications()}
+                          margin={{
+                            top: 20,
+                            right: 30,
+                            left: 20,
+                            bottom: 5,
+                          }}
+                        >
                           <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis type="number" />
-                          <YAxis dataKey="name" type="category" width={150} />
+                          <XAxis dataKey="date" />
+                          <YAxis />
                           <Tooltip />
                           <Legend />
-                          <Bar dataKey="applications" fill="#8884d8" name="Applications" />
-                        </BarChart>
+                          <Bar dataKey="count" name="Verifications" fill="#8884d8" />
+                        </RechartsBarChart>
                       </ResponsiveContainer>
+                    </div>
+                    
+                    <div className="mt-6">
+                      <h3 className="font-medium mb-2">Summary</h3>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <Card>
+                          <CardContent className="p-4">
+                            <div className="text-sm text-muted-foreground">Total Verifications</div>
+                            <div className="text-2xl font-bold">{getFilteredLeads().length}</div>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="p-4">
+                            <div className="text-sm text-muted-foreground">Daily Average</div>
+                            <div className="text-2xl font-bold">
+                              {getDailyVerifications().length > 0 
+                                ? (getFilteredLeads().length / getDailyVerifications().length).toFixed(1) 
+                                : '0'}
+                            </div>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="p-4">
+                            <div className="text-sm text-muted-foreground">Completion Rate</div>
+                            <div className="text-2xl font-bold">
+                              {getFilteredLeads().length > 0 
+                                ? Math.round((getFilteredLeads().filter(l => l.status === 'Completed').length / getFilteredLeads().length) * 100) 
+                                : 0}%
+                            </div>
+                          </CardContent>
+                        </Card>
+                        <Card>
+                          <CardContent className="p-4">
+                            <div className="text-sm text-muted-foreground">Rejection Rate</div>
+                            <div className="text-2xl font-bold">
+                              {getFilteredLeads().length > 0 
+                                ? Math.round((getFilteredLeads().filter(l => l.status === 'Rejected').length / getFilteredLeads().length) * 100) 
+                                : 0}%
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
               </TabsContent>
             </Tabs>
+            
+            <div className="flex justify-end">
+              <Button variant="outline" onClick={() => {
+                // In a real app, this would generate and download a report
+                alert('Report generation would be implemented here');
+              }}>
+                Export Report
+              </Button>
+            </div>
           </div>
         </main>
       </div>

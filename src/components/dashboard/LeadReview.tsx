@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -52,6 +51,37 @@ const LeadReview = ({
   };
 
   const isReviewed = verification?.reviewedBy !== undefined;
+
+  // For the Photo rendering section, update it to use caption instead of name
+  const renderPhotos = (photos?: Photo[]) => {
+    if (!photos || photos.length === 0) {
+      return (
+        <div className="text-center p-4 text-muted-foreground">
+          No photos uploaded
+        </div>
+      );
+    }
+
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {photos.map(photo => (
+          <div key={photo.id} className="relative border rounded-md p-3">
+            <img 
+              src={photo.url} 
+              alt={photo.caption} // Use caption instead of name 
+              className="w-full h-40 object-cover rounded-md mb-2"
+            />
+            <div className="text-sm font-medium mt-2">{photo.caption}</div> // Use caption instead of name
+            {photo.uploadDate && (
+              <div className="text-xs text-muted-foreground">
+                Uploaded on: {typeof photo.uploadDate === 'string' ? photo.uploadDate : format(photo.uploadDate, 'MMM d, yyyy')}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -133,23 +163,7 @@ const LeadReview = ({
             <div>
               <h3 className="text-sm font-medium mb-3">Uploaded Photos</h3>
               {verification?.photos && verification.photos.length > 0 ? (
-                <div className="grid grid-cols-2 gap-4">
-                  {verification.photos.map((photo) => (
-                    <div key={photo.id} className="border rounded-md overflow-hidden">
-                      <img 
-                        src={photo.url} 
-                        alt={photo.name} 
-                        className="w-full h-32 object-cover" 
-                      />
-                      <div className="p-2">
-                        <p className="text-xs">{photo.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {photo.uploadDate ? formatDateTime(photo.uploadDate) : ''}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                renderPhotos(verification.photos)
               ) : (
                 <div className="border rounded-md p-4 bg-muted/30 flex items-center justify-center h-32">
                   <p className="text-sm text-muted-foreground">No photos uploaded</p>

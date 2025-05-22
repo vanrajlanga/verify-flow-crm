@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { User, Lead, getLeadStats, getAgentPerformance } from '@/utils/mockData';
+import { User, Lead, getLeadStats, getAgentPerformance, compareDates } from '@/utils/mockData';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
 import { BarChart, CalendarDays, CheckCircle2, CircleDollarSign, User2 } from 'lucide-react';
@@ -47,11 +47,9 @@ const AdminDashboard = () => {
       try {
         const parsedLeads = JSON.parse(storedLeads);
         
-        // Sort leads by creation date
+        // Sort leads by creation date using the helper function
         parsedLeads.sort((a: Lead, b: Lead) => {
-          const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
-          const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
-          return dateB.getTime() - dateA.getTime();
+          return compareDates(b.createdAt, a.createdAt);
         });
         
         setLeads(parsedLeads);

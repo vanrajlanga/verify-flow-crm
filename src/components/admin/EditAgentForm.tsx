@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from 'react';
-import { User } from '@/utils/mockData';
+import { User, Document } from '@/utils/mockData';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from '@/components/ui/use-toast';
@@ -36,7 +35,7 @@ const EditAgentForm = ({ agent, onUpdate, onClose, locationData }: EditAgentForm
   const [maxTravelDistance, setMaxTravelDistance] = useState(agent.maxTravelDistance?.toString() || "10");
   const [extraChargePerKm, setExtraChargePerKm] = useState(agent.extraChargePerKm?.toString() || "5");
   const [profilePicture, setProfilePicture] = useState(agent.profilePicture || "");
-  const [documents, setDocuments] = useState(agent.kycDocuments || []);
+  const [documents, setDocuments] = useState<Document[]>(agent.kycDocuments || []);
   
   // Find the district options for the selected state
   const availableDistricts = locationData.states.find((s: any) => s.name === state)?.districts || [];
@@ -156,6 +155,52 @@ const EditAgentForm = ({ agent, onUpdate, onClose, locationData }: EditAgentForm
       .map(n => n[0])
       .join('')
       .toUpperCase();
+  };
+
+  const renderDocumentCard = (docType: string, title: string) => {
+    const doc = documents.find(d => d.type === docType);
+    
+    if (doc) {
+      return (
+        <div className="relative">
+          <img 
+            src={doc.url} 
+            alt={doc.name} 
+            className="w-full h-32 object-cover rounded-md"
+          />
+          <Button 
+            variant="destructive" 
+            size="icon"
+            className="absolute top-1 right-1 h-6 w-6"
+            onClick={() => handleRemoveDocument(doc.id)}
+          >
+            <X className="h-3 w-3" />
+          </Button>
+          {doc.verified && (
+            <div className="absolute bottom-1 right-1 bg-green-500 text-white px-2 py-0.5 rounded-md text-xs">
+              Verified
+            </div>
+          )}
+        </div>
+      );
+    }
+    
+    return (
+      <label className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg h-32 cursor-pointer hover:bg-muted/50">
+        <div className="flex flex-col items-center p-4">
+          <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+          <span className="text-sm text-center text-muted-foreground">
+            Click to upload {title}
+          </span>
+        </div>
+        <input
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={e => handleDocumentUpload(e, docType)}
+        />
+      </label>
+    );
   };
 
   return (
@@ -385,172 +430,24 @@ const EditAgentForm = ({ agent, onUpdate, onClose, locationData }: EditAgentForm
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* PAN Card Upload */}
                 <div className="border rounded-lg p-4 space-y-3">
                   <h3 className="font-medium">PAN Card</h3>
-                  {documents.find(doc => doc.type === 'panCard') ? (
-                    <div className="relative">
-                      <img 
-                        src={documents.find(doc => doc.type === 'panCard')?.url} 
-                        alt="PAN Card" 
-                        className="w-full h-32 object-cover rounded-md"
-                      />
-                      <Button 
-                        variant="destructive" 
-                        size="icon"
-                        className="absolute top-1 right-1 h-6 w-6"
-                        onClick={() => handleRemoveDocument(documents.find(doc => doc.type === 'panCard')?.id || '')}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                      {documents.find(doc => doc.type === 'panCard')?.verified && (
-                        <div className="absolute bottom-1 right-1 bg-green-500 text-white px-2 py-0.5 rounded-md text-xs">
-                          Verified
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <label className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg h-32 cursor-pointer hover:bg-muted/50">
-                      <div className="flex flex-col items-center p-4">
-                        <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                        <span className="text-sm text-center text-muted-foreground">
-                          Click to upload PAN Card
-                        </span>
-                      </div>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={e => handleDocumentUpload(e, 'panCard')}
-                      />
-                    </label>
-                  )}
+                  {renderDocumentCard('panCard', 'PAN Card')}
                 </div>
 
-                {/* Aadhar Card Upload */}
                 <div className="border rounded-lg p-4 space-y-3">
                   <h3 className="font-medium">Aadhar Card</h3>
-                  {documents.find(doc => doc.type === 'aadharCard') ? (
-                    <div className="relative">
-                      <img 
-                        src={documents.find(doc => doc.type === 'aadharCard')?.url} 
-                        alt="Aadhar Card" 
-                        className="w-full h-32 object-cover rounded-md"
-                      />
-                      <Button 
-                        variant="destructive" 
-                        size="icon"
-                        className="absolute top-1 right-1 h-6 w-6"
-                        onClick={() => handleRemoveDocument(documents.find(doc => doc.type === 'aadharCard')?.id || '')}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                      {documents.find(doc => doc.type === 'aadharCard')?.verified && (
-                        <div className="absolute bottom-1 right-1 bg-green-500 text-white px-2 py-0.5 rounded-md text-xs">
-                          Verified
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <label className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg h-32 cursor-pointer hover:bg-muted/50">
-                      <div className="flex flex-col items-center p-4">
-                        <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                        <span className="text-sm text-center text-muted-foreground">
-                          Click to upload Aadhar Card
-                        </span>
-                      </div>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={e => handleDocumentUpload(e, 'aadharCard')}
-                      />
-                    </label>
-                  )}
+                  {renderDocumentCard('aadharCard', 'Aadhar Card')}
                 </div>
 
-                {/* Driving License Upload */}
                 <div className="border rounded-lg p-4 space-y-3">
                   <h3 className="font-medium">Driving License</h3>
-                  {documents.find(doc => doc.type === 'drivingLicense') ? (
-                    <div className="relative">
-                      <img 
-                        src={documents.find(doc => doc.type === 'drivingLicense')?.url} 
-                        alt="Driving License" 
-                        className="w-full h-32 object-cover rounded-md"
-                      />
-                      <Button 
-                        variant="destructive" 
-                        size="icon"
-                        className="absolute top-1 right-1 h-6 w-6"
-                        onClick={() => handleRemoveDocument(documents.find(doc => doc.type === 'drivingLicense')?.id || '')}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                      {documents.find(doc => doc.type === 'drivingLicense')?.verified && (
-                        <div className="absolute bottom-1 right-1 bg-green-500 text-white px-2 py-0.5 rounded-md text-xs">
-                          Verified
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <label className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg h-32 cursor-pointer hover:bg-muted/50">
-                      <div className="flex flex-col items-center p-4">
-                        <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                        <span className="text-sm text-center text-muted-foreground">
-                          Click to upload Driving License
-                        </span>
-                      </div>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={e => handleDocumentUpload(e, 'drivingLicense')}
-                      />
-                    </label>
-                  )}
+                  {renderDocumentCard('drivingLicense', 'Driving License')}
                 </div>
 
-                {/* Other Documents Upload */}
                 <div className="border rounded-lg p-4 space-y-3">
                   <h3 className="font-medium">Other Document</h3>
-                  {documents.find(doc => doc.type === 'otherDocument') ? (
-                    <div className="relative">
-                      <img 
-                        src={documents.find(doc => doc.type === 'otherDocument')?.url} 
-                        alt="Other Document" 
-                        className="w-full h-32 object-cover rounded-md"
-                      />
-                      <Button 
-                        variant="destructive" 
-                        size="icon"
-                        className="absolute top-1 right-1 h-6 w-6"
-                        onClick={() => handleRemoveDocument(documents.find(doc => doc.type === 'otherDocument')?.id || '')}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                      {documents.find(doc => doc.type === 'otherDocument')?.verified && (
-                        <div className="absolute bottom-1 right-1 bg-green-500 text-white px-2 py-0.5 rounded-md text-xs">
-                          Verified
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <label className="flex flex-col items-center justify-center border-2 border-dashed rounded-lg h-32 cursor-pointer hover:bg-muted/50">
-                      <div className="flex flex-col items-center p-4">
-                        <FileText className="h-8 w-8 text-muted-foreground mb-2" />
-                        <span className="text-sm text-center text-muted-foreground">
-                          Click to upload Other Document
-                        </span>
-                      </div>
-                      <input
-                        type="file"
-                        accept="image/*,.pdf"
-                        className="hidden"
-                        onChange={e => handleDocumentUpload(e, 'otherDocument')}
-                      />
-                    </label>
-                  )}
+                  {renderDocumentCard('otherDocument', 'Other Document')}
                 </div>
               </div>
             </CardContent>

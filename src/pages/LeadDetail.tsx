@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, Lead, getLeadById, getUserById, getBankById, Document } from '@/utils/mockData';
+import { User, Lead, getUserById, getBankById, Document, Photo, getLeadById, dateToString } from '@/utils/mockData';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
 import LeadReview from '@/components/dashboard/LeadReview';
@@ -87,7 +87,7 @@ const LeadDetail = () => {
       const currentDate = new Date();
       updatedLead.verification = {
         ...updatedLead.verification,
-        startTime: currentDate,
+        startTime: dateToString(currentDate),
         status: 'In Progress'
       };
       updatedLead.status = 'In Progress';
@@ -122,7 +122,7 @@ const LeadDetail = () => {
       const currentDate = new Date();
       updatedLead.verification = {
         ...updatedLead.verification,
-        arrivalTime: currentDate,
+        arrivalTime: dateToString(currentDate),
       };
       setLead(updatedLead);
       
@@ -147,13 +147,12 @@ const LeadDetail = () => {
   const handleUploadPhoto = (files: FileList) => {
     if (lead && lead.verification) {
       const updatedLead = { ...lead };
-      const newPhotos: Document[] = Array.from(files).map((file, index) => ({
+      const newPhotos: Photo[] = Array.from(files).map((file, index) => ({
         id: `newphoto${Date.now()}${index}`,
         name: file.name,
-        type: 'Photo',
-        uploadedBy: 'agent',
+        caption: file.name, // Set caption to file name for Photo type compatibility
         url: '/placeholder.svg', // In a real app, we would upload to storage
-        uploadDate: new Date()
+        uploadDate: dateToString(new Date())
       }));
       
       updatedLead.verification = {
@@ -189,7 +188,8 @@ const LeadDetail = () => {
         name: file.name,
         type,
         url: '/placeholder.svg', // In a real app, we would upload to storage
-        uploadDate: new Date()
+        uploadDate: new Date(),
+        verified: false
       }));
       
       updatedLead.verification = {
@@ -245,7 +245,7 @@ const LeadDetail = () => {
       const currentDate = new Date();
       updatedLead.verification = {
         ...updatedLead.verification,
-        completionTime: currentDate,
+        completionTime: dateToString(currentDate),
         status: 'Completed'
       };
       updatedLead.status = 'Completed';
@@ -278,7 +278,7 @@ const LeadDetail = () => {
         ...updatedLead.verification,
         adminRemarks: remarks,
         reviewedBy: currentUser.id,
-        reviewedAt: currentDate,
+        reviewedAt: dateToString(currentDate),
         status: 'Completed'
       };
       
@@ -310,7 +310,7 @@ const LeadDetail = () => {
         ...updatedLead.verification,
         adminRemarks: remarks,
         reviewedBy: currentUser.id,
-        reviewedAt: currentDate,
+        reviewedAt: dateToString(currentDate),
         status: 'Rejected'
       };
       updatedLead.status = 'Rejected';

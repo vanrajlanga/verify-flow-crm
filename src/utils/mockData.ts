@@ -7,7 +7,7 @@ export interface Address {
   city: string;
   district: string;
   state: string;
-  postalCode: string;  // Note: Changed from pincode to postalCode to match type definition
+  postalCode: string;
   coordinates?: {
     lat: number;
     lng: number;
@@ -21,6 +21,7 @@ export interface AdditionalDetails {
     yearsEmployed?: number;
     monthlySalary?: number;
     workExperience?: string;
+    company?: string;
   };
   propertyDetails?: {
     propertyType?: string;
@@ -40,7 +41,7 @@ export interface AdditionalDetails {
     city: string;
     district: string;
     state: string;
-    postalCode: string;  // Note: Changed from pincode to postalCode
+    postalCode: string;
   }[];
 }
 
@@ -49,28 +50,32 @@ export interface Document {
   type: string;
   name: string;
   url: string;
-  uploadDate?: Date;
+  uploadDate?: Date | string;
   uploadedBy?: 'agent' | 'bank' | 'admin';
+  verified?: boolean;
 }
 
 export interface Photo {
   id: string;
   caption: string;
   url: string;
+  name?: string;
+  uploadDate?: Date | string;
 }
 
 export interface VerificationData {
   id: string;
   agentId: string;
-  status: 'In Progress' | 'Completed' | 'Rejected' | 'Not Started';
+  leadId?: string;
+  status: 'In Progress' | 'Completed' | 'Rejected' | 'Not Started' | 'Pending';
   startTime?: string;
   completionTime?: string;
-  arrivalTime?: string; 
+  arrivalTime?: string | Date;
   documents?: Document[];
   photos?: Photo[];
   notes?: string;
   reviewedBy?: string;
-  reviewedAt?: string;
+  reviewedAt?: string | Date;
   reviewNotes?: string;
   location?: {
     latitude: number;
@@ -89,7 +94,7 @@ export interface Lead {
   additionalDetails: AdditionalDetails;
   status: 'Pending' | 'In Progress' | 'Completed' | 'Rejected' | 'Not Started';
   bank: string;
-  visitType: 'Office' | 'Residence' | 'Both';  // Changed 'Home' to 'Residence' to match type definition
+  visitType: 'Office' | 'Residence' | 'Both' | 'Home';
   assignedTo: string;
   verificationDate?: Date | string;
   createdAt: Date | string;
@@ -102,7 +107,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  password: string; // Make sure this is included as it's required by type
+  password: string;
   phone?: string;
   role: 'admin' | 'agent';
   district?: string;
@@ -112,16 +117,19 @@ export interface User {
   completionRate?: number;
   profilePicture?: string;
   kycDocuments?: Document[];
+  baseLocation?: string;
+  maxTravelDistance?: number;
+  extraChargePerKm?: number;
 }
 
 export interface Bank {
   id: string;
   name: string;
-  headOffice: string; // Required by type
-  pointOfContact: string; // Required by type
-  email: string; // Required by type
-  phone: string; // Required by type
-  totalApplications?: number; // Added this as it's used in code
+  headOffice: string;
+  pointOfContact: string;
+  email: string;
+  phone: string;
+  totalApplications?: number;
 }
 
 // Mock data and helper functions
@@ -681,7 +689,7 @@ export const mockLeads: Lead[] = [
       }
     ],
     instructions: 'Verify professional license and address details.',
-     verification: {
+    verification: {
       id: 'v6',
       agentId: 'u7',
       status: 'In Progress',
@@ -739,6 +747,10 @@ export const mockBanks: Bank[] = [
   }
 ];
 
+export const getLeadById = (leadId: string): Lead | undefined => {
+  return mockLeads.find(lead => lead.id === leadId);
+};
+
 export const getLeadsByAgentId = (agentId: string): Lead[] => {
   return mockLeads.filter(lead => lead.assignedTo === agentId);
 };
@@ -759,7 +771,8 @@ export const getAgentPerformance = () => {
       id: agent.id,
       name: agent.name,
       totalVerifications: agent.totalVerifications || 0,
-      completionRate: agent.completionRate || 0
+      completionRate: agent.completionRate || 0,
+      district: agent.district
     }));
 };
 
@@ -775,4 +788,17 @@ export const getBankById = (bankId: string): Bank | undefined => {
 
 export const getUserById = (userId: string): User | undefined => {
   return mockUsers.find(user => user.id === userId);
+};
+
+// Helper to convert Date objects to strings for consistency
+export const dateToString = (date: Date | string): string => {
+  if (typeof date === 'string') return date;
+  return format(date, 'yyyy-MM-dd HH:mm:ss');
+};
+
+// Helper to ensure dates can be compared regardless of type
+export const compareDates = (dateA: Date | string, dateB: Date | string): number => {
+  const dateObjA = typeof dateA === 'string' ? new Date(dateA) : dateA;
+  const dateObjB = typeof dateB === 'string' ? new Date(dateB) : dateB;
+  return dateObjA.getTime() - dateObjB.getTime();
 };
