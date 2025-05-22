@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { User } from '@/utils/mockData';
 import { Button } from "@/components/ui/button";
@@ -32,8 +31,8 @@ const EditAgentForm = ({ agent, onUpdate, onClose, locationData }: EditAgentForm
   const [city, setCity] = useState(agent.city || "");
   const [password, setPassword] = useState("");
   const [baseLocation, setBaseLocation] = useState(agent.baseLocation || "");
-  const [maxTravelDistance, setMaxTravelDistance] = useState(agent.maxTravelDistance || "10");
-  const [extraChargePerKm, setExtraChargePerKm] = useState(agent.extraChargePerKm || "5");
+  const [maxTravelDistance, setMaxTravelDistance] = useState(agent.maxTravelDistance?.toString() || "10");
+  const [extraChargePerKm, setExtraChargePerKm] = useState(agent.extraChargePerKm?.toString() || "5");
   
   // Find the district options for the selected state
   const availableDistricts = locationData.states.find((s: any) => s.name === state)?.districts || [];

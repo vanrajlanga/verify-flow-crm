@@ -1,4 +1,3 @@
-
 // Types
 export interface User {
   id: string;
@@ -9,6 +8,10 @@ export interface User {
   state?: string;
   city?: string;
   password?: string;
+  phone?: string;
+  baseLocation?: string;
+  maxTravelDistance?: number;
+  extraChargePerKm?: number;
   totalVerifications?: number;
   completionRate?: number;
 }
@@ -25,6 +28,25 @@ export interface Lead {
     state: string;
     pincode: string;
   };
+  additionalDetails?: {
+    company?: string;
+    designation?: string;
+    workExperience?: string;
+    propertyType?: string;
+    ownershipStatus?: string;
+    propertyAge?: string;
+    monthlyIncome?: string;
+    annualIncome?: string;
+    otherIncome?: string;
+    addresses?: Array<{
+      type: string;
+      street: string;
+      city: string;
+      district: string;
+      state: string;
+      pincode: string;
+    }>;
+  };
   visitType: 'Home' | 'Office' | 'Both';
   status: 'Pending' | 'In Progress' | 'Completed' | 'Rejected';
   assignedTo: string;
@@ -32,7 +54,8 @@ export interface Lead {
   documents: Document[];
   instructions?: string;
   verification?: Verification;
-  createdAt: Date; // Added createdAt property to match usage in AddLeadForm
+  createdAt: Date;
+  verificationDate?: Date;
 }
 
 export interface Document {
@@ -77,6 +100,7 @@ export const mockUsers: User[] = [
     name: 'Admin User',
     email: 'admin@bankkyc.com',
     role: 'admin',
+    phone: '+91 9876543210',
     totalVerifications: 0,
     completionRate: 0
   },
@@ -86,6 +110,10 @@ export const mockUsers: User[] = [
     email: 'agent.delhi@bankkyc.com',
     role: 'agent',
     district: 'Delhi',
+    phone: '+91 9876543211',
+    baseLocation: 'Central Delhi, New Delhi',
+    maxTravelDistance: 15,
+    extraChargePerKm: 10,
     totalVerifications: 45,
     completionRate: 92
   },
@@ -95,6 +123,10 @@ export const mockUsers: User[] = [
     email: 'agent.mumbai@bankkyc.com',
     role: 'agent',
     district: 'Mumbai',
+    phone: '+91 9876543212',
+    baseLocation: 'Andheri, Mumbai',
+    maxTravelDistance: 20,
+    extraChargePerKm: 8,
     totalVerifications: 38,
     completionRate: 89
   },
@@ -104,6 +136,10 @@ export const mockUsers: User[] = [
     email: 'agent.bangalore@bankkyc.com',
     role: 'agent',
     district: 'Bangalore',
+    phone: '+91 9876543213',
+    baseLocation: 'Koramangala, Bangalore',
+    maxTravelDistance: 12,
+    extraChargePerKm: 12,
     totalVerifications: 52,
     completionRate: 95
   }
