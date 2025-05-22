@@ -8,6 +8,7 @@ import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
 import LeadList from '@/components/dashboard/LeadList';
 import { toast } from '@/components/ui/use-toast';
+import CheckInOut from '@/components/agent/CheckInOut';
 
 const AgentLeads = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -30,6 +31,9 @@ const AgentLeads = () => {
     }
 
     setCurrentUser(parsedUser);
+    
+    // Check if agent is on leave for today
+    checkAgentLeaveStatus(parsedUser.id);
     
     // Fetch leads for the agent
     try {
@@ -124,6 +128,35 @@ const AgentLeads = () => {
       localStorage.setItem('mockLeads', JSON.stringify([...agentLeads]));
     }
   }, [navigate]);
+  
+  const checkAgentLeaveStatus = (agentId: string) => {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Check if agent is on leave
+    const storedLeaves = localStorage.getItem('agentLeaves');
+    if (storedLeaves) {
+      try {
+        const allLeaves = JSON.parse(storedLeaves);
+        const activeLeave = allLeaves.find(
+          (leave: any) => 
+            leave.agentId === agentId && 
+            leave.status === 'Approved' &&
+            new Date(leave.fromDate).toISOString().split('T')[0] <= today &&
+            new Date(leave.toDate).toISOString().split('T')[0] >= today
+        );
+        
+        if (activeLeave) {
+          toast({
+            title: "On Leave Today",
+            description: "You are on approved leave today. No new tasks will be assigned.",
+            variant: "destructive", // Using destructive for visual prominence
+          });
+        }
+      } catch (error) {
+        console.error("Error checking leave status:", error);
+      }
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('kycUser');
@@ -155,6 +188,8 @@ const AgentLeads = () => {
                 </p>
               </div>
             </div>
+            
+            <CheckInOut user={currentUser} />
             
             <Card>
               <CardHeader>

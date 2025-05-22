@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -40,6 +39,7 @@ import {
 } from "@/components/ui/dialog";
 import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
 import { useForm } from "react-hook-form";
+import { isWithinInterval, parseISO } from "date-fns";
 
 interface LeadListProps {
   leads: Lead[];
@@ -66,6 +66,34 @@ const LeadList = ({
   
   const navigate = useNavigate();
 
+  // Check if an agent is on leave for a specific date
+  const isAgentOnLeave = (agentId: string, date?: Date) => {
+    const checkDate = date || new Date();
+    const storedLeaves = localStorage.getItem('agentLeaves');
+    
+    if (storedLeaves) {
+      try {
+        const allLeaves = JSON.parse(storedLeaves);
+        return allLeaves.some(
+          (leave: any) => 
+            leave.agentId === agentId && 
+            leave.status === 'Approved' &&
+            isWithinInterval(checkDate, {
+              start: parseISO(leave.fromDate),
+              end: parseISO(leave.toDate)
+            })
+        );
+      } catch (error) {
+        console.error("Error checking leave status:", error);
+        return false;
+      }
+    }
+    return false;
+  };
+  
+  // Filter out agents who are on leave
+  const availableAgentsNotOnLeave = availableAgents.filter(agent => !isAgentOnLeave(agent.id));
+  
   const filteredLeads = leads.filter(lead => {
     const matchesSearch = lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           lead.address.district.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -127,12 +155,37 @@ const LeadList = ({
     
     const updatedLead = {
       ...selectedLead,
-      assignedTo: newAgentId,
-      verification: {
-        ...selectedLead.verification,
-        agentId: newAgentId
-      }
+      assignedTo: newAgentId
     };
+
+    // Make sure the verification object has the correct agentId
+    if (updatedLead.verification) {
+      updatedLead.verification.agentId = newAgentId;
+    } else {
+      updatedLead.verification = {
+        id: `verification-${updatedLead.id}`,
+        leadId: updatedLead.id,
+        status: "Not Started" as "Not Started" | "In Progress" | "Completed" | "Rejected",
+        agentId: newAgentId,
+        photos: [],
+        documents: [],
+        notes: ""
+      };
+    }
+    
+    // Update in localStorage directly to fix the persistence issue
+    const storedLeads = localStorage.getItem('mockLeads');
+    if (storedLeads) {
+      try {
+        const allLeads = JSON.parse(storedLeads);
+        const updatedLeads = allLeads.map((lead: Lead) => 
+          lead.id === updatedLead.id ? updatedLead : lead
+        );
+        localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+      } catch (error) {
+        console.error("Error updating leads in localStorage:", error);
+      }
+    }
     
     onUpdate(updatedLead);
     setIsReassignDialogOpen(false);
@@ -315,11 +368,21 @@ const LeadList = ({
                   <SelectValue placeholder="Select an agent" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableAgents.map((agent) => (
+                  {availableAgentsNotOnLeave.length === 0 && (
+                    <div className="py-2 px-2 text-sm text-muted-foreground">
+                      No available agents found
+                    </div>
+                  )}
+                  {availableAgentsNotOnLeave.map((agent) => (
                     <SelectItem key={agent.id} value={agent.id}>
                       {agent.name} ({agent.district || 'No district assigned'})
                     </SelectItem>
                   ))}
+                  {availableAgents.length > availableAgentsNotOnLeave.length && (
+                    <div className="py-2 px-2 text-sm text-muted-foreground border-t">
+                      Some agents are not shown because they are on leave
+                    </div>
+                  )}
                 </SelectContent>
               </Select>
             </div>

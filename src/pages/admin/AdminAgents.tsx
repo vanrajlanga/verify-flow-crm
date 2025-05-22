@@ -30,6 +30,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import AgentDocuments from '@/components/agent/AgentDocuments';
+import LeaveManagementAdmin from '@/components/admin/LeaveManagementAdmin';
+import AttendanceReports from '@/components/admin/AttendanceReports';
 
 const AdminAgents = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -411,6 +414,8 @@ const AdminAgents = () => {
               <TabsList>
                 <TabsTrigger value="agents">Agents</TabsTrigger>
                 <TabsTrigger value="locations">Locations</TabsTrigger>
+                <TabsTrigger value="attendance">Attendance</TabsTrigger>
+                <TabsTrigger value="leaves">Leave Requests</TabsTrigger>
               </TabsList>
               <TabsContent value="agents" className="mt-4">
                 <Card>
@@ -502,6 +507,12 @@ const AdminAgents = () => {
                   setLocationData={handleLocationDataChange}
                 />
               </TabsContent>
+              <TabsContent value="attendance" className="mt-4">
+                <AttendanceReports />
+              </TabsContent>
+              <TabsContent value="leaves" className="mt-4">
+                <LeaveManagementAdmin />
+              </TabsContent>
             </Tabs>
           </div>
         </main>
@@ -509,7 +520,7 @@ const AdminAgents = () => {
       
       {/* Edit Agent Dialog */}
       <Dialog open={!!editingAgent} onOpenChange={(open) => !open && setEditingAgent(null)}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Edit Agent</DialogTitle>
             <DialogDescription>

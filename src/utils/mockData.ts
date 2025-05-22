@@ -3,17 +3,24 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'agent';
-  district?: string;
-  state?: string;
-  city?: string;
   password?: string;
-  phone?: string;
+  role: 'agent' | 'admin';
+  state?: string;
+  district?: string;
+  city?: string;
+  totalVerifications?: number;
+  completionRate?: number;
   baseLocation?: string;
   maxTravelDistance?: number;
   extraChargePerKm?: number;
-  totalVerifications?: number;
-  completionRate?: number;
+  profilePicture?: string;
+  documents?: {
+    id: string;
+    type: string;
+    filename: string;
+    url: string;
+    uploadDate: string;
+  }[];
 }
 
 export interface Lead {
@@ -21,53 +28,47 @@ export interface Lead {
   name: string;
   age: number;
   job: string;
-  address: {
+  address: Address;
+  additionalDetails: AdditionalDetails;
+  status: 'Pending' | 'In Progress' | 'Completed' | 'Rejected';
+  bank: string;
+  visitType: 'Office' | 'Residence' | 'Both';
+  assignedTo: string;
+  createdAt: Date;
+  documents?: string[];
+  instructions?: string;
+  verification: VerificationData;
+}
+
+export interface Address {
+  street: string;
+  city: string;
+  district: string;
+  state: string;
+  pincode: string;
+}
+
+export interface AdditionalDetails {
+  company?: string;
+  designation?: string;
+  workExperience?: string;
+  propertyType?: string;
+  ownershipStatus?: string;
+  propertyAge?: string;
+  monthlyIncome?: string;
+  annualIncome?: string;
+  otherIncome?: string;
+  addresses?: Array<{
+    type: string;
     street: string;
     city: string;
     district: string;
     state: string;
     pincode: string;
-  };
-  additionalDetails?: {
-    company?: string;
-    designation?: string;
-    workExperience?: string;
-    propertyType?: string;
-    ownershipStatus?: string;
-    propertyAge?: string;
-    monthlyIncome?: string;
-    annualIncome?: string;
-    otherIncome?: string;
-    addresses?: Array<{
-      type: string;
-      street: string;
-      city: string;
-      district: string;
-      state: string;
-      pincode: string;
-    }>;
-  };
-  visitType: 'Home' | 'Office' | 'Both';
-  status: 'Pending' | 'In Progress' | 'Completed' | 'Rejected';
-  assignedTo: string;
-  bank: string;
-  documents: Document[];
-  instructions?: string;
-  verification?: Verification;
-  createdAt: Date;
-  verificationDate?: Date;
+  }>;
 }
 
-export interface Document {
-  id: string;
-  name: string;
-  type: 'PAN' | 'Aadhar' | 'Voter ID' | 'Rent Agreement' | 'Job ID' | 'Salary Slip' | 'Business License' | 'Photo' | 'Other';
-  uploadedBy: 'bank' | 'agent';
-  url: string;
-  uploadDate: Date;
-}
-
-export interface Verification {
+export interface VerificationData {
   id: string;
   leadId: string;
   agentId: string;
@@ -85,6 +86,15 @@ export interface Verification {
   adminRemarks?: string;
   reviewedBy?: string;
   reviewedAt?: Date;
+}
+
+export interface Document {
+  id: string;
+  name: string;
+  type: 'PAN' | 'Aadhar' | 'Voter ID' | 'Rent Agreement' | 'Job ID' | 'Salary Slip' | 'Business License' | 'Photo' | 'Other';
+  uploadedBy: 'bank' | 'agent';
+  url: string;
+  uploadDate: Date;
 }
 
 export interface Bank {

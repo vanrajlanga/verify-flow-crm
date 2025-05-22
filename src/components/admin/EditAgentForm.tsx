@@ -13,6 +13,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPin } from 'lucide-react';
+import AgentDocuments from '@/components/agent/AgentDocuments';
 
 interface EditAgentFormProps {
   agent: User;
@@ -99,6 +100,7 @@ const EditAgentForm = ({ agent, onUpdate, onClose, locationData }: EditAgentForm
         <TabsList className="w-full">
           <TabsTrigger value="basic" className="flex-1">Basic Info</TabsTrigger>
           <TabsTrigger value="location" className="flex-1">Location & Travel</TabsTrigger>
+          <TabsTrigger value="documents" className="flex-1">Documents & KYC</TabsTrigger>
         </TabsList>
         
         <TabsContent value="basic" className="space-y-4 pt-4">
@@ -288,6 +290,10 @@ const EditAgentForm = ({ agent, onUpdate, onClose, locationData }: EditAgentForm
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+        
+        <TabsContent value="documents" className="space-y-6 pt-4">
+          <AgentDocuments user={agent} onUpdate={onUpdate} />
         </TabsContent>
       </Tabs>
       
