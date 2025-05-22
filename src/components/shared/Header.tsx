@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -29,9 +28,7 @@ const Header = ({ user, onLogout, toggleSidebar }: HeaderProps) => {
       <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex h-16 items-center px-4 md:px-6">
         <div className="flex w-full items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <div className="bg-primary rounded-md p-1">
-              <span className="text-primary-foreground font-bold">KYC</span>
-            </div>
+            <img src="https://theeclipso.com/wp-content/uploads/2025/03/the-eclipso-black-logo.png" alt="Bank Verification CRM" className="h-8 w-auto" />
             <span className="font-bold text-lg hidden md:inline-block">Bank Verification CRM</span>
           </Link>
         </div>
@@ -53,9 +50,7 @@ const Header = ({ user, onLogout, toggleSidebar }: HeaderProps) => {
             <span className="sr-only">Toggle sidebar</span>
           </Button>
           <Link to="/" className="flex items-center gap-2">
-            <div className="bg-primary rounded-md p-1">
-              <span className="text-primary-foreground font-bold">KYC</span>
-            </div>
+            <img src="https://theeclipso.com/wp-content/uploads/2025/03/the-eclipso-black-logo.png" alt="Bank Verification CRM" className="h-8 w-auto" />
             <span className="font-bold text-lg hidden md:inline-block">Bank Verification CRM</span>
           </Link>
         </div>

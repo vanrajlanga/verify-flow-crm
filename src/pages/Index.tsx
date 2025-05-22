@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LoginForm from '@/components/auth/LoginForm';
@@ -34,9 +33,7 @@ const Index = () => {
       <header className="bg-white border-b px-8 py-4">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center space-x-2">
-            <div className="bg-primary rounded-md p-1">
-              <span className="text-primary-foreground font-bold text-sm">KYC</span>
-            </div>
+            <img src="https://theeclipso.com/wp-content/uploads/2025/03/the-eclipso-black-logo.png" alt="Bank Verification CRM" className="h-10 w-auto" />
             <h1 className="text-lg font-bold">Bank Verification CRM</h1>
           </div>
         </div>
