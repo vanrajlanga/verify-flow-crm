@@ -26,8 +26,39 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "@/components/ui/use-toast";
-import { Address, AdditionalDetails, Bank, Lead, User, mockBanks, mockUsers } from '@/utils/mockData';
-import { isWithinInterval, parseISO } from 'date-fns';
+import { Address, AdditionalDetails, Bank, Document, Lead, User, VerificationData } from '@/utils/mockData';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { MapPin, Plus, X } from 'lucide-react';
+
+interface Document {
+  id: string;
+  file: File;
+  name: string;
+}
+
+interface LocationData {
+  states: {
+    id: string;
+    name: string;
+    districts: {
+      id: string;
+      name: string;
+      cities: {
+        id: string;
+        name: string;
+      }[];
+    }[];
+  }[];
+}
+
+interface AddLeadFormProps {
+  agents: User[];
+  banks: Bank[];
+  onAddLead: (lead: Lead) => void;
+  onClose: () => void;
+  locationData: LocationData;
+}
 
 const formSchema = z.object({
   // Personal Information
@@ -94,30 +125,9 @@ const formSchema = z.object({
   instructions: z.string().optional(),
 });
 
-interface Document {
-  id: string;
-  file: File;
-  name: string;
-}
-
-interface LocationData {
-  states: {
-    id: string;
-    name: string;
-    districts: {
-      id: string;
-      name: string;
-      cities: {
-        id: string;
-        name: string;
-      }[];
-    }[];
-  }[];
-}
-
 interface AddLeadFormProps {
   agents: User[];
-  banks: { id: string; name: string }[];
+  banks: Bank[];
   onAddLead: (lead: Lead) => void;
   onClose: () => void;
   locationData: LocationData;
@@ -253,7 +263,7 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     // Create documents array from the uploaded files
-    const uploadedDocuments = documents.map(doc => ({
+    const uploadedDocuments: Document[] = documents.map(doc => ({
       id: doc.id,
       name: doc.name,
       type: 'Other' as const,
@@ -313,12 +323,21 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
       },
       status: 'Pending',
       bank: values.bank,
-      visitType: values.visitType as "Home" | "Office" | "Both",
+      visitType: values.visitType as "Office" | "Residence" | "Both",
       assignedTo: values.assignmentType === 'manual' && values.assignedTo ? values.assignedTo : '',
       verificationDate: values.verificationDate ? new Date(values.verificationDate) : undefined,
       createdAt: new Date(),
       documents: uploadedDocuments,
       instructions: values.instructions || '',
+      verification: {
+        status: 'Not Started',
+        agentId: values.assignedTo || '',
+        leadId: `lead-${Date.now()}`,
+        id: `verification-${Date.now()}`,
+        photos: [],
+        documents: [],
+        notes: ''
+      }
     };
     
     // Only add verification if assigned to an agent

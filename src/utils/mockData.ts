@@ -14,12 +14,20 @@ export interface User {
   maxTravelDistance?: number;
   extraChargePerKm?: number;
   profilePicture?: string;
+  phone?: string;
   documents?: {
     id: string;
     type: string;
     filename: string;
     url: string;
     uploadDate: string;
+  }[];
+  leaves?: {
+    id: string;
+    startDate: Date;
+    endDate: Date;
+    reason: string;
+    status: 'pending' | 'approved' | 'rejected';
   }[];
 }
 
@@ -35,7 +43,7 @@ export interface Lead {
   visitType: 'Office' | 'Residence' | 'Both';
   assignedTo: string;
   createdAt: Date;
-  documents?: string[];
+  documents?: Document[] | string[];
   instructions?: string;
   verification: VerificationData;
 }
@@ -70,7 +78,7 @@ export interface AdditionalDetails {
 
 export interface VerificationData {
   id: string;
-  leadId: string;
+  leadId?: string;
   agentId: string;
   startTime?: Date;
   arrivalTime?: Date;
@@ -455,6 +463,39 @@ export const mockLeads: Lead[] = [
     createdAt: new Date('2023-03-04')
   }
 ];
+
+// Function to update document references in mock data
+export const updateMockDataDocumentReferences = () => {
+  // Convert string document references to Document objects in mockLeads
+  mockLeads.forEach(lead => {
+    if (lead.documents && Array.isArray(lead.documents)) {
+      lead.documents = lead.documents.map(doc => {
+        if (typeof doc === 'string') {
+          // Convert string to Document object
+          return {
+            id: `doc-${Math.random().toString(36).substr(2, 9)}`,
+            name: doc,
+            type: 'Other',
+            uploadedBy: 'bank',
+            url: '/placeholder.svg',
+            uploadDate: new Date()
+          };
+        }
+        return doc;
+      });
+    }
+  });
+};
+
+// Update mock data document references
+updateMockDataDocumentReferences();
+
+// Convert "Home" to "Residence" in visitType properties
+mockLeads.forEach(lead => {
+  if (lead.visitType === 'Home') {
+    lead.visitType = 'Residence';
+  }
+});
 
 // Authentication helper functions
 export const loginUser = (email: string, password: string): User | null => {
