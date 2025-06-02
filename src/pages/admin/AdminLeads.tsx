@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -241,23 +242,26 @@ const AdminLeads = () => {
 
     const csvContent = [
       headers.join(','),
-      ...leads.map(lead => [
-        lead.additionalDetails?.agencyFileNo || '',
-        lead.name,
-        lead.additionalDetails?.phoneNumber || '',
-        lead.visitType,
-        lead.additionalDetails?.leadType || '',
-        `"${lead.address.street}, ${lead.address.city}, ${lead.address.state}"`,
-        lead.additionalDetails?.addresses?.find(addr => addr.type === 'Office') 
-          ? `"${lead.additionalDetails.addresses.find(addr => addr.type === 'Office')?.street || ''}"` 
-          : 'N/A',
-        lead.createdAt ? new Date(lead.createdAt).toLocaleDateString() : '',
-        lead.status,
-        agents.find(agent => agent.id === lead.assignedTo)?.name || 'Unassigned',
-        lead.additionalDetails?.loanAmount || 'N/A',
-        lead.additionalDetails?.vehicleBrandName || 'N/A',
-        lead.additionalDetails?.vehicleModelName || 'N/A'
-      ].join(','))
+      ...leads.map(lead => {
+        // Find office address from additional addresses
+        const officeAddress = lead.additionalDetails?.addresses?.find(addr => addr.type === 'Office');
+        
+        return [
+          lead.additionalDetails?.agencyFileNo || '',
+          lead.name,
+          lead.additionalDetails?.phoneNumber || '',
+          lead.visitType,
+          lead.additionalDetails?.leadType || '',
+          `"${lead.address.street}, ${lead.address.city}, ${lead.address.state}"`,
+          officeAddress ? `"${officeAddress.street}, ${officeAddress.city}, ${officeAddress.state}"` : 'N/A',
+          lead.createdAt ? new Date(lead.createdAt).toLocaleDateString() : '',
+          lead.status,
+          agents.find(agent => agent.id === lead.assignedTo)?.name || 'Unassigned',
+          lead.additionalDetails?.loanAmount || 'N/A',
+          lead.additionalDetails?.vehicleBrandName || 'N/A',
+          lead.additionalDetails?.vehicleModelName || 'N/A'
+        ].join(',');
+      })
     ].join('\n');
 
     // Download file
