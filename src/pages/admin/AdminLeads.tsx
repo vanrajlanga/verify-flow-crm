@@ -195,6 +195,163 @@ const AdminLeads = () => {
     });
   };
 
+  const handleBulkDelete = (leadIds: string[]) => {
+    const updatedLeads = leads.filter(lead => !leadIds.includes(lead.id));
+    setLeads(updatedLeads);
+    localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+
+    toast({
+      title: "Leads deleted",
+      description: `${leadIds.length} leads have been removed.`,
+    });
+  };
+
+  const handleAssignLead = (leadId: string, agentId: string) => {
+    const updatedLeads = leads.map(lead => {
+      if (lead.id === leadId) {
+        return {
+          ...lead,
+          assignedTo: agentId,
+          verification: {
+            ...lead.verification,
+            agentId: agentId,
+            status: 'Not Started'
+          }
+        } as Lead;
+      }
+      return lead;
+    });
+    
+    setLeads(updatedLeads);
+    localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+
+    toast({
+      title: "Lead assigned",
+      description: "Lead has been assigned to the selected agent.",
+    });
+  };
+
+  const handleExport = (format: 'csv' | 'xls') => {
+    // Create CSV content
+    const headers = [
+      'Agency File No', 'Customer Name', 'Phone', 'Address Type', 'Product Type',
+      'Residence Address', 'Office Address', 'FI Date', 'Status', 'Assigned Agent',
+      'Loan Amount', 'Asset Make', 'Asset Model'
+    ];
+
+    const csvContent = [
+      headers.join(','),
+      ...leads.map(lead => [
+        lead.additionalDetails?.agencyFileNo || '',
+        lead.name,
+        lead.additionalDetails?.phoneNumber || '',
+        lead.visitType,
+        lead.additionalDetails?.leadType || '',
+        `"${lead.address.street}, ${lead.address.city}, ${lead.address.state}"`,
+        lead.additionalDetails?.addresses?.find(addr => addr.type === 'Office') 
+          ? `"${lead.additionalDetails.addresses.find(addr => addr.type === 'Office')?.street || ''}"` 
+          : 'N/A',
+        lead.createdAt ? new Date(lead.createdAt).toLocaleDateString() : '',
+        lead.status,
+        agents.find(agent => agent.id === lead.assignedTo)?.name || 'Unassigned',
+        lead.additionalDetails?.loanAmount || 'N/A',
+        lead.additionalDetails?.vehicleBrandName || 'N/A',
+        lead.additionalDetails?.vehicleModelName || 'N/A'
+      ].join(','))
+    ].join('\n');
+
+    // Download file
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `leads_export_${new Date().toISOString().split('T')[0]}.${format}`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  };
+
+  const handleImport = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const lines = content.split('\n');
+        const headers = lines[0].split(',');
+        
+        // Parse CSV and create leads (simplified implementation)
+        const importedLeads: Lead[] = [];
+        
+        for (let i = 1; i < lines.length; i++) {
+          const values = lines[i].split(',');
+          if (values.length >= 3 && values[1].trim()) { // At least name is required
+            const newLead: Lead = {
+              id: `imported-lead-${Date.now()}-${i}`,
+              name: values[1].trim(),
+              age: 30, // Default age
+              job: values[3] || 'Not specified',
+              address: {
+                street: values[5] || '',
+                city: 'Not specified',
+                district: 'Not specified',
+                state: 'Not specified',
+                pincode: '000000'
+              },
+              additionalDetails: {
+                agencyFileNo: values[0] || '',
+                phoneNumber: values[2] || '',
+                company: '',
+                designation: '',
+                workExperience: '',
+                propertyType: '',
+                ownershipStatus: '',
+                propertyAge: '',
+                monthlyIncome: '',
+                annualIncome: '',
+                otherIncome: '',
+                addresses: []
+              },
+              status: 'Pending',
+              bank: 'bank-1', // Default bank
+              visitType: 'Residence',
+              assignedTo: '',
+              createdAt: new Date(),
+              documents: [],
+              instructions: ''
+            };
+            importedLeads.push(newLead);
+          }
+        }
+        
+        if (importedLeads.length > 0) {
+          const updatedLeads = [...leads, ...importedLeads];
+          setLeads(updatedLeads);
+          localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+          
+          toast({
+            title: "Import successful",
+            description: `${importedLeads.length} leads have been imported.`,
+          });
+        } else {
+          toast({
+            title: "Import failed",
+            description: "No valid leads found in the file.",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        console.error('Import error:', error);
+        toast({
+          title: "Import failed",
+          description: "Error reading the file. Please check the format.",
+          variant: "destructive",
+        });
+      }
+    };
+    reader.readAsText(file);
+  };
+
   const handleUpdateLocationData = (newLocationData: LocationData) => {
     setLocationData(newLocationData);
     localStorage.setItem('locationData', JSON.stringify(newLocationData));
@@ -274,12 +431,15 @@ const AdminLeads = () => {
                   currentUser={currentUser}
                   isAdmin={true}
                   onUpdate={(lead) => {
-                    // Fix: Adapter function to match expected signature
                     if (lead && lead.id && lead.status) {
                       handleUpdateLead(lead.id, lead.status);
                     }
                   }}
                   onDelete={handleDeleteLead}
+                  onBulkDelete={handleBulkDelete}
+                  onAssignLead={handleAssignLead}
+                  onExport={handleExport}
+                  onImport={handleImport}
                   availableAgents={agents}
                 />
               </CardContent>

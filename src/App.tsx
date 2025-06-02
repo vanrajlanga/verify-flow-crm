@@ -55,6 +55,9 @@ const App = () => {
             <Route path="/admin/banks" element={<AdminBanks />} />
             <Route path="/admin/settings" element={<AdminSettings />} />
             
+            {/* Generic lead detail route for both admin and agent */}
+            <Route path="/lead/:leadId" element={<LeadDetail />} />
+            
             {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />
           </Routes>
