@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   name: string;
@@ -84,6 +83,7 @@ export interface VerificationPhoto {
 export interface VerificationDocument {
   id: string;
   name: string;
+  type: string;
   url: string;
   uploadDate: Date;
 }

@@ -176,6 +176,8 @@ const AdminAgents = () => {
       name: newAgent.name,
       email: newAgent.email,
       role: 'agent',
+      phone: '+91 0000000000', // Default phone number
+      status: 'Active',
       state: newAgent.state,
       district: newAgent.district,
       city: newAgent.city,
