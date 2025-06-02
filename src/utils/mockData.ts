@@ -7,6 +7,24 @@ export interface User {
   phone: string;
   district: string;
   status: 'Active' | 'Inactive';
+  state?: string;
+  city?: string;
+  baseLocation?: string;
+  maxTravelDistance?: number;
+  extraChargePerKm?: number;
+  profilePicture?: string;
+  documents?: UserDocument[];
+  totalVerifications?: number;
+  completionRate?: number;
+  password?: string;
+}
+
+export interface UserDocument {
+  id: string;
+  type: string;
+  filename: string;
+  url: string;
+  uploadDate: string;
 }
 
 export interface Address {
@@ -56,16 +74,35 @@ export interface Document {
   uploadDate: Date;
 }
 
+export interface VerificationPhoto {
+  id: string;
+  name: string;
+  url: string;
+  uploadDate: Date;
+}
+
+export interface VerificationDocument {
+  id: string;
+  name: string;
+  url: string;
+  uploadDate: Date;
+}
+
 export interface VerificationData {
   id: string;
   leadId: string;
   status: 'Not Started' | 'In Progress' | 'Completed' | 'Rejected';
   agentId: string;
-  photos: string[];
-  documents: Document[];
+  photos: VerificationPhoto[];
+  documents: VerificationDocument[];
   notes?: string;
   startTime?: Date;
   endTime?: Date;
+  arrivalTime?: Date;
+  completionTime?: Date;
+  reviewedAt?: Date;
+  reviewedBy?: string;
+  adminRemarks?: string;
   location?: {
     latitude: number;
     longitude: number;
@@ -105,7 +142,8 @@ export const mockUsers: User[] = [
     email: 'admin@kycverification.com',
     phone: '+91 98765 43210',
     district: '',
-    status: 'Active'
+    status: 'Active',
+    password: 'password'
   },
   {
     id: 'agent-1',
@@ -114,7 +152,15 @@ export const mockUsers: User[] = [
     email: 'rajesh@kycverification.com',
     phone: '+91 98765 43211',
     district: 'Bangalore Urban',
-    status: 'Active'
+    status: 'Active',
+    state: 'Karnataka',
+    city: 'Bangalore',
+    baseLocation: 'HSR Layout, Bangalore',
+    maxTravelDistance: 25,
+    extraChargePerKm: 10,
+    totalVerifications: 45,
+    completionRate: 92,
+    password: 'password'
   },
   {
     id: 'agent-2',
@@ -123,7 +169,15 @@ export const mockUsers: User[] = [
     email: 'priya@kycverification.com',
     phone: '+91 98765 43212',
     district: 'Mumbai',
-    status: 'Active'
+    status: 'Active',
+    state: 'Maharashtra',
+    city: 'Mumbai',
+    baseLocation: 'Andheri West, Mumbai',
+    maxTravelDistance: 20,
+    extraChargePerKm: 12,
+    totalVerifications: 38,
+    completionRate: 87,
+    password: 'password'
   },
   {
     id: 'agent-3',
@@ -132,7 +186,15 @@ export const mockUsers: User[] = [
     email: 'amit@kycverification.com',
     phone: '+91 98765 43213',
     district: 'Bangalore Urban',
-    status: 'Active'
+    status: 'Active',
+    state: 'Karnataka',
+    city: 'Bangalore',
+    baseLocation: 'Koramangala, Bangalore',
+    maxTravelDistance: 30,
+    extraChargePerKm: 8,
+    totalVerifications: 52,
+    completionRate: 95,
+    password: 'password'
   }
 ];
 
@@ -274,6 +336,24 @@ export const mockBanks: Bank[] = [
   { id: 'bank-4', name: 'Axis Bank', totalApplications: 87 },
   { id: 'bank-5', name: 'Punjab National Bank', totalApplications: 76 }
 ];
+
+// Utility functions
+export const loginUser = (email: string, password: string): User | null => {
+  const user = mockUsers.find(u => u.email === email && u.password === password);
+  return user || null;
+};
+
+export const getUserById = (id: string): User | undefined => {
+  return mockUsers.find(user => user.id === id);
+};
+
+export const getBankById = (id: string): Bank | undefined => {
+  return mockBanks.find(bank => bank.id === id);
+};
+
+export const getLeadById = (id: string): Lead | undefined => {
+  return mockLeads.find(lead => lead.id === id);
+};
 
 export const getLeadsByAgentId = (agentId: string): Lead[] => {
   return mockLeads.filter(lead => lead.assignedTo === agentId);
