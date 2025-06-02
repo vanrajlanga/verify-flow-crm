@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
@@ -31,6 +30,9 @@ import { Address, AdditionalDetails, Bank, Document as MockDocument, Lead, User,
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { MapPin, Plus, X } from 'lucide-react';
+import { LeadType } from './LeadTypeManager';
+import { BankBranch } from './BankBranchManager';
+import { VehicleBrand, VehicleModel } from './VehicleManager';
 
 // Rename the local Document interface to UploadDocument to avoid conflict
 interface UploadDocument {
@@ -63,13 +65,25 @@ interface AddLeadFormProps {
 }
 
 const formSchema = z.object({
+  // Lead Type and Basic Info
+  leadType: z.string().min(1, { message: "Please select a lead type." }),
+  agencyFileNo: z.string().min(1, { message: "Agency File No. is required." }),
+  applicationBarcode: z.string().optional(),
+  caseId: z.string().optional(),
+  schemeDesc: z.string().optional(),
+  bankBranch: z.string().min(1, { message: "Please select a bank branch." }),
+  additionalComments: z.string().optional(),
+  loanAmount: z.string().optional(),
+  vehicleBrand: z.string().optional(),
+  vehicleModel: z.string().optional(),
+  
   // Personal Information
-  name: z.string().min(2, {
-    message: "Name must be at least 2 characters.",
-  }),
+  name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   age: z.string().refine((val) => !isNaN(parseInt(val)) && parseInt(val) > 0, {
     message: "Age must be a positive number.",
   }),
+  phoneNumber: z.string().min(10, { message: "Phone number must be at least 10 digits." }),
+  dateOfBirth: z.string().min(1, { message: "Date of birth is required." }),
   
   // Job Details
   job: z.string().min(2, {
@@ -127,19 +141,17 @@ const formSchema = z.object({
   instructions: z.string().optional(),
 });
 
-interface AddLeadFormProps {
-  agents: User[];
-  banks: Bank[];
-  onAddLead: (lead: Lead) => void;
-  onClose: () => void;
-  locationData: LocationData;
-}
-
 const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLeadFormProps) => {
   const [documents, setDocuments] = useState<UploadDocument[]>([]);
   const [documentName, setDocumentName] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [activeTab, setActiveTab] = useState("personal");
+  const [activeTab, setActiveTab] = useState("lead-type");
+  
+  // State for master data
+  const [leadTypes, setLeadTypes] = useState<LeadType[]>([]);
+  const [bankBranches, setBankBranches] = useState<BankBranch[]>([]);
+  const [vehicleBrands, setVehicleBrands] = useState<VehicleBrand[]>([]);
+  const [vehicleModels, setVehicleModels] = useState<VehicleModel[]>([]);
   
   // Add Google Maps script
   useEffect(() => {
@@ -155,11 +167,49 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
     }
   }, []);
   
+  // Load master data
+  useEffect(() => {
+    // Load lead types
+    const storedLeadTypes = localStorage.getItem('leadTypes');
+    if (storedLeadTypes) {
+      setLeadTypes(JSON.parse(storedLeadTypes));
+    }
+
+    // Load bank branches
+    const storedBranches = localStorage.getItem('bankBranches');
+    if (storedBranches) {
+      setBankBranches(JSON.parse(storedBranches));
+    }
+
+    // Load vehicle data
+    const storedBrands = localStorage.getItem('vehicleBrands');
+    if (storedBrands) {
+      setVehicleBrands(JSON.parse(storedBrands));
+    }
+
+    const storedModels = localStorage.getItem('vehicleModels');
+    if (storedModels) {
+      setVehicleModels(JSON.parse(storedModels));
+    }
+  }, []);
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      leadType: "",
+      agencyFileNo: "",
+      applicationBarcode: "",
+      caseId: "",
+      schemeDesc: "",
+      bankBranch: "",
+      additionalComments: "",
+      loanAmount: "",
+      vehicleBrand: "",
+      vehicleModel: "",
       name: "",
       age: "",
+      phoneNumber: "",
+      dateOfBirth: "",
       job: "",
       company: "",
       designation: "",
@@ -190,11 +240,15 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
     },
   });
 
-  // Watch form values for state, district, and assignment type
+  // Watch form values
+  const selectedLeadType = form.watch("leadType");
+  const selectedVehicleBrand = form.watch("vehicleBrand");
   const selectedStateName = form.watch("state");
   const selectedDistrictName = form.watch("district");
   const assignmentType = form.watch("assignmentType");
   const hasOfficeAddress = form.watch("hasOfficeAddress");
+  const officeStateName = form.watch("officeState");
+  const officeDistrictName = form.watch("officeDistrict");
   
   // Office address form fields
   const officeStateName = form.watch("officeState");
@@ -218,6 +272,14 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
   const filteredAgents = agents.filter(agent => 
     !selectedDistrictName || agent.district === selectedDistrictName || !agent.district
   );
+
+  // Get selected lead type details
+  const selectedLeadTypeObj = leadTypes.find(type => type.id === selectedLeadType);
+  const isLoanType = selectedLeadTypeObj?.category === 'loan';
+  const isVehicleType = selectedLeadTypeObj?.category === 'vehicle';
+
+  // Get filtered vehicle models
+  const filteredVehicleModels = vehicleModels.filter(model => model.brandId === selectedVehicleBrand);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -308,7 +370,51 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
       visitType = visitTypeValue as "Office" | "Residence" | "Both";
     }
 
-    // Create a new lead object
+    // Create enhanced additional details
+    const additionalDetails: any = {
+      company: values.company || "",
+      designation: values.designation || "",
+      workExperience: values.workExperience || "",
+      propertyType: values.propertyType || "",
+      ownershipStatus: values.ownershipStatus || "",
+      propertyAge: values.propertyAge || "",
+      monthlyIncome: values.monthlyIncome || "",
+      annualIncome: values.annualIncome || "",
+      otherIncome: values.otherIncome || "",
+      addresses: addresses,
+      phoneNumber: values.phoneNumber,
+      email: "", // Will be added later if needed
+      dateOfBirth: values.dateOfBirth,
+      agencyFileNo: values.agencyFileNo,
+      applicationBarcode: values.applicationBarcode || "",
+      caseId: values.caseId || "",
+      schemeDesc: values.schemeDesc || "",
+      bankBranch: values.bankBranch,
+      additionalComments: values.additionalComments || "",
+      leadType: selectedLeadTypeObj?.name || "",
+      leadTypeId: values.leadType
+    };
+
+    // Add loan-specific fields
+    if (isLoanType && values.loanAmount) {
+      additionalDetails.loanAmount = values.loanAmount;
+      additionalDetails.loanType = selectedLeadTypeObj?.name;
+    }
+
+    // Add vehicle-specific fields
+    if (isVehicleType) {
+      if (values.vehicleBrand) {
+        const brandName = vehicleBrands.find(b => b.id === values.vehicleBrand)?.name;
+        additionalDetails.vehicleBrandName = brandName;
+        additionalDetails.vehicleBrandId = values.vehicleBrand;
+      }
+      if (values.vehicleModel) {
+        const modelName = vehicleModels.find(m => m.id === values.vehicleModel)?.name;
+        additionalDetails.vehicleModelName = modelName;
+        additionalDetails.vehicleModelId = values.vehicleModel;
+      }
+    }
+
     const newLead: Lead = {
       id: `lead-${Date.now()}`,
       name: values.name,
@@ -321,18 +427,7 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
         state: values.state,
         pincode: values.pincode
       },
-      additionalDetails: {
-        company: values.company || "",
-        designation: values.designation || "",
-        workExperience: values.workExperience || "",
-        propertyType: values.propertyType || "",
-        ownershipStatus: values.ownershipStatus || "",
-        propertyAge: values.propertyAge || "",
-        monthlyIncome: values.monthlyIncome || "",
-        annualIncome: values.annualIncome || "",
-        otherIncome: values.otherIncome || "",
-        addresses: addresses
-      },
+      additionalDetails: additionalDetails,
       status: 'Pending',
       bank: values.bank,
       visitType: visitType,
@@ -393,11 +488,229 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="w-full">
+              <TabsTrigger value="lead-type" className="flex-1">Lead Type & Details</TabsTrigger>
               <TabsTrigger value="personal" className="flex-1">Personal Information</TabsTrigger>
               <TabsTrigger value="job" className="flex-1">Job Details</TabsTrigger>
               <TabsTrigger value="property" className="flex-1">Property & Income</TabsTrigger>
               <TabsTrigger value="verification" className="flex-1">Verification</TabsTrigger>
             </TabsList>
+            
+            <TabsContent value="lead-type" className="space-y-4 pt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Lead Type & Basic Information</CardTitle>
+                  <CardDescription>Select the type of lead and provide basic details</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="leadType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Lead Type *</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select lead type" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {leadTypes.map((type) => (
+                              <SelectItem key={type.id} value={type.id}>
+                                {type.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="agencyFileNo"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Agency File No. *</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter agency file number" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="applicationBarcode"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Application Barcode</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter application barcode" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="caseId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Case ID</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter case ID" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="schemeDesc"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Scheme Description</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter scheme description" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="bankBranch"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Bank Branch *</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select bank branch" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {bankBranches.map((branch) => (
+                              <SelectItem key={branch.id} value={branch.id}>
+                                {branch.name} ({branch.code}) - {branch.city}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Conditional fields based on lead type */}
+                  {isLoanType && (
+                    <FormField
+                      control={form.control}
+                      name="loanAmount"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Loan Amount (₹)</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter loan amount" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+
+                  {isVehicleType && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="vehicleBrand"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Vehicle Brand</FormLabel>
+                            <Select 
+                              onValueChange={(value) => {
+                                field.onChange(value);
+                                form.setValue('vehicleModel', '');
+                              }} 
+                              value={field.value || ''}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select vehicle brand" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {vehicleBrands.map((brand) => (
+                                  <SelectItem key={brand.id} value={brand.id}>
+                                    {brand.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="vehicleModel"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Vehicle Model</FormLabel>
+                            <Select 
+                              onValueChange={field.onChange} 
+                              value={field.value || ''}
+                              disabled={!selectedVehicleBrand}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder={
+                                    !selectedVehicleBrand 
+                                      ? "Select a brand first" 
+                                      : "Select vehicle model"
+                                  } />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {filteredVehicleModels.map((model) => (
+                                  <SelectItem key={model.id} value={model.id}>
+                                    {model.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  )}
+
+                  <FormField
+                    control={form.control}
+                    name="additionalComments"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Additional Comments</FormLabel>
+                        <FormControl>
+                          <Textarea placeholder="Enter any additional comments" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
             
             <TabsContent value="personal" className="space-y-4 pt-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -406,7 +719,7 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
                   name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Full Name</FormLabel>
+                      <FormLabel>Full Name *</FormLabel>
                       <FormControl>
                         <Input placeholder="Enter applicant's full name" {...field} />
                       </FormControl>
@@ -420,9 +733,37 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
                   name="age"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Age</FormLabel>
+                      <FormLabel>Age *</FormLabel>
                       <FormControl>
                         <Input type="number" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="phoneNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone Number *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter phone number" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="dateOfBirth"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Date of Birth *</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -1111,7 +1452,6 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
                 </Card>
               </div>
               
-              {/* Document Upload Section */}
               <Card>
                 <CardHeader>
                   <CardTitle>Documents</CardTitle>

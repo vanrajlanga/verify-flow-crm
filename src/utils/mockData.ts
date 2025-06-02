@@ -58,27 +58,33 @@ export interface Address {
 }
 
 export interface AdditionalDetails {
-  company?: string;
-  designation?: string;
-  workExperience?: string;
-  propertyType?: string;
-  ownershipStatus?: string;
-  propertyAge?: string;
-  monthlyIncome?: string;
-  annualIncome?: string;
-  otherIncome?: string;
+  company: string;
+  designation: string;
+  workExperience: string;
+  propertyType: string;
+  ownershipStatus: string;
+  propertyAge: string;
+  monthlyIncome: string;
+  annualIncome: string;
+  otherIncome: string;
+  addresses: Address[];
   phoneNumber?: string;
+  email?: string;
+  dateOfBirth?: string;
+  agencyFileNo?: string;
+  applicationBarcode?: string;
+  caseId?: string;
+  schemeDesc?: string;
+  bankBranch?: string;
+  additionalComments?: string;
+  leadType?: string;
+  leadTypeId?: string;
   loanAmount?: string;
   loanType?: string;
-  email?: string;
-  addresses?: Array<{
-    type: string;
-    street: string;
-    city: string;
-    district: string;
-    state: string;
-    pincode: string;
-  }>;
+  vehicleBrandName?: string;
+  vehicleBrandId?: string;
+  vehicleModelName?: string;
+  vehicleModelId?: string;
 }
 
 export interface VerificationData {
@@ -119,427 +125,189 @@ export interface Bank {
 // Mock Data
 export const mockUsers: User[] = [
   {
-    id: '1',
-    name: 'Admin User',
-    email: 'admin@bankkyc.com',
+    id: 'admin-1',
+    username: 'admin',
+    password: 'admin123',
+    name: 'System Administrator',
     role: 'admin',
-    phone: '+91 9876543210',
-    totalVerifications: 0,
-    completionRate: 0
+    email: 'admin@kycverification.com',
+    phone: '+91 98765 43210',
+    district: '',
+    status: 'Active'
   },
   {
-    id: '2',
-    name: 'Agent Delhi',
-    email: 'agent.delhi@bankkyc.com',
+    id: 'agent-1',
+    username: 'agent1',
+    password: 'agent123',
+    name: 'Rajesh Kumar',
     role: 'agent',
-    district: 'Delhi',
-    phone: '+91 9876543211',
-    baseLocation: 'Central Delhi, New Delhi',
-    maxTravelDistance: 15,
-    extraChargePerKm: 10,
-    totalVerifications: 45,
-    completionRate: 92
+    email: 'rajesh@kycverification.com',
+    phone: '+91 98765 43211',
+    district: 'Bangalore Urban',
+    status: 'Active'
   },
   {
-    id: '3',
-    name: 'Agent Mumbai',
-    email: 'agent.mumbai@bankkyc.com',
+    id: 'agent-2',
+    username: 'agent2',
+    password: 'agent123',
+    name: 'Priya Sharma',
     role: 'agent',
+    email: 'priya@kycverification.com',
+    phone: '+91 98765 43212',
     district: 'Mumbai',
-    phone: '+91 9876543212',
-    baseLocation: 'Andheri, Mumbai',
-    maxTravelDistance: 20,
-    extraChargePerKm: 8,
-    totalVerifications: 38,
-    completionRate: 89
+    status: 'Active'
   },
   {
-    id: '4',
-    name: 'Agent Bangalore',
-    email: 'agent.bangalore@bankkyc.com',
+    id: 'agent-3',
+    username: 'agent3',
+    password: 'agent123',
+    name: 'Amit Patel',
     role: 'agent',
-    district: 'Bangalore',
-    phone: '+91 9876543213',
-    baseLocation: 'Koramangala, Bangalore',
-    maxTravelDistance: 12,
-    extraChargePerKm: 12,
-    totalVerifications: 52,
-    completionRate: 95
+    email: 'amit@kycverification.com',
+    phone: '+91 98765 43213',
+    district: 'Bangalore Urban',
+    status: 'Active'
   }
 ];
 
 export const mockBanks: Bank[] = [
-  { id: '1', name: 'HDFC Bank', totalApplications: 120 },
-  { id: '2', name: 'ICICI Bank', totalApplications: 95 },
-  { id: '3', name: 'State Bank of India', totalApplications: 150 },
-  { id: '4', name: 'Axis Bank', totalApplications: 85 },
-  { id: '5', name: 'Bank of Baroda', totalApplications: 65 },
-  { id: '6', name: 'Punjab National Bank', totalApplications: 70 },
-  { id: '7', name: 'Kotak Mahindra Bank', totalApplications: 55 },
-  { id: '8', name: 'IndusInd Bank', totalApplications: 45 },
-  { id: '9', name: 'Yes Bank', totalApplications: 40 },
-  { id: '10', name: 'Canara Bank', totalApplications: 60 }
+  { id: 'bank-1', name: 'State Bank of India', totalApplications: 156 },
+  { id: 'bank-2', name: 'HDFC Bank', totalApplications: 134 },
+  { id: 'bank-3', name: 'ICICI Bank', totalApplications: 98 },
+  { id: 'bank-4', name: 'Axis Bank', totalApplications: 87 },
+  { id: 'bank-5', name: 'Punjab National Bank', totalApplications: 76 }
 ];
 
 export const mockLeads: Lead[] = [
   {
-    id: '1',
-    name: 'Rahul Sharma',
-    age: 32,
+    id: 'lead-001',
+    name: 'John Doe',
+    age: 35,
     job: 'Software Engineer',
     address: {
-      street: '123 Main Street',
-      city: 'New Delhi',
-      district: 'Delhi',
-      state: 'Delhi',
-      pincode: '110001'
+      street: '123 Tech Park',
+      city: 'Bangalore',
+      district: 'Bangalore Urban',
+      state: 'Karnataka',
+      pincode: '560001'
     },
     additionalDetails: {
-      company: 'Tech Solutions',
-      designation: 'Senior Developer',
-      workExperience: '5 years',
-      monthlyIncome: '120000',
-      annualIncome: '1440000',
-      phoneNumber: '+91 9876543210',
-      email: 'rahul.sharma@example.com',
-      loanAmount: '2000000',
-      loanType: 'Home Loan'
+      company: 'Tech Solutions Pvt Ltd',
+      designation: 'Senior Software Engineer',
+      workExperience: '8',
+      propertyType: 'apartment',
+      ownershipStatus: 'owned',
+      propertyAge: '5',
+      monthlyIncome: '80000',
+      annualIncome: '960000',
+      otherIncome: '',
+      addresses: [
+        {
+          type: 'Home',
+          street: '123 Tech Park',
+          city: 'Bangalore',
+          district: 'Bangalore Urban',
+          state: 'Karnataka',
+          pincode: '560001'
+        }
+      ],
+      phoneNumber: '+91 98765 43214',
+      email: 'john.doe@email.com',
+      dateOfBirth: '1989-05-15',
+      agencyFileNo: 'AGY001',
+      applicationBarcode: 'APP001',
+      caseId: 'CASE001',
+      schemeDesc: 'Home Loan Scheme',
+      bankBranch: 'branch-1',
+      additionalComments: 'Priority customer',
+      leadType: 'HOME LOAN',
+      leadTypeId: 'home-loan',
+      loanAmount: '5000000',
+      loanType: 'HOME LOAN'
     },
-    visitType: 'Both',
     status: 'Pending',
-    assignedTo: '2',
-    bank: '1',
-    documents: [
-      {
-        id: 'd1',
-        name: 'PAN Card',
-        type: 'PAN',
-        uploadedBy: 'bank',
-        url: '/placeholder.svg',
-        uploadDate: new Date('2023-03-15')
-      },
-      {
-        id: 'd2',
-        name: 'Aadhar Card',
-        type: 'Aadhar',
-        uploadedBy: 'bank',
-        url: '/placeholder.svg',
-        uploadDate: new Date('2023-03-15')
-      }
-    ],
-    instructions: 'Verify both home and office addresses. Confirm employment details with HR.',
-    createdAt: new Date('2023-03-14'),
+    bank: 'bank-1',
+    visitType: 'Residence',
+    assignedTo: 'agent-1',
+    createdAt: new Date('2024-01-15'),
+    verificationDate: new Date('2024-01-20'),
+    documents: [],
+    instructions: 'Please verify employment and property ownership',
     verification: {
-      id: 'v-pending-1',
-      agentId: '2',
-      leadId: '1',
+      id: 'verification-001',
+      leadId: 'lead-001',
       status: 'Not Started',
+      agentId: 'agent-1',
       photos: [],
-      documents: []
+      documents: [],
+      notes: ''
     }
   },
   {
-    id: '2',
-    name: 'Priya Patel',
+    id: 'lead-002',
+    name: 'Sarah Wilson',
     age: 28,
     job: 'Marketing Manager',
     address: {
-      street: '456 Park Avenue',
+      street: '456 Business District',
       city: 'Mumbai',
       district: 'Mumbai',
       state: 'Maharashtra',
       pincode: '400001'
     },
     additionalDetails: {
-      company: 'Creative Marketing',
-      designation: 'Senior Manager',
-      workExperience: '4 years',
-      monthlyIncome: '90000',
-      annualIncome: '1080000',
-      phoneNumber: '+91 9876543220',
-      email: 'priya.patel@example.com',
-      loanAmount: '1500000',
-      loanType: 'Personal Loan'
+      company: 'Marketing Pro',
+      designation: 'Marketing Manager',
+      workExperience: '5',
+      propertyType: 'apartment',
+      ownershipStatus: 'rented',
+      propertyAge: '3',
+      monthlyIncome: '60000',
+      annualIncome: '720000',
+      otherIncome: '',
+      addresses: [
+        {
+          type: 'Home',
+          street: '456 Business District',
+          city: 'Mumbai',
+          district: 'Mumbai',
+          state: 'Maharashtra',
+          pincode: '400001'
+        }
+      ],
+      phoneNumber: '+91 98765 43215',
+      email: 'sarah.wilson@email.com',
+      dateOfBirth: '1996-03-22',
+      agencyFileNo: 'AGY002',
+      applicationBarcode: 'APP002',
+      caseId: 'CASE002',
+      schemeDesc: 'Auto Loan Scheme',
+      bankBranch: 'branch-2',
+      additionalComments: 'First time customer',
+      leadType: 'AUTO LOANS',
+      leadTypeId: 'auto-loans',
+      vehicleBrandName: 'Maruti Suzuki',
+      vehicleBrandId: 'brand-1',
+      vehicleModelName: 'Swift',
+      vehicleModelId: 'model-1'
     },
-    visitType: 'Residence',
     status: 'In Progress',
-    assignedTo: '3',
-    bank: '2',
-    documents: [
-      {
-        id: 'd3',
-        name: 'PAN Card',
-        type: 'PAN',
-        uploadedBy: 'bank',
-        url: '/placeholder.svg',
-        uploadDate: new Date('2023-03-18')
-      }
-    ],
-    verification: {
-      id: 'v1',
-      leadId: '2',
-      agentId: '3',
-      startTime: new Date('2023-03-20T10:30:00'),
-      arrivalTime: new Date('2023-03-20T11:15:00'),
-      status: 'In Progress',
-      photos: [],
-      documents: []
-    },
-    createdAt: new Date('2023-03-17')
-  },
-  {
-    id: '3',
-    name: 'Amit Kumar',
-    age: 35,
-    job: 'Business Owner',
-    address: {
-      street: '789 Tech Park',
-      city: 'Bangalore',
-      district: 'Bangalore',
-      state: 'Karnataka',
-      pincode: '560001'
-    },
-    additionalDetails: {
-      company: 'Kumar Enterprises',
-      designation: 'CEO',
-      workExperience: '10 years',
-      monthlyIncome: '250000',
-      annualIncome: '3000000'
-    },
-    visitType: 'Office',
-    status: 'Completed',
-    assignedTo: '4',
-    bank: '3',
-    documents: [
-      {
-        id: 'd4',
-        name: 'PAN Card',
-        type: 'PAN',
-        uploadedBy: 'bank',
-        url: '/placeholder.svg',
-        uploadDate: new Date('2023-03-10')
-      },
-      {
-        id: 'd5',
-        name: 'Business License',
-        type: 'Business License',
-        uploadedBy: 'bank',
-        url: '/placeholder.svg',
-        uploadDate: new Date('2023-03-10')
-      }
-    ],
-    verification: {
-      id: 'v2',
-      leadId: '3',
-      agentId: '4',
-      startTime: new Date('2023-03-12T09:00:00'),
-      arrivalTime: new Date('2023-03-12T09:45:00'),
-      completionTime: new Date('2023-03-12T10:30:00'),
-      location: {
-        latitude: 12.9716,
-        longitude: 77.5946
-      },
-      status: 'Completed',
-      notes: 'Verified business premises. All documents authentic. Business appears operational with 10 employees present.',
-      photos: [
-        {
-          id: 'p1',
-          name: 'Office Entrance',
-          type: 'Photo',
-          uploadedBy: 'agent',
-          url: '/placeholder.svg',
-          uploadDate: new Date('2023-03-12T09:50:00')
-        },
-        {
-          id: 'p2',
-          name: 'Applicant Photo',
-          type: 'Photo',
-          uploadedBy: 'agent',
-          url: '/placeholder.svg',
-          uploadDate: new Date('2023-03-12T10:00:00')
-        }
-      ],
-      documents: [
-        {
-          id: 'd6',
-          name: 'Business License Copy',
-          type: 'Business License',
-          uploadedBy: 'agent',
-          url: '/placeholder.svg',
-          uploadDate: new Date('2023-03-12T10:10:00')
-        }
-      ],
-      adminRemarks: 'All documents and verification complete. Approved for banking services.',
-      reviewedBy: '1',
-      reviewedAt: new Date('2023-03-13T14:30:00')
-    },
-    createdAt: new Date('2023-03-09')
-  },
-  {
-    id: '4',
-    name: 'Sneha Gupta',
-    age: 29,
-    job: 'Doctor',
-    address: {
-      street: '321 Hospital Road',
-      city: 'New Delhi',
-      district: 'Delhi',
-      state: 'Delhi',
-      pincode: '110005'
-    },
-    additionalDetails: {
-      company: 'City Hospital',
-      designation: 'Senior Doctor',
-      workExperience: '6 years',
-      monthlyIncome: '150000',
-      annualIncome: '1800000'
-    },
+    bank: 'bank-2',
     visitType: 'Both',
-    status: 'Pending',
-    assignedTo: '2',
-    bank: '4',
-    documents: [
-      {
-        id: 'd7',
-        name: 'PAN Card',
-        type: 'PAN',
-        uploadedBy: 'bank',
-        url: '/placeholder.svg',
-        uploadDate: new Date('2023-03-19')
-      },
-      {
-        id: 'd8',
-        name: 'Medical License',
-        type: 'Job ID',
-        uploadedBy: 'bank',
-        url: '/placeholder.svg',
-        uploadDate: new Date('2023-03-19')
-      }
-    ],
-    instructions: 'Verify hospital employment and residence. Collect proof of income.',
-    createdAt: new Date('2023-03-18'),
+    assignedTo: 'agent-2',
+    createdAt: new Date('2024-01-16'),
+    verificationDate: new Date('2024-01-21'),
+    documents: [],
+    instructions: 'Verify income and vehicle details',
     verification: {
-      id: 'v-pending-2',
-      agentId: '2',
-      leadId: '4',
-      status: 'Not Started',
+      id: 'verification-002',
+      leadId: 'lead-002',
+      status: 'In Progress',
+      agentId: 'agent-2',
       photos: [],
-      documents: []
-    }
-  },
-  {
-    id: '5',
-    name: 'Vikram Singh',
-    age: 45,
-    job: 'Government Officer',
-    address: {
-      street: '567 Civil Lines',
-      city: 'Mumbai',
-      district: 'Mumbai',
-      state: 'Maharashtra',
-      pincode: '400010'
-    },
-    additionalDetails: {
-      company: 'Government of Maharashtra',
-      designation: 'Senior Officer',
-      workExperience: '15 years',
-      monthlyIncome: '80000',
-      annualIncome: '960000'
-    },
-    visitType: 'Residence',
-    status: 'Pending',
-    assignedTo: '3',
-    bank: '5',
-    documents: [
-      {
-        id: 'd9',
-        name: 'PAN Card',
-        type: 'PAN',
-        uploadedBy: 'bank',
-        url: '/placeholder.svg',
-        uploadDate: new Date('2023-03-20')
-      },
-      {
-        id: 'd10',
-        name: 'Government ID',
-        type: 'Job ID',
-        uploadedBy: 'bank',
-        url: '/placeholder.svg',
-        uploadDate: new Date('2023-03-20')
-      }
-    ],
-    createdAt: new Date('2023-03-19'),
-    verification: {
-      id: 'v-pending-3',
-      agentId: '3',
-      leadId: '5',
-      status: 'Not Started',
-      photos: [],
-      documents: []
-    }
-  },
-  {
-    id: '6',
-    name: 'Meena Reddy',
-    age: 33,
-    job: 'Accountant',
-    address: {
-      street: '890 Finance Street',
-      city: 'Bangalore',
-      district: 'Bangalore',
-      state: 'Karnataka',
-      pincode: '560010'
-    },
-    additionalDetails: {
-      company: 'Financial Solutions Ltd',
-      designation: 'Senior Accountant',
-      workExperience: '8 years',
-      monthlyIncome: '75000',
-      annualIncome: '900000'
-    },
-    visitType: 'Office',
-    status: 'Rejected',
-    assignedTo: '4',
-    bank: '6',
-    documents: [
-      {
-        id: 'd11',
-        name: 'PAN Card',
-        type: 'PAN',
-        uploadedBy: 'bank',
-        url: '/placeholder.svg',
-        uploadDate: new Date('2023-03-05')
-      }
-    ],
-    verification: {
-      id: 'v3',
-      leadId: '6',
-      agentId: '4',
-      startTime: new Date('2023-03-07T11:00:00'),
-      arrivalTime: new Date('2023-03-07T11:30:00'),
-      completionTime: new Date('2023-03-07T12:15:00'),
-      location: {
-        latitude: 12.9716,
-        longitude: 77.5946
-      },
-      status: 'Rejected',
-      notes: 'Unable to verify employment. Office address does not exist as stated.',
-      photos: [
-        {
-          id: 'p3',
-          name: 'Location Photo',
-          type: 'Photo',
-          uploadedBy: 'agent',
-          url: '/placeholder.svg',
-          uploadDate: new Date('2023-03-07T11:45:00')
-        }
-      ],
       documents: [],
-      adminRemarks: 'Application rejected due to false employment information.',
-      reviewedBy: '1',
-      reviewedAt: new Date('2023-03-08T10:00:00')
-    },
-    createdAt: new Date('2023-03-04')
+      notes: 'Initial verification started'
+    }
   }
 ];
 
@@ -620,11 +388,17 @@ export const getLeadStats = () => {
 export const getAgentPerformance = () => {
   return mockUsers
     .filter(user => user.role === 'agent')
-    .map(agent => ({
-      id: agent.id,
-      name: agent.name,
-      district: agent.district,
-      totalVerifications: agent.totalVerifications,
-      completionRate: agent.completionRate
-    }));
+    .map(agent => {
+      const agentLeads = mockLeads.filter(lead => lead.assignedTo === agent.id);
+      const completedLeads = agentLeads.filter(lead => lead.status === 'Completed');
+      const completionRate = agentLeads.length > 0 ? Math.round((completedLeads.length / agentLeads.length) * 100) : 0;
+
+      return {
+        id: agent.id,
+        name: agent.name,
+        district: agent.district,
+        totalVerifications: agentLeads.length,
+        completionRate
+      };
+    });
 };

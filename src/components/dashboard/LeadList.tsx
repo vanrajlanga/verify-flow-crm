@@ -1,46 +1,20 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Lead, User } from '@/utils/mockData';
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Lead, User, getUserById, getBankById } from '@/utils/mockData';
-import { 
-  Eye, 
-  Search, 
-  Edit, 
-  Trash, 
-  UserCheck, 
-  MoreVertical 
-} from 'lucide-react';
-import { toast } from '@/components/ui/use-toast';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
-import { useForm } from "react-hook-form";
-import { isWithinInterval, parseISO } from "date-fns";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Eye, MapPin, Calendar, Clock, User as UserIcon, Building, Phone, CreditCard } from 'lucide-react';
+import { format } from 'date-fns';
 
 interface LeadListProps {
   leads: Lead[];
@@ -51,356 +25,210 @@ interface LeadListProps {
   availableAgents?: User[];
 }
 
-const LeadList = ({ 
-  leads, 
-  currentUser, 
-  isAdmin = false,
-  onUpdate,
-  onDelete,
-  availableAgents = []
-}: LeadListProps) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [isReassignDialogOpen, setIsReassignDialogOpen] = useState(false);
-  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
-  const [newAgentId, setNewAgentId] = useState('');
-  
+const LeadList = ({ leads, currentUser, isAdmin = false }: LeadListProps) => {
   const navigate = useNavigate();
 
-  // Check if an agent is on leave for a specific date
-  const isAgentOnLeave = (agentId: string, date?: Date) => {
-    const checkDate = date || new Date();
-    const storedLeaves = localStorage.getItem('agentLeaves');
-    
-    if (storedLeaves) {
-      try {
-        const allLeaves = JSON.parse(storedLeaves);
-        return allLeaves.some(
-          (leave: any) => 
-            leave.agentId === agentId && 
-            leave.status === 'Approved' &&
-            isWithinInterval(checkDate, {
-              start: parseISO(leave.fromDate),
-              end: parseISO(leave.toDate)
-            })
-        );
-      } catch (error) {
-        console.error("Error checking leave status:", error);
-        return false;
-      }
-    }
-    return false;
-  };
-  
-  // Filter out agents who are on leave
-  const availableAgentsNotOnLeave = availableAgents.filter(agent => !isAgentOnLeave(agent.id));
-  
-  const filteredLeads = leads.filter(lead => {
-    const matchesSearch = lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          lead.address.district.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          getBankById(lead.bank)?.name.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || lead.status.toLowerCase() === statusFilter.toLowerCase();
-    
-    return matchesSearch && matchesStatus;
-  });
-
-  const getStatusBadge = (status: Lead['status']) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Pending':
-        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200">Pending</Badge>;
-      case 'In Progress':
-        return <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">In Progress</Badge>;
-      case 'Completed':
-        return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">Completed</Badge>;
-      case 'Rejected':
-        return <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">Rejected</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
+      case 'Pending': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      case 'In Progress': return 'bg-blue-100 text-blue-800 border-blue-300';
+      case 'Completed': return 'bg-green-100 text-green-800 border-green-300';
+      case 'Rejected': return 'bg-red-100 text-red-800 border-red-300';
+      default: return 'bg-gray-100 text-gray-800 border-gray-300';
     }
   };
 
-  const handleViewLead = (leadId: string) => {
-    console.log("Viewing lead with ID:", leadId);
-    // Route to the proper page based on user role
-    if (isAdmin) {
-      navigate(`/admin/leads/${leadId}`);
-    } else {
-      navigate(`/agent/leads/${leadId}`);
-    }
+  const getVerificationStatus = (lead: Lead) => {
+    if (!lead.verification) return 'Not Started';
+    return lead.verification.status;
   };
-  
-  const handleEditLead = (lead: Lead) => {
-    if (isAdmin) {
-      navigate(`/admin/leads/${lead.id}`);
-    }
-  };
-  
-  const handleDeleteLead = (leadId: string) => {
-    if (onDelete && isAdmin) {
-      onDelete(leadId);
-    }
-  };
-  
-  const handleOpenReassignDialog = (lead: Lead) => {
-    setSelectedLead(lead);
-    const agent = getUserById(lead.assignedTo);
-    if (agent) {
-      setNewAgentId(agent.id);
-    }
-    setIsReassignDialogOpen(true);
-  };
-  
-  const handleReassignLead = () => {
-    if (!selectedLead || !newAgentId || !onUpdate) {
-      return;
-    }
-    
-    const updatedLead = {
-      ...selectedLead,
-      assignedTo: newAgentId
-    };
 
-    // Make sure the verification object has the correct agentId
-    if (updatedLead.verification) {
-      updatedLead.verification.agentId = newAgentId;
-    } else {
-      updatedLead.verification = {
-        id: `verification-${updatedLead.id}`,
-        leadId: updatedLead.id,
-        status: "Not Started" as "Not Started" | "In Progress" | "Completed" | "Rejected",
-        agentId: newAgentId,
-        photos: [],
-        documents: [],
-        notes: ""
-      };
-    }
-    
-    // Update in localStorage directly to fix the persistence issue
-    const storedLeads = localStorage.getItem('mockLeads');
-    if (storedLeads) {
-      try {
-        const allLeads = JSON.parse(storedLeads);
-        const updatedLeads = allLeads.map((lead: Lead) => 
-          lead.id === updatedLead.id ? updatedLead : lead
-        );
-        localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
-      } catch (error) {
-        console.error("Error updating leads in localStorage:", error);
+  const getBankBranchName = (branchId: string) => {
+    try {
+      const storedBranches = localStorage.getItem('bankBranches');
+      if (storedBranches) {
+        const branches = JSON.parse(storedBranches);
+        const branch = branches.find((b: any) => b.id === branchId);
+        return branch ? `${branch.name} (${branch.code})` : branchId;
       }
+    } catch (error) {
+      console.error('Error getting branch name:', error);
     }
-    
-    onUpdate(updatedLead);
-    setIsReassignDialogOpen(false);
-    
-    toast({
-      title: "Lead Reassigned",
-      description: "The lead has been successfully reassigned to a new agent.",
-    });
+    return branchId;
   };
+
+  const getAddressString = (address: any) => {
+    if (!address) return 'N/A';
+    return `${address.street || ''}, ${address.city || ''}, ${address.district || ''}, ${address.state || ''} - ${address.pincode || ''}`.replace(/^,\s*|,\s*$/g, '');
+  };
+
+  const getResidenceAddress = (lead: Lead) => {
+    return getAddressString(lead.address);
+  };
+
+  const getOfficeAddress = (lead: Lead) => {
+    if (!lead.additionalDetails?.addresses) return 'N/A';
+    const officeAddress = lead.additionalDetails.addresses.find((addr: any) => addr.type === 'Office');
+    return officeAddress ? getAddressString(officeAddress) : 'N/A';
+  };
+
+  const getPermanentAddress = (lead: Lead) => {
+    // For now, using residence address as permanent address
+    // This can be enhanced to have a separate permanent address field
+    return getResidenceAddress(lead);
+  };
+
+  const getLeadTypeName = (lead: Lead) => {
+    return lead.additionalDetails?.leadType || 'N/A';
+  };
+
+  const getLoanAmount = (lead: Lead) => {
+    return lead.additionalDetails?.loanAmount ? `₹${lead.additionalDetails.loanAmount}` : 'N/A';
+  };
+
+  const getAssetMake = (lead: Lead) => {
+    return lead.additionalDetails?.vehicleBrandName || 'N/A';
+  };
+
+  const getAssetModel = (lead: Lead) => {
+    return lead.additionalDetails?.vehicleModelName || 'N/A';
+  };
+
+  const getFIDate = (lead: Lead) => {
+    return lead.createdAt ? format(new Date(lead.createdAt), 'dd/MM/yyyy') : 'N/A';
+  };
+
+  const getFITime = (lead: Lead) => {
+    return lead.createdAt ? format(new Date(lead.createdAt), 'HH:mm') : 'N/A';
+  };
+
+  const getDateOfBirth = (lead: Lead) => {
+    if (lead.additionalDetails?.dateOfBirth) {
+      return format(new Date(lead.additionalDetails.dateOfBirth), 'dd/MM/yyyy');
+    }
+    return 'N/A';
+  };
+
+  if (leads.length === 0) {
+    return (
+      <Card>
+        <CardContent className="text-center py-8">
+          <p className="text-muted-foreground">No leads found.</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2 justify-between">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by name, district, or bank..."
-            type="search"
-            className="pl-8"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        <div className="flex space-x-2">
-          <Button 
-            variant={statusFilter === 'all' ? 'default' : 'outline'} 
-            size="sm"
-            onClick={() => setStatusFilter('all')}
-          >
-            All
-          </Button>
-          <Button 
-            variant={statusFilter === 'pending' ? 'default' : 'outline'} 
-            size="sm"
-            onClick={() => setStatusFilter('pending')}
-          >
-            Pending
-          </Button>
-          <Button 
-            variant={statusFilter === 'in progress' ? 'default' : 'outline'} 
-            size="sm"
-            onClick={() => setStatusFilter('in progress')}
-          >
-            In Progress
-          </Button>
-          <Button 
-            variant={statusFilter === 'completed' ? 'default' : 'outline'} 
-            size="sm"
-            onClick={() => setStatusFilter('completed')}
-          >
-            Completed
-          </Button>
-        </div>
-      </div>
-
-      <div className="rounded-md border bg-white overflow-hidden">
+      <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Address</TableHead>
-              <TableHead>Visit Type</TableHead>
-              <TableHead>Status</TableHead>
-              {isAdmin && <TableHead>Assigned To</TableHead>}
-              <TableHead>Bank</TableHead>
+              <TableHead className="w-[100px]">Agency File No.</TableHead>
+              <TableHead className="w-[120px]">Branch</TableHead>
+              <TableHead className="w-[120px]">Application ID</TableHead>
+              <TableHead className="w-[150px]">Customer Name</TableHead>
+              <TableHead className="w-[100px]">Address Type</TableHead>
+              <TableHead className="w-[120px]">Product Type</TableHead>
+              <TableHead className="w-[200px]">Residence Address</TableHead>
+              <TableHead className="w-[200px]">Office Address</TableHead>
+              <TableHead className="w-[200px]">Permanent Address</TableHead>
+              <TableHead className="w-[100px]">FI Date</TableHead>
+              <TableHead className="w-[80px]">FI Time</TableHead>
+              <TableHead className="w-[80px]">FI Flag</TableHead>
+              <TableHead className="w-[100px]">Date of Birth</TableHead>
+              <TableHead className="w-[120px]">Designation</TableHead>
+              <TableHead className="w-[100px]">Loan Amount</TableHead>
+              <TableHead className="w-[100px]">Asset Make</TableHead>
+              <TableHead className="w-[100px]">Asset Model</TableHead>
               <TableHead className="w-[100px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredLeads.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={isAdmin ? 7 : 6} className="h-24 text-center">
-                  No leads found.
+            {leads.map((lead) => (
+              <TableRow key={lead.id} className="hover:bg-muted/50">
+                <TableCell className="font-medium">
+                  {lead.additionalDetails?.agencyFileNo || 'N/A'}
+                </TableCell>
+                <TableCell>
+                  {lead.additionalDetails?.bankBranch ? getBankBranchName(lead.additionalDetails.bankBranch) : 'N/A'}
+                </TableCell>
+                <TableCell>
+                  {lead.additionalDetails?.applicationBarcode || lead.id}
+                </TableCell>
+                <TableCell className="font-medium">
+                  <div className="flex items-center gap-2">
+                    <UserIcon className="h-4 w-4 text-muted-foreground" />
+                    {lead.name}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge variant="outline">{lead.visitType}</Badge>
+                </TableCell>
+                <TableCell>
+                  {getLeadTypeName(lead)}
+                </TableCell>
+                <TableCell className="max-w-[200px] truncate" title={getResidenceAddress(lead)}>
+                  {getResidenceAddress(lead)}
+                </TableCell>
+                <TableCell className="max-w-[200px] truncate" title={getOfficeAddress(lead)}>
+                  {getOfficeAddress(lead)}
+                </TableCell>
+                <TableCell className="max-w-[200px] truncate" title={getPermanentAddress(lead)}>
+                  {getPermanentAddress(lead)}
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-3 w-3 text-muted-foreground" />
+                    {getFIDate(lead)}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-3 w-3 text-muted-foreground" />
+                    {getFITime(lead)}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge className={getStatusColor(getVerificationStatus(lead))}>
+                    {getVerificationStatus(lead)}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  {getDateOfBirth(lead)}
+                </TableCell>
+                <TableCell>
+                  {lead.additionalDetails?.designation || lead.job}
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1">
+                    <CreditCard className="h-3 w-3 text-muted-foreground" />
+                    {getLoanAmount(lead)}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {getAssetMake(lead)}
+                </TableCell>
+                <TableCell>
+                  {getAssetModel(lead)}
+                </TableCell>
+                <TableCell>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate(`/lead/${lead.id}`)}
+                    className="flex items-center gap-1"
+                  >
+                    <Eye className="h-3 w-3" />
+                    View
+                  </Button>
                 </TableCell>
               </TableRow>
-            ) : (
-              filteredLeads.map((lead) => {
-                const assignedAgent = isAdmin ? getUserById(lead.assignedTo) : null;
-                const bank = getBankById(lead.bank);
-
-                return (
-                  <TableRow key={lead.id}>
-                    <TableCell className="font-medium">{lead.name}</TableCell>
-                    <TableCell>{lead.address.district}, {lead.address.state}</TableCell>
-                    <TableCell>{lead.visitType}</TableCell>
-                    <TableCell>{getStatusBadge(lead.status)}</TableCell>
-                    {isAdmin && (
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <span>{assignedAgent?.name || 'Unassigned'}</span>
-                          {isAdmin && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleOpenReassignDialog(lead)}
-                              title="Reassign"
-                            >
-                              <UserCheck className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    )}
-                    <TableCell>{bank?.name || 'Unknown'}</TableCell>
-                    <TableCell>
-                      {isAdmin ? (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => handleViewLead(lead.id)}>
-                              <Eye className="h-4 w-4 mr-2" /> View
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleEditLead(lead)}>
-                              <Edit className="h-4 w-4 mr-2" /> Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => handleOpenReassignDialog(lead)}
-                              className="text-blue-600"
-                            >
-                              <UserCheck className="h-4 w-4 mr-2" /> Reassign
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => handleDeleteLead(lead.id)}
-                              className="text-red-600"
-                            >
-                              <Trash className="h-4 w-4 mr-2" /> Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      ) : (
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => handleViewLead(lead.id)}
-                        >
-                          <Eye className="h-4 w-4 mr-1" /> View
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            )}
+            ))}
           </TableBody>
         </Table>
       </div>
-      
-      {/* Reassign Dialog */}
-      <Dialog open={isReassignDialogOpen} onOpenChange={setIsReassignDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Reassign Lead</DialogTitle>
-            <DialogDescription>
-              Select a new agent to handle this verification lead.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="py-4 space-y-4">
-            {selectedLead && (
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Lead Details</p>
-                <p className="text-sm">Name: {selectedLead.name}</p>
-                <p className="text-sm">Location: {selectedLead.address.district}, {selectedLead.address.state}</p>
-                <p className="text-sm">Current Agent: {getUserById(selectedLead.assignedTo)?.name || 'Unassigned'}</p>
-              </div>
-            )}
-            
-            <div className="space-y-2">
-              <label htmlFor="agent" className="text-sm font-medium">
-                New Agent
-              </label>
-              <Select value={newAgentId} onValueChange={setNewAgentId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select an agent" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableAgentsNotOnLeave.length === 0 && (
-                    <div className="py-2 px-2 text-sm text-muted-foreground">
-                      No available agents found
-                    </div>
-                  )}
-                  {availableAgentsNotOnLeave.map((agent) => (
-                    <SelectItem key={agent.id} value={agent.id}>
-                      {agent.name} ({agent.district || 'No district assigned'})
-                    </SelectItem>
-                  ))}
-                  {availableAgents.length > availableAgentsNotOnLeave.length && (
-                    <div className="py-2 px-2 text-sm text-muted-foreground border-t">
-                      Some agents are not shown because they are on leave
-                    </div>
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsReassignDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleReassignLead}>
-              Reassign Lead
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
