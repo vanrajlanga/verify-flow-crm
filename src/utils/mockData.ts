@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   name: string;
@@ -27,6 +28,7 @@ export interface UserDocument {
 }
 
 export interface Address {
+  type?: 'Residence' | 'Office' | 'Permanent';
   street: string;
   city: string;
   district: string;
@@ -205,6 +207,7 @@ export const mockLeads: Lead[] = [
     age: 35,
     job: 'Software Engineer',
     address: {
+      type: 'Residence',
       street: '123 Tech Park',
       city: 'Bangalore',
       district: 'Bangalore Urban',
@@ -223,11 +226,20 @@ export const mockLeads: Lead[] = [
       otherIncome: '',
       addresses: [
         {
+          type: 'Residence',
           street: '123 Tech Park',
           city: 'Bangalore',
           district: 'Bangalore Urban',
           state: 'Karnataka',
           pincode: '560001'
+        },
+        {
+          type: 'Office',
+          street: '456 IT Park, Electronic City',
+          city: 'Bangalore',
+          district: 'Bangalore Urban',
+          state: 'Karnataka',
+          pincode: '560100'
         }
       ],
       phoneNumber: '+91 98765 43214',
@@ -268,6 +280,7 @@ export const mockLeads: Lead[] = [
     age: 28,
     job: 'Marketing Manager',
     address: {
+      type: 'Residence',
       street: '456 Business District',
       city: 'Mumbai',
       district: 'Mumbai',
@@ -286,11 +299,20 @@ export const mockLeads: Lead[] = [
       otherIncome: '',
       addresses: [
         {
+          type: 'Residence',
           street: '456 Business District',
           city: 'Mumbai',
           district: 'Mumbai',
           state: 'Maharashtra',
           pincode: '400001'
+        },
+        {
+          type: 'Office',
+          street: '789 Corporate Tower, Andheri',
+          city: 'Mumbai',
+          district: 'Mumbai',
+          state: 'Maharashtra',
+          pincode: '400053'
         }
       ],
       phoneNumber: '+91 98765 43215',
