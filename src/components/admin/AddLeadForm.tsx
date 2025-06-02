@@ -34,7 +34,6 @@ import { LeadType } from './LeadTypeManager';
 import { BankBranch } from './BankBranchManager';
 import { VehicleBrand, VehicleModel } from './VehicleManager';
 
-// Rename the local Document interface to UploadDocument to avoid conflict
 interface UploadDocument {
   id: string;
   file: File;
@@ -65,7 +64,6 @@ interface AddLeadFormProps {
 }
 
 const formSchema = z.object({
-  // Lead Type and Basic Info
   leadType: z.string().min(1, { message: "Please select a lead type." }),
   agencyFileNo: z.string().min(1, { message: "Agency File No. is required." }),
   applicationBarcode: z.string().optional(),
@@ -76,34 +74,24 @@ const formSchema = z.object({
   loanAmount: z.string().optional(),
   vehicleBrand: z.string().optional(),
   vehicleModel: z.string().optional(),
-  
-  // Personal Information
   name: z.string().min(2, { message: "Name must be at least 2 characters." }),
   age: z.string().refine((val) => !isNaN(parseInt(val)) && parseInt(val) > 0, {
     message: "Age must be a positive number.",
   }),
   phoneNumber: z.string().min(10, { message: "Phone number must be at least 10 digits." }),
   dateOfBirth: z.string().min(1, { message: "Date of birth is required." }),
-  
-  // Job Details
   job: z.string().min(2, {
     message: "Job must be at least 2 characters.",
   }),
   company: z.string().optional(),
   designation: z.string().optional(),
   workExperience: z.string().optional(),
-  
-  // Property Details
   propertyType: z.string().optional(),
   ownershipStatus: z.string().optional(),
   propertyAge: z.string().optional(),
-  
-  // Income Details
   monthlyIncome: z.string().optional(),
   annualIncome: z.string().optional(),
   otherIncome: z.string().optional(),
-  
-  // Address
   street: z.string().min(5, {
     message: "Street address must be at least 5 characters.",
   }),
@@ -119,16 +107,12 @@ const formSchema = z.object({
   pincode: z.string().min(5, {
     message: "Pincode must be at least 5 characters.",
   }),
-  
-  // Additional address (office)
   hasOfficeAddress: z.boolean().default(false),
   officeStreet: z.string().optional(),
   officeCity: z.string().optional(),
   officeDistrict: z.string().optional(),
   officeState: z.string().optional(),
   officePincode: z.string().optional(),
-  
-  // Verification details
   bank: z.string().min(1, {
     message: "Please select a bank.",
   }),
@@ -147,13 +131,11 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [activeTab, setActiveTab] = useState("lead-type");
   
-  // State for master data
   const [leadTypes, setLeadTypes] = useState<LeadType[]>([]);
   const [bankBranches, setBankBranches] = useState<BankBranch[]>([]);
   const [vehicleBrands, setVehicleBrands] = useState<VehicleBrand[]>([]);
   const [vehicleModels, setVehicleModels] = useState<VehicleModel[]>([]);
   
-  // Add Google Maps script
   useEffect(() => {
     const existingScript = document.getElementById('google-maps-script');
     
@@ -167,21 +149,17 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
     }
   }, []);
   
-  // Load master data
   useEffect(() => {
-    // Load lead types
     const storedLeadTypes = localStorage.getItem('leadTypes');
     if (storedLeadTypes) {
       setLeadTypes(JSON.parse(storedLeadTypes));
     }
 
-    // Load bank branches
     const storedBranches = localStorage.getItem('bankBranches');
     if (storedBranches) {
       setBankBranches(JSON.parse(storedBranches));
     }
 
-    // Load vehicle data
     const storedBrands = localStorage.getItem('vehicleBrands');
     if (storedBrands) {
       setVehicleBrands(JSON.parse(storedBrands));
@@ -240,7 +218,7 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
     },
   });
 
-  // Watch form values
+  // Watch form values - fixed duplicate declarations
   const selectedLeadType = form.watch("leadType");
   const selectedVehicleBrand = form.watch("vehicleBrand");
   const selectedStateName = form.watch("state");
@@ -250,17 +228,11 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
   const officeStateName = form.watch("officeState");
   const officeDistrictName = form.watch("officeDistrict");
   
-  // Office address form fields
-  const officeStateName = form.watch("officeState");
-  const officeDistrictName = form.watch("officeDistrict");
-  
-  // Find selected state and district objects (for home address)
   const selectedState = locationData.states.find(state => state.name === selectedStateName);
   const availableDistricts = selectedState?.districts || [];
   const selectedDistrict = selectedState?.districts.find(district => district.name === selectedDistrictName);
   const availableCities = selectedDistrict?.cities || [];
   
-  // Find selected state and district objects (for office address)
   const selectedOfficeState = locationData.states.find(state => state.name === officeStateName);
   const availableOfficeDistricts = selectedOfficeState?.districts || [];
   const selectedOfficeDistrict = selectedOfficeState?.districts.find(
@@ -268,17 +240,14 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
   );
   const availableOfficeCities = selectedOfficeDistrict?.cities || [];
   
-  // Filter agents based on selected district
   const filteredAgents = agents.filter(agent => 
     !selectedDistrictName || agent.district === selectedDistrictName || !agent.district
   );
 
-  // Get selected lead type details
   const selectedLeadTypeObj = leadTypes.find(type => type.id === selectedLeadType);
   const isLoanType = selectedLeadTypeObj?.category === 'loan';
   const isVehicleType = selectedLeadTypeObj?.category === 'vehicle';
 
-  // Get filtered vehicle models
   const filteredVehicleModels = vehicleModels.filter(model => model.brandId === selectedVehicleBrand);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -316,7 +285,6 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
     setDocumentName('');
     setSelectedFile(null);
     
-    // Reset the file input
     const fileInput = document.getElementById('document-upload') as HTMLInputElement;
     if (fileInput) fileInput.value = '';
   };
@@ -326,7 +294,6 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
   };
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    // Create documents array from the uploaded files
     const uploadedDocuments: MockDocument[] = documents.map(doc => ({
       id: doc.id,
       name: doc.name,
@@ -336,10 +303,8 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
       uploadDate: new Date()
     }));
 
-    // Create addresses array
     const addresses = [
       {
-        type: "Home",
         street: values.street,
         city: values.city,
         district: values.district,
@@ -348,10 +313,8 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
       }
     ];
 
-    // Add office address if available
     if (values.hasOfficeAddress && values.officeStreet) {
       addresses.push({
-        type: "Office",
         street: values.officeStreet || "",
         city: values.officeCity || "",
         district: values.officeDistrict || "",
@@ -360,7 +323,6 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
       });
     }
 
-    // Convert visit type from "Home" to "Residence" if needed
     let visitTypeValue = values.visitType;
     let visitType: "Office" | "Residence" | "Both";
     
@@ -370,7 +332,6 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
       visitType = visitTypeValue as "Office" | "Residence" | "Both";
     }
 
-    // Create enhanced additional details
     const additionalDetails: any = {
       company: values.company || "",
       designation: values.designation || "",
@@ -383,7 +344,7 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
       otherIncome: values.otherIncome || "",
       addresses: addresses,
       phoneNumber: values.phoneNumber,
-      email: "", // Will be added later if needed
+      email: "",
       dateOfBirth: values.dateOfBirth,
       agencyFileNo: values.agencyFileNo,
       applicationBarcode: values.applicationBarcode || "",
@@ -395,13 +356,11 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
       leadTypeId: values.leadType
     };
 
-    // Add loan-specific fields
     if (isLoanType && values.loanAmount) {
       additionalDetails.loanAmount = values.loanAmount;
       additionalDetails.loanType = selectedLeadTypeObj?.name;
     }
 
-    // Add vehicle-specific fields
     if (isVehicleType) {
       if (values.vehicleBrand) {
         const brandName = vehicleBrands.find(b => b.id === values.vehicleBrand)?.name;
@@ -445,12 +404,10 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
       }
     };
     
-    // Store verification date if provided
     if (values.verificationDate) {
       newLead.verificationDate = new Date(values.verificationDate);
     }
     
-    // Only add verification if assigned to an agent
     if (newLead.assignedTo) {
       newLead.verification = {
         status: 'Not Started',
@@ -472,7 +429,6 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
   };
 
   useEffect(() => {
-    // Reset office address fields when hasOfficeAddress is toggled off
     if (!hasOfficeAddress) {
       form.setValue("officeStreet", "");
       form.setValue("officeCity", "");
@@ -610,7 +566,6 @@ const AddLeadForm = ({ agents, banks, onAddLead, onClose, locationData }: AddLea
                     )}
                   />
 
-                  {/* Conditional fields based on lead type */}
                   {isLoanType && (
                     <FormField
                       control={form.control}

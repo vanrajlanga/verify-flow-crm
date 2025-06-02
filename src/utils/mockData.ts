@@ -1,52 +1,12 @@
-// Types
+
 export interface User {
   id: string;
   name: string;
+  role: 'admin' | 'agent';
   email: string;
-  password?: string;
-  role: 'agent' | 'admin';
-  state?: string;
-  district?: string;
-  city?: string;
-  totalVerifications?: number;
-  completionRate?: number;
-  baseLocation?: string;
-  maxTravelDistance?: number;
-  extraChargePerKm?: number;
-  profilePicture?: string;
-  phone?: string;
-  documents?: {
-    id: string;
-    type: string;
-    filename: string;
-    url: string;
-    uploadDate: string;
-  }[];
-  leaves?: {
-    id: string;
-    startDate: Date;
-    endDate: Date;
-    reason: string;
-    status: 'pending' | 'approved' | 'rejected';
-  }[];
-}
-
-export interface Lead {
-  id: string;
-  name: string;
-  age: number;
-  job: string;
-  address: Address;
-  additionalDetails: AdditionalDetails;
-  status: 'Pending' | 'In Progress' | 'Completed' | 'Rejected';
-  bank: string;
-  visitType: 'Office' | 'Residence' | 'Both';
-  assignedTo: string;
-  createdAt: Date;
-  documents?: Document[] | string[];
-  instructions?: string;
-  verification: VerificationData;
-  verificationDate?: Date;  // Added this field to support the form
+  phone: string;
+  district: string;
+  status: 'Active' | 'Inactive';
 }
 
 export interface Address {
@@ -87,33 +47,48 @@ export interface AdditionalDetails {
   vehicleModelId?: string;
 }
 
-export interface VerificationData {
-  id: string;
-  leadId?: string;
-  agentId: string;
-  startTime?: Date;
-  arrivalTime?: Date;
-  completionTime?: Date;
-  location?: {
-    latitude: number;
-    longitude: number;
-  };
-  photos: Document[];
-  documents: Document[];
-  notes?: string;
-  status: 'Not Started' | 'In Progress' | 'Completed' | 'Rejected';
-  adminRemarks?: string;
-  reviewedBy?: string;
-  reviewedAt?: Date;
-}
-
 export interface Document {
   id: string;
   name: string;
-  type: 'PAN' | 'Aadhar' | 'Voter ID' | 'Rent Agreement' | 'Job ID' | 'Salary Slip' | 'Business License' | 'Photo' | 'Other';
-  uploadedBy: 'bank' | 'agent';
+  type: 'ID Proof' | 'Address Proof' | 'Income Proof' | 'Other';
+  uploadedBy: 'agent' | 'bank';
   url: string;
   uploadDate: Date;
+}
+
+export interface VerificationData {
+  id: string;
+  leadId: string;
+  status: 'Not Started' | 'In Progress' | 'Completed' | 'Rejected';
+  agentId: string;
+  photos: string[];
+  documents: Document[];
+  notes?: string;
+  startTime?: Date;
+  endTime?: Date;
+  location?: {
+    latitude: number;
+    longitude: number;
+    address: string;
+  };
+}
+
+export interface Lead {
+  id: string;
+  name: string;
+  age: number;
+  job: string;
+  address: Address;
+  additionalDetails: AdditionalDetails;
+  status: 'Pending' | 'In Progress' | 'Completed' | 'Rejected';
+  bank: string;
+  visitType: 'Office' | 'Residence' | 'Both';
+  assignedTo: string;
+  createdAt: Date;
+  verificationDate?: Date;
+  documents: Document[];
+  instructions?: string;
+  verification?: VerificationData;
 }
 
 export interface Bank {
@@ -122,12 +97,9 @@ export interface Bank {
   totalApplications: number;
 }
 
-// Mock Data
 export const mockUsers: User[] = [
   {
     id: 'admin-1',
-    username: 'admin',
-    password: 'admin123',
     name: 'System Administrator',
     role: 'admin',
     email: 'admin@kycverification.com',
@@ -137,8 +109,6 @@ export const mockUsers: User[] = [
   },
   {
     id: 'agent-1',
-    username: 'agent1',
-    password: 'agent123',
     name: 'Rajesh Kumar',
     role: 'agent',
     email: 'rajesh@kycverification.com',
@@ -148,8 +118,6 @@ export const mockUsers: User[] = [
   },
   {
     id: 'agent-2',
-    username: 'agent2',
-    password: 'agent123',
     name: 'Priya Sharma',
     role: 'agent',
     email: 'priya@kycverification.com',
@@ -159,8 +127,6 @@ export const mockUsers: User[] = [
   },
   {
     id: 'agent-3',
-    username: 'agent3',
-    password: 'agent123',
     name: 'Amit Patel',
     role: 'agent',
     email: 'amit@kycverification.com',
@@ -168,14 +134,6 @@ export const mockUsers: User[] = [
     district: 'Bangalore Urban',
     status: 'Active'
   }
-];
-
-export const mockBanks: Bank[] = [
-  { id: 'bank-1', name: 'State Bank of India', totalApplications: 156 },
-  { id: 'bank-2', name: 'HDFC Bank', totalApplications: 134 },
-  { id: 'bank-3', name: 'ICICI Bank', totalApplications: 98 },
-  { id: 'bank-4', name: 'Axis Bank', totalApplications: 87 },
-  { id: 'bank-5', name: 'Punjab National Bank', totalApplications: 76 }
 ];
 
 export const mockLeads: Lead[] = [
@@ -203,7 +161,6 @@ export const mockLeads: Lead[] = [
       otherIncome: '',
       addresses: [
         {
-          type: 'Home',
           street: '123 Tech Park',
           city: 'Bangalore',
           district: 'Bangalore Urban',
@@ -267,7 +224,6 @@ export const mockLeads: Lead[] = [
       otherIncome: '',
       addresses: [
         {
-          type: 'Home',
           street: '456 Business District',
           city: 'Mumbai',
           district: 'Mumbai',
@@ -311,68 +267,16 @@ export const mockLeads: Lead[] = [
   }
 ];
 
-// Function to update document references in mock data
-export const updateMockDataDocumentReferences = () => {
-  // Convert string document references to Document objects in mockLeads
-  mockLeads.forEach(lead => {
-    if (lead.documents && Array.isArray(lead.documents)) {
-      lead.documents = lead.documents.map(doc => {
-        if (typeof doc === 'string') {
-          // Convert string to Document object
-          return {
-            id: `doc-${Math.random().toString(36).substr(2, 9)}`,
-            name: doc,
-            type: 'Other',
-            uploadedBy: 'bank',
-            url: '/placeholder.svg',
-            uploadDate: new Date()
-          };
-        }
-        return doc;
-      });
-    }
-  });
-};
-
-// Update mock data document references
-updateMockDataDocumentReferences();
-
-// Convert "Home" to "Residence" in visitType properties
-mockLeads.forEach(lead => {
-  if (lead.visitType === 'Home' as any) {
-    lead.visitType = 'Residence';
-  }
-});
-
-// Authentication helper functions
-export const loginUser = (email: string, password: string): User | null => {
-  // In a real app, this would validate against a backend
-  // For demo, we'll accept any email that matches our mock users and any password
-  const user = mockUsers.find(u => u.email === email);
-  return user || null;
-};
+export const mockBanks: Bank[] = [
+  { id: 'bank-1', name: 'State Bank of India', totalApplications: 156 },
+  { id: 'bank-2', name: 'HDFC Bank', totalApplications: 134 },
+  { id: 'bank-3', name: 'ICICI Bank', totalApplications: 98 },
+  { id: 'bank-4', name: 'Axis Bank', totalApplications: 87 },
+  { id: 'bank-5', name: 'Punjab National Bank', totalApplications: 76 }
+];
 
 export const getLeadsByAgentId = (agentId: string): Lead[] => {
   return mockLeads.filter(lead => lead.assignedTo === agentId);
-};
-
-export const getLeadById = (leadId: string): Lead | undefined => {
-  return mockLeads.find(lead => lead.id === leadId);
-};
-
-export const getUserById = (userId: string): User | undefined => {
-  return mockUsers.find(user => user.id === userId);
-};
-
-export const getBankById = (bankId: string): Bank | undefined => {
-  return mockBanks.find(bank => bank.id === bankId);
-};
-
-export const updateLeadStatus = (leadId: string, status: Lead['status']): void => {
-  const lead = mockLeads.find(lead => lead.id === leadId);
-  if (lead) {
-    lead.status = status;
-  }
 };
 
 export const getLeadStats = () => {
@@ -381,7 +285,7 @@ export const getLeadStats = () => {
   const inProgress = mockLeads.filter(lead => lead.status === 'In Progress').length;
   const completed = mockLeads.filter(lead => lead.status === 'Completed').length;
   const rejected = mockLeads.filter(lead => lead.status === 'Rejected').length;
-  
+
   return { total, pending, inProgress, completed, rejected };
 };
 
