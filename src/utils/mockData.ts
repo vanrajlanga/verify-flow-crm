@@ -155,7 +155,77 @@ export const getLeadsByAgentId = supabaseGetLeadsByAgentId;
 export const getLeadStats = supabaseGetLeadStats;
 export const getAgentPerformance = supabaseGetAgentPerformance;
 
-// Keep the mock arrays for backward compatibility during transition
-export const mockUsers: User[] = [];
+// Mock data for fallback/testing
+export const mockUsers: User[] = [
+  {
+    id: '1',
+    name: 'System Administrator',
+    role: 'admin',
+    email: 'admin@kycverification.com',
+    phone: '+91 98765 43210',
+    district: '',
+    status: 'Active',
+    password: 'password'
+  },
+  {
+    id: '2',
+    name: 'Rajesh Kumar',
+    role: 'agent',
+    email: 'rajesh@kycverification.com',
+    phone: '+91 98765 43211',
+    district: 'Bangalore Urban',
+    status: 'Active',
+    state: 'Karnataka',
+    city: 'Bangalore',
+    baseLocation: 'HSR Layout, Bangalore',
+    maxTravelDistance: 25,
+    extraChargePerKm: 10,
+    totalVerifications: 45,
+    completionRate: 92,
+    password: 'password'
+  },
+  {
+    id: '3',
+    name: 'Priya Sharma',
+    role: 'agent',
+    email: 'priya@kycverification.com',
+    phone: '+91 98765 43212',
+    district: 'Mumbai',
+    status: 'Active',
+    state: 'Maharashtra',
+    city: 'Mumbai',
+    baseLocation: 'Andheri West, Mumbai',
+    maxTravelDistance: 20,
+    extraChargePerKm: 12,
+    totalVerifications: 38,
+    completionRate: 87,
+    password: 'password'
+  },
+  {
+    id: '4',
+    name: 'Amit Patel',
+    role: 'agent',
+    email: 'amit@kycverification.com',
+    phone: '+91 98765 43213',
+    district: 'Bangalore Urban',
+    status: 'Active',
+    state: 'Karnataka',
+    city: 'Bangalore',
+    baseLocation: 'Koramangala, Bangalore',
+    maxTravelDistance: 30,
+    extraChargePerKm: 8,
+    totalVerifications: 52,
+    completionRate: 95,
+    password: 'password'
+  }
+];
+
 export const mockLeads: Lead[] = [];
-export const mockBanks: Bank[] = [];
+
+export const mockBanks: Bank[] = [
+  { id: '1', name: 'State Bank of India', totalApplications: 156 },
+  { id: '2', name: 'HDFC Bank', totalApplications: 134 },
+  { id: '3', name: 'ICICI Bank', totalApplications: 98 },
+  { id: '4', name: 'Axis Bank', totalApplications: 87 },
+  { id: '5', name: 'Punjab National Bank', totalApplications: 76 }
+];

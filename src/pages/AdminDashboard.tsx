@@ -11,9 +11,28 @@ import Sidebar from '@/components/shared/Sidebar';
 import LeadList from '@/components/dashboard/LeadList';
 import { BarChart, BadgeCheck, Upload, Users, List, ArrowRight } from 'lucide-react';
 
+interface Stats {
+  total: number;
+  pending: number;
+  inProgress: number;
+  completed: number;
+  rejected: number;
+}
+
+interface AgentPerformance {
+  id: string;
+  name: string;
+  district: string;
+  totalVerifications: number;
+  completionRate: number;
+}
+
 const AdminDashboard = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [stats, setStats] = useState<Stats>({ total: 0, pending: 0, inProgress: 0, completed: 0, rejected: 0 });
+  const [agents, setAgents] = useState<AgentPerformance[]>([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -31,15 +50,38 @@ const AdminDashboard = () => {
     }
 
     setCurrentUser(parsedUser);
+    
+    // Load data
+    loadDashboardData();
   }, [navigate]);
+
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      
+      // Load stats and agent performance
+      const [statsData, agentsData] = await Promise.all([
+        getLeadStats(),
+        getAgentPerformance()
+      ]);
+      
+      setStats(statsData);
+      setAgents(agentsData);
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+      // Set fallback data
+      setStats({ total: 0, pending: 0, inProgress: 0, completed: 0, rejected: 0 });
+      setAgents([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('kycUser');
     navigate('/');
   };
 
-  const stats = getLeadStats();
-  const agents = getAgentPerformance();
   const recentLeads = [...mockLeads].sort((a, b) => {
     const dateA = a.verification?.completionTime || new Date(0);
     const dateB = b.verification?.completionTime || new Date(0);
@@ -142,25 +184,35 @@ const AdminDashboard = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {agents.map((agent) => (
-                      <div key={agent.id} className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-0.5">
-                            <p className="text-sm font-medium">{agent.name}</p>
-                            <p className="text-xs text-muted-foreground">{agent.district}</p>
+                  {loading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="text-sm text-muted-foreground">Loading agent data...</div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {agents.length > 0 ? agents.map((agent) => (
+                        <div key={agent.id} className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="space-y-0.5">
+                              <p className="text-sm font-medium">{agent.name}</p>
+                              <p className="text-xs text-muted-foreground">{agent.district}</p>
+                            </div>
+                            <div className="text-sm font-medium">{agent.completionRate}%</div>
                           </div>
-                          <div className="text-sm font-medium">{agent.completionRate}%</div>
+                          <div className="h-2 relative rounded-full overflow-hidden">
+                            <Progress value={agent.completionRate} className="h-full" />
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {agent.totalVerifications} verifications completed
+                          </p>
                         </div>
-                        <div className="h-2 relative rounded-full overflow-hidden">
-                          <Progress value={agent.completionRate} className="h-full" />
+                      )) : (
+                        <div className="text-sm text-muted-foreground text-center py-4">
+                          No agent data available
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                          {agent.totalVerifications} verifications completed
-                        </p>
-                      </div>
-                    ))}
-                  </div>
+                      )}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 

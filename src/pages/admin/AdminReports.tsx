@@ -29,9 +29,19 @@ import {
 } from 'recharts';
 import { format, subDays } from 'date-fns';
 
+interface AgentPerformance {
+  id: string;
+  name: string;
+  district: string;
+  totalVerifications: number;
+  completionRate: number;
+}
+
 const AdminReports = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [agents, setAgents] = useState<AgentPerformance[]>([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -49,7 +59,21 @@ const AdminReports = () => {
     }
 
     setCurrentUser(parsedUser);
+    loadAgentData();
   }, [navigate]);
+
+  const loadAgentData = async () => {
+    try {
+      setLoading(true);
+      const agentData = await getAgentPerformance();
+      setAgents(agentData);
+    } catch (error) {
+      console.error('Error loading agent data:', error);
+      setAgents([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('kycUser');
@@ -57,8 +81,6 @@ const AdminReports = () => {
   };
 
   // Prepare data for charts
-  const agents = getAgentPerformance();
-  
   const statusData = [
     { name: 'Pending', value: mockLeads.filter(l => l.status === 'Pending').length },
     { name: 'In Progress', value: mockLeads.filter(l => l.status === 'In Progress').length },
@@ -189,25 +211,35 @@ const AdminReports = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-8">
-                      {agents.map((agent) => (
-                        <div key={agent.id} className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <div className="space-y-0.5">
-                              <h3 className="font-medium">{agent.name}</h3>
-                              <p className="text-sm text-muted-foreground">{agent.district}</p>
+                    {loading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="text-sm text-muted-foreground">Loading agent data...</div>
+                      </div>
+                    ) : (
+                      <div className="space-y-8">
+                        {agents.length > 0 ? agents.map((agent) => (
+                          <div key={agent.id} className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <div className="space-y-0.5">
+                                <h3 className="font-medium">{agent.name}</h3>
+                                <p className="text-sm text-muted-foreground">{agent.district}</p>
+                              </div>
+                              <div className="text-sm font-medium">{agent.completionRate}%</div>
                             </div>
-                            <div className="text-sm font-medium">{agent.completionRate}%</div>
+                            <div className="h-2 relative rounded-full overflow-hidden">
+                              <Progress value={agent.completionRate} className="h-full" />
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {agent.totalVerifications} verifications completed
+                            </p>
                           </div>
-                          <div className="h-2 relative rounded-full overflow-hidden">
-                            <Progress value={agent.completionRate} className="h-full" />
+                        )) : (
+                          <div className="text-sm text-muted-foreground text-center py-4">
+                            No agent data available
                           </div>
-                          <p className="text-sm text-muted-foreground">
-                            {agent.totalVerifications} verifications completed
-                          </p>
-                        </div>
-                      ))}
-                    </div>
+                        )}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
