@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { User, Lead, getLeadsByAgentId } from '@/utils/mockData';
+import { User, Lead } from '@/utils/mockData';
+import { getLeadsByAgentId } from '@/lib/supabase-queries';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
 import { Calendar, Clock, Eye } from 'lucide-react';
@@ -34,11 +35,20 @@ const AgentHistory = () => {
     setCurrentUser(parsedUser);
     
     // Fetch completed leads for the agent
-    const agentLeads = getLeadsByAgentId(parsedUser.id);
-    const completed = agentLeads.filter(lead => 
-      lead.status === 'Completed' || lead.status === 'Rejected'
-    );
-    setCompletedLeads(completed);
+    const fetchCompletedLeads = async () => {
+      try {
+        const agentLeads = await getLeadsByAgentId(parsedUser.id);
+        const completed = agentLeads.filter(lead => 
+          lead.status === 'Completed' || lead.status === 'Rejected'
+        );
+        setCompletedLeads(completed);
+      } catch (error) {
+        console.error('Error fetching agent leads:', error);
+        setCompletedLeads([]);
+      }
+    };
+    
+    fetchCompletedLeads();
   }, [navigate]);
 
   const handleLogout = () => {

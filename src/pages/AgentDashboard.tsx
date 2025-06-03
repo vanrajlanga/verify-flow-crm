@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { User, Lead, getLeadsByAgentId } from '@/utils/mockData';
+import { User, Lead } from '@/utils/mockData';
+import { getLeadsByAgentId } from '@/lib/supabase-queries';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
 import LeadList from '@/components/dashboard/LeadList';
@@ -32,9 +33,18 @@ const AgentDashboard = () => {
 
     setCurrentUser(parsedUser);
     
-    // Fetch leads for the agent
-    const agentLeads = getLeadsByAgentId(parsedUser.id);
-    setLeads(agentLeads);
+    // Fetch leads for the agent - properly await the async function
+    const fetchLeads = async () => {
+      try {
+        const agentLeads = await getLeadsByAgentId(parsedUser.id);
+        setLeads(agentLeads);
+      } catch (error) {
+        console.error('Error fetching agent leads:', error);
+        setLeads([]);
+      }
+    };
+    
+    fetchLeads();
   }, [navigate]);
 
   const handleLogout = () => {

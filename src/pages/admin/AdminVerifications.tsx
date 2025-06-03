@@ -1,10 +1,12 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { User, Lead, getUserById } from '@/utils/mockData';
+import { User, Lead } from '@/utils/mockData';
+import { getUserById } from '@/lib/supabase-queries';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
 import { format } from 'date-fns';
@@ -14,6 +16,7 @@ const AdminVerifications = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [completedVerifications, setCompletedVerifications] = useState<Lead[]>([]);
+  const [agentNames, setAgentNames] = useState<{[key: string]: string}>({});
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -32,44 +35,59 @@ const AdminVerifications = () => {
 
     setCurrentUser(parsedUser);
     
-    // Get leads with verification data from localStorage or from the mockData directly
-    const storedLeads = localStorage.getItem('mockLeads');
-    let verificationsWithData = [];
-    
-    if (storedLeads) {
-      try {
-        const parsedLeads = JSON.parse(storedLeads);
-        // Filter leads that have verification data
-        verificationsWithData = parsedLeads.filter((lead: Lead) => 
-          lead.verification && 
-          (lead.verification.status === 'Completed' || 
-           lead.verification.status === 'In Progress' || 
-           lead.verification.photos?.length > 0 || 
-           lead.verification.documents?.length > 0)
-        );
-      } catch (error) {
-        console.error("Error loading verifications from localStorage:", error);
-        // If there's an error, use the mock data directly
-        verificationsWithData = [];
+    const fetchVerifications = async () => {
+      // Get leads with verification data from localStorage or from the mockData directly
+      const storedLeads = localStorage.getItem('mockLeads');
+      let verificationsWithData = [];
+      
+      if (storedLeads) {
+        try {
+          const parsedLeads = JSON.parse(storedLeads);
+          // Filter leads that have verification data
+          verificationsWithData = parsedLeads.filter((lead: Lead) => 
+            lead.verification && 
+            (lead.verification.status === 'Completed' || 
+             lead.verification.status === 'In Progress' || 
+             lead.verification.photos?.length > 0 || 
+             lead.verification.documents?.length > 0)
+          );
+        } catch (error) {
+          console.error("Error loading verifications from localStorage:", error);
+          verificationsWithData = [];
+        }
       }
-    }
-    
-    // If no data from localStorage or it was empty, use the mockData
-    if (verificationsWithData.length === 0) {
-      import('@/utils/mockData').then(({ mockLeads }) => {
-        // Filter leads that have verification data
-        const filteredLeads = mockLeads.filter(lead => 
+      
+      // If no data from localStorage or it was empty, use the mockData
+      if (verificationsWithData.length === 0) {
+        const { mockLeads } = await import('@/utils/mockData');
+        verificationsWithData = mockLeads.filter(lead => 
           lead.verification && 
           (lead.verification.status === 'Completed' || 
            lead.verification.status === 'In Progress' || 
            lead.verification.photos?.length > 0 || 
            lead.verification.documents?.length > 0)
         );
-        setCompletedVerifications(filteredLeads);
-      });
-    } else {
+      }
+      
       setCompletedVerifications(verificationsWithData);
-    }
+      
+      // Fetch agent names for all verifications
+      const agentNamesMap: {[key: string]: string} = {};
+      for (const lead of verificationsWithData) {
+        if (lead.assignedTo && !agentNamesMap[lead.assignedTo]) {
+          try {
+            const agent = await getUserById(lead.assignedTo);
+            agentNamesMap[lead.assignedTo] = agent?.name || 'Unknown';
+          } catch (error) {
+            console.error('Error fetching agent:', error);
+            agentNamesMap[lead.assignedTo] = 'Unknown';
+          }
+        }
+      }
+      setAgentNames(agentNamesMap);
+    };
+    
+    fetchVerifications();
   }, [navigate]);
 
   const handleLogout = () => {
@@ -149,13 +167,12 @@ const AdminVerifications = () => {
                         </TableRow>
                       ) : (
                         completedVerifications.map((lead) => {
-                          const agent = getUserById(lead.assignedTo);
                           const verification = lead.verification!;
                           
                           return (
                             <TableRow key={verification.id}>
                               <TableCell className="font-medium">{lead.name}</TableCell>
-                              <TableCell>{agent?.name || 'Unknown'}</TableCell>
+                              <TableCell>{agentNames[lead.assignedTo] || 'Unknown'}</TableCell>
                               <TableCell>
                                 {verification.startTime 
                                   ? format(new Date(verification.startTime), 'MMM d, yyyy h:mm a')

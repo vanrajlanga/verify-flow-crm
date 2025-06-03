@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -57,6 +56,8 @@ const LeadDetail = () => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [lead, setLead] = useState<any>(null);
+  const [agent, setAgent] = useState<any>(null);
+  const [bank, setBank] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   
   useEffect(() => {
@@ -70,43 +71,65 @@ const LeadDetail = () => {
     const parsedUser = JSON.parse(storedUser);
     setCurrentUser(parsedUser);
     
-    // Get leads from localStorage or use mockLeads if not available
-    const storedLeads = localStorage.getItem('mockLeads');
-    let allLeads = [];
-    
-    if (storedLeads) {
+    const fetchLeadData = async () => {
       try {
-        allLeads = JSON.parse(storedLeads);
+        // Get leads from localStorage or use mockLeads if not available
+        const storedLeads = localStorage.getItem('mockLeads');
+        let allLeads = [];
+        
+        if (storedLeads) {
+          try {
+            allLeads = JSON.parse(storedLeads);
+          } catch (error) {
+            console.error("Error parsing stored leads:", error);
+            allLeads = mockLeads;
+          }
+        } else {
+          allLeads = mockLeads;
+        }
+        
+        // Try finding the lead directly using ID
+        let foundLead = getLeadById(leadId || '');
+        
+        // If not found with getLeadById, search manually in all leads
+        if (!foundLead && allLeads && allLeads.length > 0) {
+          foundLead = allLeads.find((l: any) => l.id === leadId);
+          
+          // If still not found, try partial match if the ID might be stored differently
+          if (!foundLead) {
+            foundLead = allLeads.find((l: any) => 
+              leadId?.includes(l.id) || 
+              l.id.includes(leadId || '')
+            );
+          }
+        }
+        
+        console.log("Looking for lead with ID:", leadId);
+        console.log("Found lead:", foundLead);
+        
+        if (foundLead) {
+          setLead(foundLead);
+          
+          // Fetch agent and bank data asynchronously
+          if (foundLead.assignedTo) {
+            const agentData = await getUserById(foundLead.assignedTo);
+            setAgent(agentData);
+          }
+          
+          if (foundLead.bank) {
+            const bankData = await getBankById(foundLead.bank);
+            setBank(bankData);
+          }
+        }
+        
+        setLoading(false);
       } catch (error) {
-        console.error("Error parsing stored leads:", error);
-        allLeads = mockLeads;
+        console.error('Error fetching lead data:', error);
+        setLoading(false);
       }
-    } else {
-      allLeads = mockLeads;
-    }
+    };
     
-    // Try finding the lead directly using ID
-    let foundLead = getLeadById(leadId || '');
-    
-    // If not found with getLeadById, search manually in all leads
-    if (!foundLead && allLeads && allLeads.length > 0) {
-      foundLead = allLeads.find((l: any) => l.id === leadId);
-      
-      // If still not found, try with different ID formats
-      if (!foundLead) {
-        // Try partial match if the ID might be stored differently
-        foundLead = allLeads.find((l: any) => 
-          leadId?.includes(l.id) || 
-          l.id.includes(leadId || '')
-        );
-      }
-    }
-    
-    console.log("Looking for lead with ID:", leadId);
-    console.log("Found lead:", foundLead);
-    
-    setLead(foundLead);
-    setLoading(false);
+    fetchLeadData();
   }, [navigate, leadId]);
 
   // Function to update lead data in localStorage

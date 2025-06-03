@@ -3,7 +3,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, Lead, getLeadsByAgentId } from '@/utils/mockData';
+import { User, Lead } from '@/utils/mockData';
+import { getLeadsByAgentId } from '@/lib/supabase-queries';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
 import LeadList from '@/components/dashboard/LeadList';
@@ -36,63 +37,64 @@ const AgentLeads = () => {
     checkAgentLeaveStatus(parsedUser.id);
     
     // Fetch leads for the agent
-    try {
-      const storedLeads = localStorage.getItem('mockLeads');
-      if (storedLeads) {
-        const allLeads = JSON.parse(storedLeads);
-        
-        // Filter leads assigned to this agent
-        const agentLeads = allLeads
-          .filter((lead: Lead) => lead.assignedTo === parsedUser.id)
-          .map((lead: any) => {
-            // Ensure verification object exists and has proper structure
-            if (!lead.verification) {
-              lead.verification = {
-                id: `verification-${lead.id}`,
-                leadId: lead.id,
-                status: "Not Started" as "Not Started" | "In Progress" | "Completed" | "Rejected",
-                agentId: parsedUser.id,
-                photos: [],
-                documents: [],
-                notes: ""
-              };
-            } else {
-              // Normalize verification status to one of the allowed types
-              if (!["Not Started", "In Progress", "Completed", "Rejected"].includes(lead.verification.status)) {
-                lead.verification.status = "Not Started";
-              }
-              // Explicit type assertion for the status
-              lead.verification.status = lead.verification.status as "Not Started" | "In Progress" | "Completed" | "Rejected";
-              
-              // Ensure photos and documents arrays exist
-              if (!lead.verification.photos) {
-                lead.verification.photos = [];
-              }
-              
-              if (!lead.verification.documents) {
-                lead.verification.documents = [];
-              }
-            }
-            
-            // Ensure lead status is one of the allowed types
-            if (!["Pending", "In Progress", "Completed", "Rejected"].includes(lead.status)) {
-              lead.status = "Pending";
-            }
-            
-            return lead as Lead;
-          });
+    const fetchAgentLeads = async () => {
+      try {
+        const storedLeads = localStorage.getItem('mockLeads');
+        if (storedLeads) {
+          const allLeads = JSON.parse(storedLeads);
           
-        setLeads(agentLeads);
-        
-        // Update local storage with normalized leads
-        localStorage.setItem('mockLeads', JSON.stringify(allLeads));
-        
-        // Log to help with debugging
-        console.log(`Found ${agentLeads.length} leads for agent ${parsedUser.id}`);
-      } else {
-        // No leads in localStorage, use the utility function
-        const agentLeads = getLeadsByAgentId(parsedUser.id)
-          .map(lead => {
+          // Filter leads assigned to this agent
+          const agentLeads = allLeads
+            .filter((lead: Lead) => lead.assignedTo === parsedUser.id)
+            .map((lead: any) => {
+              // Ensure verification object exists and has proper structure
+              if (!lead.verification) {
+                lead.verification = {
+                  id: `verification-${lead.id}`,
+                  leadId: lead.id,
+                  status: "Not Started" as "Not Started" | "In Progress" | "Completed" | "Rejected",
+                  agentId: parsedUser.id,
+                  photos: [],
+                  documents: [],
+                  notes: ""
+                };
+              } else {
+                // Normalize verification status to one of the allowed types
+                if (!["Not Started", "In Progress", "Completed", "Rejected"].includes(lead.verification.status)) {
+                  lead.verification.status = "Not Started";
+                }
+                // Explicit type assertion for the status
+                lead.verification.status = lead.verification.status as "Not Started" | "In Progress" | "Completed" | "Rejected";
+                
+                // Ensure photos and documents arrays exist
+                if (!lead.verification.photos) {
+                  lead.verification.photos = [];
+                }
+                
+                if (!lead.verification.documents) {
+                  lead.verification.documents = [];
+                }
+              }
+              
+              // Ensure lead status is one of the allowed types
+              if (!["Pending", "In Progress", "Completed", "Rejected"].includes(lead.status)) {
+                lead.status = "Pending";
+              }
+              
+              return lead as Lead;
+            });
+            
+          setLeads(agentLeads);
+          
+          // Update local storage with normalized leads
+          localStorage.setItem('mockLeads', JSON.stringify(allLeads));
+          
+          // Log to help with debugging
+          console.log(`Found ${agentLeads.length} leads for agent ${parsedUser.id}`);
+        } else {
+          // No leads in localStorage, use the utility function
+          const agentLeads = await getLeadsByAgentId(parsedUser.id);
+          const normalizedLeads = agentLeads.map(lead => {
             // Ensure verification object exists and has proper structure
             if (!lead.verification) {
               lead.verification = {
@@ -129,23 +131,21 @@ const AgentLeads = () => {
             
             return lead;
           });
-        
-        setLeads(agentLeads);
-        
-        // Store in localStorage
-        localStorage.setItem('mockLeads', JSON.stringify([...agentLeads]));
-        
-        console.log(`Using mock data: Found ${agentLeads.length} leads for agent ${parsedUser.id}`);
+          
+          setLeads(normalizedLeads);
+          
+          // Store in localStorage
+          localStorage.setItem('mockLeads', JSON.stringify(normalizedLeads));
+          
+          console.log(`Using supabase data: Found ${normalizedLeads.length} leads for agent ${parsedUser.id}`);
+        }
+      } catch (error) {
+        console.error("Error loading agent leads:", error);
+        setLeads([]);
       }
-    } catch (error) {
-      console.error("Error loading agent leads:", error);
-      // Fallback to the utility function
-      const agentLeads = getLeadsByAgentId(parsedUser.id);
-      setLeads(agentLeads);
-      
-      // Store in localStorage
-      localStorage.setItem('mockLeads', JSON.stringify([...agentLeads]));
-    }
+    };
+    
+    fetchAgentLeads();
   }, [navigate]);
   
   const checkAgentLeaveStatus = (agentId: string) => {
