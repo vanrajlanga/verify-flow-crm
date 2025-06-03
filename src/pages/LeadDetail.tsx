@@ -177,9 +177,6 @@ const LeadDetail = () => {
     );
   }
 
-  const agent = getUserById(lead.assignedTo);
-  const bank = getBankById(lead.bank);
-  
   // Handle verification actions for agents
   const handleStartVerification = () => {
     if (!lead.verification) {
