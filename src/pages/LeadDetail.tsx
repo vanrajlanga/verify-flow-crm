@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -88,8 +89,8 @@ const LeadDetail = () => {
           allLeads = mockLeads;
         }
         
-        // Try finding the lead directly using ID
-        let foundLead = getLeadById(leadId || '');
+        // Try finding the lead directly using ID - await the Promise
+        let foundLead = await getLeadById(leadId || '');
         
         // If not found with getLeadById, search manually in all leads
         if (!foundLead && allLeads && allLeads.length > 0) {
