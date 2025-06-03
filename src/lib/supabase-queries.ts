@@ -13,7 +13,7 @@ import { mockUsers, mockBanks } from '@/utils/mockData';
 export const loginUser = async (email: string, password: string) => {
   try {
     // First try to query the database
-    const { data: user, error } = await supabase
+    const { data: user, error } = await (supabase as any)
       .from('users')
       .select('*')
       .eq('email', email)
@@ -42,7 +42,7 @@ export const loginUser = async (email: string, password: string) => {
 
 export const getUserById = async (id: string) => {
   try {
-    const { data: user, error } = await supabase
+    const { data: user, error } = await (supabase as any)
       .from('users')
       .select('*')
       .eq('id', id)
@@ -70,7 +70,7 @@ export const getUserById = async (id: string) => {
 // Bank queries
 export const getBanks = async () => {
   try {
-    const { data: banks, error } = await supabase
+    const { data: banks, error } = await (supabase as any)
       .from('banks')
       .select('*');
 
@@ -92,7 +92,7 @@ export const getBanks = async () => {
 
 export const getBankById = async (id: string) => {
   try {
-    const { data: bank, error } = await supabase
+    const { data: bank, error } = await (supabase as any)
       .from('banks')
       .select('*')
       .eq('id', id)
@@ -120,7 +120,7 @@ export const getBankById = async (id: string) => {
 // Lead queries with joins
 export const getLeads = async () => {
   try {
-    const { data: leads, error } = await supabase
+    const { data: leads, error } = await (supabase as any)
       .from('leads')
       .select(`
         *,
@@ -152,7 +152,7 @@ export const getLeads = async () => {
 
 export const getLeadById = async (id: string) => {
   try {
-    const { data: lead, error } = await supabase
+    const { data: lead, error } = await (supabase as any)
       .from('leads')
       .select(`
         *,
@@ -186,7 +186,7 @@ export const getLeadById = async (id: string) => {
 
 export const getLeadsByAgentId = async (agentId: string) => {
   try {
-    const { data: leads, error } = await supabase
+    const { data: leads, error } = await (supabase as any)
       .from('leads')
       .select(`
         *,
@@ -220,7 +220,7 @@ export const getLeadsByAgentId = async (agentId: string) => {
 // Statistics queries
 export const getLeadStats = async () => {
   try {
-    const { data: leads, error } = await supabase
+    const { data: leads, error } = await (supabase as any)
       .from('leads')
       .select('status');
 
@@ -248,7 +248,7 @@ export const getLeadStats = async () => {
 
 export const getAgentPerformance = async () => {
   try {
-    const { data: agents, error: agentsError } = await supabase
+    const { data: agents, error: agentsError } = await (supabase as any)
       .from('users')
       .select('*')
       .eq('role', 'agent');
@@ -273,7 +273,7 @@ export const getAgentPerformance = async () => {
     const performance = await Promise.all(
       agents.map(async (agent: any) => {
         try {
-          const { data: agentLeads, error: leadsError } = await supabase
+          const { data: agentLeads, error: leadsError } = await (supabase as any)
             .from('leads')
             .select('status')
             .eq('assigned_to', agent.id);
