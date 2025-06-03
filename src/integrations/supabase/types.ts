@@ -18,7 +18,20 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      address_type: "Residence" | "Office" | "Permanent"
+      document_type: "ID Proof" | "Address Proof" | "Income Proof" | "Other"
+      lead_status: "Pending" | "In Progress" | "Completed" | "Rejected"
+      ownership_status: "owned" | "rented" | "family_owned"
+      property_type: "apartment" | "house" | "villa" | "commercial"
+      uploaded_by: "agent" | "bank"
+      user_role: "admin" | "agent"
+      user_status: "Active" | "Inactive"
+      verification_status:
+        | "Not Started"
+        | "In Progress"
+        | "Completed"
+        | "Rejected"
+      visit_type: "Office" | "Residence" | "Both"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +146,22 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      address_type: ["Residence", "Office", "Permanent"],
+      document_type: ["ID Proof", "Address Proof", "Income Proof", "Other"],
+      lead_status: ["Pending", "In Progress", "Completed", "Rejected"],
+      ownership_status: ["owned", "rented", "family_owned"],
+      property_type: ["apartment", "house", "villa", "commercial"],
+      uploaded_by: ["agent", "bank"],
+      user_role: ["admin", "agent"],
+      user_status: ["Active", "Inactive"],
+      verification_status: [
+        "Not Started",
+        "In Progress",
+        "Completed",
+        "Rejected",
+      ],
+      visit_type: ["Office", "Residence", "Both"],
+    },
   },
 } as const

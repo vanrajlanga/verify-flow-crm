@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   name: string;
@@ -136,275 +135,27 @@ export interface Bank {
   totalApplications: number;
 }
 
-export const mockUsers: User[] = [
-  {
-    id: 'admin-1',
-    name: 'System Administrator',
-    role: 'admin',
-    email: 'admin@kycverification.com',
-    phone: '+91 98765 43210',
-    district: '',
-    status: 'Active',
-    password: 'password'
-  },
-  {
-    id: 'agent-1',
-    name: 'Rajesh Kumar',
-    role: 'agent',
-    email: 'rajesh@kycverification.com',
-    phone: '+91 98765 43211',
-    district: 'Bangalore Urban',
-    status: 'Active',
-    state: 'Karnataka',
-    city: 'Bangalore',
-    baseLocation: 'HSR Layout, Bangalore',
-    maxTravelDistance: 25,
-    extraChargePerKm: 10,
-    totalVerifications: 45,
-    completionRate: 92,
-    password: 'password'
-  },
-  {
-    id: 'agent-2',
-    name: 'Priya Sharma',
-    role: 'agent',
-    email: 'priya@kycverification.com',
-    phone: '+91 98765 43212',
-    district: 'Mumbai',
-    status: 'Active',
-    state: 'Maharashtra',
-    city: 'Mumbai',
-    baseLocation: 'Andheri West, Mumbai',
-    maxTravelDistance: 20,
-    extraChargePerKm: 12,
-    totalVerifications: 38,
-    completionRate: 87,
-    password: 'password'
-  },
-  {
-    id: 'agent-3',
-    name: 'Amit Patel',
-    role: 'agent',
-    email: 'amit@kycverification.com',
-    phone: '+91 98765 43213',
-    district: 'Bangalore Urban',
-    status: 'Active',
-    state: 'Karnataka',
-    city: 'Bangalore',
-    baseLocation: 'Koramangala, Bangalore',
-    maxTravelDistance: 30,
-    extraChargePerKm: 8,
-    totalVerifications: 52,
-    completionRate: 95,
-    password: 'password'
-  }
-];
+// Import Supabase query functions
+import { 
+  loginUser as supabaseLoginUser,
+  getUserById as supabaseGetUserById,
+  getBankById as supabaseGetBankById,
+  getLeadById as supabaseGetLeadById,
+  getLeadsByAgentId as supabaseGetLeadsByAgentId,
+  getLeadStats as supabaseGetLeadStats,
+  getAgentPerformance as supabaseGetAgentPerformance
+} from '@/lib/supabase-queries';
 
-export const mockLeads: Lead[] = [
-  {
-    id: 'lead-001',
-    name: 'John Doe',
-    age: 35,
-    job: 'Software Engineer',
-    address: {
-      type: 'Residence',
-      street: '123 Tech Park',
-      city: 'Bangalore',
-      district: 'Bangalore Urban',
-      state: 'Karnataka',
-      pincode: '560001'
-    },
-    additionalDetails: {
-      company: 'Tech Solutions Pvt Ltd',
-      designation: 'Senior Software Engineer',
-      workExperience: '8',
-      propertyType: 'apartment',
-      ownershipStatus: 'owned',
-      propertyAge: '5',
-      monthlyIncome: '80000',
-      annualIncome: '960000',
-      otherIncome: '',
-      addresses: [
-        {
-          type: 'Residence',
-          street: '123 Tech Park',
-          city: 'Bangalore',
-          district: 'Bangalore Urban',
-          state: 'Karnataka',
-          pincode: '560001'
-        },
-        {
-          type: 'Office',
-          street: '456 IT Park, Electronic City',
-          city: 'Bangalore',
-          district: 'Bangalore Urban',
-          state: 'Karnataka',
-          pincode: '560100'
-        }
-      ],
-      phoneNumber: '+91 98765 43214',
-      email: 'john.doe@email.com',
-      dateOfBirth: '1989-05-15',
-      agencyFileNo: 'AGY001',
-      applicationBarcode: 'APP001',
-      caseId: 'CASE001',
-      schemeDesc: 'Home Loan Scheme',
-      bankBranch: 'branch-1',
-      additionalComments: 'Priority customer',
-      leadType: 'HOME LOAN',
-      leadTypeId: 'home-loan',
-      loanAmount: '5000000',
-      loanType: 'HOME LOAN'
-    },
-    status: 'Pending',
-    bank: 'bank-1',
-    visitType: 'Residence',
-    assignedTo: 'agent-1',
-    createdAt: new Date('2024-01-15'),
-    verificationDate: new Date('2024-01-20'),
-    documents: [],
-    instructions: 'Please verify employment and property ownership',
-    verification: {
-      id: 'verification-001',
-      leadId: 'lead-001',
-      status: 'Not Started',
-      agentId: 'agent-1',
-      photos: [],
-      documents: [],
-      notes: ''
-    }
-  },
-  {
-    id: 'lead-002',
-    name: 'Sarah Wilson',
-    age: 28,
-    job: 'Marketing Manager',
-    address: {
-      type: 'Residence',
-      street: '456 Business District',
-      city: 'Mumbai',
-      district: 'Mumbai',
-      state: 'Maharashtra',
-      pincode: '400001'
-    },
-    additionalDetails: {
-      company: 'Marketing Pro',
-      designation: 'Marketing Manager',
-      workExperience: '5',
-      propertyType: 'apartment',
-      ownershipStatus: 'rented',
-      propertyAge: '3',
-      monthlyIncome: '60000',
-      annualIncome: '720000',
-      otherIncome: '',
-      addresses: [
-        {
-          type: 'Residence',
-          street: '456 Business District',
-          city: 'Mumbai',
-          district: 'Mumbai',
-          state: 'Maharashtra',
-          pincode: '400001'
-        },
-        {
-          type: 'Office',
-          street: '789 Corporate Tower, Andheri',
-          city: 'Mumbai',
-          district: 'Mumbai',
-          state: 'Maharashtra',
-          pincode: '400053'
-        }
-      ],
-      phoneNumber: '+91 98765 43215',
-      email: 'sarah.wilson@email.com',
-      dateOfBirth: '1996-03-22',
-      agencyFileNo: 'AGY002',
-      applicationBarcode: 'APP002',
-      caseId: 'CASE002',
-      schemeDesc: 'Auto Loan Scheme',
-      bankBranch: 'branch-2',
-      additionalComments: 'First time customer',
-      leadType: 'AUTO LOANS',
-      leadTypeId: 'auto-loans',
-      vehicleBrandName: 'Maruti Suzuki',
-      vehicleBrandId: 'brand-1',
-      vehicleModelName: 'Swift',
-      vehicleModelId: 'model-1'
-    },
-    status: 'In Progress',
-    bank: 'bank-2',
-    visitType: 'Both',
-    assignedTo: 'agent-2',
-    createdAt: new Date('2024-01-16'),
-    verificationDate: new Date('2024-01-21'),
-    documents: [],
-    instructions: 'Verify income and vehicle details',
-    verification: {
-      id: 'verification-002',
-      leadId: 'lead-002',
-      status: 'In Progress',
-      agentId: 'agent-2',
-      photos: [],
-      documents: [],
-      notes: 'Initial verification started'
-    }
-  }
-];
+// Export the Supabase functions with the same names as the original mock functions
+export const loginUser = supabaseLoginUser;
+export const getUserById = supabaseGetUserById;
+export const getBankById = supabaseGetBankById;
+export const getLeadById = supabaseGetLeadById;
+export const getLeadsByAgentId = supabaseGetLeadsByAgentId;
+export const getLeadStats = supabaseGetLeadStats;
+export const getAgentPerformance = supabaseGetAgentPerformance;
 
-export const mockBanks: Bank[] = [
-  { id: 'bank-1', name: 'State Bank of India', totalApplications: 156 },
-  { id: 'bank-2', name: 'HDFC Bank', totalApplications: 134 },
-  { id: 'bank-3', name: 'ICICI Bank', totalApplications: 98 },
-  { id: 'bank-4', name: 'Axis Bank', totalApplications: 87 },
-  { id: 'bank-5', name: 'Punjab National Bank', totalApplications: 76 }
-];
-
-// Utility functions
-export const loginUser = (email: string, password: string): User | null => {
-  const user = mockUsers.find(u => u.email === email && u.password === password);
-  return user || null;
-};
-
-export const getUserById = (id: string): User | undefined => {
-  return mockUsers.find(user => user.id === id);
-};
-
-export const getBankById = (id: string): Bank | undefined => {
-  return mockBanks.find(bank => bank.id === id);
-};
-
-export const getLeadById = (id: string): Lead | undefined => {
-  return mockLeads.find(lead => lead.id === id);
-};
-
-export const getLeadsByAgentId = (agentId: string): Lead[] => {
-  return mockLeads.filter(lead => lead.assignedTo === agentId);
-};
-
-export const getLeadStats = () => {
-  const total = mockLeads.length;
-  const pending = mockLeads.filter(lead => lead.status === 'Pending').length;
-  const inProgress = mockLeads.filter(lead => lead.status === 'In Progress').length;
-  const completed = mockLeads.filter(lead => lead.status === 'Completed').length;
-  const rejected = mockLeads.filter(lead => lead.status === 'Rejected').length;
-
-  return { total, pending, inProgress, completed, rejected };
-};
-
-export const getAgentPerformance = () => {
-  return mockUsers
-    .filter(user => user.role === 'agent')
-    .map(agent => {
-      const agentLeads = mockLeads.filter(lead => lead.assignedTo === agent.id);
-      const completedLeads = agentLeads.filter(lead => lead.status === 'Completed');
-      const completionRate = agentLeads.length > 0 ? Math.round((completedLeads.length / agentLeads.length) * 100) : 0;
-
-      return {
-        id: agent.id,
-        name: agent.name,
-        district: agent.district,
-        totalVerifications: agentLeads.length,
-        completionRate
-      };
-    });
-};
+// Keep the mock arrays for backward compatibility during transition
+export const mockUsers: User[] = [];
+export const mockLeads: Lead[] = [];
+export const mockBanks: Bank[] = [];
