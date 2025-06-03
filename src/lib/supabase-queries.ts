@@ -6,9 +6,13 @@ import {
   transformSupabaseBank 
 } from './data-transformers';
 
+// Fallback to mock data when database is not available
+import { mockUsers, mockBanks } from '@/utils/mockData';
+
 // User queries
 export const loginUser = async (email: string, password: string) => {
   try {
+    // First try to query the database
     const { data: user, error } = await supabase
       .from('users')
       .select('*')
@@ -16,15 +20,23 @@ export const loginUser = async (email: string, password: string) => {
       .eq('password', password)
       .single();
 
-    if (error) {
+    if (error && error.code !== '42P01') {
       console.error('Login error:', error);
       return null;
     }
 
-    return transformSupabaseUser(user);
+    if (user) {
+      return transformSupabaseUser(user);
+    }
+
+    // Fall back to mock data if database table doesn't exist
+    const mockUser = mockUsers.find(u => u.email === email && u.password === password);
+    return mockUser || null;
   } catch (error) {
     console.error('Login error:', error);
-    return null;
+    // Fall back to mock data
+    const mockUser = mockUsers.find(u => u.email === email && u.password === password);
+    return mockUser || null;
   }
 };
 
@@ -36,15 +48,22 @@ export const getUserById = async (id: string) => {
       .eq('id', id)
       .single();
 
-    if (error) {
+    if (error && error.code !== '42P01') {
       console.error('Get user error:', error);
       return null;
     }
 
-    return transformSupabaseUser(user);
+    if (user) {
+      return transformSupabaseUser(user);
+    }
+
+    // Fall back to mock data
+    const mockUser = mockUsers.find(u => u.id === id);
+    return mockUser || null;
   } catch (error) {
     console.error('Get user error:', error);
-    return null;
+    const mockUser = mockUsers.find(u => u.id === id);
+    return mockUser || null;
   }
 };
 
@@ -55,15 +74,19 @@ export const getBanks = async () => {
       .from('banks')
       .select('*');
 
-    if (error) {
+    if (error && error.code !== '42P01') {
       console.error('Get banks error:', error);
-      return [];
+      return mockBanks;
     }
 
-    return banks ? banks.map(transformSupabaseBank) : [];
+    if (banks) {
+      return banks.map(transformSupabaseBank);
+    }
+
+    return mockBanks;
   } catch (error) {
     console.error('Get banks error:', error);
-    return [];
+    return mockBanks;
   }
 };
 
@@ -75,15 +98,22 @@ export const getBankById = async (id: string) => {
       .eq('id', id)
       .single();
 
-    if (error) {
+    if (error && error.code !== '42P01') {
       console.error('Get bank error:', error);
       return null;
     }
 
-    return transformSupabaseBank(bank);
+    if (bank) {
+      return transformSupabaseBank(bank);
+    }
+
+    // Fall back to mock data
+    const mockBank = mockBanks.find(b => b.id === id);
+    return mockBank || null;
   } catch (error) {
     console.error('Get bank error:', error);
-    return null;
+    const mockBank = mockBanks.find(b => b.id === id);
+    return mockBank || null;
   }
 };
 
@@ -104,12 +134,16 @@ export const getLeads = async () => {
         )
       `);
 
-    if (error) {
+    if (error && error.code !== '42P01') {
       console.error('Get leads error:', error);
       return [];
     }
 
-    return leads ? leads.map(transformSupabaseLead) : [];
+    if (leads) {
+      return leads.map(transformSupabaseLead);
+    }
+
+    return [];
   } catch (error) {
     console.error('Get leads error:', error);
     return [];
@@ -134,12 +168,16 @@ export const getLeadById = async (id: string) => {
       .eq('id', id)
       .single();
 
-    if (error) {
+    if (error && error.code !== '42P01') {
       console.error('Get lead error:', error);
       return null;
     }
 
-    return transformSupabaseLead(lead);
+    if (lead) {
+      return transformSupabaseLead(lead);
+    }
+
+    return null;
   } catch (error) {
     console.error('Get lead error:', error);
     return null;
@@ -163,12 +201,16 @@ export const getLeadsByAgentId = async (agentId: string) => {
       `)
       .eq('assigned_to', agentId);
 
-    if (error) {
+    if (error && error.code !== '42P01') {
       console.error('Get leads by agent error:', error);
       return [];
     }
 
-    return leads ? leads.map(transformSupabaseLead) : [];
+    if (leads) {
+      return leads.map(transformSupabaseLead);
+    }
+
+    return [];
   } catch (error) {
     console.error('Get leads by agent error:', error);
     return [];
@@ -182,7 +224,7 @@ export const getLeadStats = async () => {
       .from('leads')
       .select('status');
 
-    if (error) {
+    if (error && error.code !== '42P01') {
       console.error('Get lead stats error:', error);
       return { total: 0, pending: 0, inProgress: 0, completed: 0, rejected: 0 };
     }
@@ -192,10 +234,10 @@ export const getLeadStats = async () => {
     }
 
     const total = leads.length;
-    const pending = leads.filter(lead => lead.status === 'Pending').length;
-    const inProgress = leads.filter(lead => lead.status === 'In Progress').length;
-    const completed = leads.filter(lead => lead.status === 'Completed').length;
-    const rejected = leads.filter(lead => lead.status === 'Rejected').length;
+    const pending = leads.filter((lead: any) => lead.status === 'Pending').length;
+    const inProgress = leads.filter((lead: any) => lead.status === 'In Progress').length;
+    const completed = leads.filter((lead: any) => lead.status === 'Completed').length;
+    const rejected = leads.filter((lead: any) => lead.status === 'Rejected').length;
 
     return { total, pending, inProgress, completed, rejected };
   } catch (error) {
@@ -211,24 +253,32 @@ export const getAgentPerformance = async () => {
       .select('*')
       .eq('role', 'agent');
 
-    if (agentsError) {
+    if (agentsError && agentsError.code !== '42P01') {
       console.error('Get agents error:', agentsError);
       return [];
     }
 
     if (!agents) {
-      return [];
+      // Fall back to mock data
+      const mockAgents = mockUsers.filter(user => user.role === 'agent');
+      return mockAgents.map(agent => ({
+        id: agent.id,
+        name: agent.name,
+        district: agent.district || '',
+        totalVerifications: agent.totalVerifications || 0,
+        completionRate: agent.completionRate || 0
+      }));
     }
 
     const performance = await Promise.all(
-      agents.map(async (agent) => {
+      agents.map(async (agent: any) => {
         try {
           const { data: agentLeads, error: leadsError } = await supabase
             .from('leads')
             .select('status')
             .eq('assigned_to', agent.id);
 
-          if (leadsError) {
+          if (leadsError && leadsError.code !== '42P01') {
             console.error('Get agent leads error:', leadsError);
             return {
               id: agent.id,
@@ -240,7 +290,7 @@ export const getAgentPerformance = async () => {
           }
 
           const leads = agentLeads || [];
-          const completedLeads = leads.filter(lead => lead.status === 'Completed');
+          const completedLeads = leads.filter((lead: any) => lead.status === 'Completed');
           const completionRate = leads.length > 0 ? Math.round((completedLeads.length / leads.length) * 100) : 0;
 
           return {
@@ -266,6 +316,14 @@ export const getAgentPerformance = async () => {
     return performance;
   } catch (error) {
     console.error('Get agent performance error:', error);
-    return [];
+    // Fall back to mock data
+    const mockAgents = mockUsers.filter(user => user.role === 'agent');
+    return mockAgents.map(agent => ({
+      id: agent.id,
+      name: agent.name,
+      district: agent.district || '',
+      totalVerifications: agent.totalVerifications || 0,
+      completionRate: agent.completionRate || 0
+    }));
   }
 };

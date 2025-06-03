@@ -19,14 +19,13 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    // Simulate API call delay
-    setTimeout(() => {
-      const user = loginUser(email, password);
+    try {
+      const user = await loginUser(email, password);
       
       if (user) {
         onLogin(user);
@@ -38,15 +37,19 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
       } else {
         setError('Invalid email or password');
       }
+    } catch (error) {
+      console.error('Login error:', error);
+      setError('Login failed. Please try again.');
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
-  const handleDemoLogin = (role: 'admin' | 'agent') => {
+  const handleDemoLogin = async (role: 'admin' | 'agent') => {
     setIsLoading(true);
-    setTimeout(() => {
-      let email = role === 'admin' ? 'admin@bankkyc.com' : 'agent.delhi@bankkyc.com';
-      const user = loginUser(email, 'password');
+    try {
+      let email = role === 'admin' ? 'admin@kycverification.com' : 'rajesh@kycverification.com';
+      const user = await loginUser(email, 'password');
       
       if (user) {
         onLogin(user);
@@ -56,8 +59,12 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
           navigate('/agent');
         }
       }
+    } catch (error) {
+      console.error('Demo login error:', error);
+      setError('Demo login failed. Please try again.');
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (

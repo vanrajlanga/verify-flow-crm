@@ -1,9 +1,10 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Lead, User, getUserById, getBankById } from '@/utils/mockData';
+import { Lead, User, Bank, getUserById, getBankById } from '@/utils/mockData';
 import { Download, FileCheck, FileX } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -23,9 +24,30 @@ const LeadReview = ({
   onForwardToBank
 }: LeadReviewProps) => {
   const [remarks, setRemarks] = useState(lead.verification?.adminRemarks || '');
-  const agent = getUserById(lead.assignedTo);
-  const bank = getBankById(lead.bank);
+  const [agent, setAgent] = useState<User | null>(null);
+  const [bank, setBank] = useState<Bank | null>(null);
+  const [loading, setLoading] = useState(true);
+  
   const verification = lead.verification;
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [agentData, bankData] = await Promise.all([
+          getUserById(lead.assignedTo),
+          getBankById(lead.bank)
+        ]);
+        setAgent(agentData);
+        setBank(bankData);
+      } catch (error) {
+        console.error('Error loading lead review data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [lead.assignedTo, lead.bank]);
 
   const formatDateTime = (date?: Date) => {
     return date ? format(date, 'h:mm a, MMM d, yyyy') : '—';
@@ -47,6 +69,14 @@ const LeadReview = ({
   };
 
   const isReviewed = verification?.reviewedBy !== undefined;
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="text-sm text-muted-foreground">Loading review data...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -97,11 +127,11 @@ const LeadReview = ({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-xs font-medium text-muted-foreground">Name</p>
-                  <p className="text-sm">{agent?.name}</p>
+                  <p className="text-sm">{agent?.name || 'Loading...'}</p>
                 </div>
                 <div>
                   <p className="text-xs font-medium text-muted-foreground">District</p>
-                  <p className="text-sm">{agent?.district}</p>
+                  <p className="text-sm">{agent?.district || 'Loading...'}</p>
                 </div>
               </div>
             </div>
