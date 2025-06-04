@@ -82,7 +82,7 @@ const TeamMemberManager = () => {
               name: formData.name, 
               email: formData.email, 
               phone: formData.phone,
-              role: formData.role,
+              role: formData.role as 'admin' | 'agent',
               ...(formData.password && { password: formData.password })
             }
           : member
@@ -104,6 +104,7 @@ const TeamMemberManager = () => {
         role: formData.role as 'admin' | 'agent',
         password: formData.password || 'defaultPassword123',
         district: '',
+        status: 'Active',
         totalVerifications: 0,
         completionRate: 0
       };
