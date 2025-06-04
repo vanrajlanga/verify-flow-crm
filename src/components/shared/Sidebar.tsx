@@ -17,7 +17,9 @@ import {
   Building,
   Briefcase,
   Shield,
-  UserCog
+  UserCog,
+  Building2,
+  CheckCircle
 } from 'lucide-react';
 import { User } from '@/utils/mockData';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -48,6 +50,12 @@ const Sidebar = ({ user, isOpen }: SidebarProps) => {
       adminOnly: false
     },
     {
+      icon: CheckCircle,
+      label: 'Verifications',
+      path: '/admin/verifications',
+      adminOnly: true
+    },
+    {
       icon: Users,
       label: 'Agents',
       path: '/admin/agents',
@@ -57,6 +65,12 @@ const Sidebar = ({ user, isOpen }: SidebarProps) => {
       icon: BarChart,
       label: 'Reports',
       path: '/admin/reports',
+      adminOnly: true
+    },
+    {
+      icon: Building2,
+      label: 'Bank Integration',
+      path: '/admin/banks',
       adminOnly: true
     },
     {
@@ -84,6 +98,30 @@ const Sidebar = ({ user, isOpen }: SidebarProps) => {
       icon: UserCheck,
       label: 'Vehicle Brands',
       path: '/admin/settings?tab=vehicles',
+      adminOnly: true
+    },
+    {
+      icon: Settings,
+      label: 'System',
+      path: '/admin/settings?tab=system',
+      adminOnly: true
+    },
+    {
+      icon: UserCog,
+      label: 'Email',
+      path: '/admin/settings?tab=email',
+      adminOnly: true
+    },
+    {
+      icon: Shield,
+      label: 'Security',
+      path: '/admin/settings?tab=security',
+      adminOnly: true
+    },
+    {
+      icon: Users,
+      label: 'Account',
+      path: '/admin/settings?tab=account',
       adminOnly: true
     }
   ];
