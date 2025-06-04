@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { User } from '@/utils/mockData';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
@@ -12,7 +12,11 @@ import VehicleManager from '@/components/admin/VehicleManager';
 const AdminSettings = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+
+  // Get the active tab from URL params, default to 'lead-types'
+  const activeTab = searchParams.get('tab') || 'lead-types';
 
   useEffect(() => {
     // Check if user is logged in
@@ -34,6 +38,10 @@ const AdminSettings = () => {
   const handleLogout = () => {
     localStorage.removeItem('kycUser');
     navigate('/');
+  };
+
+  const handleTabChange = (value: string) => {
+    setSearchParams({ tab: value });
   };
 
   if (!currentUser) {
@@ -60,7 +68,7 @@ const AdminSettings = () => {
               </p>
             </div>
 
-            <Tabs defaultValue="lead-types" className="space-y-4">
+            <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
               <TabsList>
                 <TabsTrigger value="lead-types">Lead Types</TabsTrigger>
                 <TabsTrigger value="bank-branches">Bank Branches</TabsTrigger>

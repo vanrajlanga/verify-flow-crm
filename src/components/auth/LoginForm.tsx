@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { loginUser } from '@/utils/mockData';
 import { Shield } from 'lucide-react';
+import { User } from '@/utils/mockData';
 
 interface LoginFormProps {
   onLogin: (user: any) => void;
@@ -25,7 +26,17 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
     setIsLoading(true);
 
     try {
-      const user = await loginUser(email, password);
+      // First try to login with mock data users
+      let user = await loginUser(email, password);
+      
+      // If not found in mock data, check localStorage users (team members)
+      if (!user) {
+        const storedUsers = localStorage.getItem('mockUsers');
+        if (storedUsers) {
+          const users: User[] = JSON.parse(storedUsers);
+          user = users.find(u => u.email === email && u.password === password);
+        }
+      }
       
       if (user) {
         onLogin(user);

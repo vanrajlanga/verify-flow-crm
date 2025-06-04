@@ -71,24 +71,28 @@ const Sidebar = ({ user, isOpen }: SidebarProps) => {
     {
       icon: Building,
       label: 'Bank Branches',
-      path: '/admin/settings/bank-branches',
+      path: '/admin/settings?tab=bank-branches',
       adminOnly: true
     },
     {
       icon: Briefcase,
       label: 'Lead Types',
-      path: '/admin/settings/lead-types',
+      path: '/admin/settings?tab=lead-types',
       adminOnly: true
     },
     {
       icon: UserCheck,
       label: 'Vehicle Brands',
-      path: '/admin/settings/vehicle-brands',
+      path: '/admin/settings?tab=vehicles',
       adminOnly: true
     }
   ];
 
   const isActiveRoute = (path: string) => {
+    if (path.includes('?tab=')) {
+      const [basePath, tab] = path.split('?tab=');
+      return location.pathname === basePath && location.search.includes(tab);
+    }
     return location.pathname === path;
   };
 
