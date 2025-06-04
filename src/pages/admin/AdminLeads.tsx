@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -17,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from '@/components/ui/use-toast';
 import AddLeadForm from '@/components/admin/AddLeadForm';
+import EditLeadForm from '@/components/admin/EditLeadForm';
 import { Plus } from 'lucide-react';
 
 interface LocationData {
@@ -42,6 +42,7 @@ const AdminLeads = () => {
   const [locationData, setLocationData] = useState<LocationData>({
     states: []
   });
+  const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -68,7 +69,6 @@ const AdminLeads = () => {
         setLeads(parsedLeads);
       } catch (error) {
         console.error("Error parsing stored leads:", error);
-        // Fallback to mock data
         setLeads(mockLeads);
         localStorage.setItem('mockLeads', JSON.stringify(mockLeads));
       }
@@ -77,12 +77,13 @@ const AdminLeads = () => {
       localStorage.setItem('mockLeads', JSON.stringify(mockLeads));
     }
 
-    // Get agents
-    const storedAgents = localStorage.getItem('mockUsers');
-    if (storedAgents) {
+    // Get ALL agents from localStorage (including newly created ones)
+    const storedUsers = localStorage.getItem('mockUsers');
+    if (storedUsers) {
       try {
-        const parsedUsers = JSON.parse(storedAgents);
-        setAgents(parsedUsers.filter((user: User) => user.role === 'agent'));
+        const parsedUsers = JSON.parse(storedUsers);
+        const filteredAgents = parsedUsers.filter((user: User) => user.role === 'agent');
+        setAgents(filteredAgents);
       } catch (error) {
         console.error("Error parsing stored users:", error);
         const filteredAgents = mockUsers.filter(user => user.role === 'agent');
@@ -102,11 +103,9 @@ const AdminLeads = () => {
         setLocationData(parsedLocationData);
       } catch (error) {
         console.error("Error parsing stored location data:", error);
-        // Initialize with empty structure if parsing fails
         initializeDefaultLocationData();
       }
     } else {
-      // First time initialization with default locations
       initializeDefaultLocationData();
     }
   }, [navigate]);
@@ -174,6 +173,24 @@ const AdminLeads = () => {
     });
   };
 
+  const handleEditLead = (lead: Lead) => {
+    setEditingLead(lead);
+  };
+
+  const handleUpdateLeadData = (updatedLead: Lead) => {
+    const updatedLeads = leads.map(lead =>
+      lead.id === updatedLead.id ? updatedLead : lead
+    );
+    setLeads(updatedLeads);
+    localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+
+    toast({
+      title: "Lead updated",
+      description: `Lead ${updatedLead.name} has been updated successfully.`,
+    });
+    setEditingLead(null);
+  };
+
   const handleAddLead = (newLead: Lead) => {
     const updatedLeads = [...leads, newLead];
     setLeads(updatedLeads);
@@ -233,7 +250,6 @@ const AdminLeads = () => {
   };
 
   const handleExport = (format: 'csv' | 'xls') => {
-    // Create CSV content
     const headers = [
       'Agency File No', 'Customer Name', 'Phone', 'Address Type', 'Product Type',
       'Residence Address', 'Office Address', 'FI Date', 'Status', 'Assigned Agent',
@@ -243,7 +259,6 @@ const AdminLeads = () => {
     const csvContent = [
       headers.join(','),
       ...leads.map(lead => {
-        // Find office address from additional addresses
         const officeAddress = lead.additionalDetails?.addresses?.find(addr => addr.type === 'Office');
         
         return [
@@ -264,7 +279,6 @@ const AdminLeads = () => {
       })
     ].join('\n');
 
-    // Download file
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -284,16 +298,15 @@ const AdminLeads = () => {
         const lines = content.split('\n');
         const headers = lines[0].split(',');
         
-        // Parse CSV and create leads (simplified implementation)
         const importedLeads: Lead[] = [];
         
         for (let i = 1; i < lines.length; i++) {
           const values = lines[i].split(',');
-          if (values.length >= 3 && values[1].trim()) { // At least name is required
+          if (values.length >= 3 && values[1].trim()) {
             const newLead: Lead = {
               id: `imported-lead-${Date.now()}-${i}`,
               name: values[1].trim(),
-              age: 30, // Default age
+              age: 30,
               job: values[3] || 'Not specified',
               address: {
                 street: values[5] || '',
@@ -317,7 +330,7 @@ const AdminLeads = () => {
                 addresses: []
               },
               status: 'Pending',
-              bank: 'bank-1', // Default bank
+              bank: 'bank-1',
               visitType: 'Residence',
               assignedTo: '',
               createdAt: new Date(),
@@ -363,9 +376,8 @@ const AdminLeads = () => {
 
   if (!currentUser) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
-  }
+  };
 
-  // Create simplified location data for backward compatibility
   const simplifiedLocationData = {
     states: locationData.states.map(state => state.name),
     districts: locationData.states.flatMap(state => 
@@ -439,6 +451,7 @@ const AdminLeads = () => {
                       handleUpdateLead(lead.id, lead.status);
                     }
                   }}
+                  onEdit={handleEditLead}
                   onDelete={handleDeleteLead}
                   onBulkDelete={handleBulkDelete}
                   onAssignLead={handleAssignLead}
@@ -451,6 +464,28 @@ const AdminLeads = () => {
           </div>
         </main>
       </div>
+
+      {/* Edit Lead Dialog */}
+      <Dialog open={!!editingLead} onOpenChange={() => setEditingLead(null)}>
+        <DialogContent className="sm:max-w-5xl w-full">
+          <DialogHeader>
+            <DialogTitle>Edit Lead</DialogTitle>
+            <DialogDescription>
+              Update lead information and details.
+            </DialogDescription>
+          </DialogHeader>
+          {editingLead && (
+            <EditLeadForm 
+              lead={editingLead}
+              agents={agents}
+              banks={mockBanks}
+              onUpdate={handleUpdateLeadData}
+              onClose={() => setEditingLead(null)}
+              locationData={locationData}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

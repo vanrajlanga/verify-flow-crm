@@ -3,7 +3,15 @@ import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Trash2 } from 'lucide-react';
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Plus, Trash2, Edit } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 
 export interface LeadType {
@@ -15,14 +23,14 @@ export interface LeadType {
 const LeadTypeManager = () => {
   const [leadTypes, setLeadTypes] = useState<LeadType[]>([]);
   const [newLeadType, setNewLeadType] = useState('');
+  const [editingType, setEditingType] = useState<LeadType | null>(null);
+  const [editName, setEditName] = useState('');
 
   useEffect(() => {
-    // Load existing lead types from localStorage
     const storedLeadTypes = localStorage.getItem('leadTypes');
     if (storedLeadTypes) {
       setLeadTypes(JSON.parse(storedLeadTypes));
     } else {
-      // Initialize with default lead types
       const defaultLeadTypes: LeadType[] = [
         { id: 'commercial-vehicles', name: 'Commercial Vehicles', category: 'vehicle' },
         { id: 'auto-loans', name: 'AUTO LOANS', category: 'vehicle' },
@@ -50,7 +58,7 @@ const LeadTypeManager = () => {
     const newType: LeadType = {
       id: `lead-type-${Date.now()}`,
       name: newLeadType.trim(),
-      category: 'loan' // Default category, can be customized
+      category: 'loan'
     };
 
     const updatedTypes = [...leadTypes, newType];
@@ -61,6 +69,38 @@ const LeadTypeManager = () => {
     toast({
       title: "Success",
       description: "Lead type added successfully"
+    });
+  };
+
+  const startEdit = (type: LeadType) => {
+    setEditingType(type);
+    setEditName(type.name);
+  };
+
+  const saveEdit = () => {
+    if (!editName.trim()) {
+      toast({
+        title: "Error",
+        description: "Lead type name cannot be empty",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const updatedTypes = leadTypes.map(type => 
+      type.id === editingType?.id 
+        ? { ...type, name: editName.trim() }
+        : type
+    );
+
+    setLeadTypes(updatedTypes);
+    localStorage.setItem('leadTypes', JSON.stringify(updatedTypes));
+    setEditingType(null);
+    setEditName('');
+
+    toast({
+      title: "Success",
+      description: "Lead type updated successfully"
     });
   };
 
@@ -96,15 +136,51 @@ const LeadTypeManager = () => {
 
         <div className="space-y-2">
           {leadTypes.map((type) => (
-            <div key={type.id} className="flex items-center justify-between p-2 border rounded">
-              <span>{type.name}</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => removeLeadType(type.id)}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+            <div key={type.id} className="flex items-center justify-between p-3 border rounded-lg">
+              <span className="font-medium">{type.name}</span>
+              <div className="flex items-center gap-2">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => startEdit(type)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Edit Lead Type</DialogTitle>
+                      <DialogDescription>
+                        Update the lead type name.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <Input
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        placeholder="Lead type name"
+                      />
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" onClick={() => setEditingType(null)}>
+                        Cancel
+                      </Button>
+                      <Button onClick={saveEdit}>
+                        Save Changes
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeLeadType(type.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           ))}
         </div>

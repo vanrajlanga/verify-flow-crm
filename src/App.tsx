@@ -19,13 +19,13 @@ import AdminReports from "./pages/admin/AdminReports";
 import AdminAgents from "./pages/admin/AdminAgents";
 import AdminBanks from "./pages/admin/AdminBanks";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminRoles from "./pages/admin/AdminRoles";
 
 // Agent pages
 import AgentLeads from "./pages/agent/AgentLeads";
 import AgentHistory from "./pages/agent/AgentHistory";
 import AgentProfile from "./pages/agent/AgentProfile";
 
-// Create QueryClient outside the component
 const queryClient = new QueryClient();
 
 const App = () => {
@@ -54,6 +54,7 @@ const App = () => {
             <Route path="/admin/agents" element={<AdminAgents />} />
             <Route path="/admin/banks" element={<AdminBanks />} />
             <Route path="/admin/settings" element={<AdminSettings />} />
+            <Route path="/admin/roles" element={<AdminRoles />} />
             
             {/* Generic lead detail route for both admin and agent */}
             <Route path="/lead/:leadId" element={<LeadDetail />} />

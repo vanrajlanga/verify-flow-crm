@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { User } from '@/utils/mockData';
 import { Button } from "@/components/ui/button";
@@ -35,16 +36,11 @@ const EditAgentForm = ({ agent, onUpdate, onClose, locationData }: EditAgentForm
   const [maxTravelDistance, setMaxTravelDistance] = useState(agent.maxTravelDistance?.toString() || "10");
   const [extraChargePerKm, setExtraChargePerKm] = useState(agent.extraChargePerKm?.toString() || "5");
   
-  // Find the district options for the selected state
   const availableDistricts = locationData.states.find((s: any) => s.name === state)?.districts || [];
-  
-  // Find the city options for the selected district
   const availableCities = availableDistricts.find((d: any) => d.name === district)?.cities || [];
 
-  // Set initial state based on agent's district when component loads
   useEffect(() => {
     if (agent.district && !state) {
-      // Find which state contains this district
       for (const s of locationData.states) {
         const foundDistrict = s.districts.find((d: any) => d.name === agent.district);
         if (foundDistrict) {
@@ -82,8 +78,23 @@ const EditAgentForm = ({ agent, onUpdate, onClose, locationData }: EditAgentForm
       extraChargePerKm: extraChargePerKm ? parseInt(extraChargePerKm) : 5
     };
     
+    // Update password if provided
     if (password) {
       updatedAgent.password = password;
+    }
+    
+    // Update the agent in localStorage
+    const storedUsers = localStorage.getItem('mockUsers');
+    if (storedUsers) {
+      try {
+        const users = JSON.parse(storedUsers);
+        const updatedUsers = users.map((user: User) => 
+          user.id === updatedAgent.id ? updatedAgent : user
+        );
+        localStorage.setItem('mockUsers', JSON.stringify(updatedUsers));
+      } catch (error) {
+        console.error('Error updating user in localStorage:', error);
+      }
     }
     
     onUpdate(updatedAgent);
@@ -151,6 +162,9 @@ const EditAgentForm = ({ agent, onUpdate, onClose, locationData }: EditAgentForm
               placeholder="Leave blank to keep current password"
               onChange={(e) => setPassword(e.target.value)}
             />
+            <p className="text-xs text-muted-foreground">
+              Enter a new password only if you want to change it
+            </p>
           </div>
         </TabsContent>
         

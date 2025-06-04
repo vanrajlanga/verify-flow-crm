@@ -43,6 +43,7 @@ interface LeadListProps {
   currentUser: User;
   isAdmin?: boolean;
   onUpdate?: (lead: Lead) => void;
+  onEdit?: (lead: Lead) => void;
   onDelete?: (leadId: string) => void;
   onBulkDelete?: (leadIds: string[]) => void;
   onAssignLead?: (leadId: string, agentId: string) => void;
@@ -56,6 +57,7 @@ const LeadList = ({
   currentUser, 
   isAdmin = false,
   onUpdate,
+  onEdit,
   onDelete,
   onBulkDelete,
   onAssignLead,
@@ -230,13 +232,11 @@ const LeadList = ({
         title: "Import started",
         description: "Processing imported leads...",
       });
-      // Reset file input
       event.target.value = '';
     }
   };
 
   const handleViewLead = (leadId: string) => {
-    // Fix the navigation route based on user role
     if (isAdmin) {
       navigate(`/admin/leads/${leadId}`);
     } else {
@@ -447,6 +447,12 @@ const LeadList = ({
                             <Eye className="h-4 w-4 mr-2" />
                             View
                           </DropdownMenuItem>
+                          {onEdit && (
+                            <DropdownMenuItem onClick={() => onEdit(lead)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem onClick={() => handleAssignLead(lead.id)}>
                             <UserPlus className="h-4 w-4 mr-2" />
                             Assign Agent
