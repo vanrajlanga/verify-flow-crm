@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -43,6 +44,7 @@ const AdminLeads = () => {
     states: []
   });
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
+  const [addLeadDialogOpen, setAddLeadDialogOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -60,12 +62,17 @@ const AdminLeads = () => {
     }
 
     setCurrentUser(parsedUser);
+    loadLeadsAndAgents();
+    loadLocationData();
+  }, [navigate]);
 
+  const loadLeadsAndAgents = () => {
     // Get leads from localStorage or use mockLeads
     const storedLeads = localStorage.getItem('mockLeads');
     if (storedLeads) {
       try {
         const parsedLeads = JSON.parse(storedLeads);
+        console.log('Loaded leads from localStorage:', parsedLeads.length);
         setLeads(parsedLeads);
       } catch (error) {
         console.error("Error parsing stored leads:", error);
@@ -73,6 +80,7 @@ const AdminLeads = () => {
         localStorage.setItem('mockLeads', JSON.stringify(mockLeads));
       }
     } else {
+      console.log('No stored leads found, using mockLeads');
       setLeads(mockLeads);
       localStorage.setItem('mockLeads', JSON.stringify(mockLeads));
     }
@@ -83,6 +91,7 @@ const AdminLeads = () => {
       try {
         const parsedUsers = JSON.parse(storedUsers);
         const filteredAgents = parsedUsers.filter((user: User) => user.role === 'agent');
+        console.log('Loaded agents from localStorage:', filteredAgents.length);
         setAgents(filteredAgents);
       } catch (error) {
         console.error("Error parsing stored users:", error);
@@ -94,7 +103,9 @@ const AdminLeads = () => {
       setAgents(filteredAgents);
       localStorage.setItem('mockUsers', JSON.stringify(mockUsers));
     }
+  };
 
+  const loadLocationData = () => {
     // Get location data from localStorage or initialize empty structure
     const storedLocationData = localStorage.getItem('locationData');
     if (storedLocationData) {
@@ -108,7 +119,7 @@ const AdminLeads = () => {
     } else {
       initializeDefaultLocationData();
     }
-  }, [navigate]);
+  };
 
   // Function to initialize default location data
   const initializeDefaultLocationData = () => {
@@ -148,13 +159,6 @@ const AdminLeads = () => {
     localStorage.setItem('locationData', JSON.stringify(defaultLocationData));
   };
 
-  // Save location data to localStorage whenever it changes
-  useEffect(() => {
-    if (locationData.states.length > 0) {
-      localStorage.setItem('locationData', JSON.stringify(locationData));
-    }
-  }, [locationData]);
-
   const handleLogout = () => {
     localStorage.removeItem('kycUser');
     navigate('/');
@@ -171,6 +175,9 @@ const AdminLeads = () => {
       title: "Lead updated",
       description: `Lead ${leadId} status updated to ${newStatus}.`,
     });
+
+    // Reload data to ensure consistency
+    loadLeadsAndAgents();
   };
 
   const handleEditLead = (lead: Lead) => {
@@ -189,9 +196,13 @@ const AdminLeads = () => {
       description: `Lead ${updatedLead.name} has been updated successfully.`,
     });
     setEditingLead(null);
+    
+    // Reload data to ensure consistency
+    loadLeadsAndAgents();
   };
 
   const handleAddLead = (newLead: Lead) => {
+    console.log('Adding new lead:', newLead);
     const updatedLeads = [...leads, newLead];
     setLeads(updatedLeads);
     localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
@@ -200,6 +211,11 @@ const AdminLeads = () => {
       title: "Lead added",
       description: `New lead ${newLead.name} has been created.`,
     });
+
+    setAddLeadDialogOpen(false);
+    
+    // Reload data to ensure consistency
+    loadLeadsAndAgents();
   };
 
   const handleDeleteLead = (leadId: string) => {
@@ -211,6 +227,9 @@ const AdminLeads = () => {
       title: "Lead deleted",
       description: `Lead ${leadId} has been removed.`,
     });
+
+    // Reload data to ensure consistency
+    loadLeadsAndAgents();
   };
 
   const handleBulkDelete = (leadIds: string[]) => {
@@ -222,31 +241,45 @@ const AdminLeads = () => {
       title: "Leads deleted",
       description: `${leadIds.length} leads have been removed.`,
     });
+
+    // Reload data to ensure consistency
+    loadLeadsAndAgents();
   };
 
   const handleAssignLead = (leadId: string, agentId: string) => {
+    console.log('Assigning lead in AdminLeads:', leadId, 'to agent:', agentId);
+    
     const updatedLeads = leads.map(lead => {
       if (lead.id === leadId) {
-        return {
+        const updatedLead = {
           ...lead,
           assignedTo: agentId,
+          status: 'Pending' as Lead['status'],
           verification: {
             ...lead.verification,
             agentId: agentId,
             status: 'Not Started'
           }
         } as Lead;
+        console.log('Updated lead:', updatedLead);
+        return updatedLead;
       }
       return lead;
     });
     
     setLeads(updatedLeads);
     localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+    
+    console.log('All leads after assignment:', updatedLeads);
 
+    const agent = agents.find(a => a.id === agentId);
     toast({
       title: "Lead assigned",
-      description: "Lead has been assigned to the selected agent.",
+      description: `Lead has been assigned to ${agent?.name || 'the selected agent'}.`,
     });
+
+    // Reload data to ensure consistency
+    loadLeadsAndAgents();
   };
 
   const handleExport = (format: 'csv' | 'xls') => {
@@ -350,6 +383,9 @@ const AdminLeads = () => {
             title: "Import successful",
             description: `${importedLeads.length} leads have been imported.`,
           });
+
+          // Reload data to ensure consistency
+          loadLeadsAndAgents();
         } else {
           toast({
             title: "Import failed",
@@ -369,25 +405,8 @@ const AdminLeads = () => {
     reader.readAsText(file);
   };
 
-  const handleUpdateLocationData = (newLocationData: LocationData) => {
-    setLocationData(newLocationData);
-    localStorage.setItem('locationData', JSON.stringify(newLocationData));
-  };
-
   if (!currentUser) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
-  };
-
-  const simplifiedLocationData = {
-    states: locationData.states.map(state => state.name),
-    districts: locationData.states.flatMap(state => 
-      state.districts.map(district => district.name)
-    ),
-    cities: locationData.states.flatMap(state => 
-      state.districts.flatMap(district => 
-        district.cities.map(city => city.name)
-      )
-    )
   };
 
   return (
@@ -410,7 +429,7 @@ const AdminLeads = () => {
                   Manage leads and track verification progress
                 </p>
               </div>
-              <Dialog>
+              <Dialog open={addLeadDialogOpen} onOpenChange={setAddLeadDialogOpen}>
                 <DialogTrigger asChild>
                   <Button>
                     <Plus className="mr-2 h-4 w-4" />
@@ -428,7 +447,7 @@ const AdminLeads = () => {
                     agents={agents}
                     banks={mockBanks}
                     onAddLead={handleAddLead}
-                    onClose={() => document.querySelector<HTMLButtonElement>('[aria-label="Close"]')?.click()}
+                    onClose={() => setAddLeadDialogOpen(false)}
                     locationData={locationData}
                   />
                 </DialogContent>

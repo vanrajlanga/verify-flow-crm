@@ -1,91 +1,179 @@
 
 import { useState } from 'react';
-import { NavLink } from 'react-router-dom';
-import { cn } from '@/lib/utils';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { 
+  LayoutDashboard, 
+  Users, 
+  FileText, 
+  BarChart, 
+  Settings, 
+  ChevronDown, 
+  ChevronRight,
+  UserCheck,
+  Building,
+  Briefcase,
+  Shield,
+  UserCog
+} from 'lucide-react';
 import { User } from '@/utils/mockData';
-import { BadgeCheck, BarChart, File, Home, List, Settings, User as UserIcon, Users } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface SidebarProps {
-  user: User | null;
+  user: User;
   isOpen: boolean;
 }
 
 const Sidebar = ({ user, isOpen }: SidebarProps) => {
-  const [activeGroup, setActiveGroup] = useState<string | null>('dashboard');
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
-  const toggleGroup = (group: string) => {
-    setActiveGroup(activeGroup === group ? null : group);
+  const isAdmin = user.role === 'admin';
+
+  const menuItems = [
+    {
+      icon: LayoutDashboard,
+      label: 'Dashboard',
+      path: isAdmin ? '/admin' : '/agent',
+      adminOnly: false
+    },
+    {
+      icon: FileText,
+      label: 'Leads',
+      path: isAdmin ? '/admin/leads' : '/agent/leads',
+      adminOnly: false
+    },
+    {
+      icon: Users,
+      label: 'Agents',
+      path: '/admin/agents',
+      adminOnly: true
+    },
+    {
+      icon: BarChart,
+      label: 'Reports',
+      path: '/admin/reports',
+      adminOnly: true
+    },
+    {
+      icon: Shield,
+      label: 'Roles & Permissions',
+      path: '/admin/roles',
+      adminOnly: true
+    }
+  ];
+
+  const settingsItems = [
+    {
+      icon: Building,
+      label: 'Bank Branches',
+      path: '/admin/settings/bank-branches',
+      adminOnly: true
+    },
+    {
+      icon: Briefcase,
+      label: 'Lead Types',
+      path: '/admin/settings/lead-types',
+      adminOnly: true
+    },
+    {
+      icon: UserCheck,
+      label: 'Vehicle Brands',
+      path: '/admin/settings/vehicle-brands',
+      adminOnly: true
+    }
+  ];
+
+  const isActiveRoute = (path: string) => {
+    return location.pathname === path;
   };
 
-  const adminLinks = [
-    { group: 'dashboard', icon: <Home size={20} />, label: 'Dashboard', path: '/admin' },
-    { group: 'leads', icon: <List size={20} />, label: 'Lead Management', path: '/admin/leads' },
-    { group: 'verifications', icon: <BadgeCheck size={20} />, label: 'Verifications', path: '/admin/verifications' },
-    { group: 'reports', icon: <BarChart size={20} />, label: 'Reports', path: '/admin/reports' },
-    { group: 'agents', icon: <Users size={20} />, label: 'Agent Management', path: '/admin/agents' },
-    { group: 'banks', icon: <File size={20} />, label: 'Bank Integration', path: '/admin/banks' },
-    { group: 'settings', icon: <Settings size={20} />, label: 'Settings', path: '/admin/settings' },
-  ];
+  const handleMenuClick = (path: string) => {
+    navigate(path);
+  };
 
-  const agentLinks = [
-    { group: 'dashboard', icon: <Home size={20} />, label: 'Dashboard', path: '/agent' },
-    { group: 'leads', icon: <List size={20} />, label: 'My Leads', path: '/agent/leads' },
-    { group: 'history', icon: <File size={20} />, label: 'History', path: '/agent/history' },
-    { group: 'profile', icon: <UserIcon size={20} />, label: 'My Profile', path: '/agent/profile' },
-  ];
-
-  // Default to admin links if user is null or if role is not defined
-  const links = user?.role === 'agent' ? agentLinks : adminLinks;
-
-  // If user is null, don't render the sidebar
-  if (!user) {
+  if (!isOpen) {
     return null;
   }
 
   return (
-    <div 
-      className={cn(
-        "fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-sidebar border-r border-gray-200 dark:border-gray-800 shadow-sm transition-transform duration-300 md:relative",
-        isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-      )}
-    >
-      <div className="flex flex-col h-full py-4">
-        <div className="px-4 py-2">
-          <h2 className="text-lg font-medium text-sidebar-foreground flex items-center">
-            <span className="bg-sidebar-primary text-sidebar-primary-foreground rounded-md p-1 mr-2 text-xs">
-              KYC
-            </span>
-            Bank Verification CRM
-          </h2>
-          <p className="text-sm text-sidebar-foreground/70 mt-1">
-            {user.role === 'admin' ? 'Administrator Panel' : `Agent Panel - ${user.district}`}
-          </p>
-        </div>
-        
-        <div className="mt-6 flex flex-col flex-1 px-3 space-y-1">
-          {links.map((link) => (
-            <NavLink
-              key={link.path}
-              to={link.path}
-              className={({ isActive }) => cn(
-                "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
-                isActive 
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground" 
-                  : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
-              )}
-              onClick={() => toggleGroup(link.group)}
-            >
-              {link.icon}
-              <span>{link.label}</span>
-            </NavLink>
-          ))}
-        </div>
+    <div className="flex h-full w-64 flex-col border-r bg-white">
+      <div className="flex h-14 items-center px-4 border-b">
+        <h2 className="text-lg font-semibold">KYC Portal</h2>
+        <Badge variant="secondary" className="ml-2">
+          {user.role}
+        </Badge>
+      </div>
+      
+      <ScrollArea className="flex-1 px-3 py-4">
+        <div className="space-y-2">
+          {menuItems.map((item) => {
+            if (item.adminOnly && !isAdmin) return null;
+            
+            const Icon = item.icon;
+            return (
+              <Button
+                key={item.path}
+                variant={isActiveRoute(item.path) ? "secondary" : "ghost"}
+                className="w-full justify-start"
+                onClick={() => handleMenuClick(item.path)}
+              >
+                <Icon className="mr-2 h-4 w-4" />
+                {item.label}
+              </Button>
+            );
+          })}
 
-        <div className="mt-auto px-4 py-2">
-          <div className="rounded-md bg-sidebar-accent/50 p-4 text-xs text-sidebar-foreground">
-            <p className="font-medium">Need help?</p>
-            <p className="mt-1">Contact support team</p>
-            <p className="font-medium mt-2">support@bankkyc.com</p>
+          {isAdmin && (
+            <>
+              <Separator className="my-4" />
+              
+              <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen}>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" className="w-full justify-start">
+                    <Settings className="mr-2 h-4 w-4" />
+                    Settings
+                    {settingsOpen ? (
+                      <ChevronDown className="ml-auto h-4 w-4" />
+                    ) : (
+                      <ChevronRight className="ml-auto h-4 w-4" />
+                    )}
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-1 pl-6">
+                  {settingsItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <Button
+                        key={item.path}
+                        variant={isActiveRoute(item.path) ? "secondary" : "ghost"}
+                        className="w-full justify-start"
+                        onClick={() => handleMenuClick(item.path)}
+                      >
+                        <Icon className="mr-2 h-4 w-4" />
+                        {item.label}
+                      </Button>
+                    );
+                  })}
+                </CollapsibleContent>
+              </Collapsible>
+            </>
+          )}
+        </div>
+      </ScrollArea>
+
+      <div className="border-t p-4">
+        <div className="flex items-center space-x-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
+            {user.name.charAt(0).toUpperCase()}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium truncate">{user.name}</p>
+            <p className="text-xs text-muted-foreground truncate">{user.email}</p>
           </div>
         </div>
       </div>

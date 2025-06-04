@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -11,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import LeadReview from '@/components/dashboard/LeadReview';
 import VerificationProcess from '@/components/dashboard/VerificationProcess';
+import DocumentViewer from '@/components/shared/DocumentViewer';
 import { toast } from '@/components/ui/use-toast';
 
 // Helper functions
@@ -21,18 +21,6 @@ const getBadgeColor = (status: string) => {
     case 'Completed': return 'bg-green-100 text-green-800';
     case 'Rejected': return 'bg-red-100 text-red-800';
     default: return 'bg-gray-100 text-gray-800';
-  }
-};
-
-const getDocumentIcon = (type: string) => {
-  switch (type) {
-    case 'PAN':
-    case 'Aadhar':
-    case 'Voter ID':
-    case 'Job ID':
-      return <FileText className="h-4 w-4" />;
-    default:
-      return <FileText className="h-4 w-4" />;
   }
 };
 
@@ -224,13 +212,15 @@ const LeadDetail = () => {
     // Convert FileList to array and create photo objects
     Array.from(files).forEach((file, index) => {
       const photoId = `photo-${new Date().getTime()}-${index}`;
+      const photoUrl = URL.createObjectURL(file); // Create preview URL
       lead.verification.photos.push({
         id: photoId,
         name: file.name,
         type: 'Photo',
         uploadedBy: 'agent',
-        url: '/placeholder.svg', // In a real app, would upload to server
-        uploadDate: new Date()
+        url: photoUrl,
+        uploadDate: new Date(),
+        size: file.size
       });
     });
     
@@ -250,13 +240,15 @@ const LeadDetail = () => {
     // Convert FileList to array and create document objects
     Array.from(files).forEach((file, index) => {
       const docId = `doc-${new Date().getTime()}-${index}`;
+      const docUrl = URL.createObjectURL(file); // Create preview URL
       lead.verification.documents.push({
         id: docId,
         name: file.name,
         type: type as any,
         uploadedBy: 'agent',
-        url: '/placeholder.svg', // In a real app, would upload to server
-        uploadDate: new Date()
+        url: docUrl,
+        uploadDate: new Date(),
+        size: file.size
       });
     });
     
@@ -334,38 +326,20 @@ const LeadDetail = () => {
     });
   };
 
-  // Document list rendering
-  const documentsList = lead.documents?.map((doc: any, index: number) => (
-    <li key={typeof doc === 'string' ? `${doc}-${index}` : doc.id} className="mb-4 flex items-center justify-between p-3 bg-white rounded-md shadow-sm border">
-      <div className="flex items-center">
-        <div className={`h-10 w-10 rounded-full flex items-center justify-center ${getBadgeColor('default')}`}>
-          {typeof doc === 'string' ? 
-            <FileText className="h-5 w-5" /> : 
-            getDocumentIcon(doc.type)
-          }
-        </div>
-        <span className="ml-3 font-medium">
-          {typeof doc === 'string' ? doc : doc.name}
-        </span>
-      </div>
-      <div className="flex items-center space-x-2">
-        <Button 
-          variant="ghost" 
-          size="sm"
-          asChild
-        >
-          <a 
-            href={typeof doc === 'string' ? '#' : doc.url} 
-            target="_blank" 
-            download={typeof doc === 'string' ? '' : doc.name}
-          >
-            <Download className="h-4 w-4 mr-1" />
-            <span>{typeof doc === 'string' ? 'Download' : 'View'}</span>
-          </a>
-        </Button>
-      </div>
-    </li>
-  ));
+  // Convert documents to proper format for DocumentViewer
+  const formattedDocuments = lead.documents?.map((doc: any) => {
+    if (typeof doc === 'string') {
+      return {
+        id: `doc-${Math.random()}`,
+        name: doc,
+        type: 'Document',
+        url: '/placeholder.svg',
+        uploadedBy: 'bank',
+        uploadDate: new Date()
+      };
+    }
+    return doc;
+  }) || [];
 
   const isAdmin = currentUser?.role === 'admin';
 
@@ -503,16 +477,7 @@ const LeadDetail = () => {
                 <CardDescription>Customer submitted documents</CardDescription>
               </CardHeader>
               <CardContent>
-                {lead.documents && lead.documents.length > 0 ? (
-                  <ul className="space-y-2">
-                    {documentsList}
-                  </ul>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <FileText className="h-12 w-12 mx-auto mb-3 opacity-20" />
-                    <p>No documents available</p>
-                  </div>
-                )}
+                <DocumentViewer documents={formattedDocuments} title="" />
               </CardContent>
             </Card>
           </div>
@@ -664,38 +629,23 @@ const LeadDetail = () => {
               </TabsContent>
               
               <TabsContent value="verification" className="pt-4">
-                {isAdmin && lead.verification ? (
-                  <LeadReview 
+                {isAdmin ? (
+                  <LeadReview
                     lead={lead}
-                    currentUser={currentUser}
                     onApprove={handleApproveVerification}
                     onReject={handleRejectVerification}
                     onForwardToBank={handleForwardToBank}
                   />
-                ) : currentUser?.role === 'agent' ? (
-                  <VerificationProcess 
+                ) : (
+                  <VerificationProcess
                     lead={lead}
-                    onStartVerification={handleStartVerification}
+                    onStart={handleStartVerification}
                     onMarkArrival={handleMarkArrival}
                     onUploadPhoto={handleUploadPhoto}
                     onUploadDocument={handleUploadDocument}
                     onAddNotes={handleAddNotes}
-                    onCompleteVerification={handleCompleteVerification}
+                    onComplete={handleCompleteVerification}
                   />
-                ) : (
-                  <Card>
-                    <CardContent className="pt-6">
-                      <div className="text-center py-8">
-                        <div className="bg-muted rounded-full h-12 w-12 flex items-center justify-center mx-auto mb-4">
-                          <Clock className="h-6 w-6 text-muted-foreground" />
-                        </div>
-                        <h3 className="text-lg font-medium mb-2">Verification Not Started</h3>
-                        <p className="text-muted-foreground">
-                          The verification process has not been initiated yet.
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
                 )}
               </TabsContent>
             </Tabs>

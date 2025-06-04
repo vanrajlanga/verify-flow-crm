@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lead, User } from '@/utils/mockData';
@@ -70,6 +71,22 @@ const LeadList = ({
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [leadToAssign, setLeadToAssign] = useState<string>('');
   const [selectedAgent, setSelectedAgent] = useState<string>('');
+
+  // Get all agents from localStorage to ensure we have the latest data
+  const getAllAgents = () => {
+    try {
+      const storedUsers = localStorage.getItem('mockUsers');
+      if (storedUsers) {
+        const users = JSON.parse(storedUsers);
+        return users.filter((user: User) => user.role === 'agent');
+      }
+    } catch (error) {
+      console.error('Error getting agents:', error);
+    }
+    return availableAgents;
+  };
+
+  const allAvailableAgents = getAllAgents();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -150,6 +167,11 @@ const LeadList = ({
     return 'N/A';
   };
 
+  const getAgentName = (agentId: string) => {
+    const agent = allAvailableAgents.find(a => a.id === agentId);
+    return agent ? agent.name : 'Unassigned';
+  };
+
   const handleSelectLead = (leadId: string, checked: boolean) => {
     if (checked) {
       setSelectedLeads([...selectedLeads, leadId]);
@@ -188,6 +210,7 @@ const LeadList = ({
 
   const handleAssignLead = (leadId: string) => {
     setLeadToAssign(leadId);
+    setSelectedAgent('');
     setAssignDialogOpen(true);
   };
 
@@ -201,11 +224,36 @@ const LeadList = ({
       return;
     }
 
+    console.log('Assigning lead:', leadToAssign, 'to agent:', selectedAgent);
+    
     if (onAssignLead) {
       onAssignLead(leadToAssign, selectedAgent);
+      
+      // Also update the lead data directly to ensure consistency
+      try {
+        const storedLeads = localStorage.getItem('mockLeads');
+        if (storedLeads) {
+          const allLeads = JSON.parse(storedLeads);
+          const updatedLeads = allLeads.map((lead: Lead) => 
+            lead.id === leadToAssign 
+              ? { 
+                  ...lead, 
+                  assignedTo: selectedAgent,
+                  status: 'Pending' as Lead['status']
+                }
+              : lead
+          );
+          localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+          console.log('Lead assignment updated in localStorage');
+        }
+      } catch (error) {
+        console.error('Error updating lead assignment:', error);
+      }
+      
+      const selectedAgentInfo = allAvailableAgents.find(a => a.id === selectedAgent);
       toast({
-        title: "Lead assigned",
-        description: "Lead has been assigned successfully.",
+        title: "Lead assigned successfully",
+        description: `Lead has been assigned to ${selectedAgentInfo?.name || 'the selected agent'}.`,
       });
     }
     
@@ -332,6 +380,7 @@ const LeadList = ({
               <TableHead className="w-[120px]">Branch</TableHead>
               <TableHead className="w-[120px]">Application ID</TableHead>
               <TableHead className="w-[150px]">Customer Name</TableHead>
+              <TableHead className="w-[120px]">Assigned Agent</TableHead>
               <TableHead className="w-[100px]">Address Type</TableHead>
               <TableHead className="w-[120px]">Product Type</TableHead>
               <TableHead className="w-[200px]">Residence Address</TableHead>
@@ -373,6 +422,11 @@ const LeadList = ({
                     <UserIcon className="h-4 w-4 text-muted-foreground" />
                     {lead.name}
                   </div>
+                </TableCell>
+                <TableCell>
+                  <Badge variant="outline" className="text-xs">
+                    {getAgentName(lead.assignedTo || '')}
+                  </Badge>
                 </TableCell>
                 <TableCell>
                   <Badge variant="outline">{lead.visitType}</Badge>
@@ -487,23 +541,29 @@ const LeadList = ({
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <Select value={selectedAgent} onValueChange={setSelectedAgent}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select an agent" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableAgents.map((agent) => (
-                  <SelectItem key={agent.id} value={agent.id}>
-                    {agent.name} - {agent.district}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Available Agents ({allAvailableAgents.length})</label>
+              <Select value={selectedAgent} onValueChange={setSelectedAgent}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select an agent" />
+                </SelectTrigger>
+                <SelectContent>
+                  {allAvailableAgents.map((agent) => (
+                    <SelectItem key={agent.id} value={agent.id}>
+                      {agent.name} - {agent.district || 'No district'} ({agent.email})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {allAvailableAgents.length === 0 && (
+                <p className="text-sm text-red-600">No agents available. Please create agents first.</p>
+              )}
+            </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setAssignDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={confirmAssignment}>
+              <Button onClick={confirmAssignment} disabled={!selectedAgent}>
                 Assign Lead
               </Button>
             </div>
