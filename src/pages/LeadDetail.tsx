@@ -632,6 +632,7 @@ const LeadDetail = () => {
                 {isAdmin ? (
                   <LeadReview
                     lead={lead}
+                    currentUser={currentUser}
                     onApprove={handleApproveVerification}
                     onReject={handleRejectVerification}
                     onForwardToBank={handleForwardToBank}
@@ -639,12 +640,12 @@ const LeadDetail = () => {
                 ) : (
                   <VerificationProcess
                     lead={lead}
-                    onStart={handleStartVerification}
+                    onStartVerification={handleStartVerification}
                     onMarkArrival={handleMarkArrival}
                     onUploadPhoto={handleUploadPhoto}
                     onUploadDocument={handleUploadDocument}
                     onAddNotes={handleAddNotes}
-                    onComplete={handleCompleteVerification}
+                    onCompleteVerification={handleCompleteVerification}
                   />
                 )}
               </TabsContent>

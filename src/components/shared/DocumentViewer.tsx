@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -67,19 +66,19 @@ const DocumentViewer = ({ documents, title = "Documents" }: DocumentViewerProps)
     return dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString();
   };
 
-  const handlePreview = (document: Document) => {
-    setPreviewDocument(document);
+  const handlePreview = (doc: Document) => {
+    setPreviewDocument(doc);
   };
 
-  const handleDownload = (document: Document) => {
+  const handleDownload = (doc: Document) => {
     // In a real application, this would download the actual file
     // For now, we'll create a simple download simulation
-    const link = document.createElement('a');
-    link.href = document.url;
-    link.download = document.name;
-    document.body.appendChild(link);
+    const link = window.document.createElement('a');
+    link.href = doc.url;
+    link.download = doc.name;
+    window.document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
+    window.document.body.removeChild(link);
   };
 
   if (!documents || documents.length === 0) {
@@ -98,29 +97,29 @@ const DocumentViewer = ({ documents, title = "Documents" }: DocumentViewerProps)
       <div className="space-y-3">
         <h3 className="text-lg font-medium">{title}</h3>
         <div className="grid gap-3">
-          {documents.map((document) => (
-            <Card key={document.id} className="hover:shadow-md transition-shadow">
+          {documents.map((doc) => (
+            <Card key={doc.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3 flex-1 min-w-0">
                     <div className="flex-shrink-0">
-                      {getFileIcon(document.name, document.type)}
+                      {getFileIcon(doc.name, doc.type)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{document.name}</p>
+                      <p className="text-sm font-medium truncate">{doc.name}</p>
                       <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                        <span>{document.type}</span>
-                        {document.size && (
+                        <span>{doc.type}</span>
+                        {doc.size && (
                           <>
                             <span>•</span>
-                            <span>{formatFileSize(document.size)}</span>
+                            <span>{formatFileSize(doc.size)}</span>
                           </>
                         )}
                         <span>•</span>
-                        <span>{formatDate(document.uploadDate)}</span>
+                        <span>{formatDate(doc.uploadDate)}</span>
                       </div>
                       <Badge variant="outline" className="text-xs mt-1">
-                        Uploaded by: {document.uploadedBy}
+                        Uploaded by: {doc.uploadedBy}
                       </Badge>
                     </div>
                   </div>
@@ -129,7 +128,7 @@ const DocumentViewer = ({ documents, title = "Documents" }: DocumentViewerProps)
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handlePreview(document)}
+                      onClick={() => handlePreview(doc)}
                     >
                       <Eye className="h-4 w-4 mr-1" />
                       Preview
@@ -137,7 +136,7 @@ const DocumentViewer = ({ documents, title = "Documents" }: DocumentViewerProps)
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleDownload(document)}
+                      onClick={() => handleDownload(doc)}
                     >
                       <Download className="h-4 w-4 mr-1" />
                       Download
