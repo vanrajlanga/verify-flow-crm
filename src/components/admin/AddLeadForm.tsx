@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { banks, bankBranches, leadTypes, agents } from '@/utils/mockData';
+import { banks, bankBranches, leadTypes, agents, Bank, User, Lead } from '@/utils/mockData';
 
 interface Address {
   id: string;
@@ -73,7 +72,30 @@ interface FormData {
   instructions: string;
 }
 
-const AddLeadForm = () => {
+interface LocationData {
+  states: {
+    id: string;
+    name: string;
+    districts: {
+      id: string;
+      name: string;
+      cities: {
+        id: string;
+        name: string;
+      }[];
+    }[];
+  }[];
+}
+
+interface AddLeadFormProps {
+  agents: User[];
+  banks: Bank[];
+  onAddLead: (newLead: Lead) => void;
+  onClose: () => void;
+  locationData: LocationData;
+}
+
+const AddLeadForm: React.FC<AddLeadFormProps> = ({ agents: propAgents, banks: propBanks, onAddLead, onClose, locationData }) => {
   const [formData, setFormData] = useState<FormData>({
     bank: '',
     leadType: '',
@@ -126,7 +148,7 @@ const AddLeadForm = () => {
   const [hasCoApplicant, setHasCoApplicant] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState('');
 
-  // Available districts and cities for office address (from mock data)
+  // Available districts and cities for office address
   const availableOfficeDistricts = ['Mumbai', 'Pune', 'Nashik', 'Nagpur', 'Aurangabad'];
   const availableOfficeCities = ['Mumbai Central', 'Pune City', 'Nashik Road', 'Nagpur Central', 'Aurangabad'];
 
@@ -136,7 +158,7 @@ const AddLeadForm = () => {
   );
 
   // Filter agents based on selected branches
-  const availableAgents = agents.filter(agent => 
+  const filteredAgents = agents.filter(agent => 
     formData.initiatedUnderBranch || formData.buildUnderBranch 
       ? agent.branch === formData.initiatedUnderBranch || agent.branch === formData.buildUnderBranch
       : true
@@ -213,18 +235,59 @@ const AddLeadForm = () => {
     
     const visitTypes = getVisitTypes();
     
-    const leadData = {
-      ...formData,
-      addresses,
-      coApplicants: hasCoApplicant ? coApplicants : [],
-      visitTypes,
-      assignedAgent: selectedAgent,
-      createdAt: new Date().toISOString(),
-      status: 'pending'
+    const newLead: Lead = {
+      id: `lead-${Date.now()}`,
+      name: formData.name,
+      age: 30,
+      job: formData.occupation,
+      address: {
+        street: addresses[0]?.addressLine1 || '',
+        city: addresses[0]?.city || '',
+        district: addresses[0]?.district || '',
+        state: addresses[0]?.state || '',
+        pincode: addresses[0]?.pincode || ''
+      },
+      additionalDetails: {
+        company: '',
+        designation: '',
+        workExperience: '',
+        propertyType: '',
+        ownershipStatus: '',
+        propertyAge: '',
+        monthlyIncome: formData.income,
+        annualIncome: '',
+        otherIncome: '',
+        addresses: addresses.map(addr => ({
+          type: addr.type as 'Residence' | 'Office' | 'Permanent',
+          street: addr.addressLine1,
+          city: addr.city,
+          district: addr.district,
+          state: addr.state,
+          pincode: addr.pincode
+        })),
+        phoneNumber: formData.phone,
+        email: formData.email,
+        dateOfBirth: formData.dateOfBirth,
+        agencyFileNo: formData.agencyFileNo,
+        applicationBarcode: formData.applicationBarcode,
+        caseId: formData.caseId,
+        schemeDesc: formData.schemeDesc,
+        additionalComments: formData.additionalComments,
+        leadType: formData.leadType,
+        loanAmount: formData.loanAmount
+      },
+      status: 'Pending',
+      bank: formData.bank,
+      visitType: visitTypes.length > 0 ? 'Both' : 'Residence',
+      assignedTo: selectedAgent,
+      createdAt: new Date(),
+      documents: [],
+      instructions: formData.instructions
     };
     
-    console.log('Lead data:', leadData);
+    onAddLead(newLead);
     toast.success('Lead added successfully!');
+    onClose();
   };
 
   return (
@@ -896,7 +959,7 @@ const AddLeadForm = () => {
                   <SelectValue placeholder="Select agent" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableAgents.map((agent) => (
+                  {filteredAgents.map((agent) => (
                     <SelectItem key={agent.id} value={agent.name}>
                       {agent.name} - {agent.branch}
                     </SelectItem>
@@ -919,7 +982,7 @@ const AddLeadForm = () => {
         </Card>
 
         <div className="flex justify-end space-x-4">
-          <Button type="button" variant="outline">
+          <Button type="button" variant="outline" onClick={onClose}>
             Cancel
           </Button>
           <Button type="submit">

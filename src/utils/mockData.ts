@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   name: string;
@@ -135,6 +136,27 @@ export interface Bank {
   totalApplications: number;
 }
 
+export interface BankBranch {
+  id: string;
+  name: string;
+  bank: string;
+  location: string;
+}
+
+export interface LeadType {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export interface Agent {
+  id: string;
+  name: string;
+  branch: string;
+  district: string;
+  city: string;
+}
+
 // Import Supabase query functions
 import { 
   loginUser as supabaseLoginUser,
@@ -228,4 +250,35 @@ export const mockBanks: Bank[] = [
   { id: '3', name: 'ICICI Bank', totalApplications: 98 },
   { id: '4', name: 'Axis Bank', totalApplications: 87 },
   { id: '5', name: 'Punjab National Bank', totalApplications: 76 }
+];
+
+// Export banks with the name that AddLeadForm expects
+export const banks = mockBanks;
+
+// Export bank branches
+export const bankBranches: BankBranch[] = [
+  { id: 'branch-1', name: 'SBI Mumbai Central', bank: 'State Bank of India', location: 'Mumbai Central' },
+  { id: 'branch-2', name: 'SBI Andheri', bank: 'State Bank of India', location: 'Andheri' },
+  { id: 'branch-3', name: 'HDFC Bandra', bank: 'HDFC Bank', location: 'Bandra' },
+  { id: 'branch-4', name: 'HDFC Powai', bank: 'HDFC Bank', location: 'Powai' },
+  { id: 'branch-5', name: 'ICICI Kurla', bank: 'ICICI Bank', location: 'Kurla' },
+  { id: 'branch-6', name: 'Axis Bank Worli', bank: 'Axis Bank', location: 'Worli' },
+  { id: 'branch-7', name: 'PNB Dadar', bank: 'Punjab National Bank', location: 'Dadar' }
+];
+
+// Export lead types
+export const leadTypes: LeadType[] = [
+  { id: 'lead-1', name: 'Home Loan', description: 'Residential property loan verification' },
+  { id: 'lead-2', name: 'Personal Loan', description: 'Personal loan verification' },
+  { id: 'lead-3', name: 'Auto Loan', description: 'Vehicle loan verification' },
+  { id: 'lead-4', name: 'Business Loan', description: 'Business loan verification' },
+  { id: 'lead-5', name: 'Credit Card', description: 'Credit card application verification' }
+];
+
+// Export agents
+export const agents: Agent[] = [
+  { id: 'agent-1', name: 'Rajesh Kumar', branch: 'SBI Mumbai Central', district: 'Mumbai', city: 'Mumbai' },
+  { id: 'agent-2', name: 'Priya Sharma', branch: 'HDFC Bandra', district: 'Mumbai', city: 'Mumbai' },
+  { id: 'agent-3', name: 'Amit Patel', branch: 'ICICI Kurla', district: 'Mumbai', city: 'Mumbai' },
+  { id: 'agent-4', name: 'Neha Singh', branch: 'Axis Bank Worli', district: 'Mumbai', city: 'Mumbai' }
 ];
