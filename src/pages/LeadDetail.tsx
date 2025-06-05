@@ -354,7 +354,7 @@ const LeadDetail = () => {
 
   // Format addresses from additionalDetails if available
   const additionalAddresses = lead.additionalDetails?.addresses || [];
-  const homeAddress = additionalAddresses.find((a: any) => a?.type === 'Home');
+  const homeAddress = additionalAddresses.find((a: any) => a?.type === 'Residence');
   const officeAddress = additionalAddresses.find((a: any) => a?.type === 'Office');
 
   return (
@@ -532,7 +532,10 @@ const LeadDetail = () => {
                                   className="max-w-full h-auto rounded-lg"
                                   onError={(e) => {
                                     e.currentTarget.style.display = 'none';
-                                    e.currentTarget.nextElementSibling!.style.display = 'block';
+                                    const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
+                                    if (nextElement) {
+                                      nextElement.style.display = 'block';
+                                    }
                                   }}
                                 />
                               )}

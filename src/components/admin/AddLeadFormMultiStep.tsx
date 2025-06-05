@@ -158,8 +158,8 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
   });
 
   const [documents, setDocuments] = useState<DocumentUpload[]>([
-    { title: 'PAN Card', file: null, type: 'PAN Card' },
-    { title: 'Aadhar Card', file: null, type: 'Aadhar Card' }
+    { title: 'PAN Card', file: null, type: 'ID Proof' },
+    { title: 'Aadhar Card', file: null, type: 'ID Proof' }
   ]);
 
   const handleInputChange = (field: string, value: any) => {
@@ -245,22 +245,20 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
         spouseName: formData.spouseName,
         addresses: [
           {
-            type: 'Home',
+            type: 'Residence' as const,
             street: formData.homeStreet,
             city: formData.homeCity,
             district: formData.homeDistrict,
             state: formData.homeState,
-            pincode: formData.homePincode,
-            verification: formData.homeVerification
+            pincode: formData.homePincode
           },
           ...(formData.officeStreet ? [{
-            type: 'Office',
+            type: 'Office' as const,
             street: formData.officeStreet,
             city: formData.officeCity,
             district: formData.officeDistrict,
             state: formData.officeState,
-            pincode: formData.officePincode,
-            verification: formData.officeVerification
+            pincode: formData.officePincode
           }] : [])
         ],
         coApplicant: formData.hasCoApplicant ? {
@@ -279,7 +277,7 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
         .map(doc => ({
           id: `doc-${Date.now()}-${Math.random()}`,
           name: doc.title,
-          type: doc.type,
+          type: doc.type as 'ID Proof' | 'Address Proof' | 'Income Proof' | 'Other',
           uploadedBy: 'admin',
           url: URL.createObjectURL(doc.file!),
           uploadDate: new Date(),
@@ -1099,22 +1097,24 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
         </div>
         
         {/* Step Indicators */}
-        <div className="flex items-center overflow-x-auto pb-2 space-x-2">
-          {stepTitles.map((title, index) => (
-            <div
-              key={index}
-              className={`flex-shrink-0 cursor-pointer px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-                index === currentStep
-                  ? 'bg-primary text-primary-foreground'
-                  : index < currentStep
-                  ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-              onClick={() => handleStepClick(index)}
-            >
-              <span className="whitespace-nowrap">{title}</span>
-            </div>
-          ))}
+        <div className="overflow-x-auto">
+          <div className="flex items-center min-w-max space-x-2 pb-2">
+            {stepTitles.map((title, index) => (
+              <div
+                key={index}
+                className={`flex-shrink-0 cursor-pointer px-3 py-2 rounded-lg text-xs font-medium transition-colors whitespace-nowrap ${
+                  index === currentStep
+                    ? 'bg-primary text-primary-foreground'
+                    : index < currentStep
+                    ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+                onClick={() => handleStepClick(index)}
+              >
+                {title}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
