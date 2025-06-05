@@ -71,6 +71,31 @@ interface FormData {
   officeState: string;
   officePincode: string;
   instructions: string;
+  // Vehicle details for auto loans
+  vehicleBrand: string;
+  vehicleModel: string;
+  vehicleYear: string;
+  vehicleVariant: string;
+  // Job details
+  company: string;
+  designation: string;
+  workExperience: string;
+  workingFrom: string;
+  workingTo: string;
+  // Property and income details
+  propertyType: string;
+  ownershipStatus: string;
+  propertyAge: string;
+  monthlyIncome: string;
+  annualIncome: string;
+  otherIncome: string;
+  sourceOfIncome: string;
+  // Verification options
+  residenceVerification: boolean;
+  officeVerification: boolean;
+  bankStatement: boolean;
+  salarySlip: boolean;
+  itrVerification: boolean;
 }
 
 interface LocationData {
@@ -95,6 +120,19 @@ interface AddLeadFormProps {
   onClose: () => void;
   locationData: LocationData;
 }
+
+const vehicleBrands = [
+  'Maruti Suzuki', 'Hyundai', 'Tata', 'Mahindra', 'Honda', 'Toyota', 'Ford', 'Renault', 'Nissan', 'Volkswagen'
+];
+
+const vehicleModels: { [key: string]: string[] } = {
+  'Maruti Suzuki': ['Swift', 'Baleno', 'WagonR', 'Alto', 'Vitara Brezza', 'Ertiga'],
+  'Hyundai': ['i20', 'Creta', 'Verna', 'Grand i10', 'Venue', 'Tucson'],
+  'Tata': ['Nexon', 'Harrier', 'Safari', 'Altroz', 'Tigor', 'Punch'],
+  'Mahindra': ['XUV700', 'Scorpio', 'Bolero', 'XUV300', 'Thar', 'KUV100'],
+  'Honda': ['City', 'Amaze', 'WR-V', 'Jazz', 'CR-V', 'Civic'],
+  'Toyota': ['Innova', 'Fortuner', 'Glanza', 'Urban Cruiser', 'Camry', 'Yaris']
+};
 
 const AddLeadFormMultiStep: React.FC<AddLeadFormProps> = ({ 
   agents: propAgents, 
@@ -136,7 +174,28 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormProps> = ({
     officeDistrict: '',
     officeState: '',
     officePincode: '',
-    instructions: ''
+    instructions: '',
+    vehicleBrand: '',
+    vehicleModel: '',
+    vehicleYear: '',
+    vehicleVariant: '',
+    company: '',
+    designation: '',
+    workExperience: '',
+    workingFrom: '',
+    workingTo: '',
+    propertyType: '',
+    ownershipStatus: '',
+    propertyAge: '',
+    monthlyIncome: '',
+    annualIncome: '',
+    otherIncome: '',
+    sourceOfIncome: '',
+    residenceVerification: false,
+    officeVerification: false,
+    bankStatement: false,
+    salarySlip: false,
+    itrVerification: false
   });
 
   const [addresses, setAddresses] = useState<Address[]>([{
@@ -169,15 +228,22 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormProps> = ({
       : true
   );
 
+  const isAutoLoan = formData.leadType === 'Auto Loan';
+  const isHomeLoan = formData.leadType === 'Home Loan';
+  const isPersonalLoan = formData.leadType === 'Personal Loan';
+
   const steps = [
     { number: 1, title: 'Lead Type & Basic Information' },
     { number: 2, title: 'Personal Information' },
-    { number: 3, title: 'Home Addresses' },
-    { number: 4, title: 'Work & Office Address' },
-    { number: 5, title: 'Agent Assignment & Review' }
+    { number: 3, title: 'Job Details' },
+    { number: 4, title: 'Property & Income Details' },
+    { number: 5, title: 'Home Addresses' },
+    { number: 6, title: 'Work & Office Address' },
+    { number: 7, title: 'Verification Options' },
+    { number: 8, title: 'Agent Assignment & Review' }
   ];
 
-  const handleInputChange = (field: keyof FormData, value: string) => {
+  const handleInputChange = (field: keyof FormData, value: string | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -238,13 +304,8 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormProps> = ({
     ));
   };
 
-  const getVisitTypes = () => {
-    const addressesToVerify = addresses.filter(addr => addr.requiresVerification);
-    return addressesToVerify.map(addr => `${addr.type} Address Verification`);
-  };
-
   const nextStep = () => {
-    if (currentStep < 5) {
+    if (currentStep < 8) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -262,10 +323,16 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormProps> = ({
       case 2:
         return formData.name && formData.email && formData.phone;
       case 3:
-        return addresses.length > 0 && addresses[0].addressLine1;
+        return formData.company && formData.designation;
       case 4:
-        return true; // Work address is optional
+        return formData.monthlyIncome;
       case 5:
+        return addresses.length > 0 && addresses[0].addressLine1;
+      case 6:
+        return true; // Work address is optional
+      case 7:
+        return true; // Verification options are optional
+      case 8:
         return selectedAgent;
       default:
         return true;
@@ -274,8 +341,6 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const visitTypes = getVisitTypes();
     
     const newLead: Lead = {
       id: `lead-${Date.now()}`,
@@ -290,15 +355,15 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormProps> = ({
         pincode: addresses[0]?.pincode || ''
       },
       additionalDetails: {
-        company: '',
-        designation: '',
-        workExperience: '',
-        propertyType: '',
-        ownershipStatus: '',
-        propertyAge: '',
-        monthlyIncome: formData.income,
-        annualIncome: '',
-        otherIncome: '',
+        company: formData.company,
+        designation: formData.designation,
+        workExperience: formData.workExperience,
+        propertyType: formData.propertyType,
+        ownershipStatus: formData.ownershipStatus,
+        propertyAge: formData.propertyAge,
+        monthlyIncome: formData.monthlyIncome,
+        annualIncome: formData.annualIncome,
+        otherIncome: formData.otherIncome,
         addresses: addresses.map(addr => ({
           type: addr.type as 'Residence' | 'Office' | 'Permanent',
           street: addr.addressLine1,
@@ -316,11 +381,13 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormProps> = ({
         schemeDesc: formData.schemeDesc,
         additionalComments: formData.additionalComments,
         leadType: formData.leadType,
-        loanAmount: formData.loanAmount
+        loanAmount: formData.loanAmount,
+        vehicleBrandName: formData.vehicleBrand,
+        vehicleModelName: formData.vehicleModel
       },
       status: 'Pending',
       bank: formData.bank,
-      visitType: visitTypes.length > 0 ? 'Both' : 'Residence',
+      visitType: 'Both',
       assignedTo: selectedAgent,
       createdAt: new Date(),
       documents: [],
@@ -333,9 +400,9 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormProps> = ({
   };
 
   const renderStepIndicator = () => (
-    <div className="flex items-center justify-between mb-6">
+    <div className="flex items-center justify-between mb-6 overflow-x-auto">
       {steps.map((step, index) => (
-        <div key={step.number} className="flex items-center">
+        <div key={step.number} className="flex items-center min-w-0">
           <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
             currentStep === step.number 
               ? 'bg-blue-600 text-white' 
@@ -345,11 +412,11 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormProps> = ({
           }`}>
             {step.number}
           </div>
-          <div className="ml-2 text-sm font-medium hidden md:block">
+          <div className="ml-2 text-sm font-medium hidden md:block whitespace-nowrap">
             {step.title}
           </div>
           {index < steps.length - 1 && (
-            <div className={`w-12 h-0.5 mx-4 ${
+            <div className={`w-8 h-0.5 mx-2 ${
               currentStep > step.number ? 'bg-green-600' : 'bg-gray-300'
             }`} />
           )}
@@ -446,16 +513,85 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormProps> = ({
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="loanAmount">Loan Amount</Label>
-            <Input
-              id="loanAmount"
-              type="number"
-              value={formData.loanAmount}
-              onChange={(e) => handleInputChange('loanAmount', e.target.value)}
-            />
-          </div>
+          {!isAutoLoan && (
+            <div className="space-y-2">
+              <Label htmlFor="loanAmount">Loan Amount</Label>
+              <Input
+                id="loanAmount"
+                type="number"
+                value={formData.loanAmount}
+                onChange={(e) => handleInputChange('loanAmount', e.target.value)}
+              />
+            </div>
+          )}
         </div>
+
+        {isAutoLoan && (
+          <>
+            <Separator />
+            <h3 className="text-lg font-semibold">Vehicle Details</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="vehicleBrand">Vehicle Brand</Label>
+                <Select value={formData.vehicleBrand} onValueChange={(value) => {
+                  handleInputChange('vehicleBrand', value);
+                  handleInputChange('vehicleModel', ''); // Reset model when brand changes
+                }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select vehicle brand" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {vehicleBrands.map((brand) => (
+                      <SelectItem key={brand} value={brand}>
+                        {brand}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="vehicleModel">Vehicle Model</Label>
+                <Select 
+                  value={formData.vehicleModel} 
+                  onValueChange={(value) => handleInputChange('vehicleModel', value)}
+                  disabled={!formData.vehicleBrand}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select vehicle model" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {formData.vehicleBrand && vehicleModels[formData.vehicleBrand]?.map((model) => (
+                      <SelectItem key={model} value={model}>
+                        {model}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="vehicleYear">Vehicle Year</Label>
+                <Input
+                  id="vehicleYear"
+                  value={formData.vehicleYear}
+                  onChange={(e) => handleInputChange('vehicleYear', e.target.value)}
+                  placeholder="e.g., 2023"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="vehicleVariant">Vehicle Variant</Label>
+                <Input
+                  id="vehicleVariant"
+                  value={formData.vehicleVariant}
+                  onChange={(e) => handleInputChange('vehicleVariant', e.target.value)}
+                  placeholder="e.g., VXI, ZXI"
+                />
+              </div>
+            </div>
+          </>
+        )}
 
         <div className="space-y-2">
           <Label htmlFor="schemeDesc">Scheme Description</Label>
@@ -537,21 +673,38 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormProps> = ({
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="fatherName">Father's Name</Label>
+            <Input
+              id="fatherName"
+              value={formData.fatherName}
+              onChange={(e) => handleInputChange('fatherName', e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="motherName">Mother's Name</Label>
+            <Input
+              id="motherName"
+              value={formData.motherName}
+              onChange={(e) => handleInputChange('motherName', e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="spouseName">Spouse Name</Label>
+            <Input
+              id="spouseName"
+              value={formData.spouseName}
+              onChange={(e) => handleInputChange('spouseName', e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="occupation">Occupation</Label>
             <Input
               id="occupation"
               value={formData.occupation}
               onChange={(e) => handleInputChange('occupation', e.target.value)}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="income">Monthly Income</Label>
-            <Input
-              id="income"
-              type="number"
-              value={formData.income}
-              onChange={(e) => handleInputChange('income', e.target.value)}
             />
           </div>
         </div>
@@ -649,6 +802,173 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormProps> = ({
   const renderStep3 = () => (
     <Card>
       <CardHeader>
+        <CardTitle>Job Details</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="company">Company *</Label>
+            <Input
+              id="company"
+              value={formData.company}
+              onChange={(e) => handleInputChange('company', e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="designation">Designation *</Label>
+            <Input
+              id="designation"
+              value={formData.designation}
+              onChange={(e) => handleInputChange('designation', e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="workExperience">Work Experience (Years)</Label>
+            <Input
+              id="workExperience"
+              value={formData.workExperience}
+              onChange={(e) => handleInputChange('workExperience', e.target.value)}
+              placeholder="e.g., 5"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="workingFrom">Working From</Label>
+            <Input
+              id="workingFrom"
+              type="date"
+              value={formData.workingFrom}
+              onChange={(e) => handleInputChange('workingFrom', e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="workingTo">Working To</Label>
+            <Input
+              id="workingTo"
+              type="date"
+              value={formData.workingTo}
+              onChange={(e) => handleInputChange('workingTo', e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="sourceOfIncome">Source of Income</Label>
+            <Select value={formData.sourceOfIncome} onValueChange={(value) => handleInputChange('sourceOfIncome', value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select source of income" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="salary">Salary</SelectItem>
+                <SelectItem value="business">Business</SelectItem>
+                <SelectItem value="freelance">Freelance</SelectItem>
+                <SelectItem value="investments">Investments</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const renderStep4 = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle>Property & Income Details</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {isHomeLoan && (
+          <>
+            <h3 className="text-lg font-semibold">Property Details</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="propertyType">Property Type</Label>
+                <Select value={formData.propertyType} onValueChange={(value) => handleInputChange('propertyType', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select property type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="apartment">Apartment</SelectItem>
+                    <SelectItem value="villa">Villa</SelectItem>
+                    <SelectItem value="plot">Plot</SelectItem>
+                    <SelectItem value="commercial">Commercial</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="ownershipStatus">Ownership Status</Label>
+                <Select value={formData.ownershipStatus} onValueChange={(value) => handleInputChange('ownershipStatus', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select ownership status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="owned">Owned</SelectItem>
+                    <SelectItem value="rented">Rented</SelectItem>
+                    <SelectItem value="family">Family Owned</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="propertyAge">Property Age (Years)</Label>
+                <Input
+                  id="propertyAge"
+                  value={formData.propertyAge}
+                  onChange={(e) => handleInputChange('propertyAge', e.target.value)}
+                  placeholder="e.g., 5"
+                />
+              </div>
+            </div>
+            <Separator />
+          </>
+        )}
+
+        <h3 className="text-lg font-semibold">Income Details</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="monthlyIncome">Monthly Income *</Label>
+            <Input
+              id="monthlyIncome"
+              type="number"
+              value={formData.monthlyIncome}
+              onChange={(e) => handleInputChange('monthlyIncome', e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="annualIncome">Annual Income</Label>
+            <Input
+              id="annualIncome"
+              type="number"
+              value={formData.annualIncome}
+              onChange={(e) => handleInputChange('annualIncome', e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="otherIncome">Other Income</Label>
+            <Input
+              id="otherIncome"
+              type="number"
+              value={formData.otherIncome}
+              onChange={(e) => handleInputChange('otherIncome', e.target.value)}
+            />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const renderStep5 = () => (
+    <Card>
+      <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span>Home Addresses</span>
           <Button type="button" onClick={addAddress} variant="outline" size="sm">
@@ -702,10 +1022,34 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormProps> = ({
               </div>
 
               <div className="space-y-2">
+                <Label>Address Line 2</Label>
+                <Input
+                  value={address.addressLine2}
+                  onChange={(e) => updateAddress(address.id, 'addressLine2', e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Landmark</Label>
+                <Input
+                  value={address.landmark}
+                  onChange={(e) => updateAddress(address.id, 'landmark', e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
                 <Label>City</Label>
                 <Input
                   value={address.city}
                   onChange={(e) => updateAddress(address.id, 'city', e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>District</Label>
+                <Input
+                  value={address.district}
+                  onChange={(e) => updateAddress(address.id, 'district', e.target.value)}
                 />
               </div>
 
@@ -742,7 +1086,7 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormProps> = ({
     </Card>
   );
 
-  const renderStep4 = () => (
+  const renderStep6 = () => (
     <div className="space-y-6">
       <Card>
         <CardHeader>
@@ -766,6 +1110,40 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormProps> = ({
                 id="workCity"
                 value={formData.workCity}
                 onChange={(e) => handleInputChange('workCity', e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="workDistrict">Work District</Label>
+              <Select value={formData.workDistrict} onValueChange={(value) => handleInputChange('workDistrict', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select work district" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableOfficeDistricts.map((district) => (
+                    <SelectItem key={district} value={district}>
+                      {district}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="workState">Work State</Label>
+              <Input
+                id="workState"
+                value={formData.workState}
+                onChange={(e) => handleInputChange('workState', e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="workPincode">Work Pincode</Label>
+              <Input
+                id="workPincode"
+                value={formData.workPincode}
+                onChange={(e) => handleInputChange('workPincode', e.target.value)}
               />
             </div>
           </div>
@@ -803,29 +1181,135 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormProps> = ({
                 </SelectContent>
               </Select>
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="officeDistrict">Office District</Label>
+              <Select value={formData.officeDistrict} onValueChange={(value) => handleInputChange('officeDistrict', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select office district" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableOfficeDistricts.map((district) => (
+                    <SelectItem key={district} value={district}>
+                      {district}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="officeState">Office State</Label>
+              <Input
+                id="officeState"
+                value={formData.officeState}
+                onChange={(e) => handleInputChange('officeState', e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="officePincode">Office Pincode</Label>
+              <Input
+                id="officePincode"
+                value={formData.officePincode}
+                onChange={(e) => handleInputChange('officePincode', e.target.value)}
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
     </div>
   );
 
-  const renderStep5 = () => (
+  const renderStep7 = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle>Verification Options</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Required Verifications</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="residenceVerification"
+                checked={formData.residenceVerification}
+                onCheckedChange={(checked) => handleInputChange('residenceVerification', checked as boolean)}
+              />
+              <Label htmlFor="residenceVerification">Residence Verification</Label>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="officeVerification"
+                checked={formData.officeVerification}
+                onCheckedChange={(checked) => handleInputChange('officeVerification', checked as boolean)}
+              />
+              <Label htmlFor="officeVerification">Office Verification</Label>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="bankStatement"
+                checked={formData.bankStatement}
+                onCheckedChange={(checked) => handleInputChange('bankStatement', checked as boolean)}
+              />
+              <Label htmlFor="bankStatement">Bank Statement Verification</Label>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="salarySlip"
+                checked={formData.salarySlip}
+                onCheckedChange={(checked) => handleInputChange('salarySlip', checked as boolean)}
+              />
+              <Label htmlFor="salarySlip">Salary Slip Verification</Label>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="itrVerification"
+                checked={formData.itrVerification}
+                onCheckedChange={(checked) => handleInputChange('itrVerification', checked as boolean)}
+              />
+              <Label htmlFor="itrVerification">ITR Verification</Label>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const renderStep8 = () => (
     <Card>
       <CardHeader>
         <CardTitle>Agent Assignment & Review</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <Label>Required Visit Types</Label>
+          <Label>Required Verifications</Label>
           <div className="p-3 bg-gray-50 rounded-lg">
-            {getVisitTypes().length > 0 ? (
+            {[
+              formData.residenceVerification && "Residence Verification",
+              formData.officeVerification && "Office Verification", 
+              formData.bankStatement && "Bank Statement Verification",
+              formData.salarySlip && "Salary Slip Verification",
+              formData.itrVerification && "ITR Verification"
+            ].filter(Boolean).length > 0 ? (
               <ul className="list-disc list-inside space-y-1">
-                {getVisitTypes().map((visitType, index) => (
-                  <li key={index} className="text-sm">{visitType}</li>
+                {[
+                  formData.residenceVerification && "Residence Verification",
+                  formData.officeVerification && "Office Verification",
+                  formData.bankStatement && "Bank Statement Verification", 
+                  formData.salarySlip && "Salary Slip Verification",
+                  formData.itrVerification && "ITR Verification"
+                ].filter(Boolean).map((verification, index) => (
+                  <li key={index} className="text-sm">{verification}</li>
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-gray-500">No addresses selected for verification</p>
+              <p className="text-sm text-gray-500">No verifications selected</p>
             )}
           </div>
         </div>
@@ -856,6 +1340,15 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormProps> = ({
             placeholder="Any special instructions for the agent..."
           />
         </div>
+
+        {isAutoLoan && (
+          <div className="p-4 bg-blue-50 rounded-lg">
+            <h4 className="font-semibold">Vehicle Details Summary</h4>
+            <p className="text-sm">Brand: {formData.vehicleBrand || 'Not specified'}</p>
+            <p className="text-sm">Model: {formData.vehicleModel || 'Not specified'}</p>
+            <p className="text-sm">Year: {formData.vehicleYear || 'Not specified'}</p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -872,6 +1365,12 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormProps> = ({
         return renderStep4();
       case 5:
         return renderStep5();
+      case 6:
+        return renderStep6();
+      case 7:
+        return renderStep7();
+      case 8:
+        return renderStep8();
       default:
         return renderStep1();
     }
@@ -907,7 +1406,7 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormProps> = ({
               Cancel
             </Button>
             
-            {currentStep < 5 ? (
+            {currentStep < 8 ? (
               <Button 
                 type="button" 
                 onClick={nextStep}
