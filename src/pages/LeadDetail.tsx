@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { FileText, Download, ArrowLeft, MapPin, User, Building, Phone, Calendar, Clock, Home, Briefcase, DollarSign } from 'lucide-react';
+import { FileText, Download, ArrowLeft, MapPin, User, Building, Phone, Calendar, Clock, Home, Briefcase, DollarSign, Eye } from 'lucide-react';
 import { getLeadById, getUserById, getBankById, mockLeads } from '@/utils/mockData';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +12,14 @@ import LeadReview from '@/components/dashboard/LeadReview';
 import VerificationProcess from '@/components/dashboard/VerificationProcess';
 import DocumentViewer from '@/components/shared/DocumentViewer';
 import { toast } from '@/components/ui/use-toast';
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 // Helper functions
 const getBadgeColor = (status: string) => {
@@ -48,6 +56,7 @@ const LeadDetail = () => {
   const [agent, setAgent] = useState<any>(null);
   const [bank, setBank] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [selectedDocument, setSelectedDocument] = useState<any>(null);
   
   useEffect(() => {
     // Check if user is logged in
@@ -395,6 +404,18 @@ const LeadDetail = () => {
                   </div>
                 </div>
 
+                {lead.additionalDetails?.email && (
+                  <div className="flex items-center space-x-3">
+                    <div className="bg-primary/10 p-2 rounded-full">
+                      <User className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Email</p>
+                      <p className="font-medium">{lead.additionalDetails.email}</p>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex items-center space-x-3">
                   <div className="bg-primary/10 p-2 rounded-full">
                     <MapPin className="h-5 w-5 text-primary" />
@@ -477,7 +498,57 @@ const LeadDetail = () => {
                 <CardDescription>Customer submitted documents</CardDescription>
               </CardHeader>
               <CardContent>
-                <DocumentViewer documents={formattedDocuments} title="" />
+                {formattedDocuments.length > 0 ? (
+                  <div className="space-y-3">
+                    {formattedDocuments.map((doc: any, index: number) => (
+                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex items-center space-x-3">
+                          <FileText className="h-5 w-5 text-blue-600" />
+                          <div>
+                            <p className="font-medium text-sm">{doc.name || doc.type}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {doc.type} • {doc.uploadDate ? format(new Date(doc.uploadDate), 'MMM d, yyyy') : 'Unknown date'}
+                            </p>
+                          </div>
+                        </div>
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="sm" onClick={() => setSelectedDocument(doc)}>
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                            <DialogHeader>
+                              <DialogTitle>{doc.name || doc.type}</DialogTitle>
+                              <DialogDescription>
+                                Document uploaded on {doc.uploadDate ? format(new Date(doc.uploadDate), 'MMM d, yyyy') : 'Unknown date'}
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="mt-4">
+                              {doc.url && (
+                                <img 
+                                  src={doc.url} 
+                                  alt={doc.name || doc.type}
+                                  className="max-w-full h-auto rounded-lg"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                    e.currentTarget.nextElementSibling!.style.display = 'block';
+                                  }}
+                                />
+                              )}
+                              <div className="hidden text-center p-8 border-2 border-dashed border-gray-300 rounded-lg">
+                                <FileText className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                                <p className="text-gray-500">Document preview not available</p>
+                              </div>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No documents uploaded</p>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -491,6 +562,148 @@ const LeadDetail = () => {
               </TabsList>
               
               <TabsContent value="details" className="pt-4 space-y-6">
+                {/* Basic Information */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Basic Information</CardTitle>
+                    <CardDescription>Lead type and basic details</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        {lead.additionalDetails?.leadType && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Lead Type</p>
+                            <p className="font-medium">{lead.additionalDetails.leadType}</p>
+                          </div>
+                        )}
+                        {lead.additionalDetails?.agencyFileNo && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Agency File No.</p>
+                            <p className="font-medium">{lead.additionalDetails.agencyFileNo}</p>
+                          </div>
+                        )}
+                        {lead.additionalDetails?.loanAmount && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Loan Amount</p>
+                            <p className="font-medium">₹{Number(lead.additionalDetails.loanAmount).toLocaleString()}</p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-4">
+                        {lead.additionalDetails?.gender && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Gender</p>
+                            <p className="font-medium">{lead.additionalDetails.gender}</p>
+                          </div>
+                        )}
+                        {lead.age && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Age</p>
+                            <p className="font-medium">{lead.age} years</p>
+                          </div>
+                        )}
+                        {lead.additionalDetails?.maritalStatus && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Marital Status</p>
+                            <p className="font-medium">{lead.additionalDetails.maritalStatus}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Family Details */}
+                {(lead.additionalDetails?.fatherName || lead.additionalDetails?.motherName || lead.additionalDetails?.spouseName) && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Family Details</CardTitle>
+                      <CardDescription>Family member information</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {lead.additionalDetails?.fatherName && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Father's Name</p>
+                            <p className="font-medium">{lead.additionalDetails.fatherName}</p>
+                          </div>
+                        )}
+                        {lead.additionalDetails?.motherName && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Mother's Name</p>
+                            <p className="font-medium">{lead.additionalDetails.motherName}</p>
+                          </div>
+                        )}
+                        {lead.additionalDetails?.spouseName && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Spouse Name</p>
+                            <p className="font-medium">{lead.additionalDetails.spouseName}</p>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Co-Applicant Details */}
+                {lead.additionalDetails?.coApplicant && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Co-Applicant Details</CardTitle>
+                      <CardDescription>Co-applicant information</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Name</p>
+                          <p className="font-medium">{lead.additionalDetails.coApplicant.name}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Phone</p>
+                          <p className="font-medium">{lead.additionalDetails.coApplicant.phone}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Relation</p>
+                          <p className="font-medium">{lead.additionalDetails.coApplicant.relation}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Vehicle Details (for Auto Loans) */}
+                {lead.additionalDetails?.leadType === 'Auto Loan' && (lead.additionalDetails?.vehicleBrandName || lead.additionalDetails?.vehicleModelName) && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Vehicle Details</CardTitle>
+                      <CardDescription>Vehicle information for auto loan</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {lead.additionalDetails.vehicleBrandName && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Vehicle Brand</p>
+                            <p className="font-medium">{lead.additionalDetails.vehicleBrandName}</p>
+                          </div>
+                        )}
+                        {lead.additionalDetails.vehicleModelName && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Vehicle Model</p>
+                            <p className="font-medium">{lead.additionalDetails.vehicleModelName}</p>
+                          </div>
+                        )}
+                        {lead.additionalDetails.vehicleVariant && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Vehicle Variant</p>
+                            <p className="font-medium">{lead.additionalDetails.vehicleVariant}</p>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
                 {/* Professional Details */}
                 <Card>
                   <CardHeader>
@@ -512,12 +725,24 @@ const LeadDetail = () => {
                           <p className="text-sm text-muted-foreground">Designation</p>
                           <p className="font-medium">{lead.additionalDetails?.designation || 'Not specified'}</p>
                         </div>
+                        {lead.additionalDetails?.employmentType && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Employment Type</p>
+                            <p className="font-medium">{lead.additionalDetails.employmentType}</p>
+                          </div>
+                        )}
                       </div>
                       <div className="space-y-4">
                         <div>
                           <p className="text-sm text-muted-foreground">Work Experience</p>
                           <p className="font-medium">{lead.additionalDetails?.workExperience || 'Not specified'}</p>
                         </div>
+                        {lead.additionalDetails?.currentJobDuration && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Current Job Duration</p>
+                            <p className="font-medium">{lead.additionalDetails.currentJobDuration}</p>
+                          </div>
+                        )}
                         {officeAddress && (
                           <div>
                             <p className="text-sm text-muted-foreground">Office Address</p>
@@ -539,14 +764,6 @@ const LeadDetail = () => {
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-4">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Loan Amount</p>
-                          <p className="font-medium">{lead.additionalDetails?.loanAmount ? `₹${Number(lead.additionalDetails.loanAmount).toLocaleString()}` : 'Not specified'}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Loan Type</p>
-                          <p className="font-medium">{lead.additionalDetails?.loanType || 'Not specified'}</p>
-                        </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Monthly Income</p>
                           <p className="font-medium">{lead.additionalDetails?.monthlyIncome ? `₹${Number(lead.additionalDetails.monthlyIncome).toLocaleString()}/month` : 'Not specified'}</p>
@@ -606,10 +823,6 @@ const LeadDetail = () => {
                           <p className="text-sm text-muted-foreground">Application ID</p>
                           <p className="font-medium">{lead.id}</p>
                         </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Email</p>
-                          <p className="font-medium">{lead.additionalDetails?.email || 'Not provided'}</p>
-                        </div>
                       </div>
                       <div className="space-y-4">
                         {lead.instructions && (
@@ -618,10 +831,6 @@ const LeadDetail = () => {
                             <p className="font-medium">{lead.instructions}</p>
                           </div>
                         )}
-                        <div>
-                          <p className="text-sm text-muted-foreground">Age</p>
-                          <p className="font-medium">{lead.age || 'Not specified'}</p>
-                        </div>
                       </div>
                     </div>
                   </CardContent>
