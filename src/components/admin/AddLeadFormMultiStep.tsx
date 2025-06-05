@@ -278,7 +278,7 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
           id: `doc-${Date.now()}-${Math.random()}`,
           name: doc.title,
           type: doc.type as 'ID Proof' | 'Address Proof' | 'Income Proof' | 'Other',
-          uploadedBy: 'admin',
+          uploadedBy: 'admin' as const,
           url: URL.createObjectURL(doc.file!),
           uploadDate: new Date(),
           size: doc.file!.size

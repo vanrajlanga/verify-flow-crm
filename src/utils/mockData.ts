@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   name: string;
@@ -40,6 +39,8 @@ export interface AdditionalDetails {
   company: string;
   designation: string;
   workExperience: string;
+  employmentType?: string;
+  currentJobDuration?: string;
   propertyType: string;
   ownershipStatus: string;
   propertyAge: string;
@@ -64,15 +65,27 @@ export interface AdditionalDetails {
   vehicleBrandId?: string;
   vehicleModelName?: string;
   vehicleModelId?: string;
+  vehicleVariant?: string;
+  gender?: string;
+  fatherName?: string;
+  motherName?: string;
+  maritalStatus?: string;
+  spouseName?: string;
+  coApplicant?: {
+    name: string;
+    phone: string;
+    relation: string;
+  };
 }
 
 export interface Document {
   id: string;
   name: string;
   type: 'ID Proof' | 'Address Proof' | 'Income Proof' | 'Other';
-  uploadedBy: 'agent' | 'bank';
+  uploadedBy: 'agent' | 'bank' | 'admin';
   url: string;
   uploadDate: Date;
+  size?: number;
 }
 
 export interface VerificationPhoto {
