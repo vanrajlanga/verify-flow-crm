@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, X, Upload, FileText } from 'lucide-react';
 import { Lead, User, Bank } from '@/utils/mockData';
+import { VehicleBrand, VehicleModel } from '@/components/admin/VehicleManager';
 
 interface LocationData {
   states: {
@@ -86,6 +86,11 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
   locationData
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
+  const [leadTypes, setLeadTypes] = useState<string[]>([]);
+  const [bankBranches, setBankBranches] = useState<any[]>([]);
+  const [vehicleBrands, setVehicleBrands] = useState<VehicleBrand[]>([]);
+  const [vehicleModels, setVehicleModels] = useState<VehicleModel[]>([]);
+  
   const [formData, setFormData] = useState({
     // Basic Information
     bankName: '',
@@ -93,6 +98,9 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
     initiatedBranch: '',
     buildBranch: '',
     agencyFileNo: '',
+    applicationBarcode: '',
+    caseId: '',
+    schemeDesc: '',
     loanAmount: '',
     
     // Vehicle Details (for Auto Loan)
@@ -162,6 +170,55 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
     { title: 'Aadhar Card', file: null, type: 'ID Proof' }
   ]);
 
+  useEffect(() => {
+    // Load lead types from localStorage
+    const storedLeadTypes = localStorage.getItem('leadTypes');
+    if (storedLeadTypes) {
+      try {
+        const parsedLeadTypes = JSON.parse(storedLeadTypes);
+        setLeadTypes(parsedLeadTypes.map((lt: any) => lt.name));
+      } catch (error) {
+        console.error('Error parsing lead types:', error);
+        setLeadTypes(['Home Loan', 'Auto Loan', 'Personal Loan', 'Business Loan', 'Credit Card']);
+      }
+    } else {
+      setLeadTypes(['Home Loan', 'Auto Loan', 'Personal Loan', 'Business Loan', 'Credit Card']);
+    }
+
+    // Load bank branches from localStorage
+    const storedBankBranches = localStorage.getItem('bankBranches');
+    if (storedBankBranches) {
+      try {
+        setBankBranches(JSON.parse(storedBankBranches));
+      } catch (error) {
+        console.error('Error parsing bank branches:', error);
+        setBankBranches([]);
+      }
+    }
+
+    // Load vehicle brands from localStorage
+    const storedVehicleBrands = localStorage.getItem('vehicleBrands');
+    if (storedVehicleBrands) {
+      try {
+        setVehicleBrands(JSON.parse(storedVehicleBrands));
+      } catch (error) {
+        console.error('Error parsing vehicle brands:', error);
+        setVehicleBrands([]);
+      }
+    }
+
+    // Load vehicle models from localStorage
+    const storedVehicleModels = localStorage.getItem('vehicleModels');
+    if (storedVehicleModels) {
+      try {
+        setVehicleModels(JSON.parse(storedVehicleModels));
+      } catch (error) {
+        console.error('Error parsing vehicle models:', error);
+        setVehicleModels([]);
+      }
+    }
+  }, []);
+
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({
       ...prev,
@@ -205,6 +262,10 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
     setCurrentStep(stepIndex);
   };
 
+  const getAvailableVehicleModels = (brandId: string) => {
+    return vehicleModels.filter(model => model.brandId === brandId);
+  };
+
   const handleSubmit = () => {
     const newLead: Lead = {
       id: `lead-${Date.now()}`,
@@ -220,6 +281,9 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
       },
       additionalDetails: {
         agencyFileNo: formData.agencyFileNo,
+        applicationBarcode: formData.applicationBarcode,
+        caseId: formData.caseId,
+        schemeDesc: formData.schemeDesc,
         phoneNumber: formData.phoneNumber,
         email: formData.email,
         company: formData.company,
@@ -339,45 +403,85 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="initiatedBranch">Initiated Under Branch</Label>
-                <Input
-                  value={formData.initiatedBranch}
-                  onChange={(e) => handleInputChange('initiatedBranch', e.target.value)}
-                  placeholder="Select initiated branch"
-                />
+                <Select value={formData.initiatedBranch} onValueChange={(value) => handleInputChange('initiatedBranch', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select initiated branch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {bankBranches.map((branch) => (
+                      <SelectItem key={branch.id} value={branch.id}>{branch.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               
               <div>
                 <Label htmlFor="buildBranch">Build Under Branch</Label>
+                <Select value={formData.buildBranch} onValueChange={(value) => handleInputChange('buildBranch', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select build branch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {bankBranches.map((branch) => (
+                      <SelectItem key={branch.id} value={branch.id}>{branch.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="agencyFileNo">Agency File No. *</Label>
                 <Input
-                  value={formData.buildBranch}
-                  onChange={(e) => handleInputChange('buildBranch', e.target.value)}
-                  placeholder="Select build branch"
+                  value={formData.agencyFileNo}
+                  onChange={(e) => handleInputChange('agencyFileNo', e.target.value)}
+                  placeholder="Enter agency file number"
+                  required
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="applicationBarcode">Application Barcode</Label>
+                <Input
+                  value={formData.applicationBarcode}
+                  onChange={(e) => handleInputChange('applicationBarcode', e.target.value)}
+                  placeholder="Enter application barcode"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="agencyFileNo">Agency File No.</Label>
+                <Label htmlFor="caseId">Case ID</Label>
                 <Input
-                  value={formData.agencyFileNo}
-                  onChange={(e) => handleInputChange('agencyFileNo', e.target.value)}
-                  placeholder="Enter agency file number"
+                  value={formData.caseId}
+                  onChange={(e) => handleInputChange('caseId', e.target.value)}
+                  placeholder="Enter case ID"
                 />
               </div>
               
-              {formData.leadType !== 'Auto Loan' && (
-                <div>
-                  <Label htmlFor="loanAmount">Loan Amount</Label>
-                  <Input
-                    type="number"
-                    value={formData.loanAmount}
-                    onChange={(e) => handleInputChange('loanAmount', e.target.value)}
-                    placeholder="Enter loan amount"
-                  />
-                </div>
-              )}
+              <div>
+                <Label htmlFor="schemeDesc">Scheme Description</Label>
+                <Input
+                  value={formData.schemeDesc}
+                  onChange={(e) => handleInputChange('schemeDesc', e.target.value)}
+                  placeholder="Enter scheme description"
+                />
+              </div>
             </div>
+
+            {formData.leadType !== 'Auto Loan' && (
+              <div>
+                <Label htmlFor="loanAmount">Loan Amount</Label>
+                <Input
+                  type="number"
+                  value={formData.loanAmount}
+                  onChange={(e) => handleInputChange('loanAmount', e.target.value)}
+                  placeholder="Enter loan amount"
+                />
+              </div>
+            )}
 
             {formData.leadType === 'Auto Loan' && (
               <div className="space-y-4">
@@ -394,7 +498,7 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
                       </SelectTrigger>
                       <SelectContent>
                         {vehicleBrands.map((brand) => (
-                          <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+                          <SelectItem key={brand.id} value={brand.id}>{brand.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -411,8 +515,8 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
                         <SelectValue placeholder="Select vehicle model" />
                       </SelectTrigger>
                       <SelectContent>
-                        {formData.vehicleBrand && vehicleModels[formData.vehicleBrand]?.map((model) => (
-                          <SelectItem key={model} value={model}>{model}</SelectItem>
+                        {getAvailableVehicleModels(formData.vehicleBrand).map((model) => (
+                          <SelectItem key={model.id} value={model.id}>{model.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -1098,7 +1202,7 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
         
         {/* Step Indicators */}
         <div className="overflow-x-auto">
-          <div className="flex items-center min-w-max space-x-2 pb-2">
+          <div className="flex items-center space-x-2 pb-2" style={{ minWidth: 'max-content' }}>
             {stepTitles.map((title, index) => (
               <div
                 key={index}
