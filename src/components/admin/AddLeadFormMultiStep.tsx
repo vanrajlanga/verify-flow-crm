@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -334,7 +335,7 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
       status: 'Pending',
       bank: formData.bankName,
       visitType: formData.visitType as 'Residence' | 'Office',
-      assignedTo: formData.assignedAgent,
+      assignedTo: formData.assignedAgent === 'unassigned' ? '' : formData.assignedAgent,
       createdAt: new Date(),
       documents: documents
         .filter(doc => doc.file)
@@ -1162,7 +1163,7 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
                   <SelectValue placeholder="Select agent to assign" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Unassigned</SelectItem>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
                   {agents.map((agent) => (
                     <SelectItem key={agent.id} value={agent.id}>
                       {agent.name} - {agent.email}
@@ -1179,7 +1180,7 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
                 <div><strong>Lead Type:</strong> {formData.leadType}</div>
                 <div><strong>Bank:</strong> {banks.find(b => b.id === formData.bankName)?.name}</div>
                 <div><strong>Phone:</strong> {formData.phoneNumber}</div>
-                <div><strong>Assigned Agent:</strong> {formData.assignedAgent ? agents.find(a => a.id === formData.assignedAgent)?.name : 'Unassigned'}</div>
+                <div><strong>Assigned Agent:</strong> {formData.assignedAgent && formData.assignedAgent !== 'unassigned' ? agents.find(a => a.id === formData.assignedAgent)?.name : 'Unassigned'}</div>
                 <div><strong>Documents:</strong> {documents.filter(d => d.file).length} uploaded</div>
               </div>
             </div>
