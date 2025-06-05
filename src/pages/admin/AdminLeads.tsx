@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -18,6 +17,7 @@ import {
 import { toast } from '@/components/ui/use-toast';
 import AddLeadForm from '@/components/admin/AddLeadForm';
 import EditLeadForm from '@/components/admin/EditLeadForm';
+import AddLeadFormMultiStep from '@/components/admin/AddLeadFormMultiStep';
 import { Plus } from 'lucide-react';
 
 interface LocationData {
@@ -436,14 +436,14 @@ const AdminLeads = () => {
                     Add New Lead
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-5xl w-full">
+                <DialogContent className="sm:max-w-5xl w-full max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>Add New Lead</DialogTitle>
                     <DialogDescription>
                       Create a new lead for verification.
                     </DialogDescription>
                   </DialogHeader>
-                  <AddLeadForm 
+                  <AddLeadFormMultiStep 
                     agents={agents}
                     banks={mockBanks}
                     onAddLead={handleAddLead}
