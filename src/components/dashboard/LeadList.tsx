@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lead, User } from '@/utils/mockData';
@@ -35,7 +34,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Eye, MapPin, Calendar, Clock, User as UserIcon, Building, Phone, CreditCard, Edit, Trash2, UserPlus, MoreVertical, Download, Upload } from 'lucide-react';
+import { Eye, MapPin, Calendar, Clock, User as UserIcon, Building, Phone, CreditCard, Edit, Trash2, UserPlus, MoreVertical, Download, Upload, FileDown, FileUp } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from '@/components/ui/use-toast';
 
@@ -304,11 +303,11 @@ const LeadList = ({
 
   return (
     <div className="space-y-4">
-      {/* Action Bar */}
+      {/* Enhanced Action Bar with Better Import/Export UI */}
       {isAdmin && (
-        <div className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
+        <div className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg border">
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-muted-foreground font-medium">
               {selectedLeads.length} of {leads.length} selected
             </span>
             {selectedLeads.length > 0 && (
@@ -316,15 +315,16 @@ const LeadList = ({
                 variant="destructive"
                 size="sm"
                 onClick={handleBulkDelete}
+                className="bg-red-600 hover:bg-red-700"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
-                Delete Selected
+                Delete Selected ({selectedLeads.length})
               </Button>
             )}
           </div>
           
-          <div className="flex items-center gap-2">
-            {/* Import */}
+          <div className="flex items-center gap-3">
+            {/* Import Button */}
             <div>
               <input
                 type="file"
@@ -337,25 +337,38 @@ const LeadList = ({
                 variant="outline"
                 size="sm"
                 onClick={() => document.getElementById('import-leads')?.click()}
+                className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
               >
-                <Upload className="h-4 w-4 mr-2" />
-                Import CSV
+                <FileUp className="h-4 w-4 mr-2" />
+                Import CSV/Excel
               </Button>
             </div>
             
-            {/* Export */}
+            {/* Export Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Download className="h-4 w-4 mr-2" />
-                  Export
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                >
+                  <FileDown className="h-4 w-4 mr-2" />
+                  Export Data
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => handleExport('csv')}>
+              <DropdownMenuContent className="bg-white border shadow-lg">
+                <DropdownMenuItem 
+                  onClick={() => handleExport('csv')}
+                  className="hover:bg-gray-50"
+                >
+                  <Download className="h-4 w-4 mr-2" />
                   Export as CSV
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleExport('xls')}>
+                <DropdownMenuItem 
+                  onClick={() => handleExport('xls')}
+                  className="hover:bg-gray-50"
+                >
+                  <Download className="h-4 w-4 mr-2" />
                   Export as Excel
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -496,7 +509,7 @@ const LeadList = ({
                             <MoreVertical className="h-3 w-3" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent>
+                        <DropdownMenuContent className="bg-white border shadow-lg">
                           <DropdownMenuItem onClick={() => handleViewLead(lead.id)}>
                             <Eye className="h-4 w-4 mr-2" />
                             View
