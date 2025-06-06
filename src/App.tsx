@@ -20,6 +20,7 @@ import AdminAgents from "./pages/admin/AdminAgents";
 import AdminBanks from "./pages/admin/AdminBanks";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminRoles from "./pages/admin/AdminRoles";
+import AddNewLead from "./pages/admin/AddNewLead";
 
 // Agent pages
 import AgentLeads from "./pages/agent/AgentLeads";
@@ -48,6 +49,7 @@ const App = () => {
             {/* Admin Routes */}
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/leads" element={<AdminLeads />} />
+            <Route path="/admin/leads/new" element={<AddNewLead />} />
             <Route path="/admin/leads/:leadId" element={<LeadDetail />} />
             <Route path="/admin/verifications" element={<AdminVerifications />} />
             <Route path="/admin/reports" element={<AdminReports />} />

@@ -44,7 +44,6 @@ const AdminLeads = () => {
     states: []
   });
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
-  const [addLeadDialogOpen, setAddLeadDialogOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -201,21 +200,8 @@ const AdminLeads = () => {
     loadLeadsAndAgents();
   };
 
-  const handleAddLead = (newLead: Lead) => {
-    console.log('Adding new lead:', newLead);
-    const updatedLeads = [...leads, newLead];
-    setLeads(updatedLeads);
-    localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
-
-    toast({
-      title: "Lead added",
-      description: `New lead ${newLead.name} has been created.`,
-    });
-
-    setAddLeadDialogOpen(false);
-    
-    // Reload data to ensure consistency
-    loadLeadsAndAgents();
+  const handleAddNewLead = () => {
+    navigate('/admin/leads/new');
   };
 
   const handleDeleteLead = (leadId: string) => {
@@ -429,29 +415,10 @@ const AdminLeads = () => {
                   Manage leads and track verification progress
                 </p>
               </div>
-              <Dialog open={addLeadDialogOpen} onOpenChange={setAddLeadDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add New Lead
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-5xl w-full max-h-[90vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>Add New Lead</DialogTitle>
-                    <DialogDescription>
-                      Create a new lead for verification.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <AddLeadFormMultiStep 
-                    agents={agents}
-                    banks={mockBanks}
-                    onAddLead={handleAddLead}
-                    onClose={() => setAddLeadDialogOpen(false)}
-                    locationData={locationData}
-                  />
-                </DialogContent>
-              </Dialog>
+              <Button onClick={handleAddNewLead}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add New Lead
+              </Button>
             </div>
             <Card>
               <CardHeader>
