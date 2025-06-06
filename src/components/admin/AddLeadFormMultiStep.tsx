@@ -40,38 +40,22 @@ interface DocumentUpload {
   type: string;
 }
 
-const leadTypes = [
-  'Home Loan',
-  'Auto Loan', 
-  'Personal Loan',
-  'Business Loan',
-  'Property Loan',
-  'Loan Against Property',
-  'Credit Card',
-  'Insurance',
-  'Investment'
-];
-
-const vehicleBrands = [
-  'Maruti Suzuki', 'Hyundai', 'Mahindra', 'Tata', 'Honda', 'Toyota', 'Ford', 'Renault', 
-  'Nissan', 'Volkswagen', 'Skoda', 'BMW', 'Mercedes-Benz', 'Audi', 'Kia', 'MG'
-];
-
-const vehicleModels: { [key: string]: string[] } = {
-  'Maruti Suzuki': ['Swift', 'Baleno', 'Alto', 'Wagon R', 'Dzire', 'Vitara Brezza', 'Ertiga', 'XL6'],
-  'Hyundai': ['i20', 'Creta', 'Venue', 'Verna', 'Elite i20', 'Grand i10', 'Santro', 'Tucson'],
-  'Mahindra': ['XUV700', 'Scorpio', 'Thar', 'Bolero', 'XUV300', 'KUV100', 'Marazzo'],
-  'Tata': ['Nexon', 'Harrier', 'Safari', 'Punch', 'Altroz', 'Tigor', 'Tiago'],
-  'Honda': ['City', 'Amaze', 'Jazz', 'WR-V', 'CR-V', 'Civic'],
-  'Toyota': ['Innova Crysta', 'Fortuner', 'Glanza', 'Urban Cruiser', 'Camry'],
-};
+interface HomeAddress {
+  id: string;
+  state: string;
+  district: string;
+  city: string;
+  street: string;
+  pincode: string;
+  verification: boolean;
+}
 
 const stepTitles = [
   'Lead Type & Basic Info',
   'Personal Information', 
   'Job Details',
   'Property & Income',
-  'Home Address',
+  'Home Addresses',
   'Work & Office Address',
   'Document Upload',
   'Verification Options',
@@ -140,14 +124,6 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
     annualIncome: '',
     otherIncome: '',
     
-    // Home Address
-    homeState: '',
-    homeDistrict: '',
-    homeCity: '',
-    homeStreet: '',
-    homePincode: '',
-    homeVerification: false,
-    
     // Work/Office Address
     officeState: '',
     officeDistrict: '',
@@ -165,59 +141,114 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
     assignedAgent: ''
   });
 
+  // Multiple home addresses state
+  const [homeAddresses, setHomeAddresses] = useState<HomeAddress[]>([
+    {
+      id: 'home-1',
+      state: '',
+      district: '',
+      city: '',
+      street: '',
+      pincode: '',
+      verification: false
+    }
+  ]);
+
   const [documents, setDocuments] = useState<DocumentUpload[]>([
     { title: 'PAN Card', file: null, type: 'ID Proof' },
     { title: 'Aadhar Card', file: null, type: 'ID Proof' }
   ]);
 
+  // Initialize all data on component mount
   useEffect(() => {
-    // Load lead types from localStorage
-    const storedLeadTypes = localStorage.getItem('leadTypes');
-    if (storedLeadTypes) {
-      try {
-        const parsedLeadTypes = JSON.parse(storedLeadTypes);
-        setLeadTypes(parsedLeadTypes.map((lt: any) => lt.name));
-      } catch (error) {
-        console.error('Error parsing lead types:', error);
-        setLeadTypes(['Home Loan', 'Auto Loan', 'Personal Loan', 'Business Loan', 'Credit Card']);
-      }
-    } else {
-      setLeadTypes(['Home Loan', 'Auto Loan', 'Personal Loan', 'Business Loan', 'Credit Card']);
-    }
-
-    // Load bank branches from localStorage
-    const storedBankBranches = localStorage.getItem('bankBranches');
-    if (storedBankBranches) {
-      try {
-        setBankBranches(JSON.parse(storedBankBranches));
-      } catch (error) {
-        console.error('Error parsing bank branches:', error);
-        setBankBranches([]);
-      }
-    }
-
-    // Load vehicle brands from localStorage
-    const storedVehicleBrands = localStorage.getItem('vehicleBrands');
-    if (storedVehicleBrands) {
-      try {
-        setVehicleBrands(JSON.parse(storedVehicleBrands));
-      } catch (error) {
-        console.error('Error parsing vehicle brands:', error);
-        setVehicleBrands([]);
-      }
-    }
-
-    // Load vehicle models from localStorage
-    const storedVehicleModels = localStorage.getItem('vehicleModels');
-    if (storedVehicleModels) {
-      try {
-        setVehicleModels(JSON.parse(storedVehicleModels));
-      } catch (error) {
-        console.error('Error parsing vehicle models:', error);
-        setVehicleModels([]);
-      }
-    }
+    console.log('Loading form data...');
+    loadAllFormData();
   }, []);
+
+  const loadAllFormData = async () => {
+    try {
+      // Load lead types
+      const storedLeadTypes = localStorage.getItem('leadTypes');
+      if (storedLeadTypes) {
+        const parsedLeadTypes = JSON.parse(storedLeadTypes);
+        const leadTypeNames = Array.isArray(parsedLeadTypes) ? parsedLeadTypes.map((lt: any) => lt.name || lt) : [];
+        setLeadTypes(leadTypeNames);
+        console.log('Loaded lead types:', leadTypeNames);
+      } else {
+        const defaultLeadTypes = ['Home Loan', 'Auto Loan', 'Personal Loan', 'Business Loan', 'Credit Card'];
+        setLeadTypes(defaultLeadTypes);
+        localStorage.setItem('leadTypes', JSON.stringify(defaultLeadTypes.map(name => ({ name }))));
+        console.log('Set default lead types:', defaultLeadTypes);
+      }
+
+      // Load bank branches
+      const storedBankBranches = localStorage.getItem('bankBranches');
+      if (storedBankBranches) {
+        const parsedBranches = JSON.parse(storedBankBranches);
+        setBankBranches(parsedBranches);
+        console.log('Loaded bank branches:', parsedBranches.length);
+      } else {
+        // Initialize with some default branches
+        const defaultBranches = [
+          { id: 'branch-1', name: 'Main Branch', code: 'MAIN001' },
+          { id: 'branch-2', name: 'City Center Branch', code: 'CC002' },
+          { id: 'branch-3', name: 'Airport Branch', code: 'AP003' }
+        ];
+        setBankBranches(defaultBranches);
+        localStorage.setItem('bankBranches', JSON.stringify(defaultBranches));
+        console.log('Set default bank branches:', defaultBranches);
+      }
+
+      // Load vehicle brands
+      const storedVehicleBrands = localStorage.getItem('vehicleBrands');
+      if (storedVehicleBrands) {
+        const parsedBrands = JSON.parse(storedVehicleBrands);
+        setVehicleBrands(parsedBrands);
+        console.log('Loaded vehicle brands:', parsedBrands.length);
+      } else {
+        // Initialize with default vehicle brands
+        const defaultBrands = [
+          { id: 'brand-1', name: 'Maruti Suzuki' },
+          { id: 'brand-2', name: 'Hyundai' },
+          { id: 'brand-3', name: 'Tata' },
+          { id: 'brand-4', name: 'Mahindra' },
+          { id: 'brand-5', name: 'Honda' },
+          { id: 'brand-6', name: 'Toyota' }
+        ];
+        setVehicleBrands(defaultBrands);
+        localStorage.setItem('vehicleBrands', JSON.stringify(defaultBrands));
+        console.log('Set default vehicle brands:', defaultBrands);
+      }
+
+      // Load vehicle models
+      const storedVehicleModels = localStorage.getItem('vehicleModels');
+      if (storedVehicleModels) {
+        const parsedModels = JSON.parse(storedVehicleModels);
+        setVehicleModels(parsedModels);
+        console.log('Loaded vehicle models:', parsedModels.length);
+      } else {
+        // Initialize with default vehicle models
+        const defaultModels = [
+          { id: 'model-1', name: 'Swift', brandId: 'brand-1' },
+          { id: 'model-2', name: 'Baleno', brandId: 'brand-1' },
+          { id: 'model-3', name: 'i20', brandId: 'brand-2' },
+          { id: 'model-4', name: 'Creta', brandId: 'brand-2' },
+          { id: 'model-5', name: 'Nexon', brandId: 'brand-3' },
+          { id: 'model-6', name: 'Harrier', brandId: 'brand-3' }
+        ];
+        setVehicleModels(defaultModels);
+        localStorage.setItem('vehicleModels', JSON.stringify(defaultModels));
+        console.log('Set default vehicle models:', defaultModels);
+      }
+    } catch (error) {
+      console.error('Error loading form data:', error);
+      // Set fallback defaults if anything fails
+      setLeadTypes(['Home Loan', 'Auto Loan', 'Personal Loan', 'Business Loan', 'Credit Card']);
+      setBankBranches([]);
+      setVehicleBrands([]);
+      setVehicleModels([]);
+    }
+  };
 
   // Helper function to check if lead type requires vehicle details
   const requiresVehicleDetails = (leadType: string) => {
@@ -235,6 +266,32 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
       ...prev,
       [field]: value
     }));
+  };
+
+  // Home address management functions
+  const addHomeAddress = () => {
+    const newAddress: HomeAddress = {
+      id: `home-${Date.now()}`,
+      state: '',
+      district: '',
+      city: '',
+      street: '',
+      pincode: '',
+      verification: false
+    };
+    setHomeAddresses(prev => [...prev, newAddress]);
+  };
+
+  const removeHomeAddress = (addressId: string) => {
+    if (homeAddresses.length > 1) {
+      setHomeAddresses(prev => prev.filter(addr => addr.id !== addressId));
+    }
+  };
+
+  const updateHomeAddress = (addressId: string, field: keyof HomeAddress, value: any) => {
+    setHomeAddresses(prev => prev.map(addr => 
+      addr.id === addressId ? { ...addr, [field]: value } : addr
+    ));
   };
 
   const addDocument = () => {
@@ -277,18 +334,32 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
     return vehicleModels.filter(model => model.brandId === brandId);
   };
 
+  const getSelectedDistricts = (stateId: string) => {
+    const state = locationData.states.find(s => s.id === stateId);
+    return state?.districts || [];
+  };
+
+  const getSelectedCities = (stateId: string, districtId: string) => {
+    const state = locationData.states.find(s => s.id === stateId);
+    const district = state?.districts.find(d => d.id === districtId);
+    return district?.cities || [];
+  };
+
   const handleSubmit = () => {
+    // Use the first home address as primary address for backward compatibility
+    const primaryAddress = homeAddresses[0];
+    
     const newLead: Lead = {
       id: `lead-${Date.now()}`,
       name: formData.customerName,
       age: parseInt(formData.age) || 30,
       job: formData.designation || 'Not specified',
       address: {
-        street: formData.homeStreet,
-        city: formData.homeCity,
-        district: formData.homeDistrict,
-        state: formData.homeState,
-        pincode: formData.homePincode
+        street: primaryAddress.street,
+        city: primaryAddress.city,
+        district: primaryAddress.district,
+        state: primaryAddress.state,
+        pincode: primaryAddress.pincode
       },
       additionalDetails: {
         agencyFileNo: formData.agencyFileNo,
@@ -319,14 +390,16 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
         maritalStatus: formData.maritalStatus,
         spouseName: formData.spouseName,
         addresses: [
-          {
+          // Add all home addresses as residence type
+          ...homeAddresses.map(addr => ({
             type: 'Residence' as const,
-            street: formData.homeStreet,
-            city: formData.homeCity,
-            district: formData.homeDistrict,
-            state: formData.homeState,
-            pincode: formData.homePincode
-          },
+            street: addr.street,
+            city: addr.city,
+            district: addr.district,
+            state: addr.state,
+            pincode: addr.pincode
+          })),
+          // Add office address if provided
           ...(formData.officeStreet ? [{
             type: 'Office' as const,
             street: formData.officeStreet,
@@ -363,17 +436,6 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
     };
 
     onAddLead(newLead);
-  };
-
-  const getSelectedDistricts = (stateId: string) => {
-    const state = locationData.states.find(s => s.id === stateId);
-    return state?.districts || [];
-  };
-
-  const getSelectedCities = (stateId: string, districtId: string) => {
-    const state = locationData.states.find(s => s.id === stateId);
-    const district = state?.districts.find(d => d.id === districtId);
-    return district?.cities || [];
   };
 
   const renderStepContent = () => {
@@ -858,98 +920,135 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
           </div>
         );
 
-      case 4: // Home Address
+      case 4: // Home Addresses (Multiple)
         return (
           <div className="space-y-6">
-            <h3 className="text-lg font-semibold">Home Address</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="homeState">State</Label>
-                <Select value={formData.homeState} onValueChange={(value) => {
-                  handleInputChange('homeState', value);
-                  handleInputChange('homeDistrict', '');
-                  handleInputChange('homeCity', '');
-                }}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select state" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {locationData.states.map((state) => (
-                      <SelectItem key={state.id} value={state.id}>{state.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <Label htmlFor="homeDistrict">District</Label>
-                <Select 
-                  value={formData.homeDistrict} 
-                  onValueChange={(value) => {
-                    handleInputChange('homeDistrict', value);
-                    handleInputChange('homeCity', '');
-                  }}
-                  disabled={!formData.homeState}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select district" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {getSelectedDistricts(formData.homeState).map((district) => (
-                      <SelectItem key={district.id} value={district.id}>{district.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <Label htmlFor="homeCity">City</Label>
-                <Select 
-                  value={formData.homeCity} 
-                  onValueChange={(value) => handleInputChange('homeCity', value)}
-                  disabled={!formData.homeDistrict}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select city" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {getSelectedCities(formData.homeState, formData.homeDistrict).map((city) => (
-                      <SelectItem key={city.id} value={city.id}>{city.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Home Addresses</h3>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addHomeAddress}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Address
+              </Button>
             </div>
+            
+            {homeAddresses.map((address, index) => (
+              <Card key={address.id}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base">Address {index + 1}</CardTitle>
+                    {homeAddresses.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeHomeAddress(address.id)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor={`homeState-${address.id}`}>State</Label>
+                      <Select 
+                        value={address.state} 
+                        onValueChange={(value) => {
+                          updateHomeAddress(address.id, 'state', value);
+                          updateHomeAddress(address.id, 'district', '');
+                          updateHomeAddress(address.id, 'city', '');
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select state" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {locationData.states.map((state) => (
+                            <SelectItem key={state.id} value={state.id}>{state.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor={`homeDistrict-${address.id}`}>District</Label>
+                      <Select 
+                        value={address.district} 
+                        onValueChange={(value) => {
+                          updateHomeAddress(address.id, 'district', value);
+                          updateHomeAddress(address.id, 'city', '');
+                        }}
+                        disabled={!address.state}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select district" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {getSelectedDistricts(address.state).map((district) => (
+                            <SelectItem key={district.id} value={district.id}>{district.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor={`homeCity-${address.id}`}>City</Label>
+                      <Select 
+                        value={address.city} 
+                        onValueChange={(value) => updateHomeAddress(address.id, 'city', value)}
+                        disabled={!address.district}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select city" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {getSelectedCities(address.state, address.district).map((city) => (
+                            <SelectItem key={city.id} value={city.id}>{city.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="homeStreet">Street Address</Label>
-                <Textarea
-                  value={formData.homeStreet}
-                  onChange={(e) => handleInputChange('homeStreet', e.target.value)}
-                  placeholder="Enter complete address"
-                  rows={3}
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="homePincode">Pincode</Label>
-                <Input
-                  value={formData.homePincode}
-                  onChange={(e) => handleInputChange('homePincode', e.target.value)}
-                  placeholder="Enter pincode"
-                />
-              </div>
-            </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor={`homeStreet-${address.id}`}>Street Address</Label>
+                      <Textarea
+                        value={address.street}
+                        onChange={(e) => updateHomeAddress(address.id, 'street', e.target.value)}
+                        placeholder="Enter complete address"
+                        rows={3}
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor={`homePincode-${address.id}`}>Pincode</Label>
+                      <Input
+                        value={address.pincode}
+                        onChange={(e) => updateHomeAddress(address.id, 'pincode', e.target.value)}
+                        placeholder="Enter pincode"
+                      />
+                    </div>
+                  </div>
 
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="homeVerification"
-                checked={formData.homeVerification}
-                onCheckedChange={(checked) => handleInputChange('homeVerification', checked)}
-              />
-              <Label htmlFor="homeVerification">Require home address verification</Label>
-            </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`homeVerification-${address.id}`}
+                      checked={address.verification}
+                      onCheckedChange={(checked) => updateHomeAddress(address.id, 'verification', checked)}
+                    />
+                    <Label htmlFor={`homeVerification-${address.id}`}>Require verification for this address</Label>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         );
 
@@ -1252,7 +1351,7 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
             {currentStep === 1 && 'Enter customer personal details'}
             {currentStep === 2 && 'Enter employment and job details'}
             {currentStep === 3 && 'Enter property and income information'}
-            {currentStep === 4 && 'Enter home address details'}
+            {currentStep === 4 && 'Enter home address details (you can add multiple addresses)'}
             {currentStep === 5 && 'Enter work and office address'}
             {currentStep === 6 && 'Upload required documents'}
             {currentStep === 7 && 'Set verification preferences'}
