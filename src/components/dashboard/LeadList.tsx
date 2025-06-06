@@ -296,6 +296,27 @@ const LeadList = ({
       <Card>
         <CardContent className="text-center py-8">
           <p className="text-muted-foreground">No leads found.</p>
+          {/* Show import option even when no leads exist */}
+          {isAdmin && (
+            <div className="mt-4">
+              <input
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                onChange={handleImport}
+                className="hidden"
+                id="import-leads-empty"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => document.getElementById('import-leads-empty')?.click()}
+                className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
+              >
+                <FileUp className="h-4 w-4 mr-2" />
+                Import Leads CSV/Excel
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     );
@@ -303,7 +324,7 @@ const LeadList = ({
 
   return (
     <div className="space-y-4">
-      {/* Enhanced Action Bar with Better Import/Export UI */}
+      {/* Enhanced Action Bar with Better Import/Export UI - ALWAYS VISIBLE FOR ADMINS */}
       {isAdmin && (
         <div className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg border">
           <div className="flex items-center gap-4">

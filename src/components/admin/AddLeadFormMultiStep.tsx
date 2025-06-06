@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -220,6 +219,17 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
     }
   }, []);
 
+  // Helper function to check if lead type requires vehicle details
+  const requiresVehicleDetails = (leadType: string) => {
+    return leadType && (
+      leadType.toLowerCase().includes('auto') || 
+      leadType.toLowerCase().includes('vehicle') || 
+      leadType.toLowerCase().includes('car') ||
+      leadType.toLowerCase().includes('bike') ||
+      leadType.toLowerCase().includes('motorcycle')
+    );
+  };
+
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({
       ...prev,
@@ -410,7 +420,7 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
                   </SelectTrigger>
                   <SelectContent>
                     {bankBranches.map((branch) => (
-                      <SelectItem key={branch.id} value={branch.id}>{branch.name}</SelectItem>
+                      <SelectItem key={branch.id} value={branch.id}>{branch.name} ({branch.code})</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -424,7 +434,7 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
                   </SelectTrigger>
                   <SelectContent>
                     {bankBranches.map((branch) => (
-                      <SelectItem key={branch.id} value={branch.id}>{branch.name}</SelectItem>
+                      <SelectItem key={branch.id} value={branch.id}>{branch.name} ({branch.code})</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -472,7 +482,7 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
               </div>
             </div>
 
-            {formData.leadType !== 'Auto Loan' && (
+            {!requiresVehicleDetails(formData.leadType) && (
               <div>
                 <Label htmlFor="loanAmount">Loan Amount</Label>
                 <Input
@@ -484,7 +494,7 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
               </div>
             )}
 
-            {formData.leadType === 'Auto Loan' && (
+            {requiresVehicleDetails(formData.leadType) && (
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Vehicle Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -531,6 +541,16 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
                       placeholder="Enter vehicle variant"
                     />
                   </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="loanAmount">Loan Amount</Label>
+                  <Input
+                    type="number"
+                    value={formData.loanAmount}
+                    onChange={(e) => handleInputChange('loanAmount', e.target.value)}
+                    placeholder="Enter loan amount"
+                  />
                 </div>
               </div>
             )}
