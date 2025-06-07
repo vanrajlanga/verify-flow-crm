@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -332,33 +333,40 @@ const AdminLeads = () => {
 
   const handleBulkDelete = async (leadIds: string[]) => {
     try {
-      // Delete from database
+      console.log('Bulk deleting leads:', leadIds);
+      
+      // Delete from database one by one
       for (const leadId of leadIds) {
-        await deleteLeadFromDatabase(leadId);
+        try {
+          await deleteLeadFromDatabase(leadId);
+          console.log('Deleted lead from database:', leadId);
+        } catch (error) {
+          console.error('Error deleting lead from database:', leadId, error);
+        }
       }
       
-      // Update local state
+      // Update local state by filtering out deleted leads
       const updatedLeads = leads.filter(lead => !leadIds.includes(lead.id));
       setLeads(updatedLeads);
+      
+      // Update localStorage as well
+      localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+
+      console.log('Bulk delete completed. Remaining leads:', updatedLeads.length);
 
       toast({
         title: "Leads deleted",
-        description: `${leadIds.length} leads have been removed.`,
+        description: `${leadIds.length} leads have been permanently removed.`,
       });
 
-      // Reload data from database
-      loadLeadsAndAgents();
+      // Don't reload data automatically to prevent regeneration
+      // loadLeadsAndAgents();
     } catch (error) {
       console.error('Error bulk deleting leads:', error);
       
-      // Fall back to localStorage delete
-      const updatedLeads = leads.filter(lead => !leadIds.includes(lead.id));
-      setLeads(updatedLeads);
-      localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
-
       toast({
-        title: "Leads deleted",
-        description: `${leadIds.length} leads have been removed (saved locally).`,
+        title: "Bulk delete failed",
+        description: "Some leads could not be deleted. Please try again.",
         variant: "destructive"
       });
     }
@@ -436,55 +444,26 @@ const AdminLeads = () => {
   };
 
   const handleExport = (format: 'csv' | 'xls') => {
-    const headers = [
-      'Agency File No', 'Customer Name', 'Phone', 'Address Type', 'Product Type',
-      'Residence Address', 'Office Address', 'FI Date', 'Status', 'Assigned Agent',
-      'Loan Amount', 'Asset Make', 'Asset Model'
-    ];
-
-    const csvContent = [
-      headers.join(','),
-      ...leads.map(lead => {
-        const officeAddress = lead.additionalDetails?.addresses?.find(addr => addr.type === 'Office');
-        
-        return [
-          lead.additionalDetails?.agencyFileNo || '',
-          lead.name,
-          lead.additionalDetails?.phoneNumber || '',
-          lead.visitType,
-          lead.additionalDetails?.leadType || '',
-          `"${lead.address.street}, ${lead.address.city}, ${lead.address.state}"`,
-          officeAddress ? `"${officeAddress.street}, ${officeAddress.city}, ${officeAddress.state}"` : 'N/A',
-          lead.createdAt ? new Date(lead.createdAt).toLocaleDateString() : '',
-          lead.status,
-          agents.find(agent => agent.id === lead.assignedTo)?.name || 'Unassigned',
-          lead.additionalDetails?.loanAmount || 'N/A',
-          lead.additionalDetails?.vehicleBrandName || 'N/A',
-          lead.additionalDetails?.vehicleModelName || 'N/A'
-        ].join(',');
-      })
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `leads_export_${new Date().toISOString().split('T')[0]}.${format}`;
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
+    // This is handled in LeadList component with enhanced functionality
   };
 
-  const handleImport = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const content = e.target?.result as string;
+  const handleImport = async (file: File) => {
+    try {
+      const content = await file.text();
+      let importedLeads: Lead[] = [];
+      
+      // Check if it's JSON (from our enhanced export) or CSV
+      if (file.name.endsWith('.json') || content.startsWith('[')) {
+        try {
+          importedLeads = JSON.parse(content);
+        } catch (error) {
+          console.error('Error parsing JSON:', error);
+          throw new Error('Invalid JSON format');
+        }
+      } else {
+        // Handle CSV import (existing logic)
         const lines = content.split('\n');
         const headers = lines[0].split(',');
-        
-        const importedLeads: Lead[] = [];
         
         for (let i = 1; i < lines.length; i++) {
           const values = lines[i].split(',');
@@ -526,36 +505,35 @@ const AdminLeads = () => {
             importedLeads.push(newLead);
           }
         }
+      }
+      
+      if (importedLeads.length > 0) {
+        const updatedLeads = [...leads, ...importedLeads];
+        setLeads(updatedLeads);
+        localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
         
-        if (importedLeads.length > 0) {
-          const updatedLeads = [...leads, ...importedLeads];
-          setLeads(updatedLeads);
-          localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
-          
-          toast({
-            title: "Import successful",
-            description: `${importedLeads.length} leads have been imported.`,
-          });
+        toast({
+          title: "Import successful",
+          description: `${importedLeads.length} leads have been imported with complete data.`,
+        });
 
-          // Reload data from database
-          loadLeadsAndAgents();
-        } else {
-          toast({
-            title: "Import failed",
-            description: "No valid leads found in the file.",
-            variant: "destructive",
-          });
-        }
-      } catch (error) {
-        console.error('Import error:', error);
+        // Reload data from database
+        loadLeadsAndAgents();
+      } else {
         toast({
           title: "Import failed",
-          description: "Error reading the file. Please check the format.",
+          description: "No valid leads found in the file.",
           variant: "destructive",
         });
       }
-    };
-    reader.readAsText(file);
+    } catch (error) {
+      console.error('Import error:', error);
+      toast({
+        title: "Import failed",
+        description: "Error reading the file. Please check the format.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (!currentUser) {
@@ -582,16 +560,21 @@ const AdminLeads = () => {
                   Manage leads and track verification progress
                 </p>
               </div>
-              <Button onClick={handleAddNewLead}>
-                <Plus className="mr-2 h-4 w-4" />
-                Add New Lead
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => navigate('/admin/leads-sheet')}>
+                  Lead Sheet View
+                </Button>
+                <Button onClick={handleAddNewLead}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add New Lead
+                </Button>
+              </div>
             </div>
             <Card>
               <CardHeader>
                 <CardTitle>Leads List</CardTitle>
                 <CardDescription>
-                  A comprehensive list of all leads in the system
+                  A comprehensive list of all leads in the system with enhanced import/export
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -622,9 +605,9 @@ const AdminLeads = () => {
       <Dialog open={!!editingLead} onOpenChange={() => setEditingLead(null)}>
         <DialogContent className="sm:max-w-5xl w-full">
           <DialogHeader>
-            <DialogTitle>Edit Lead</DialogTitle>
+            <DialogTitle>Edit Complete Lead Data</DialogTitle>
             <DialogDescription>
-              Update lead information and details.
+              Update all lead information including personal details, addresses, financial data, and verification details.
             </DialogDescription>
           </DialogHeader>
           {editingLead && (

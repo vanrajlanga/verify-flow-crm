@@ -1,28 +1,27 @@
 
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { User } from '@/utils/mockData';
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
-  LayoutDashboard, 
+  Home, 
   Users, 
   FileText, 
-  BarChart, 
+  BarChart3, 
   Settings, 
-  ChevronDown, 
+  Building2, 
+  UserCheck, 
+  MapPin,
+  ChevronLeft,
   ChevronRight,
-  UserCheck,
-  Building,
-  Briefcase,
-  Shield,
-  UserCog,
-  Building2,
-  CheckCircle
+  Calendar,
+  Clock,
+  UserPlus,
+  FileSpreadsheet,
+  List
 } from 'lucide-react';
-import { User } from '@/utils/mockData';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface SidebarProps {
   user: User;
@@ -32,193 +31,114 @@ interface SidebarProps {
 const Sidebar = ({ user, isOpen }: SidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [settingsOpen, setSettingsOpen] = useState(false);
 
-  const isAdmin = user.role === 'admin';
+  const isActive = (path: string) => location.pathname === path;
 
-  const menuItems = [
-    {
-      icon: LayoutDashboard,
-      label: 'Dashboard',
-      path: isAdmin ? '/admin' : '/agent',
-      adminOnly: false
-    },
-    {
-      icon: FileText,
-      label: 'Leads',
-      path: isAdmin ? '/admin/leads' : '/agent/leads',
-      adminOnly: false
-    },
-    {
-      icon: CheckCircle,
-      label: 'Verifications',
-      path: '/admin/verifications',
-      adminOnly: true
-    },
-    {
-      icon: Users,
-      label: 'Agents',
-      path: '/admin/agents',
-      adminOnly: true
-    },
-    {
-      icon: BarChart,
-      label: 'Reports',
-      path: '/admin/reports',
-      adminOnly: true
-    },
-    {
-      icon: Building2,
-      label: 'Bank Integration',
-      path: '/admin/banks',
-      adminOnly: true
-    },
-    {
-      icon: Shield,
-      label: 'Roles & Permissions',
-      path: '/admin/roles',
-      adminOnly: true
-    }
+  const adminMenuItems = [
+    { icon: Home, label: 'Dashboard', path: '/admin/dashboard' },
+    { icon: List, label: 'Lead List', path: '/admin/leads' },
+    { icon: FileSpreadsheet, label: 'Lead Sheet', path: '/admin/leads-sheet' },
+    { icon: Users, label: 'Agents', path: '/admin/agents' },
+    { icon: Building2, label: 'Banks', path: '/admin/banks' },
+    { icon: UserCheck, label: 'Verifications', path: '/admin/verifications' },
+    { icon: BarChart3, label: 'Reports', path: '/admin/reports' },
+    { icon: Settings, label: 'Settings', path: '/admin/settings' },
   ];
 
-  const settingsItems = [
-    {
-      icon: Building,
-      label: 'Bank Branches',
-      path: '/admin/settings?tab=bank-branches',
-      adminOnly: true
-    },
-    {
-      icon: Briefcase,
-      label: 'Lead Types',
-      path: '/admin/settings?tab=lead-types',
-      adminOnly: true
-    },
-    {
-      icon: UserCheck,
-      label: 'Vehicle Brands',
-      path: '/admin/settings?tab=vehicles',
-      adminOnly: true
-    },
-    {
-      icon: Settings,
-      label: 'System',
-      path: '/admin/settings?tab=system',
-      adminOnly: true
-    },
-    {
-      icon: UserCog,
-      label: 'Email',
-      path: '/admin/settings?tab=email',
-      adminOnly: true
-    },
-    {
-      icon: Shield,
-      label: 'Security',
-      path: '/admin/settings?tab=security',
-      adminOnly: true
-    },
-    {
-      icon: Users,
-      label: 'Account',
-      path: '/admin/settings?tab=account',
-      adminOnly: true
-    }
+  const agentMenuItems = [
+    { icon: Home, label: 'Dashboard', path: '/agent/dashboard' },
+    { icon: FileText, label: 'My Leads', path: '/agent/leads' },
+    { icon: Calendar, label: 'History', path: '/agent/history' },
+    { icon: Clock, label: 'Profile', path: '/agent/profile' },
   ];
 
-  const isActiveRoute = (path: string) => {
-    if (path.includes('?tab=')) {
-      const [basePath, tab] = path.split('?tab=');
-      return location.pathname === basePath && location.search.includes(tab);
-    }
-    return location.pathname === path;
-  };
-
-  const handleMenuClick = (path: string) => {
-    navigate(path);
-  };
-
-  if (!isOpen) {
-    return null;
-  }
+  const menuItems = user.role === 'admin' ? adminMenuItems : agentMenuItems;
 
   return (
-    <div className="flex h-full w-64 flex-col border-r bg-white">
-      <div className="flex h-14 items-center px-4 border-b">
-        <h2 className="text-lg font-semibold">KYC Portal</h2>
-        <Badge variant="secondary" className="ml-2">
-          {user.role}
-        </Badge>
-      </div>
-      
-      <ScrollArea className="flex-1 px-3 py-4">
-        <div className="space-y-2">
-          {menuItems.map((item) => {
-            if (item.adminOnly && !isAdmin) return null;
-            
-            const Icon = item.icon;
-            return (
-              <Button
-                key={item.path}
-                variant={isActiveRoute(item.path) ? "secondary" : "ghost"}
-                className="w-full justify-start"
-                onClick={() => handleMenuClick(item.path)}
-              >
-                <Icon className="mr-2 h-4 w-4" />
-                {item.label}
-              </Button>
-            );
-          })}
-
-          {isAdmin && (
-            <>
-              <Separator className="my-4" />
-              
-              <Collapsible open={settingsOpen} onOpenChange={setSettingsOpen}>
-                <CollapsibleTrigger asChild>
-                  <Button variant="ghost" className="w-full justify-start">
-                    <Settings className="mr-2 h-4 w-4" />
-                    Settings
-                    {settingsOpen ? (
-                      <ChevronDown className="ml-auto h-4 w-4" />
-                    ) : (
-                      <ChevronRight className="ml-auto h-4 w-4" />
-                    )}
-                  </Button>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-1 pl-6">
-                  {settingsItems.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <Button
-                        key={item.path}
-                        variant={isActiveRoute(item.path) ? "secondary" : "ghost"}
-                        className="w-full justify-start"
-                        onClick={() => handleMenuClick(item.path)}
-                      >
-                        <Icon className="mr-2 h-4 w-4" />
-                        {item.label}
-                      </Button>
-                    );
-                  })}
-                </CollapsibleContent>
-              </Collapsible>
-            </>
+    <div className={`bg-white border-r border-gray-200 transition-all duration-300 ${
+      isOpen ? 'w-64' : 'w-16'
+    } flex flex-col h-screen`}>
+      {/* Header */}
+      <div className="p-4 border-b border-gray-200">
+        <div className="flex items-center justify-between">
+          {isOpen && (
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">KYC System</h2>
+              <p className="text-sm text-gray-500">Verification Platform</p>
+            </div>
           )}
         </div>
-      </ScrollArea>
+      </div>
 
-      <div className="border-t p-4">
-        <div className="flex items-center space-x-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
+      {/* User Info */}
+      <div className="p-4 border-b border-gray-200">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-medium">
             {user.name.charAt(0).toUpperCase()}
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">{user.name}</p>
-            <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-          </div>
+          {isOpen && (
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-gray-900 truncate">{user.name}</p>
+              <div className="flex items-center space-x-2">
+                <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+                  {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                </Badge>
+                {user.role === 'agent' && user.district && (
+                  <Badge variant="outline" className="text-xs">
+                    {user.district}
+                  </Badge>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 p-4">
+        <ul className="space-y-2">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const active = isActive(item.path);
+            
+            return (
+              <li key={item.path}>
+                <Button
+                  variant={active ? "default" : "ghost"}
+                  className={`w-full justify-start ${!isOpen ? 'px-2' : ''} ${
+                    active ? 'bg-blue-600 text-white hover:bg-blue-700' : 'hover:bg-gray-100'
+                  }`}
+                  onClick={() => navigate(item.path)}
+                >
+                  <Icon className={`h-5 w-5 ${isOpen ? 'mr-3' : ''}`} />
+                  {isOpen && <span>{item.label}</span>}
+                </Button>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+
+      {/* Footer - Agent Stats */}
+      {user.role === 'agent' && isOpen && (
+        <div className="p-4 border-t border-gray-200">
+          <Card>
+            <CardContent className="p-3">
+              <div className="text-center">
+                <div className="text-lg font-semibold text-blue-600">
+                  {user.totalVerifications || 0}
+                </div>
+                <div className="text-xs text-gray-500">Total Verifications</div>
+                <div className="mt-2">
+                  <div className="text-sm font-medium text-green-600">
+                    {user.completionRate || 0}% Success Rate
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };

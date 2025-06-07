@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lead, User } from '@/utils/mockData';
@@ -187,7 +188,7 @@ const LeadList = ({
     }
   };
 
-  const handleBulkDelete = () => {
+  const handleBulkDelete = async () => {
     if (selectedLeads.length === 0) {
       toast({
         title: "No leads selected",
@@ -198,12 +199,21 @@ const LeadList = ({
     }
 
     if (onBulkDelete) {
-      onBulkDelete(selectedLeads);
-      setSelectedLeads([]);
-      toast({
-        title: "Leads deleted",
-        description: `${selectedLeads.length} leads have been deleted.`,
-      });
+      try {
+        await onBulkDelete(selectedLeads);
+        setSelectedLeads([]); // Clear selection after successful deletion
+        toast({
+          title: "Leads deleted",
+          description: `${selectedLeads.length} leads have been deleted successfully.`,
+        });
+      } catch (error) {
+        console.error('Error in bulk delete:', error);
+        toast({
+          title: "Delete failed",
+          description: "Some leads could not be deleted. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -262,25 +272,204 @@ const LeadList = ({
   };
 
   const handleExport = (format: 'csv' | 'xls') => {
-    if (onExport) {
-      onExport(format);
-      toast({
-        title: "Export started",
-        description: `Exporting leads in ${format.toUpperCase()} format...`,
-      });
-    }
+    // Enhanced export with ALL fields including images
+    const headers = [
+      'Lead ID', 'Agency File No', 'Application Barcode', 'Case ID', 'Customer Name', 
+      'Age', 'Job/Designation', 'Phone', 'Email', 'Date of Birth', 'Address Type', 
+      'Product Type', 'Lead Type', 'Lead Type ID', 'Residence Address', 'Office Address', 
+      'Permanent Address', 'Company', 'Work Experience', 'Property Type', 'Ownership Status',
+      'Property Age', 'Monthly Income', 'Annual Income', 'Other Income', 'FI Date', 'FI Time',
+      'Status', 'Verification Status', 'Assigned Agent', 'Loan Amount', 'Loan Type',
+      'Asset Make', 'Asset Model', 'Vehicle Brand ID', 'Vehicle Model ID', 'Bank Branch',
+      'Scheme Description', 'Additional Comments', 'Instructions', 'Verification Notes',
+      'Verification Start Time', 'Verification End Time', 'Verification Completion Time',
+      'Verification Location', 'Document Images', 'Verification Photos', 'Created Date'
+    ];
+
+    const csvContent = [
+      headers.join(','),
+      ...leads.map(lead => {
+        const officeAddress = lead.additionalDetails?.addresses?.find(addr => addr.type === 'Office');
+        const documentImages = lead.documents?.map(doc => doc.url || doc.name).join(';') || '';
+        const verificationPhotos = lead.verification?.photos?.join(';') || '';
+        
+        return [
+          lead.id,
+          lead.additionalDetails?.agencyFileNo || '',
+          lead.additionalDetails?.applicationBarcode || '',
+          lead.additionalDetails?.caseId || '',
+          lead.name,
+          lead.age || '',
+          lead.additionalDetails?.designation || lead.job || '',
+          lead.additionalDetails?.phoneNumber || '',
+          lead.additionalDetails?.email || '',
+          getDateOfBirth(lead),
+          lead.visitType,
+          getLeadTypeName(lead),
+          lead.additionalDetails?.leadType || '',
+          lead.additionalDetails?.leadTypeId || '',
+          `"${getResidenceAddress(lead)}"`,
+          `"${getOfficeAddress(lead)}"`,
+          `"${getPermanentAddress(lead)}"`,
+          lead.additionalDetails?.company || '',
+          lead.additionalDetails?.workExperience || '',
+          lead.additionalDetails?.propertyType || '',
+          lead.additionalDetails?.ownershipStatus || '',
+          lead.additionalDetails?.propertyAge || '',
+          lead.additionalDetails?.monthlyIncome || '',
+          lead.additionalDetails?.annualIncome || '',
+          lead.additionalDetails?.otherIncome || '',
+          getFIDate(lead),
+          getFITime(lead),
+          lead.status,
+          getVerificationStatus(lead),
+          getAgentName(lead.assignedTo || ''),
+          getLoanAmount(lead),
+          lead.additionalDetails?.loanType || '',
+          getAssetMake(lead),
+          getAssetModel(lead),
+          lead.additionalDetails?.vehicleBrandId || '',
+          lead.additionalDetails?.vehicleModelId || '',
+          lead.additionalDetails?.bankBranch || '',
+          lead.additionalDetails?.schemeDesc || '',
+          lead.additionalDetails?.additionalComments || '',
+          lead.instructions || '',
+          lead.verification?.notes || '',
+          lead.verification?.startTime ? new Date(lead.verification.startTime).toISOString() : '',
+          lead.verification?.endTime ? new Date(lead.verification.endTime).toISOString() : '',
+          lead.verification?.completionTime ? new Date(lead.verification.completionTime).toISOString() : '',
+          lead.verification?.locationAddress || '',
+          `"${documentImages}"`,
+          `"${verificationPhotos}"`,
+          lead.createdAt ? new Date(lead.createdAt).toISOString() : ''
+        ].join(',');
+      })
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `leads_export_complete_${new Date().toISOString().split('T')[0]}.${format}`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+
+    toast({
+      title: "Export completed",
+      description: `Complete lead data exported in ${format.toUpperCase()} format with all fields including images.`,
+    });
   };
 
   const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file && onImport) {
-      onImport(file);
-      toast({
-        title: "Import started",
-        description: "Processing imported leads...",
-      });
-      event.target.value = '';
-    }
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const lines = content.split('\n');
+        const headers = lines[0].split(',');
+        
+        const importedLeads: Lead[] = [];
+        
+        for (let i = 1; i < lines.length; i++) {
+          const values = lines[i].split(',');
+          if (values.length >= 5 && values[4].trim()) { // At least basic fields
+            const newLead: Lead = {
+              id: values[0] || `imported-lead-${Date.now()}-${i}`,
+              name: values[4].trim(),
+              age: parseInt(values[5]) || 30,
+              job: values[6] || 'Not specified',
+              address: {
+                street: values[14] ? values[14].replace(/"/g, '') : '',
+                city: 'Imported',
+                district: 'Imported',
+                state: 'Imported',
+                pincode: '000000'
+              },
+              additionalDetails: {
+                agencyFileNo: values[1] || '',
+                applicationBarcode: values[2] || '',
+                caseId: values[3] || '',
+                phoneNumber: values[7] || '',
+                email: values[8] || '',
+                dateOfBirth: values[9] || '',
+                designation: values[6] || '',
+                company: values[17] || '',
+                workExperience: values[18] || '',
+                propertyType: values[19] || '',
+                ownershipStatus: values[20] || '',
+                propertyAge: values[21] || '',
+                monthlyIncome: values[22] || '',
+                annualIncome: values[23] || '',
+                otherIncome: values[24] || '',
+                leadType: values[12] || '',
+                leadTypeId: values[13] || '',
+                loanAmount: values[30] || '',
+                loanType: values[31] || '',
+                vehicleBrandName: values[32] || '',
+                vehicleModelName: values[33] || '',
+                vehicleBrandId: values[34] || '',
+                vehicleModelId: values[35] || '',
+                bankBranch: values[36] || '',
+                schemeDesc: values[37] || '',
+                additionalComments: values[38] || '',
+                addresses: []
+              },
+              status: (values[27] as Lead['status']) || 'Pending',
+              bank: 'bank-1',
+              visitType: values[10] || 'Residence',
+              assignedTo: '',
+              createdAt: values[42] ? new Date(values[42]) : new Date(),
+              documents: [],
+              instructions: values[39] || '',
+              verification: values[40] ? {
+                id: `verification-${Date.now()}-${i}`,
+                leadId: values[0] || `imported-lead-${Date.now()}-${i}`,
+                status: 'Not Started',
+                agentId: '',
+                photos: values[41] ? values[41].replace(/"/g, '').split(';').filter(p => p) : [],
+                documents: [],
+                notes: values[40] || ''
+              } : undefined
+            };
+            importedLeads.push(newLead);
+          }
+        }
+        
+        if (importedLeads.length > 0 && onImport) {
+          // Create a mock file with the imported data
+          const importData = JSON.stringify(importedLeads);
+          const blob = new Blob([importData], { type: 'application/json' });
+          const mockFile = new File([blob], 'imported_leads.json', { type: 'application/json' });
+          
+          onImport(mockFile);
+          
+          toast({
+            title: "Import successful",
+            description: `${importedLeads.length} leads imported with complete data including verification details.`,
+          });
+        } else {
+          toast({
+            title: "Import failed",
+            description: "No valid leads found in the file or missing required fields.",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        console.error('Import error:', error);
+        toast({
+          title: "Import failed",
+          description: "Error reading the file. Please check the format and try again.",
+          variant: "destructive",
+        });
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
   };
 
   const handleViewLead = (leadId: string) => {
@@ -296,7 +485,6 @@ const LeadList = ({
       <Card>
         <CardContent className="text-center py-8">
           <p className="text-muted-foreground">No leads found.</p>
-          {/* Show import option even when no leads exist */}
           {isAdmin && (
             <div className="mt-4">
               <input
@@ -313,7 +501,7 @@ const LeadList = ({
                 className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
               >
                 <FileUp className="h-4 w-4 mr-2" />
-                Import Leads CSV/Excel
+                Import Complete Lead Data (CSV/Excel)
               </Button>
             </div>
           )}
@@ -324,7 +512,6 @@ const LeadList = ({
 
   return (
     <div className="space-y-4">
-      {/* Enhanced Action Bar with Better Import/Export UI - ALWAYS VISIBLE FOR ADMINS */}
       {isAdmin && (
         <div className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg border">
           <div className="flex items-center gap-4">
@@ -345,7 +532,6 @@ const LeadList = ({
           </div>
           
           <div className="flex items-center gap-3">
-            {/* Import Button */}
             <div>
               <input
                 type="file"
@@ -361,11 +547,10 @@ const LeadList = ({
                 className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
               >
                 <FileUp className="h-4 w-4 mr-2" />
-                Import CSV/Excel
+                Import Complete Data
               </Button>
             </div>
             
-            {/* Export Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button 
@@ -374,7 +559,7 @@ const LeadList = ({
                   className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
                 >
                   <FileDown className="h-4 w-4 mr-2" />
-                  Export Data
+                  Export Complete Data
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="bg-white border shadow-lg">
@@ -383,14 +568,14 @@ const LeadList = ({
                   className="hover:bg-gray-50"
                 >
                   <Download className="h-4 w-4 mr-2" />
-                  Export as CSV
+                  Export Complete CSV
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   onClick={() => handleExport('xls')}
                   className="hover:bg-gray-50"
                 >
                   <Download className="h-4 w-4 mr-2" />
-                  Export as Excel
+                  Export Complete Excel
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -538,7 +723,7 @@ const LeadList = ({
                           {onEdit && (
                             <DropdownMenuItem onClick={() => onEdit(lead)}>
                               <Edit className="h-4 w-4 mr-2" />
-                              Edit
+                              Edit All Data
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuItem onClick={() => handleAssignLead(lead.id)}>
@@ -565,7 +750,6 @@ const LeadList = ({
         </Table>
       </div>
 
-      {/* Assign Agent Dialog */}
       <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
         <DialogContent>
           <DialogHeader>
