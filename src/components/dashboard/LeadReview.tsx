@@ -1,9 +1,11 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Lead, User, Bank, getUserById, getBankById } from '@/utils/mockData';
+import { Lead, User, Bank } from '@/utils/mockData';
+import { getUserById, getBankById } from '@/lib/supabase-queries';
 import { Download, FileCheck, FileX } from 'lucide-react';
 import { format } from 'date-fns';
 

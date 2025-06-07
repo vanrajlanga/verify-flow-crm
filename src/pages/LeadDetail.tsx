@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { FileText, Download, ArrowLeft, MapPin, User, Building, Phone, Calendar, Clock, Home, Briefcase, DollarSign, Eye } from 'lucide-react';
-import { getLeadById, getUserById, getBankById, mockLeads } from '@/utils/mockData';
+import { mockLeads } from '@/utils/mockData';
+import { getLeadById, getUserById, getBankById } from '@/lib/supabase-queries';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

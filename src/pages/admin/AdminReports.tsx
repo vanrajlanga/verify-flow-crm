@@ -9,9 +9,9 @@ import {
   User, 
   mockLeads, 
   mockUsers, 
-  mockBanks,
-  getAgentPerformance 
+  mockBanks
 } from '@/utils/mockData';
+import { getAgentPerformance } from '@/lib/supabase-queries';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
 import { 
