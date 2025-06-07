@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { loginUser } from '@/utils/mockData';
+import { loginUser } from '@/lib/supabase-queries';
 import { Shield } from 'lucide-react';
 import { User } from '@/utils/mockData';
 
@@ -26,19 +26,11 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
     setIsLoading(true);
 
     try {
-      // First try to login with mock data users
-      let user = await loginUser(email, password);
-      
-      // If not found in mock data, check localStorage users (team members)
-      if (!user) {
-        const storedUsers = localStorage.getItem('mockUsers');
-        if (storedUsers) {
-          const users: User[] = JSON.parse(storedUsers);
-          user = users.find(u => u.email === email && u.password === password);
-        }
-      }
+      console.log('Attempting login with email:', email);
+      const user = await loginUser(email, password);
       
       if (user) {
+        console.log('Login successful for user:', user.name);
         onLogin(user);
         if (user.role === 'admin') {
           navigate('/admin');
@@ -46,6 +38,7 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
           navigate('/agent');
         }
       } else {
+        console.log('Login failed - invalid credentials');
         setError('Invalid email or password');
       }
     } catch (error) {
@@ -58,17 +51,32 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
 
   const handleDemoLogin = async (role: 'admin' | 'agent') => {
     setIsLoading(true);
+    setError('');
+    
     try {
-      let email = role === 'admin' ? 'admin@kycverification.com' : 'rajesh@kycverification.com';
-      const user = await loginUser(email, 'password');
+      let email, password;
+      if (role === 'admin') {
+        email = 'admin@kycverification.com';
+        password = 'password';
+      } else {
+        email = 'rajesh@kycverification.com';
+        password = 'password';
+      }
+      
+      console.log('Demo login attempt for:', email);
+      const user = await loginUser(email, password);
       
       if (user) {
+        console.log('Demo login successful for user:', user.name);
         onLogin(user);
         if (user.role === 'admin') {
           navigate('/admin');
         } else {
           navigate('/agent');
         }
+      } else {
+        console.log('Demo login failed');
+        setError('Demo login failed. Please try again.');
       }
     } catch (error) {
       console.error('Demo login error:', error);
@@ -123,6 +131,23 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
             {isLoading ? 'Signing in...' : 'Sign In'}
           </Button>
         </form>
+
+        {/* Demo Credentials Display */}
+        <div className="bg-gray-50 p-4 rounded-lg text-sm">
+          <h4 className="font-medium mb-2">Demo Accounts:</h4>
+          <div className="space-y-2">
+            <div>
+              <strong>Admin:</strong><br />
+              Email: admin@kycverification.com<br />
+              Password: password
+            </div>
+            <div>
+              <strong>Agent:</strong><br />
+              Email: rajesh@kycverification.com<br />
+              Password: password
+            </div>
+          </div>
+        </div>
       </CardContent>
       <CardFooter className="flex flex-col space-y-4">
         <div className="relative w-full">
@@ -131,7 +156,7 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
           </div>
           <div className="relative flex justify-center text-xs uppercase">
             <span className="bg-background px-2 text-muted-foreground">
-              Demo Access
+              Quick Demo Access
             </span>
           </div>
         </div>

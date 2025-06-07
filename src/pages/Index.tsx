@@ -1,7 +1,9 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LoginForm from '@/components/auth/LoginForm';
 import { User } from '@/utils/mockData';
+import { insertDefaultUsers } from '@/lib/insert-default-users';
 
 const Index = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -21,6 +23,9 @@ const Index = () => {
         navigate('/agent');
       }
     }
+
+    // Insert default users into database
+    insertDefaultUsers();
   }, [navigate]);
 
   const handleLogin = (user: User) => {

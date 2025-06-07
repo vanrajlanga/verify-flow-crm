@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { 
   transformSupabaseUser, 
@@ -12,6 +11,8 @@ import { mockUsers, mockBanks } from '@/utils/mockData';
 // User queries
 export const loginUser = async (email: string, password: string) => {
   try {
+    console.log('Attempting login for:', email);
+    
     // First try to query the database
     const { data: user, error } = await supabase
       .from('users')
@@ -20,23 +21,69 @@ export const loginUser = async (email: string, password: string) => {
       .eq('password', password)
       .single();
 
-    if (error && error.code !== '42P01') {
-      console.error('Login error:', error);
+    if (error) {
+      console.log('Database query error:', error);
+      
+      // If table doesn't exist or other error, fall back to mock data
+      console.log('Falling back to mock data');
+      const mockUser = mockUsers.find(u => u.email === email && u.password === password);
+      if (mockUser) {
+        console.log('Found user in mock data:', mockUser.name);
+        return mockUser;
+      }
+      
+      // Also check localStorage for additional users
+      const storedUsers = localStorage.getItem('mockUsers');
+      if (storedUsers) {
+        try {
+          const users = JSON.parse(storedUsers);
+          const localUser = users.find((u: any) => u.email === email && u.password === password);
+          if (localUser) {
+            console.log('Found user in localStorage:', localUser.name);
+            return localUser;
+          }
+        } catch (parseError) {
+          console.error('Error parsing stored users:', parseError);
+        }
+      }
+      
+      console.log('No user found with provided credentials');
       return null;
     }
 
     if (user) {
+      console.log('Found user in database:', user.name);
       return transformSupabaseUser(user);
     }
 
-    // Fall back to mock data if database table doesn't exist
-    const mockUser = mockUsers.find(u => u.email === email && u.password === password);
-    return mockUser || null;
+    return null;
   } catch (error) {
     console.error('Login error:', error);
+    
     // Fall back to mock data
+    console.log('Falling back to mock data due to error');
     const mockUser = mockUsers.find(u => u.email === email && u.password === password);
-    return mockUser || null;
+    if (mockUser) {
+      console.log('Found user in mock data:', mockUser.name);
+      return mockUser;
+    }
+    
+    // Also check localStorage
+    const storedUsers = localStorage.getItem('mockUsers');
+    if (storedUsers) {
+      try {
+        const users = JSON.parse(storedUsers);
+        const localUser = users.find((u: any) => u.email === email && u.password === password);
+        if (localUser) {
+          console.log('Found user in localStorage:', localUser.name);
+          return localUser;
+        }
+      } catch (parseError) {
+        console.error('Error parsing stored users:', parseError);
+      }
+    }
+    
+    return null;
   }
 };
 
