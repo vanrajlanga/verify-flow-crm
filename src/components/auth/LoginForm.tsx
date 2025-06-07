@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -33,9 +32,9 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
         console.log('Login successful for user:', user.name);
         onLogin(user);
         if (user.role === 'admin') {
-          navigate('/admin');
+          navigate('/admin/dashboard');
         } else {
-          navigate('/agent');
+          navigate('/agent/dashboard');
         }
       } else {
         console.log('Login failed - invalid credentials');
@@ -70,9 +69,9 @@ const LoginForm = ({ onLogin }: LoginFormProps) => {
         console.log('Demo login successful for user:', user.name);
         onLogin(user);
         if (user.role === 'admin') {
-          navigate('/admin');
+          navigate('/admin/dashboard');
         } else {
-          navigate('/agent');
+          navigate('/agent/dashboard');
         }
       } else {
         console.log('Demo login failed');
