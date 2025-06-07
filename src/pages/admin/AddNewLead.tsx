@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, mockBanks } from '@/utils/mockData';
@@ -8,6 +7,7 @@ import AddLeadFormMultiStep from '@/components/admin/AddLeadFormMultiStep';
 import { toast } from '@/components/ui/use-toast';
 import { saveLeadToDatabase } from '@/lib/lead-operations';
 import { getUserById } from '@/lib/supabase-queries';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LocationData {
   states: {
@@ -55,7 +55,7 @@ const AddNewLead = () => {
   const loadAgents = async () => {
     try {
       // Try to get agents from database first
-      const { data: dbAgents, error } = await (supabase as any)
+      const { data: dbAgents, error } = await supabase
         .from('users')
         .select('*')
         .eq('role', 'agent');
