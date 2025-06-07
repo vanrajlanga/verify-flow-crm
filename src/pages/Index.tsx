@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LoginForm from '@/components/auth/LoginForm';
@@ -18,9 +17,9 @@ const Index = () => {
       
       // Redirect to appropriate dashboard
       if (parsedUser.role === 'admin') {
-        navigate('/admin');
+        navigate('/admin/dashboard');
       } else {
-        navigate('/agent');
+        navigate('/agent/dashboard');
       }
     }
 
