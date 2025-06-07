@@ -6,6 +6,8 @@ import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
 import AddLeadFormMultiStep from '@/components/admin/AddLeadFormMultiStep';
 import { toast } from '@/components/ui/use-toast';
+import { saveLeadToDatabase } from '@/lib/lead-operations';
+import { getUserById } from '@/lib/supabase-queries';
 
 interface LocationData {
   states: {
@@ -50,8 +52,41 @@ const AddNewLead = () => {
     loadLocationData();
   }, [navigate]);
 
-  const loadAgents = () => {
-    // Get ALL agents from localStorage (including newly created ones)
+  const loadAgents = async () => {
+    try {
+      // Try to get agents from database first
+      const { data: dbAgents, error } = await (supabase as any)
+        .from('users')
+        .select('*')
+        .eq('role', 'agent');
+
+      if (!error && dbAgents && dbAgents.length > 0) {
+        const transformedAgents = dbAgents.map((agent: any) => ({
+          id: agent.id,
+          name: agent.name,
+          role: agent.role,
+          email: agent.email,
+          phone: agent.phone || '',
+          district: agent.district || '',
+          status: agent.status || 'Active',
+          state: agent.state,
+          city: agent.city,
+          baseLocation: agent.base_location,
+          maxTravelDistance: agent.max_travel_distance,
+          extraChargePerKm: agent.extra_charge_per_km,
+          profilePicture: agent.profile_picture,
+          totalVerifications: agent.total_verifications || 0,
+          completionRate: agent.completion_rate || 0,
+          password: agent.password
+        }));
+        setAgents(transformedAgents);
+        return;
+      }
+    } catch (error) {
+      console.error('Error loading agents from database:', error);
+    }
+
+    // Fall back to localStorage
     const storedUsers = localStorage.getItem('mockUsers');
     if (storedUsers) {
       try {
@@ -126,32 +161,46 @@ const AddNewLead = () => {
     navigate('/');
   };
 
-  const handleAddLead = (newLead: any) => {
-    console.log('Adding new lead:', newLead);
-    
-    // Get current leads
-    const storedLeads = localStorage.getItem('mockLeads');
-    let currentLeads = [];
-    if (storedLeads) {
-      try {
-        currentLeads = JSON.parse(storedLeads);
-      } catch (error) {
-        console.error("Error parsing stored leads:", error);
-        currentLeads = [];
+  const handleAddLead = async (newLead: any) => {
+    try {
+      console.log('Adding new lead:', newLead);
+      
+      // Save to database
+      await saveLeadToDatabase(newLead);
+
+      toast({
+        title: "Lead added",
+        description: `New lead ${newLead.name} has been created successfully and saved to database.`,
+      });
+
+      // Navigate back to leads list
+      navigate('/admin/leads');
+    } catch (error) {
+      console.error('Error saving lead to database:', error);
+      
+      // Fall back to localStorage if database save fails
+      const storedLeads = localStorage.getItem('mockLeads');
+      let currentLeads = [];
+      if (storedLeads) {
+        try {
+          currentLeads = JSON.parse(storedLeads);
+        } catch (parseError) {
+          console.error("Error parsing stored leads:", parseError);
+          currentLeads = [];
+        }
       }
+
+      const updatedLeads = [...currentLeads, newLead];
+      localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+
+      toast({
+        title: "Lead added",
+        description: `New lead ${newLead.name} has been created successfully (saved locally).`,
+        variant: "destructive"
+      });
+
+      navigate('/admin/leads');
     }
-
-    // Add new lead
-    const updatedLeads = [...currentLeads, newLead];
-    localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
-
-    toast({
-      title: "Lead added",
-      description: `New lead ${newLead.name} has been created successfully.`,
-    });
-
-    // Navigate back to leads list
-    navigate('/admin/leads');
   };
 
   const handleClose = () => {

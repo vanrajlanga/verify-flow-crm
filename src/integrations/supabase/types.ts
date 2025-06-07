@@ -9,7 +9,409 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      additional_details: {
+        Row: {
+          additional_comments: string | null
+          agency_file_no: string | null
+          annual_income: string | null
+          application_barcode: string | null
+          bank_branch: string | null
+          case_id: string | null
+          company: string | null
+          created_at: string
+          date_of_birth: string | null
+          designation: string | null
+          email: string | null
+          id: string
+          lead_id: string | null
+          lead_type: string | null
+          lead_type_id: string | null
+          loan_amount: string | null
+          loan_type: string | null
+          monthly_income: string | null
+          other_income: string | null
+          ownership_status: string | null
+          phone_number: string | null
+          property_age: string | null
+          property_type: string | null
+          scheme_desc: string | null
+          vehicle_brand_id: string | null
+          vehicle_brand_name: string | null
+          vehicle_model_id: string | null
+          vehicle_model_name: string | null
+          work_experience: string | null
+        }
+        Insert: {
+          additional_comments?: string | null
+          agency_file_no?: string | null
+          annual_income?: string | null
+          application_barcode?: string | null
+          bank_branch?: string | null
+          case_id?: string | null
+          company?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          designation?: string | null
+          email?: string | null
+          id?: string
+          lead_id?: string | null
+          lead_type?: string | null
+          lead_type_id?: string | null
+          loan_amount?: string | null
+          loan_type?: string | null
+          monthly_income?: string | null
+          other_income?: string | null
+          ownership_status?: string | null
+          phone_number?: string | null
+          property_age?: string | null
+          property_type?: string | null
+          scheme_desc?: string | null
+          vehicle_brand_id?: string | null
+          vehicle_brand_name?: string | null
+          vehicle_model_id?: string | null
+          vehicle_model_name?: string | null
+          work_experience?: string | null
+        }
+        Update: {
+          additional_comments?: string | null
+          agency_file_no?: string | null
+          annual_income?: string | null
+          application_barcode?: string | null
+          bank_branch?: string | null
+          case_id?: string | null
+          company?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          designation?: string | null
+          email?: string | null
+          id?: string
+          lead_id?: string | null
+          lead_type?: string | null
+          lead_type_id?: string | null
+          loan_amount?: string | null
+          loan_type?: string | null
+          monthly_income?: string | null
+          other_income?: string | null
+          ownership_status?: string | null
+          phone_number?: string | null
+          property_age?: string | null
+          property_type?: string | null
+          scheme_desc?: string | null
+          vehicle_brand_id?: string | null
+          vehicle_brand_name?: string | null
+          vehicle_model_id?: string | null
+          vehicle_model_name?: string | null
+          work_experience?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "additional_details_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      addresses: {
+        Row: {
+          city: string | null
+          created_at: string
+          district: string | null
+          id: string
+          pincode: string | null
+          state: string | null
+          street: string | null
+          type: string
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string
+          district?: string | null
+          id?: string
+          pincode?: string | null
+          state?: string | null
+          street?: string | null
+          type: string
+        }
+        Update: {
+          city?: string | null
+          created_at?: string
+          district?: string | null
+          id?: string
+          pincode?: string | null
+          state?: string | null
+          street?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      banks: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          total_applications: number | null
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          name: string
+          total_applications?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          total_applications?: number | null
+        }
+        Relationships: []
+      }
+      lead_addresses: {
+        Row: {
+          address_id: string | null
+          created_at: string
+          id: string
+          lead_id: string | null
+        }
+        Insert: {
+          address_id?: string | null
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+        }
+        Update: {
+          address_id?: string | null
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_addresses_address_id_fkey"
+            columns: ["address_id"]
+            isOneToOne: false
+            referencedRelation: "addresses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_addresses_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leads: {
+        Row: {
+          address_id: string | null
+          age: number | null
+          assigned_to: string | null
+          bank_id: string | null
+          created_at: string
+          id: string
+          instructions: string | null
+          job: string | null
+          name: string
+          status: string
+          updated_at: string
+          verification_date: string | null
+          visit_type: string | null
+        }
+        Insert: {
+          address_id?: string | null
+          age?: number | null
+          assigned_to?: string | null
+          bank_id?: string | null
+          created_at?: string
+          id: string
+          instructions?: string | null
+          job?: string | null
+          name: string
+          status: string
+          updated_at?: string
+          verification_date?: string | null
+          visit_type?: string | null
+        }
+        Update: {
+          address_id?: string | null
+          age?: number | null
+          assigned_to?: string | null
+          bank_id?: string | null
+          created_at?: string
+          id?: string
+          instructions?: string | null
+          job?: string | null
+          name?: string
+          status?: string
+          updated_at?: string
+          verification_date?: string | null
+          visit_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_address_id_fkey"
+            columns: ["address_id"]
+            isOneToOne: false
+            referencedRelation: "addresses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_bank_id_fkey"
+            columns: ["bank_id"]
+            isOneToOne: false
+            referencedRelation: "banks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          base_location: string | null
+          city: string | null
+          completion_rate: number | null
+          created_at: string
+          district: string | null
+          email: string
+          extra_charge_per_km: number | null
+          id: string
+          max_travel_distance: number | null
+          name: string
+          password: string
+          phone: string | null
+          profile_picture: string | null
+          role: string
+          state: string | null
+          status: string | null
+          total_verifications: number | null
+        }
+        Insert: {
+          base_location?: string | null
+          city?: string | null
+          completion_rate?: number | null
+          created_at?: string
+          district?: string | null
+          email: string
+          extra_charge_per_km?: number | null
+          id: string
+          max_travel_distance?: number | null
+          name: string
+          password: string
+          phone?: string | null
+          profile_picture?: string | null
+          role: string
+          state?: string | null
+          status?: string | null
+          total_verifications?: number | null
+        }
+        Update: {
+          base_location?: string | null
+          city?: string | null
+          completion_rate?: number | null
+          created_at?: string
+          district?: string | null
+          email?: string
+          extra_charge_per_km?: number | null
+          id?: string
+          max_travel_distance?: number | null
+          name?: string
+          password?: string
+          phone?: string | null
+          profile_picture?: string | null
+          role?: string
+          state?: string | null
+          status?: string | null
+          total_verifications?: number | null
+        }
+        Relationships: []
+      }
+      verifications: {
+        Row: {
+          admin_remarks: string | null
+          agent_id: string | null
+          arrival_time: string | null
+          completion_time: string | null
+          created_at: string
+          end_time: string | null
+          id: string
+          lead_id: string | null
+          location_address: string | null
+          location_latitude: number | null
+          location_longitude: number | null
+          notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          start_time: string | null
+          status: string | null
+        }
+        Insert: {
+          admin_remarks?: string | null
+          agent_id?: string | null
+          arrival_time?: string | null
+          completion_time?: string | null
+          created_at?: string
+          end_time?: string | null
+          id?: string
+          lead_id?: string | null
+          location_address?: string | null
+          location_latitude?: number | null
+          location_longitude?: number | null
+          notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          start_time?: string | null
+          status?: string | null
+        }
+        Update: {
+          admin_remarks?: string | null
+          agent_id?: string | null
+          arrival_time?: string | null
+          completion_time?: string | null
+          created_at?: string
+          end_time?: string | null
+          id?: string
+          lead_id?: string | null
+          location_address?: string | null
+          location_latitude?: number | null
+          location_longitude?: number | null
+          notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          start_time?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "verifications_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "verifications_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "verifications_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
