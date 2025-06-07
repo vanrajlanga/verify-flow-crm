@@ -291,7 +291,9 @@ const LeadList = ({
       ...leads.map(lead => {
         const officeAddress = lead.additionalDetails?.addresses?.find(addr => addr.type === 'Office');
         const documentImages = lead.documents?.map(doc => doc.url || doc.name).join(';') || '';
-        const verificationPhotos = lead.verification?.photos?.join(';') || '';
+        const verificationPhotos = lead.verification?.photos?.map(photo => 
+          typeof photo === 'string' ? photo : photo.url
+        ).join(';') || '';
         
         return [
           lead.id,
@@ -338,7 +340,7 @@ const LeadList = ({
           lead.verification?.startTime ? new Date(lead.verification.startTime).toISOString() : '',
           lead.verification?.endTime ? new Date(lead.verification.endTime).toISOString() : '',
           lead.verification?.completionTime ? new Date(lead.verification.completionTime).toISOString() : '',
-          lead.verification?.locationAddress || '',
+          lead.verification?.location?.address || '',
           `"${documentImages}"`,
           `"${verificationPhotos}"`,
           lead.createdAt ? new Date(lead.createdAt).toISOString() : ''
@@ -378,6 +380,8 @@ const LeadList = ({
         for (let i = 1; i < lines.length; i++) {
           const values = lines[i].split(',');
           if (values.length >= 5 && values[4].trim()) { // At least basic fields
+            const visitType = values[10] as Lead['visitType'] || 'Residence';
+            
             const newLead: Lead = {
               id: values[0] || `imported-lead-${Date.now()}-${i}`,
               name: values[4].trim(),
@@ -421,7 +425,7 @@ const LeadList = ({
               },
               status: (values[27] as Lead['status']) || 'Pending',
               bank: 'bank-1',
-              visitType: values[10] || 'Residence',
+              visitType: visitType,
               assignedTo: '',
               createdAt: values[42] ? new Date(values[42]) : new Date(),
               documents: [],
@@ -431,7 +435,7 @@ const LeadList = ({
                 leadId: values[0] || `imported-lead-${Date.now()}-${i}`,
                 status: 'Not Started',
                 agentId: '',
-                photos: values[41] ? values[41].replace(/"/g, '').split(';').filter(p => p) : [],
+                photos: values[41] ? values[41].replace(/"/g, '').split(';').filter(p => p).map(url => ({ url, caption: '' })) : [],
                 documents: [],
                 notes: values[40] || ''
               } : undefined

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -98,7 +97,7 @@ const AdminLeadsSheet = () => {
               updatedLead.status = editValue as Lead['status'];
               break;
             case 'visitType':
-              updatedLead.visitType = editValue;
+              updatedLead.visitType = editValue as Lead['visitType'];
               break;
             case 'assignedTo':
               updatedLead.assignedTo = editValue;
