@@ -435,7 +435,12 @@ const LeadList = ({
                 leadId: values[0] || `imported-lead-${Date.now()}-${i}`,
                 status: 'Not Started',
                 agentId: '',
-                photos: values[41] ? values[41].replace(/"/g, '').split(';').filter(p => p).map(url => ({ url, caption: '' })) : [],
+                photos: values[41] ? values[41].replace(/"/g, '').split(';').filter(p => p).map((url, index) => ({
+                  id: `photo-${Date.now()}-${i}-${index}`,
+                  name: `imported-photo-${index + 1}.jpg`,
+                  url: url.trim(),
+                  uploadDate: new Date()
+                })) : [],
                 documents: [],
                 notes: values[40] || ''
               } : undefined
