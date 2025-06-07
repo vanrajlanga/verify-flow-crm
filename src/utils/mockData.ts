@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   name: string;
@@ -169,26 +170,6 @@ export interface Agent {
   district: string;
   city: string;
 }
-
-// Import Supabase query functions
-import { 
-  loginUser as supabaseLoginUser,
-  getUserById as supabaseGetUserById,
-  getBankById as supabaseGetBankById,
-  getLeadById as supabaseGetLeadById,
-  getLeadsByAgentId as supabaseGetLeadsByAgentId,
-  getLeadStats as supabaseGetLeadStats,
-  getAgentPerformance as supabaseGetAgentPerformance
-} from '@/lib/supabase-queries';
-
-// Export the Supabase functions with the same names as the original mock functions
-export const loginUser = supabaseLoginUser;
-export const getUserById = supabaseGetUserById;
-export const getBankById = supabaseGetBankById;
-export const getLeadById = supabaseGetLeadById;
-export const getLeadsByAgentId = supabaseGetLeadsByAgentId;
-export const getLeadStats = supabaseGetLeadStats;
-export const getAgentPerformance = supabaseGetAgentPerformance;
 
 // Mock data for fallback/testing
 export const mockUsers: User[] = [
