@@ -825,5 +825,3 @@ const AdminLeads = () => {
 };
 
 export default AdminLeads;
-
-}
