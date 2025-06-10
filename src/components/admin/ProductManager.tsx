@@ -134,7 +134,7 @@ const ProductManager = () => {
     setNewProduct({
       name: product.name,
       description: product.description,
-      banks: [...product.banks]
+      banks: [...(product.banks || [])]
     });
     setIsDialogOpen(true);
   };
@@ -152,6 +152,11 @@ const ProductManager = () => {
     setNewProduct({ name: '', description: '', banks: [] });
     setEditingProduct(null);
     setIsDialogOpen(false);
+  };
+
+  const getBankNames = (bankIds: string[] | undefined) => {
+    if (!bankIds || !Array.isArray(bankIds)) return 'No banks selected';
+    return bankIds.map(bankId => banks.find(b => b.id === bankId)?.name || 'Unknown Bank').join(', ');
   };
 
   return (
@@ -224,7 +229,7 @@ const ProductManager = () => {
                 <span className="font-medium">{product.name}</span>
                 <span className="text-sm text-muted-foreground ml-2">- {product.description}</span>
                 <div className="text-xs text-muted-foreground mt-1">
-                  Banks: {product.banks.map(bankId => banks.find(b => b.id === bankId)?.name).join(', ')}
+                  Banks: {getBankNames(product.banks)}
                 </div>
               </div>
               <div className="flex gap-2">
