@@ -50,11 +50,6 @@ export interface AdditionalDetails {
   otherIncome: string;
   addresses: Address[];
   phoneNumber?: string;
-  secondaryPhones?: Array<{
-    id: string;
-    number: string;
-    type: string;
-  }>;
   email?: string;
   dateOfBirth?: string;
   agencyFileNo?: string;
