@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -127,7 +126,7 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
       const selectedBank = banks.find(bank => bank.name === formData.bank);
       if (selectedBank) {
         const filtered = products.filter(product => 
-          product.banks.includes(selectedBank.id)
+          product.banks && Array.isArray(product.banks) && product.banks.includes(selectedBank.id)
         );
         setFilteredProducts(filtered);
       }
