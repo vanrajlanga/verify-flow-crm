@@ -36,6 +36,7 @@ const App = () => (
           <Route path="/admin/leads" element={<AdminLeads />} />
           <Route path="/admin/leads-sheet" element={<AdminLeadsSheet />} />
           <Route path="/admin/leads/new" element={<AddNewLead />} />
+          <Route path="/admin/add-lead" element={<AddNewLead />} />
           <Route path="/admin/leads/:id" element={<LeadDetail />} />
           <Route path="/admin/agents" element={<AdminAgents />} />
           <Route path="/admin/banks" element={<AdminBanks />} />

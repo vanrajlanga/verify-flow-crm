@@ -296,7 +296,7 @@ const AdminLeads = () => {
   };
 
   const handleAddNewLead = () => {
-    navigate('/admin/leads/new');
+    navigate('/admin/add-lead');
   };
 
   const handleDeleteLead = async (leadId: string) => {
