@@ -50,6 +50,8 @@ export interface AdditionalDetails {
   otherIncome: string;
   addresses: Address[];
   phoneNumber?: string;
+  phoneNumbers?: string[];
+  secondaryPhones?: string[];
   email?: string;
   dateOfBirth?: string;
   agencyFileNo?: string;

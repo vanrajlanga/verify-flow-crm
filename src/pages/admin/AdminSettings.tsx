@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import LeadTypeManager from '@/components/admin/LeadTypeManager';
 import BankBranchManager from '@/components/admin/BankBranchManager';
 import VehicleManager from '@/components/admin/VehicleManager';
+import ProductManager from '@/components/admin/ProductManager';
 
 const AdminSettings = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -77,7 +78,7 @@ const AdminSettings = () => {
 
             <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
               <TabsList className="grid grid-cols-7 w-full">
-                <TabsTrigger value="lead-types">Lead Types</TabsTrigger>
+                <TabsTrigger value="products">Products</TabsTrigger>
                 <TabsTrigger value="bank-branches">Bank Branches</TabsTrigger>
                 <TabsTrigger value="vehicles">Vehicle Brands</TabsTrigger>
                 <TabsTrigger value="system">System</TabsTrigger>
@@ -86,8 +87,8 @@ const AdminSettings = () => {
                 <TabsTrigger value="account">Account</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="lead-types">
-                <LeadTypeManager />
+              <TabsContent value="products">
+                <ProductManager />
               </TabsContent>
 
               <TabsContent value="bank-branches">
