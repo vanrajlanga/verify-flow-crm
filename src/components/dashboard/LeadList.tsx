@@ -136,7 +136,7 @@ const LeadList = ({
     return getResidenceAddress(lead);
   };
 
-  const getLeadTypeName = (lead: Lead) => {
+  const getProductName = (lead: Lead) => {
     return lead.additionalDetails?.leadType || 'N/A';
   };
 
@@ -201,7 +201,7 @@ const LeadList = ({
     if (onBulkDelete) {
       try {
         await onBulkDelete(selectedLeads);
-        setSelectedLeads([]); // Clear selection after successful deletion
+        setSelectedLeads([]);
         toast({
           title: "Leads deleted",
           description: `${selectedLeads.length} leads have been deleted successfully.`,
@@ -238,7 +238,6 @@ const LeadList = ({
     if (onAssignLead) {
       onAssignLead(leadToAssign, selectedAgent);
       
-      // Also update the lead data directly to ensure consistency
       try {
         const storedLeads = localStorage.getItem('mockLeads');
         if (storedLeads) {
@@ -271,88 +270,76 @@ const LeadList = ({
     setSelectedAgent('');
   };
 
-  const handleExport = (format: 'csv' | 'xls') => {
-    // Enhanced export with ALL fields including images
+  const generateSampleCSV = () => {
     const headers = [
-      'Lead ID', 'Agency File No', 'Application Barcode', 'Case ID', 'Customer Name', 
-      'Age', 'Job/Designation', 'Phone', 'Email', 'Date of Birth', 'Address Type', 
-      'Product Type', 'Lead Type', 'Lead Type ID', 'Residence Address', 'Office Address', 
-      'Permanent Address', 'Company', 'Work Experience', 'Property Type', 'Ownership Status',
-      'Property Age', 'Monthly Income', 'Annual Income', 'Other Income', 'FI Date', 'FI Time',
-      'Status', 'Verification Status', 'Assigned Agent', 'Loan Amount', 'Loan Type',
-      'Asset Make', 'Asset Model', 'Vehicle Brand ID', 'Vehicle Model ID', 'Bank Branch',
-      'Scheme Description', 'Additional Comments', 'Instructions', 'Verification Notes',
-      'Verification Start Time', 'Verification End Time', 'Verification Completion Time',
-      'Verification Location', 'Document Images', 'Verification Photos', 'Created Date'
+      'Agency File No', 'Branch', 'Application ID', 'Customer Name', 'Assigned Agent',
+      'Address Type', 'Product Type', 'Residence Address', 'Office Address', 
+      'Permanent Address', 'FI Date', 'FI Time', 'FI Flag', 'Date of Birth',
+      'Designation', 'Loan Amount', 'Asset Make', 'Asset Model'
+    ];
+
+    const sampleData = [
+      'AGF001', 'Main Branch (MB001)', 'APP001', 'Sample Customer', 'Agent Name',
+      'Residence', 'HOME LOAN', '123 Main St, Mumbai, Mumbai, Maharashtra - 400001',
+      'ABC Corp, Andheri, Mumbai, Maharashtra - 400058', '123 Main St, Mumbai, Mumbai, Maharashtra - 400001',
+      '01/01/2024', '09:00', 'Pending', '15/06/1990', 'Software Engineer',
+      '₹2500000', 'Maruti', 'Swift'
+    ];
+
+    const csvContent = [headers.join(','), sampleData.join(',')].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'sample_lead_data.csv';
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+
+    toast({
+      title: "Sample downloaded",
+      description: "Sample CSV file with proper field mapping has been downloaded.",
+    });
+  };
+
+  const handleExport = (format: 'csv' | 'xls') => {
+    const headers = [
+      'Agency File No', 'Branch', 'Application ID', 'Customer Name', 'Assigned Agent',
+      'Address Type', 'Product Type', 'Residence Address', 'Office Address', 
+      'Permanent Address', 'FI Date', 'FI Time', 'FI Flag', 'Date of Birth',
+      'Designation', 'Loan Amount', 'Asset Make', 'Asset Model'
     ];
 
     const csvContent = [
       headers.join(','),
-      ...leads.map(lead => {
-        const officeAddress = lead.additionalDetails?.addresses?.find(addr => addr.type === 'Office');
-        const documentImages = lead.documents?.map(doc => doc.url || doc.name).join(';') || '';
-        const verificationPhotos = lead.verification?.photos?.map(photo => 
-          typeof photo === 'string' ? photo : photo.url
-        ).join(';') || '';
-        
-        return [
-          lead.id,
-          lead.additionalDetails?.agencyFileNo || '',
-          lead.additionalDetails?.applicationBarcode || '',
-          lead.additionalDetails?.caseId || '',
-          lead.name,
-          lead.age || '',
-          lead.additionalDetails?.designation || lead.job || '',
-          lead.additionalDetails?.phoneNumber || '',
-          lead.additionalDetails?.email || '',
-          getDateOfBirth(lead),
-          lead.visitType,
-          getLeadTypeName(lead),
-          lead.additionalDetails?.leadType || '',
-          lead.additionalDetails?.leadTypeId || '',
-          `"${getResidenceAddress(lead)}"`,
-          `"${getOfficeAddress(lead)}"`,
-          `"${getPermanentAddress(lead)}"`,
-          lead.additionalDetails?.company || '',
-          lead.additionalDetails?.workExperience || '',
-          lead.additionalDetails?.propertyType || '',
-          lead.additionalDetails?.ownershipStatus || '',
-          lead.additionalDetails?.propertyAge || '',
-          lead.additionalDetails?.monthlyIncome || '',
-          lead.additionalDetails?.annualIncome || '',
-          lead.additionalDetails?.otherIncome || '',
-          getFIDate(lead),
-          getFITime(lead),
-          lead.status,
-          getVerificationStatus(lead),
-          getAgentName(lead.assignedTo || ''),
-          getLoanAmount(lead),
-          lead.additionalDetails?.loanType || '',
-          getAssetMake(lead),
-          getAssetModel(lead),
-          lead.additionalDetails?.vehicleBrandId || '',
-          lead.additionalDetails?.vehicleModelId || '',
-          lead.additionalDetails?.bankBranch || '',
-          lead.additionalDetails?.schemeDesc || '',
-          lead.additionalDetails?.additionalComments || '',
-          lead.instructions || '',
-          lead.verification?.notes || '',
-          lead.verification?.startTime ? new Date(lead.verification.startTime).toISOString() : '',
-          lead.verification?.endTime ? new Date(lead.verification.endTime).toISOString() : '',
-          lead.verification?.completionTime ? new Date(lead.verification.completionTime).toISOString() : '',
-          lead.verification?.location?.address || '',
-          `"${documentImages}"`,
-          `"${verificationPhotos}"`,
-          lead.createdAt ? new Date(lead.createdAt).toISOString() : ''
-        ].join(',');
-      })
+      ...leads.map(lead => [
+        lead.additionalDetails?.agencyFileNo || '',
+        getBankBranchName(lead.additionalDetails?.bankBranch || ''),
+        lead.additionalDetails?.applicationBarcode || '',
+        lead.name,
+        getAgentName(lead.assignedTo || ''),
+        lead.visitType,
+        getProductName(lead),
+        `"${getResidenceAddress(lead)}"`,
+        `"${getOfficeAddress(lead)}"`,
+        `"${getPermanentAddress(lead)}"`,
+        getFIDate(lead),
+        getFITime(lead),
+        lead.status,
+        getDateOfBirth(lead),
+        lead.additionalDetails?.designation || lead.job || '',
+        getLoanAmount(lead),
+        getAssetMake(lead),
+        getAssetModel(lead)
+      ].join(','))
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `leads_export_complete_${new Date().toISOString().split('T')[0]}.${format}`;
+    a.download = `leads_export_${new Date().toISOString().split('T')[0]}.${format}`;
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);
@@ -360,7 +347,7 @@ const LeadList = ({
 
     toast({
       title: "Export completed",
-      description: `Complete lead data exported in ${format.toUpperCase()} format with all fields including images.`,
+      description: `Lead data exported in ${format.toUpperCase()} format with correct field mapping.`,
     });
   };
 
@@ -372,85 +359,82 @@ const LeadList = ({
     reader.onload = (e) => {
       try {
         const content = e.target?.result as string;
-        const lines = content.split('\n');
-        const headers = lines[0].split(',');
+        const lines = content.split('\n').filter(line => line.trim());
+        
+        if (lines.length < 2) {
+          toast({
+            title: "Import failed",
+            description: "File must contain header and at least one data row.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+        console.log('CSV Headers:', headers);
         
         const importedLeads: Lead[] = [];
         
         for (let i = 1; i < lines.length; i++) {
-          const values = lines[i].split(',');
-          if (values.length >= 5 && values[4].trim()) { // At least basic fields
-            const visitType = values[10] as Lead['visitType'] || 'Residence';
+          const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+          
+          if (values.length >= 4 && values[3].trim()) {
+            const visitType = values[5] as Lead['visitType'] || 'Residence';
             
             const newLead: Lead = {
-              id: values[0] || `imported-lead-${Date.now()}-${i}`,
-              name: values[4].trim(),
-              age: parseInt(values[5]) || 30,
-              job: values[6] || 'Not specified',
+              id: `imported-lead-${Date.now()}-${i}`,
+              name: values[3] || `Customer ${i}`,
+              age: 30,
+              job: values[14] || 'Not specified',
               address: {
-                street: values[14] ? values[14].replace(/"/g, '') : '',
-                city: 'Imported',
-                district: 'Imported',
-                state: 'Imported',
-                pincode: '000000'
+                street: values[7] ? values[7].split(',')[0] : '',
+                city: values[7] ? values[7].split(',')[1] || 'Unknown' : 'Unknown',
+                district: values[7] ? values[7].split(',')[2] || 'Unknown' : 'Unknown',
+                state: values[7] ? values[7].split(',')[3] || 'Unknown' : 'Unknown',
+                pincode: values[7] ? values[7].split('-')[1] || '000000' : '000000'
               },
               additionalDetails: {
-                agencyFileNo: values[1] || '',
+                agencyFileNo: values[0] || '',
+                bankBranch: values[1] || '',
                 applicationBarcode: values[2] || '',
-                caseId: values[3] || '',
-                phoneNumber: values[7] || '',
-                email: values[8] || '',
-                dateOfBirth: values[9] || '',
-                designation: values[6] || '',
-                company: values[17] || '',
-                workExperience: values[18] || '',
-                propertyType: values[19] || '',
-                ownershipStatus: values[20] || '',
-                propertyAge: values[21] || '',
-                monthlyIncome: values[22] || '',
-                annualIncome: values[23] || '',
-                otherIncome: values[24] || '',
-                leadType: values[12] || '',
-                leadTypeId: values[13] || '',
-                loanAmount: values[30] || '',
-                loanType: values[31] || '',
-                vehicleBrandName: values[32] || '',
-                vehicleModelName: values[33] || '',
-                vehicleBrandId: values[34] || '',
-                vehicleModelId: values[35] || '',
-                bankBranch: values[36] || '',
-                schemeDesc: values[37] || '',
-                additionalComments: values[38] || '',
-                addresses: []
+                phoneNumber: '',
+                email: '',
+                dateOfBirth: values[13] || '',
+                designation: values[14] || '',
+                company: '',
+                workExperience: '',
+                propertyType: '',
+                ownershipStatus: '',
+                propertyAge: '',
+                monthlyIncome: '',
+                annualIncome: '',
+                otherIncome: '',
+                leadType: values[6] || '',
+                loanAmount: values[15] ? values[15].replace('₹', '') : '',
+                vehicleBrandName: values[16] || '',
+                vehicleModelName: values[17] || '',
+                addresses: values[8] ? [{
+                  type: 'Office',
+                  street: values[8].split(',')[0] || '',
+                  city: values[8].split(',')[1] || 'Unknown',
+                  district: values[8].split(',')[2] || 'Unknown',
+                  state: values[8].split(',')[3] || 'Unknown',
+                  pincode: values[8].split('-')[1] || '000000'
+                }] : []
               },
-              status: (values[27] as Lead['status']) || 'Pending',
+              status: (values[12] as Lead['status']) || 'Pending',
               bank: 'bank-1',
               visitType: visitType,
               assignedTo: '',
-              createdAt: values[42] ? new Date(values[42]) : new Date(),
+              createdAt: values[10] ? new Date(values[10].split('/').reverse().join('-')) : new Date(),
               documents: [],
-              instructions: values[39] || '',
-              verification: values[40] ? {
-                id: `verification-${Date.now()}-${i}`,
-                leadId: values[0] || `imported-lead-${Date.now()}-${i}`,
-                status: 'Not Started',
-                agentId: '',
-                photos: values[41] ? values[41].replace(/"/g, '').split(';').filter(p => p).map((url, index) => ({
-                  id: `photo-${Date.now()}-${i}-${index}`,
-                  name: `imported-photo-${index + 1}.jpg`,
-                  url: url.trim(),
-                  uploadDate: new Date()
-                })) : [],
-                documents: [],
-                notes: values[40] || ''
-              } : undefined
+              instructions: ''
             };
             importedLeads.push(newLead);
           }
         }
         
         if (importedLeads.length > 0 && onImport) {
-          // Create a mock file with the imported data
           const importData = JSON.stringify(importedLeads);
           const blob = new Blob([importData], { type: 'application/json' });
           const mockFile = new File([blob], 'imported_leads.json', { type: 'application/json' });
@@ -459,12 +443,12 @@ const LeadList = ({
           
           toast({
             title: "Import successful",
-            description: `${importedLeads.length} leads imported with complete data including verification details.`,
+            description: `${importedLeads.length} leads imported with correct field mapping.`,
           });
         } else {
           toast({
             title: "Import failed",
-            description: "No valid leads found in the file or missing required fields.",
+            description: "No valid leads found in the file.",
             variant: "destructive",
           });
         }
@@ -493,9 +477,9 @@ const LeadList = ({
     return (
       <Card>
         <CardContent className="text-center py-8">
-          <p className="text-muted-foreground">No leads found.</p>
+          <p className="text-muted-foreground mb-4">No leads found.</p>
           {isAdmin && (
-            <div className="mt-4">
+            <div className="flex justify-center gap-4">
               <input
                 type="file"
                 accept=".csv,.xlsx,.xls"
@@ -510,7 +494,16 @@ const LeadList = ({
                 className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
               >
                 <FileUp className="h-4 w-4 mr-2" />
-                Import Complete Lead Data (CSV/Excel)
+                Import Leads
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={generateSampleCSV}
+                className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+              >
+                <Download className="h-4 w-4 mr-2" />
+                Download Sample CSV
               </Button>
             </div>
           )}
@@ -541,6 +534,16 @@ const LeadList = ({
           </div>
           
           <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={generateSampleCSV}
+              className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Download Sample
+            </Button>
+            
             <div>
               <input
                 type="file"
@@ -556,7 +559,7 @@ const LeadList = ({
                 className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
               >
                 <FileUp className="h-4 w-4 mr-2" />
-                Import Complete Data
+                Import Leads
               </Button>
             </div>
             
@@ -565,10 +568,10 @@ const LeadList = ({
                 <Button 
                   variant="outline" 
                   size="sm"
-                  className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                  className="bg-orange-50 border-orange-200 text-orange-700 hover:bg-orange-100"
                 >
                   <FileDown className="h-4 w-4 mr-2" />
-                  Export Complete Data
+                  Export Leads
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="bg-white border shadow-lg">
@@ -577,14 +580,14 @@ const LeadList = ({
                   className="hover:bg-gray-50"
                 >
                   <Download className="h-4 w-4 mr-2" />
-                  Export Complete CSV
+                  Export CSV
                 </DropdownMenuItem>
                 <DropdownMenuItem 
                   onClick={() => handleExport('xls')}
                   className="hover:bg-gray-50"
                 >
                   <Download className="h-4 w-4 mr-2" />
-                  Export Complete Excel
+                  Export Excel
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -632,126 +635,63 @@ const LeadList = ({
                   <TableCell>
                     <Checkbox
                       checked={selectedLeads.includes(lead.id)}
-                      onCheckedChange={(checked) => handleSelectLead(lead.id, !!checked)}
+                      onCheckedChange={(checked) => handleSelectLead(lead.id, checked as boolean)}
                     />
                   </TableCell>
                 )}
-                <TableCell className="font-medium">
-                  {lead.additionalDetails?.agencyFileNo || 'N/A'}
-                </TableCell>
+                <TableCell className="font-medium">{lead.additionalDetails?.agencyFileNo || 'N/A'}</TableCell>
+                <TableCell>{getBankBranchName(lead.additionalDetails?.bankBranch || '')}</TableCell>
+                <TableCell>{lead.additionalDetails?.applicationBarcode || 'N/A'}</TableCell>
+                <TableCell className="font-medium">{lead.name}</TableCell>
+                <TableCell>{getAgentName(lead.assignedTo || '')}</TableCell>
+                <TableCell>{lead.visitType}</TableCell>
+                <TableCell>{getProductName(lead)}</TableCell>
+                <TableCell className="max-w-[200px] truncate">{getResidenceAddress(lead)}</TableCell>
+                <TableCell className="max-w-[200px] truncate">{getOfficeAddress(lead)}</TableCell>
+                <TableCell className="max-w-[200px] truncate">{getPermanentAddress(lead)}</TableCell>
+                <TableCell>{getFIDate(lead)}</TableCell>
+                <TableCell>{getFITime(lead)}</TableCell>
                 <TableCell>
-                  {lead.additionalDetails?.bankBranch ? getBankBranchName(lead.additionalDetails.bankBranch) : 'N/A'}
+                  <Badge className={getStatusColor(lead.status)}>{lead.status}</Badge>
                 </TableCell>
+                <TableCell>{getDateOfBirth(lead)}</TableCell>
+                <TableCell>{lead.additionalDetails?.designation || lead.job || 'N/A'}</TableCell>
+                <TableCell>{getLoanAmount(lead)}</TableCell>
+                <TableCell>{getAssetMake(lead)}</TableCell>
+                <TableCell>{getAssetModel(lead)}</TableCell>
                 <TableCell>
-                  {lead.additionalDetails?.applicationBarcode || lead.id}
-                </TableCell>
-                <TableCell className="font-medium">
-                  <div className="flex items-center gap-2">
-                    <UserIcon className="h-4 w-4 text-muted-foreground" />
-                    {lead.name}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="outline" className="text-xs">
-                    {getAgentName(lead.assignedTo || '')}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="outline">{lead.visitType}</Badge>
-                </TableCell>
-                <TableCell>
-                  {getLeadTypeName(lead)}
-                </TableCell>
-                <TableCell className="max-w-[200px] truncate" title={getResidenceAddress(lead)}>
-                  {getResidenceAddress(lead)}
-                </TableCell>
-                <TableCell className="max-w-[200px] truncate" title={getOfficeAddress(lead)}>
-                  {getOfficeAddress(lead)}
-                </TableCell>
-                <TableCell className="max-w-[200px] truncate" title={getPermanentAddress(lead)}>
-                  {getPermanentAddress(lead)}
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3 text-muted-foreground" />
-                    {getFIDate(lead)}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-3 w-3 text-muted-foreground" />
-                    {getFITime(lead)}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge className={getStatusColor(getVerificationStatus(lead))}>
-                    {getVerificationStatus(lead)}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  {getDateOfBirth(lead)}
-                </TableCell>
-                <TableCell>
-                  {lead.additionalDetails?.designation || lead.job}
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1">
-                    <CreditCard className="h-3 w-3 text-muted-foreground" />
-                    {getLoanAmount(lead)}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {getAssetMake(lead)}
-                </TableCell>
-                <TableCell>
-                  {getAssetModel(lead)}
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleViewLead(lead.id)}
-                    >
-                      <Eye className="h-3 w-3 mr-1" />
-                      View
-                    </Button>
-                    
-                    {isAdmin && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="outline" size="sm">
-                            <MoreVertical className="h-3 w-3" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="bg-white border shadow-lg">
-                          <DropdownMenuItem onClick={() => handleViewLead(lead.id)}>
-                            <Eye className="h-4 w-4 mr-2" />
-                            View
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="h-8 w-8 p-0">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-white border shadow-lg">
+                      <DropdownMenuItem onClick={() => handleViewLead(lead.id)} className="hover:bg-gray-50">
+                        <Eye className="h-4 w-4 mr-2" />
+                        View Details
+                      </DropdownMenuItem>
+                      {isAdmin && (
+                        <>
+                          <DropdownMenuItem onClick={() => onEdit && onEdit(lead)} className="hover:bg-gray-50">
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit
                           </DropdownMenuItem>
-                          {onEdit && (
-                            <DropdownMenuItem onClick={() => onEdit(lead)}>
-                              <Edit className="h-4 w-4 mr-2" />
-                              Edit All Data
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuItem onClick={() => handleAssignLead(lead.id)}>
+                          <DropdownMenuItem onClick={() => handleAssignLead(lead.id)} className="hover:bg-gray-50">
                             <UserPlus className="h-4 w-4 mr-2" />
                             Assign Agent
                           </DropdownMenuItem>
-                          {onDelete && (
-                            <DropdownMenuItem 
-                              onClick={() => onDelete(lead.id)}
-                              className="text-red-600"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
-                  </div>
+                          <DropdownMenuItem 
+                            onClick={() => onDelete && onDelete(lead.id)} 
+                            className="text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </TableCell>
               </TableRow>
             ))}
@@ -759,41 +699,36 @@ const LeadList = ({
         </Table>
       </div>
 
+      {/* Assign Agent Dialog */}
       <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Assign Lead to Agent</DialogTitle>
+            <DialogTitle>Assign Agent</DialogTitle>
             <DialogDescription>
               Select an agent to assign this lead to.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Available Agents ({allAvailableAgents.length})</label>
-              <Select value={selectedAgent} onValueChange={setSelectedAgent}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select an agent" />
-                </SelectTrigger>
-                <SelectContent>
-                  {allAvailableAgents.map((agent) => (
-                    <SelectItem key={agent.id} value={agent.id}>
-                      {agent.name} - {agent.district || 'No district'} ({agent.email})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {allAvailableAgents.length === 0 && (
-                <p className="text-sm text-red-600">No agents available. Please create agents first.</p>
-              )}
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setAssignDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={confirmAssignment} disabled={!selectedAgent}>
-                Assign Lead
-              </Button>
-            </div>
+            <Select value={selectedAgent} onValueChange={setSelectedAgent}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select an agent" />
+              </SelectTrigger>
+              <SelectContent>
+                {allAvailableAgents.map((agent) => (
+                  <SelectItem key={agent.id} value={agent.id}>
+                    {agent.name} - {agent.district}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setAssignDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={confirmAssignment}>
+              Assign Lead
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
