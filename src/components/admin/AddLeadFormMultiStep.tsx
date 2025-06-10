@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,6 +57,20 @@ interface CoApplicant {
 
 const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData }: AddLeadFormMultiStepProps) => {
   const [currentStep, setCurrentStep] = useState(0);
+  
+  // Step titles for navigation
+  const stepTitles = [
+    "Lead Type & Basic Info",
+    "Personal Information", 
+    "Job Details",
+    "Property & Income",
+    "Home Addresses",
+    "Work & Office Address",
+    "Document Upload",
+    "Verification Options",
+    "Agent Assignment"
+  ];
+
   const [formData, setFormData] = useState({
     // Step 1: Lead Type & Basic Info
     bankName: '',
@@ -154,15 +167,26 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
     }
   }, []);
 
-  // Filter products when bank is selected
+  // Filter products when bank is selected - FIXED VERSION
   useEffect(() => {
-    if (formData.bankName) {
+    console.log('Bank selection changed:', formData.bankName);
+    console.log('Available products:', products);
+    
+    if (formData.bankName && banks.length > 0) {
       const selectedBank = banks.find(bank => bank.name === formData.bankName);
+      console.log('Selected bank:', selectedBank);
+      
       if (selectedBank) {
-        const filtered = products.filter(product => 
-          product.banks && Array.isArray(product.banks) && product.banks.includes(selectedBank.id)
-        );
+        const filtered = products.filter(product => {
+          const productBanks = product.banks || [];
+          const hasBank = Array.isArray(productBanks) && productBanks.includes(selectedBank.id);
+          console.log(`Product ${product.name} banks:`, productBanks, 'includes bank:', hasBank);
+          return hasBank;
+        });
+        console.log('Filtered products:', filtered);
         setFilteredProducts(filtered);
+      } else {
+        setFilteredProducts([]);
       }
     } else {
       setFilteredProducts(products);
@@ -171,6 +195,7 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
 
   const nextStep = () => setCurrentStep(prev => prev + 1);
   const prevStep = () => setCurrentStep(prev => prev - 1);
+  const goToStep = (stepIndex: number) => setCurrentStep(stepIndex);
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -336,9 +361,15 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
                       <SelectValue placeholder="Select lead type" />
                     </SelectTrigger>
                     <SelectContent>
-                      {filteredProducts.map((product) => (
-                        <SelectItem key={product.id} value={product.name}>{product.name}</SelectItem>
-                      ))}
+                      {filteredProducts.length > 0 ? (
+                        filteredProducts.map((product) => (
+                          <SelectItem key={product.id} value={product.name}>{product.name}</SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="" disabled>
+                          {formData.bankName ? 'No products available for selected bank' : 'Please select a bank first'}
+                        </SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -1075,18 +1106,36 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
     <div className="container mx-auto mt-8">
       <h2 className="text-2xl font-bold mb-4">Add New Lead</h2>
       
-      {/* Step Progress Indicator */}
+      {/* Step Navigation */}
       <div className="mb-6">
+        <div className="flex flex-wrap gap-2 mb-4">
+          {stepTitles.map((title, index) => (
+            <Button
+              key={index}
+              variant={currentStep === index ? "default" : "outline"}
+              size="sm"
+              onClick={() => goToStep(index)}
+              className={cn(
+                "text-xs px-3 py-1",
+                currentStep === index && "bg-primary text-primary-foreground"
+              )}
+            >
+              {index + 1}. {title}
+            </Button>
+          ))}
+        </div>
+        
+        {/* Progress Indicator */}
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium">Step {currentStep + 1} of 9</span>
+          <span className="text-sm font-medium">Step {currentStep + 1} of {stepTitles.length}</span>
           <span className="text-sm text-muted-foreground">
-            {Math.round(((currentStep + 1) / 9) * 100)}% Complete
+            {Math.round(((currentStep + 1) / stepTitles.length) * 100)}% Complete
           </span>
         </div>
         <div className="w-full bg-muted rounded-full h-2">
           <div 
             className="bg-primary h-2 rounded-full transition-all duration-300" 
-            style={{ width: `${((currentStep + 1) / 9) * 100}%` }}
+            style={{ width: `${((currentStep + 1) / stepTitles.length) * 100}%` }}
           ></div>
         </div>
       </div>
@@ -1103,7 +1152,7 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
               Previous
             </Button>
           )}
-          {currentStep < 8 ? (
+          {currentStep < stepTitles.length - 1 ? (
             <Button onClick={nextStep}>
               Next
             </Button>
@@ -1119,3 +1168,5 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
 };
 
 export default AddLeadFormMultiStep;
+
+}
