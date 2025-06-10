@@ -546,7 +546,7 @@ const AdminLeads = () => {
       'Additional Comments', 'Instructions', 'Created At'
     ];
 
-    const csvData = filteredLeads.map(lead => [
+    const csvData = leads.map(lead => [
       lead.name,
       lead.age,
       lead.job,
@@ -599,7 +599,7 @@ const AdminLeads = () => {
 
     toast({
       title: "Export Successful",
-      description: `${filteredLeads.length} leads exported to CSV`
+      description: `${leads.length} leads exported to CSV`
     });
   };
 
@@ -825,3 +825,5 @@ const AdminLeads = () => {
 };
 
 export default AdminLeads;
+
+}

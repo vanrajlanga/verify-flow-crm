@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,20 +32,23 @@ interface Product {
   banks: string[];
 }
 
+type AddressType = 'Residence' | 'Office' | 'Permanent';
+type VisitType = 'Office' | 'Residence' | 'Both';
+
 const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData }: AddLeadFormMultiStepProps) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({
     name: '',
     age: 18,
     job: '',
-    addressType: 'Residence' as const,
+    addressType: 'Residence' as AddressType,
     street: '',
     city: '',
     district: '',
     state: '',
     pincode: '',
     bank: '',
-    visitType: 'Office' as const,
+    visitType: 'Office' as VisitType,
     assignedTo: '',
     instructions: ''
   });
@@ -143,17 +147,6 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      address: {
-        ...prev.address,
-        [name]: value
-      }
-    }));
   };
 
   const handleAdditionalDetailsChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -402,7 +395,7 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="addressType">Address Type *</Label>
-                  <Select value={formData.addressType} onValueChange={(value) => setFormData({...formData, addressType: value as "Residence" | "Office" | "Permanent"})}>
+                  <Select value={formData.addressType} onValueChange={(value: AddressType) => setFormData({...formData, addressType: value})}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select address type" />
                     </SelectTrigger>
@@ -764,7 +757,7 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="visitType">Visit Type *</Label>
-                  <Select value={formData.visitType} onValueChange={(value) => setFormData({...formData, visitType: value as "Office" | "Residence" | "Both"})}>
+                  <Select value={formData.visitType} onValueChange={(value: VisitType) => setFormData({...formData, visitType: value})}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select visit type" />
                     </SelectTrigger>
