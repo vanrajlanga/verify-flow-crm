@@ -167,7 +167,7 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
     }
   }, []);
 
-  // Filter products when bank is selected - FIXED VERSION
+  // Filter products when bank is selected
   useEffect(() => {
     console.log('Bank selection changed:', formData.bankName);
     console.log('Available products:', products);
@@ -1168,5 +1168,3 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
 };
 
 export default AddLeadFormMultiStep;
-
-}
