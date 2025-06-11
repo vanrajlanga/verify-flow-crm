@@ -87,6 +87,53 @@ export const loginUser = async (email: string, password: string) => {
   }
 };
 
+// Save user to both database and localStorage for fallback
+export const saveUser = async (userData: any) => {
+  try {
+    console.log('Saving user:', userData);
+    
+    // Try to save to database first
+    const { data, error } = await supabase
+      .from('users')
+      .insert(userData)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error saving user to database:', error);
+    } else {
+      console.log('User saved to database successfully');
+    }
+  } catch (error) {
+    console.error('Database save error:', error);
+  }
+
+  // Always save to localStorage as fallback
+  try {
+    const storedUsers = localStorage.getItem('mockUsers');
+    let users = [];
+    
+    if (storedUsers) {
+      users = JSON.parse(storedUsers);
+    }
+    
+    // Check if user already exists
+    const existingUserIndex = users.findIndex((u: any) => u.email === userData.email);
+    if (existingUserIndex !== -1) {
+      // Update existing user
+      users[existingUserIndex] = userData;
+    } else {
+      // Add new user
+      users.push(userData);
+    }
+    
+    localStorage.setItem('mockUsers', JSON.stringify(users));
+    console.log('User saved to localStorage successfully');
+  } catch (error) {
+    console.error('Error saving user to localStorage:', error);
+  }
+};
+
 export const getUserById = async (id: string) => {
   try {
     const { data: user, error } = await supabase
@@ -106,11 +153,49 @@ export const getUserById = async (id: string) => {
 
     // Fall back to mock data
     const mockUser = mockUsers.find(u => u.id === id);
-    return mockUser || null;
+    if (mockUser) {
+      return mockUser;
+    }
+
+    // Check localStorage
+    const storedUsers = localStorage.getItem('mockUsers');
+    if (storedUsers) {
+      try {
+        const users = JSON.parse(storedUsers);
+        const localUser = users.find((u: any) => u.id === id);
+        if (localUser) {
+          return localUser;
+        }
+      } catch (parseError) {
+        console.error('Error parsing stored users:', parseError);
+      }
+    }
+
+    return null;
   } catch (error) {
     console.error('Get user error:', error);
+    
+    // Fall back to mock data
     const mockUser = mockUsers.find(u => u.id === id);
-    return mockUser || null;
+    if (mockUser) {
+      return mockUser;
+    }
+
+    // Check localStorage
+    const storedUsers = localStorage.getItem('mockUsers');
+    if (storedUsers) {
+      try {
+        const users = JSON.parse(storedUsers);
+        const localUser = users.find((u: any) => u.id === id);
+        if (localUser) {
+          return localUser;
+        }
+      } catch (parseError) {
+        console.error('Error parsing stored users:', parseError);
+      }
+    }
+
+    return null;
   }
 };
 

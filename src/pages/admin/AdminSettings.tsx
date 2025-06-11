@@ -9,6 +9,7 @@ import ProductManager from '@/components/admin/ProductManager';
 import LocationManager from '@/components/admin/LocationManager';
 import RoleManager from '@/components/admin/RoleManager';
 import TeamMemberManager from '@/components/admin/TeamMemberManager';
+import BankBranchManager from '@/components/admin/BankBranchManager';
 
 interface LocationData {
   states: {
@@ -91,6 +92,7 @@ const AdminSettings = () => {
             <Tabs defaultValue="products" className="space-y-4">
               <TabsList>
                 <TabsTrigger value="products">Products</TabsTrigger>
+                <TabsTrigger value="branches">Bank Branches</TabsTrigger>
                 <TabsTrigger value="locations">Locations</TabsTrigger>
                 <TabsTrigger value="permissions">Permissions</TabsTrigger>
                 <TabsTrigger value="team">Team Members</TabsTrigger>
@@ -98,6 +100,10 @@ const AdminSettings = () => {
 
               <TabsContent value="products">
                 <ProductManager />
+              </TabsContent>
+
+              <TabsContent value="branches">
+                <BankBranchManager />
               </TabsContent>
 
               <TabsContent value="locations">
