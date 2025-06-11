@@ -796,7 +796,7 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
                           <SelectValue placeholder="Select district" />
                         </SelectTrigger>
                         <SelectContent>
-                          {locationData.states.map(state => (
+                          {locationData.states.map(state => 
                             state.districts.map(district => (
                               <SelectItem key={district.id} value={district.name}>{district.name}</SelectItem>
                             ))
@@ -811,12 +811,12 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
                           <SelectValue placeholder="Select city" />
                         </SelectTrigger>
                         <SelectContent>
-                          {locationData.states.map(state => (
-                            state.districts.map(district => (
+                          {locationData.states.map(state => 
+                            state.districts.map(district => 
                               district.cities.map(city => (
                                 <SelectItem key={city.id} value={city.name}>{city.name}</SelectItem>
                               ))
-                            ))
+                            )
                           )}
                         </SelectContent>
                       </Select>
@@ -883,11 +883,11 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
                       <SelectValue placeholder="Select district" />
                     </SelectTrigger>
                     <SelectContent>
-                      {locationData.states.map(state => (
+                      {locationData.states.map(state => 
                         state.districts.map(district => (
                           <SelectItem key={district.id} value={district.name}>{district.name}</SelectItem>
                         ))
-                      ))}
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -898,13 +898,13 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
                       <SelectValue placeholder="Select city" />
                     </SelectTrigger>
                     <SelectContent>
-                      {locationData.states.map(state => (
-                        state.districts.map(district => (
+                      {locationData.states.map(state => 
+                        state.districts.map(district => 
                           district.cities.map(city => (
                             <SelectItem key={city.id} value={city.name}>{city.name}</SelectItem>
                           ))
-                        ))
-                      ))}
+                        )
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
