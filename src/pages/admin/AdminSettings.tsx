@@ -10,9 +10,25 @@ import LocationManager from '@/components/admin/LocationManager';
 import RoleManager from '@/components/admin/RoleManager';
 import TeamMemberManager from '@/components/admin/TeamMemberManager';
 
+interface LocationData {
+  states: {
+    id: string;
+    name: string;
+    districts: {
+      id: string;
+      name: string;
+      cities: {
+        id: string;
+        name: string;
+      }[];
+    }[];
+  }[];
+}
+
 const AdminSettings = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [locationData, setLocationData] = useState<LocationData>({ states: [] });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -29,6 +45,18 @@ const AdminSettings = () => {
     }
 
     setCurrentUser(parsedUser);
+
+    // Load location data from localStorage
+    const storedLocationData = localStorage.getItem('locationData');
+    if (storedLocationData) {
+      try {
+        const parsedLocationData = JSON.parse(storedLocationData);
+        setLocationData(parsedLocationData);
+      } catch (error) {
+        console.error('Error parsing location data:', error);
+        setLocationData({ states: [] });
+      }
+    }
   }, [navigate]);
 
   const handleLogout = () => {
@@ -73,7 +101,10 @@ const AdminSettings = () => {
               </TabsContent>
 
               <TabsContent value="locations">
-                <LocationManager />
+                <LocationManager 
+                  locationData={locationData}
+                  setLocationData={setLocationData}
+                />
               </TabsContent>
 
               <TabsContent value="permissions">
