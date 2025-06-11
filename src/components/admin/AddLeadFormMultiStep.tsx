@@ -366,7 +366,7 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
                           <SelectItem key={product.id} value={product.name}>{product.name}</SelectItem>
                         ))
                       ) : (
-                        <SelectItem value="" disabled>
+                        <SelectItem value="no-products" disabled>
                           {formData.bankName ? 'No products available for selected bank' : 'Please select a bank first'}
                         </SelectItem>
                       )}
@@ -800,7 +800,7 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
                             state.districts.map(district => (
                               <SelectItem key={district.id} value={district.name}>{district.name}</SelectItem>
                             ))
-                          ))}
+                          )}
                         </SelectContent>
                       </Select>
                     </div>
@@ -817,7 +817,7 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
                                 <SelectItem key={city.id} value={city.name}>{city.name}</SelectItem>
                               ))
                             ))
-                          ))}
+                          )}
                         </SelectContent>
                       </Select>
                     </div>
