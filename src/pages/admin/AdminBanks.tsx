@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -57,12 +58,14 @@ const AdminBanks = () => {
     // In a real app, we would make an API call to create the bank
     const newBankId = `b${Date.now()}`;
     
-    setBanks(prev => [...prev, { 
-      id: newBankId, 
-      name: newBank.name, 
-      totalApplications: 0,
-      branches: [] // Add empty branches array
-    }]);
+    setBanks(prev => [
+      ...prev,
+      {
+        id: newBankId,
+        name: newBank.name,
+        totalApplications: 0
+      }
+    ]);
     
     toast({
       title: "Bank added",

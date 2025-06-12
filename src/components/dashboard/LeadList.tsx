@@ -290,7 +290,7 @@ const LeadList = ({
       headers.join(','),
       ...leads.map(lead => {
         const officeAddress = lead.additionalDetails?.addresses?.find(addr => addr.type === 'Office');
-        const documentImages = lead.documents?.map(doc => doc.url || doc.title).join(';') || '';
+        const documentImages = lead.documents?.map(doc => doc.url || doc.name).join(';') || '';
         const verificationPhotos = lead.verification?.photos?.map(photo => 
           typeof photo === 'string' ? photo : photo.url
         ).join(';') || '';
@@ -388,8 +388,6 @@ const LeadList = ({
               age: parseInt(values[5]) || 30,
               job: values[6] || 'Not specified',
               address: {
-                id: `addr-imported-${i}`,
-                type: 'Residence',
                 street: values[14] ? values[14].replace(/"/g, '') : '',
                 city: 'Imported',
                 district: 'Imported',
@@ -423,13 +421,7 @@ const LeadList = ({
                 bankBranch: values[36] || '',
                 schemeDesc: values[37] || '',
                 additionalComments: values[38] || '',
-                gender: 'Not specified',
-                maritalStatus: 'Not specified',
-                fatherName: 'Not specified',
-                motherName: 'Not specified',
-                spouseName: '',
-                addresses: [],
-                phoneNumbers: []
+                addresses: []
               },
               status: (values[27] as Lead['status']) || 'Pending',
               bank: 'bank-1',

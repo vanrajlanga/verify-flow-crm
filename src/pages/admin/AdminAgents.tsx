@@ -1,20 +1,99 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User } from '@/utils/mockData';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { User, mockUsers } from '@/utils/mockData';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
-import { DataTableViewOptions } from "@/components/admin/data-table-view-options"
-import { DataTable } from "@/components/admin/data-table"
-import { columns } from "@/components/admin/agent-table/columns"
-import { supabase } from '@/integrations/supabase/client';
-import { transformSupabaseUser } from '@/lib/data-transformers';
-import { toast } from "@/components/ui/use-toast"
+import { Edit, Plus, Search, Trash } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import EditAgentForm from '@/components/admin/EditAgentForm';
+import LocationManager from '@/components/admin/LocationManager';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import AgentDocuments from '@/components/agent/AgentDocuments';
+import LeaveManagementAdmin from '@/components/admin/LeaveManagementAdmin';
+import AttendanceReports from '@/components/admin/AttendanceReports';
 
 const AdminAgents = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [agents, setAgents] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState('agents');
+  const [newAgent, setNewAgent] = useState({
+    name: '',
+    email: '',
+    state: '',
+    district: '',
+    city: '',
+    password: ''
+  });
+  const [editingAgent, setEditingAgent] = useState<User | null>(null);
+  const [locationData, setLocationData] = useState({
+    states: [
+      {
+        id: 'state-1',
+        name: 'Maharashtra',
+        districts: [
+          {
+            id: 'district-1',
+            name: 'Mumbai',
+            cities: [
+              { id: 'city-1', name: 'Mumbai City' },
+              { id: 'city-2', name: 'Navi Mumbai' }
+            ]
+          },
+          {
+            id: 'district-2',
+            name: 'Pune',
+            cities: [
+              { id: 'city-3', name: 'Pune City' },
+              { id: 'city-4', name: 'Pimpri-Chinchwad' }
+            ]
+          }
+        ]
+      },
+      {
+        id: 'state-2',
+        name: 'Karnataka',
+        districts: [
+          {
+            id: 'district-3',
+            name: 'Bangalore',
+            cities: [
+              { id: 'city-5', name: 'Bangalore City' },
+              { id: 'city-6', name: 'Electronic City' }
+            ]
+          }
+        ]
+      }
+    ]
+  });
+  
+  // Computed values for dropdowns
+  const availableDistricts = locationData.states.find(s => s.name === newAgent.state)?.districts || [];
+  const availableCities = availableDistricts.find(d => d.name === newAgent.district)?.cities || [];
+  
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -32,71 +111,143 @@ const AdminAgents = () => {
     }
 
     setCurrentUser(parsedUser);
-    loadAgents();
-  }, [navigate]);
-
-  const loadAgents = async () => {
-    setLoading(true);
-    try {
-      // Try to get agents from database first
-      const { data: dbAgents, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('role', 'agent');
-
-      if (!error && dbAgents && dbAgents.length > 0) {
-        const transformedAgents = dbAgents.map((agent: any) => ({
-          id: agent.id,
-          name: agent.name,
-          email: agent.email,
-          password: agent.password || 'default123', // Add default password
-          role: agent.role,
-          phone: agent.phone || '',
-          status: agent.status || 'Active',
-          state: agent.state,
-          district: agent.district || '',
-          city: agent.city,
-          totalVerifications: agent.total_verifications || 0,
-          completionRate: agent.completion_rate || 0
-        }));
-        setAgents(transformedAgents);
-        return;
-      }
-    } catch (error) {
-      console.error('Error loading agents from database:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load agents from database.",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-
-    // Fall back to localStorage
-    const storedUsers = localStorage.getItem('mockUsers');
-    if (storedUsers) {
+    
+    // Get agents from localStorage or use mockUsers
+    const storedAgents = localStorage.getItem('mockAgents');
+    if (storedAgents) {
       try {
-        const parsedUsers = JSON.parse(storedUsers);
-        const filteredAgents = parsedUsers.filter((user: User) => user.role === 'agent');
-        setAgents(filteredAgents);
+        const parsedAgents = JSON.parse(storedAgents);
+        setAgents(parsedAgents.filter((user: User) => user.role === 'agent'));
       } catch (error) {
-        console.error("Error parsing stored users:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load agents from localStorage.",
-          variant: "destructive"
-        });
-        setAgents([]);
+        console.error("Error parsing stored agents:", error);
+        // Fallback to mock data
+        const agentUsers = mockUsers.filter(user => user.role === 'agent');
+        setAgents(agentUsers);
+        localStorage.setItem('mockAgents', JSON.stringify(mockUsers));
       }
     } else {
-      setAgents([]);
+      const agentUsers = mockUsers.filter(user => user.role === 'agent');
+      setAgents(agentUsers);
+      localStorage.setItem('mockAgents', JSON.stringify(mockUsers));
     }
-  };
+    
+    // Get location data from localStorage or use default
+    const storedLocationData = localStorage.getItem('locationData');
+    if (storedLocationData) {
+      try {
+        const parsedLocationData = JSON.parse(storedLocationData);
+        setLocationData(parsedLocationData);
+      } catch (error) {
+        console.error("Error parsing stored location data:", error);
+        // Default data is already set in the state
+        localStorage.setItem('locationData', JSON.stringify(locationData));
+      }
+    } else {
+      localStorage.setItem('locationData', JSON.stringify(locationData));
+    }
+  }, [navigate]);
 
   const handleLogout = () => {
     localStorage.removeItem('kycUser');
     navigate('/');
+  };
+
+  const filteredAgents = agents.filter(agent =>
+    agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    agent.district?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    agent.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleCreateAgent = () => {
+    // Validate form inputs
+    if (!newAgent.name.trim() || !newAgent.email.trim()) {
+      toast({
+        title: "Missing information",
+        description: "Please provide name and email for the new agent.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // In a real app, we would make an API call to create the agent
+    const newAgentId = `a${Date.now()}`;
+    const agentToAdd: User = {
+      id: newAgentId,
+      name: newAgent.name,
+      email: newAgent.email,
+      role: 'agent',
+      phone: '+91 0000000000', // Default phone number
+      status: 'Active',
+      state: newAgent.state,
+      district: newAgent.district,
+      city: newAgent.city,
+      totalVerifications: 0,
+      completionRate: 0
+    };
+    
+    const updatedAgents = [...agents, agentToAdd];
+    setAgents(updatedAgents);
+    
+    // Update in localStorage
+    const storedUsers = JSON.parse(localStorage.getItem('mockAgents') || '[]');
+    const updatedUsers = [...storedUsers, agentToAdd];
+    localStorage.setItem('mockAgents', JSON.stringify(updatedUsers));
+    
+    toast({
+      title: "Agent created",
+      description: `${newAgent.name} has been added as an agent.`,
+    });
+    
+    // Reset form
+    setNewAgent({
+      name: '',
+      email: '',
+      state: '',
+      district: '',
+      city: '',
+      password: ''
+    });
+  };
+
+  const handleDeleteAgent = (agentId: string) => {
+    // In a real app, we would make an API call to delete the agent
+    const updatedAgents = agents.filter(agent => agent.id !== agentId);
+    setAgents(updatedAgents);
+    
+    // Update in localStorage
+    const storedUsers = JSON.parse(localStorage.getItem('mockAgents') || '[]');
+    const updatedUsers = storedUsers.filter((user: User) => user.id !== agentId);
+    localStorage.setItem('mockAgents', JSON.stringify(updatedUsers));
+    
+    toast({
+      title: "Agent deleted",
+      description: "The agent has been removed from the system.",
+    });
+  };
+  
+  const handleEditAgent = (agent: User) => {
+    setEditingAgent(agent);
+  };
+  
+  const handleUpdateAgent = (updatedAgent: User) => {
+    const updatedAgents = agents.map(agent => 
+      agent.id === updatedAgent.id ? updatedAgent : agent
+    );
+    setAgents(updatedAgents);
+    
+    // Update in localStorage
+    const storedUsers = JSON.parse(localStorage.getItem('mockAgents') || '[]');
+    const updatedUsers = storedUsers.map((user: User) => 
+      user.id === updatedAgent.id ? updatedAgent : user
+    );
+    localStorage.setItem('mockAgents', JSON.stringify(updatedUsers));
+    
+    setEditingAgent(null);
+  };
+  
+  const handleLocationDataChange = (newLocationData: any) => {
+    setLocationData(newLocationData);
+    localStorage.setItem('locationData', JSON.stringify(newLocationData));
   };
 
   if (!currentUser) {
@@ -106,32 +257,288 @@ const AdminAgents = () => {
   return (
     <div className="flex min-h-screen bg-muted/30">
       <Sidebar user={currentUser} isOpen={sidebarOpen} />
-
+      
       <div className="flex flex-col flex-1">
-        <Header
-          user={currentUser}
-          onLogout={handleLogout}
-          toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+        <Header 
+          user={currentUser} 
+          onLogout={handleLogout} 
+          toggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
         />
-
+        
         <main className="flex-1 p-4 md:p-6">
-          <div className="container mx-auto max-w-7xl">
-            <div className="mb-4 flex items-center justify-between">
-              <h1 className="text-2xl font-semibold">Agents</h1>
-              <DataTableViewOptions table={null} />
+          <div className="max-w-7xl mx-auto space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight">Agent Management</h1>
+                <p className="text-muted-foreground">
+                  Add, edit, and manage verification agents
+                </p>
+              </div>
+              
+              {activeTab === 'agents' && (
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add New Agent
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                      <DialogTitle>Add New Agent</DialogTitle>
+                      <DialogDescription>
+                        Enter the details for the new verification agent.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="name" className="text-right">
+                          Name
+                        </Label>
+                        <Input
+                          id="name"
+                          value={newAgent.name}
+                          onChange={(e) => setNewAgent({...newAgent, name: e.target.value})}
+                          className="col-span-3"
+                        />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="email" className="text-right">
+                          Email
+                        </Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={newAgent.email}
+                          onChange={(e) => setNewAgent({...newAgent, email: e.target.value})}
+                          className="col-span-3"
+                        />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="state" className="text-right">
+                          State
+                        </Label>
+                        <div className="col-span-3">
+                          <Select
+                            value={newAgent.state}
+                            onValueChange={(value) => setNewAgent({
+                              ...newAgent, 
+                              state: value,
+                              district: '',
+                              city: ''
+                            })}
+                          >
+                            <SelectTrigger id="state">
+                              <SelectValue placeholder="Select state" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {locationData.states.map((state) => (
+                                <SelectItem key={state.id} value={state.name}>
+                                  {state.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="district" className="text-right">
+                          District
+                        </Label>
+                        <div className="col-span-3">
+                          <Select
+                            value={newAgent.district}
+                            onValueChange={(value) => setNewAgent({
+                              ...newAgent, 
+                              district: value,
+                              city: ''
+                            })}
+                            disabled={availableDistricts.length === 0}
+                          >
+                            <SelectTrigger id="district">
+                              <SelectValue placeholder={newAgent.state ? "Select district" : "Select state first"} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {availableDistricts.map((district) => (
+                                <SelectItem key={district.id} value={district.name}>
+                                  {district.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="city" className="text-right">
+                          City
+                        </Label>
+                        <div className="col-span-3">
+                          <Select
+                            value={newAgent.city}
+                            onValueChange={(value) => setNewAgent({...newAgent, city: value})}
+                            disabled={availableCities.length === 0}
+                          >
+                            <SelectTrigger id="city">
+                              <SelectValue placeholder={newAgent.district ? "Select city" : "Select district first"} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {availableCities.map((city) => (
+                                <SelectItem key={city.id} value={city.name}>
+                                  {city.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="password" className="text-right">
+                          Password
+                        </Label>
+                        <Input
+                          id="password"
+                          type="password"
+                          value={newAgent.password}
+                          onChange={(e) => setNewAgent({...newAgent, password: e.target.value})}
+                          className="col-span-3"
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button type="submit" onClick={handleCreateAgent}>Save Agent</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              )}
             </div>
-            {loading ? (
-              <div className="flex items-center justify-center h-48">
-                <p>Loading agents...</p>
-              </div>
-            ) : (
-              <div className="rounded-md border">
-                <DataTable columns={columns} data={agents} />
-              </div>
-            )}
+            
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList>
+                <TabsTrigger value="agents">Agents</TabsTrigger>
+                <TabsTrigger value="locations">Locations</TabsTrigger>
+                <TabsTrigger value="attendance">Attendance</TabsTrigger>
+                <TabsTrigger value="leaves">Leave Requests</TabsTrigger>
+              </TabsList>
+              <TabsContent value="agents" className="mt-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Agent Directory</CardTitle>
+                    <CardDescription>
+                      Complete list of all verification agents in the system
+                    </CardDescription>
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search agents by name, email, or district..."
+                        className="pl-8"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="rounded-md border bg-white overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Email</TableHead>
+                            <TableHead>State</TableHead>
+                            <TableHead>District</TableHead>
+                            <TableHead>City</TableHead>
+                            <TableHead>Verifications</TableHead>
+                            <TableHead>Completion Rate</TableHead>
+                            <TableHead className="w-[100px]">Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredAgents.length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={8} className="h-24 text-center">
+                                No agents found.
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            filteredAgents.map((agent) => (
+                              <TableRow key={agent.id}>
+                                <TableCell className="font-medium">{agent.name}</TableCell>
+                                <TableCell>{agent.email}</TableCell>
+                                <TableCell>{agent.state || 'N/A'}</TableCell>
+                                <TableCell>{agent.district || 'N/A'}</TableCell>
+                                <TableCell>{agent.city || 'N/A'}</TableCell>
+                                <TableCell>{agent.totalVerifications}</TableCell>
+                                <TableCell>
+                                  {agent.completionRate}%
+                                  <div className="w-full h-1.5 bg-gray-100 rounded-full mt-1">
+                                    <div 
+                                      className="h-1.5 bg-green-500 rounded-full" 
+                                      style={{ width: `${agent.completionRate}%` }}
+                                    />
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center space-x-1">
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon"
+                                      onClick={() => handleEditAgent(agent)}
+                                    >
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon"
+                                      onClick={() => handleDeleteAgent(agent.id)}
+                                    >
+                                      <Trash className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              <TabsContent value="locations" className="mt-4">
+                <LocationManager 
+                  locationData={locationData}
+                  setLocationData={handleLocationDataChange}
+                />
+              </TabsContent>
+              <TabsContent value="attendance" className="mt-4">
+                <AttendanceReports />
+              </TabsContent>
+              <TabsContent value="leaves" className="mt-4">
+                <LeaveManagementAdmin />
+              </TabsContent>
+            </Tabs>
           </div>
         </main>
       </div>
+      
+      {/* Edit Agent Dialog */}
+      <Dialog open={!!editingAgent} onOpenChange={(open) => !open && setEditingAgent(null)}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Edit Agent</DialogTitle>
+            <DialogDescription>
+              Update agent information
+            </DialogDescription>
+          </DialogHeader>
+          {editingAgent && (
+            <EditAgentForm
+              agent={editingAgent}
+              onUpdate={handleUpdateAgent}
+              onClose={() => setEditingAgent(null)}
+              locationData={locationData}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

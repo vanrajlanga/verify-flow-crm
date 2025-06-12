@@ -167,53 +167,6 @@ export type Database = {
         }
         Relationships: []
       }
-      co_applicants: {
-        Row: {
-          age: number | null
-          created_at: string
-          email: string | null
-          id: string
-          lead_id: string | null
-          monthly_income: string | null
-          name: string
-          occupation: string | null
-          phone_number: string | null
-          relationship: string | null
-        }
-        Insert: {
-          age?: number | null
-          created_at?: string
-          email?: string | null
-          id?: string
-          lead_id?: string | null
-          monthly_income?: string | null
-          name: string
-          occupation?: string | null
-          phone_number?: string | null
-          relationship?: string | null
-        }
-        Update: {
-          age?: number | null
-          created_at?: string
-          email?: string | null
-          id?: string
-          lead_id?: string | null
-          monthly_income?: string | null
-          name?: string
-          occupation?: string | null
-          phone_number?: string | null
-          relationship?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "co_applicants_lead_id_fkey"
-            columns: ["lead_id"]
-            isOneToOne: false
-            referencedRelation: "leads"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       lead_addresses: {
         Row: {
           address_id: string | null
@@ -256,9 +209,7 @@ export type Database = {
           age: number | null
           assigned_to: string | null
           bank_id: string | null
-          co_applicant_name: string | null
           created_at: string
-          has_co_applicant: boolean | null
           id: string
           instructions: string | null
           job: string | null
@@ -273,9 +224,7 @@ export type Database = {
           age?: number | null
           assigned_to?: string | null
           bank_id?: string | null
-          co_applicant_name?: string | null
           created_at?: string
-          has_co_applicant?: boolean | null
           id: string
           instructions?: string | null
           job?: string | null
@@ -290,9 +239,7 @@ export type Database = {
           age?: number | null
           assigned_to?: string | null
           bank_id?: string | null
-          co_applicant_name?: string | null
           created_at?: string
-          has_co_applicant?: boolean | null
           id?: string
           instructions?: string | null
           job?: string | null
@@ -322,41 +269,6 @@ export type Database = {
             columns: ["bank_id"]
             isOneToOne: false
             referencedRelation: "banks"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      phone_numbers: {
-        Row: {
-          created_at: string
-          id: string
-          is_primary: boolean | null
-          lead_id: string | null
-          number: string
-          type: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          is_primary?: boolean | null
-          lead_id?: string | null
-          number: string
-          type?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          is_primary?: boolean | null
-          lead_id?: string | null
-          number?: string
-          type?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "phone_numbers_lead_id_fkey"
-            columns: ["lead_id"]
-            isOneToOne: false
-            referencedRelation: "leads"
             referencedColumns: ["id"]
           },
         ]
@@ -420,56 +332,6 @@ export type Database = {
           total_verifications?: number | null
         }
         Relationships: []
-      }
-      vehicle_details: {
-        Row: {
-          created_at: string
-          down_payment: string | null
-          id: string
-          lead_id: string | null
-          vehicle_brand_id: string | null
-          vehicle_brand_name: string | null
-          vehicle_model_id: string | null
-          vehicle_model_name: string | null
-          vehicle_price: string | null
-          vehicle_type: string | null
-          vehicle_year: number | null
-        }
-        Insert: {
-          created_at?: string
-          down_payment?: string | null
-          id?: string
-          lead_id?: string | null
-          vehicle_brand_id?: string | null
-          vehicle_brand_name?: string | null
-          vehicle_model_id?: string | null
-          vehicle_model_name?: string | null
-          vehicle_price?: string | null
-          vehicle_type?: string | null
-          vehicle_year?: number | null
-        }
-        Update: {
-          created_at?: string
-          down_payment?: string | null
-          id?: string
-          lead_id?: string | null
-          vehicle_brand_id?: string | null
-          vehicle_brand_name?: string | null
-          vehicle_model_id?: string | null
-          vehicle_model_name?: string | null
-          vehicle_price?: string | null
-          vehicle_type?: string | null
-          vehicle_year?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "vehicle_details_lead_id_fkey"
-            columns: ["lead_id"]
-            isOneToOne: false
-            referencedRelation: "leads"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       verifications: {
         Row: {

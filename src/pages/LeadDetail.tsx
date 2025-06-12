@@ -1,25 +1,65 @@
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { User, Lead } from '@/utils/mockData';
-import Header from '@/components/shared/Header';
-import Sidebar from '@/components/shared/Sidebar';
+import { format } from 'date-fns';
+import { FileText, Download, ArrowLeft, MapPin, User, Building, Phone, Calendar, Clock, Home, Briefcase, DollarSign, Eye } from 'lucide-react';
+import { mockLeads } from '@/utils/mockData';
+import { getLeadById, getUserById, getBankById } from '@/lib/supabase-queries';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Edit, Phone, Mail, MapPin, Building, Car, CreditCard } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
+import LeadReview from '@/components/dashboard/LeadReview';
+import VerificationProcess from '@/components/dashboard/VerificationProcess';
+import DocumentViewer from '@/components/shared/DocumentViewer';
 import { toast } from '@/components/ui/use-toast';
-import { getLeadsFromDatabase } from '@/lib/lead-operations';
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
+// Helper functions
+const getBadgeColor = (status: string) => {
+  switch (status) {
+    case 'Pending': return 'bg-yellow-100 text-yellow-800';
+    case 'In Progress': return 'bg-blue-100 text-blue-800';
+    case 'Completed': return 'bg-green-100 text-green-800';
+    case 'Rejected': return 'bg-red-100 text-red-800';
+    default: return 'bg-gray-100 text-gray-800';
+  }
+};
+
+const getStatusBadge = (status: string) => {
+  switch (status) {
+    case 'Pending':
+      return <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200">{status}</Badge>;
+    case 'In Progress':
+      return <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">{status}</Badge>;
+    case 'Completed':
+      return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">{status}</Badge>;
+    case 'Rejected':
+      return <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">{status}</Badge>;
+    default:
+      return <Badge variant="outline">{status}</Badge>;
+  }
+};
+
+// LeadDetail component
 const LeadDetail = () => {
-  const { leadId } = useParams();
+  const { leadId } = useParams<{ leadId: string }>();
   const navigate = useNavigate();
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [lead, setLead] = useState<Lead | null>(null);
-  const [loading, setLoading] = useState(true);
-
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [lead, setLead] = useState<any>(null);
+  const [agent, setAgent] = useState<any>(null);
+  const [bank, setBank] = useState<any>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [selectedDocument, setSelectedDocument] = useState<any>(null);
+  
   useEffect(() => {
     // Check if user is logged in
     const storedUser = localStorage.getItem('kycUser');
@@ -30,483 +70,802 @@ const LeadDetail = () => {
 
     const parsedUser = JSON.parse(storedUser);
     setCurrentUser(parsedUser);
-    loadLead();
-  }, [navigate, leadId]);
-
-  const loadLead = async () => {
-    if (!leadId) {
-      toast({
-        title: "Error",
-        description: "No lead ID provided.",
-        variant: "destructive",
-      });
-      navigate('/admin/leads');
-      return;
-    }
-
-    try {
-      // Try to get lead from database first
-      const dbLeads = await getLeadsFromDatabase();
-      const foundLead = dbLeads.find(l => l.id === leadId);
-      
-      if (foundLead) {
-        setLead(foundLead);
-        setLoading(false);
-        return;
-      }
-
-      // Fall back to localStorage
-      const storedLeads = localStorage.getItem('mockLeads');
-      if (storedLeads) {
-        const leads = JSON.parse(storedLeads);
-        const foundLead = leads.find((l: any) => l.id === leadId);
+    
+    const fetchLeadData = async () => {
+      try {
+        // Get leads from localStorage or use mockLeads if not available
+        const storedLeads = localStorage.getItem('mockLeads');
+        let allLeads = [];
+        
+        if (storedLeads) {
+          try {
+            allLeads = JSON.parse(storedLeads);
+          } catch (error) {
+            console.error("Error parsing stored leads:", error);
+            allLeads = mockLeads;
+          }
+        } else {
+          allLeads = mockLeads;
+        }
+        
+        // Try finding the lead directly using ID - await the Promise
+        let foundLead = await getLeadById(leadId || '');
+        
+        // If not found with getLeadById, search manually in all leads
+        if (!foundLead && allLeads && allLeads.length > 0) {
+          foundLead = allLeads.find((l: any) => l.id === leadId);
+          
+          // If still not found, try partial match if the ID might be stored differently
+          if (!foundLead) {
+            foundLead = allLeads.find((l: any) => 
+              leadId?.includes(l.id) || 
+              l.id.includes(leadId || '')
+            );
+          }
+        }
+        
+        console.log("Looking for lead with ID:", leadId);
+        console.log("Found lead:", foundLead);
+        
         if (foundLead) {
           setLead(foundLead);
-        } else {
-          toast({
-            title: "Lead not found",
-            description: "The lead you're looking for could not be found.",
-            variant: "destructive",
-          });
-          navigate('/admin/leads');
+          
+          // Fetch agent and bank data asynchronously
+          if (foundLead.assignedTo) {
+            const agentData = await getUserById(foundLead.assignedTo);
+            setAgent(agentData);
+          }
+          
+          if (foundLead.bank) {
+            const bankData = await getBankById(foundLead.bank);
+            setBank(bankData);
+          }
         }
+        
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching lead data:', error);
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Error loading lead:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load lead details.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('kycUser');
-    navigate('/');
-  };
-
-  const handleEdit = () => {
-    navigate(`/admin/add-lead/${leadId}`);
-  };
-
-  const getBankName = (bankId: string) => {
-    const bankNames = {
-      'bank-1': 'State Bank of India',
-      'bank-2': 'HDFC Bank',
-      'bank-3': 'ICICI Bank'
     };
-    return bankNames[bankId as keyof typeof bankNames] || bankId;
-  };
+    
+    fetchLeadData();
+  }, [navigate, leadId]);
 
-  const getAgentName = (agentId: string) => {
-    try {
-      const storedUsers = localStorage.getItem('mockUsers');
-      if (storedUsers) {
-        const users = JSON.parse(storedUsers);
-        const agent = users.find((user: User) => user.id === agentId);
-        return agent ? agent.name : 'Unassigned';
+  // Function to update lead data in localStorage
+  const updateLeadInStorage = (updatedLead: any) => {
+    const storedLeads = localStorage.getItem('mockLeads');
+    if (storedLeads) {
+      try {
+        const allLeads = JSON.parse(storedLeads);
+        const updatedLeads = allLeads.map((l: any) => 
+          l.id === updatedLead.id ? updatedLead : l
+        );
+        localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+      } catch (error) {
+        console.error("Error updating lead in storage:", error);
       }
-    } catch (error) {
-      console.error('Error getting agent name:', error);
     }
-    return 'Unassigned';
+    setLead({...updatedLead});
   };
-
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'Completed':
-        return 'default';
-      case 'In Progress':
-      case 'Assigned':
-        return 'secondary';
-      case 'Pending':
-        return 'outline';
-      case 'Rejected':
-        return 'destructive';
-      default:
-        return 'outline';
-    }
-  };
-
-  const formatDate = (date: Date | string) => {
-    if (!date) return 'N/A';
-    const d = typeof date === 'string' ? new Date(date) : date;
-    return d.toLocaleDateString();
-  };
-
-  const formatAddress = (address: any) => {
-    if (!address) return 'N/A';
-    const parts = [
-      address.street,
-      address.city,
-      address.district,
-      address.state,
-      address.pincode
-    ].filter(Boolean);
-    return parts.join(', ') || 'N/A';
-  };
-
-  if (!currentUser) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>;
-  }
 
   if (loading) {
     return (
-      <div className="flex min-h-screen bg-muted/30">
-        <Sidebar user={currentUser} isOpen={sidebarOpen} />
-        <div className="flex flex-col flex-1">
-          <Header 
-            user={currentUser} 
-            onLogout={handleLogout} 
-            toggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
-          />
-          <main className="flex-1 p-4 md:p-6">
-            <div className="flex items-center justify-center h-48">
-              <p>Loading lead details...</p>
-            </div>
-          </main>
-        </div>
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
       </div>
     );
   }
 
   if (!lead) {
     return (
-      <div className="flex min-h-screen bg-muted/30">
-        <Sidebar user={currentUser} isOpen={sidebarOpen} />
-        <div className="flex flex-col flex-1">
-          <Header 
-            user={currentUser} 
-            onLogout={handleLogout} 
-            toggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
-          />
-          <main className="flex-1 p-4 md:p-6">
-            <div className="flex items-center justify-center h-48">
-              <p>Lead not found</p>
-            </div>
-          </main>
+      <div className="flex flex-col items-center justify-center h-screen p-6">
+        <div className="text-red-500 mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="15" y1="9" x2="9" y2="15"></line>
+            <line x1="9" y1="9" x2="15" y2="15"></line>
+          </svg>
         </div>
+        <h1 className="text-2xl font-bold mb-2">Lead Not Found</h1>
+        <p className="text-muted-foreground mb-6">The lead you're looking for doesn't exist or has been removed.</p>
+        <Button onClick={() => navigate(-1)}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Go Back
+        </Button>
       </div>
     );
   }
 
+  // Handle verification actions for agents
+  const handleStartVerification = () => {
+    if (!lead.verification) {
+      lead.verification = {
+        id: `verification-${lead.id}`,
+        leadId: lead.id,
+        agentId: currentUser.id,
+        status: 'In Progress',
+        photos: [],
+        documents: [],
+        notes: ''
+      };
+    }
+    
+    lead.verification.startTime = new Date();
+    lead.verification.status = 'In Progress';
+    lead.status = 'In Progress';
+    
+    updateLeadInStorage(lead);
+    
+    toast({
+      title: "Verification Started",
+      description: "You've started the verification process.",
+    });
+  };
+
+  const handleMarkArrival = () => {
+    if (lead.verification) {
+      lead.verification.arrivalTime = new Date();
+      updateLeadInStorage(lead);
+    }
+    
+    toast({
+      title: "Arrival Marked",
+      description: "Your arrival at the verification location has been recorded.",
+    });
+  };
+
+  const handleUploadPhoto = (files: FileList) => {
+    if (!lead.verification.photos) {
+      lead.verification.photos = [];
+    }
+    
+    // Convert FileList to array and create photo objects
+    Array.from(files).forEach((file, index) => {
+      const photoId = `photo-${new Date().getTime()}-${index}`;
+      const photoUrl = URL.createObjectURL(file); // Create preview URL
+      lead.verification.photos.push({
+        id: photoId,
+        name: file.name,
+        type: 'Photo',
+        uploadedBy: 'agent',
+        url: photoUrl,
+        uploadDate: new Date(),
+        size: file.size
+      });
+    });
+    
+    updateLeadInStorage(lead);
+    
+    toast({
+      title: "Photos Uploaded",
+      description: `${files.length} photo(s) have been uploaded.`,
+    });
+  };
+
+  const handleUploadDocument = (files: FileList, type: string) => {
+    if (!lead.verification.documents) {
+      lead.verification.documents = [];
+    }
+    
+    // Convert FileList to array and create document objects
+    Array.from(files).forEach((file, index) => {
+      const docId = `doc-${new Date().getTime()}-${index}`;
+      const docUrl = URL.createObjectURL(file); // Create preview URL
+      lead.verification.documents.push({
+        id: docId,
+        name: file.name,
+        type: type as any,
+        uploadedBy: 'agent',
+        url: docUrl,
+        uploadDate: new Date(),
+        size: file.size
+      });
+    });
+    
+    updateLeadInStorage(lead);
+    
+    toast({
+      title: "Documents Uploaded",
+      description: `${files.length} ${type} document(s) have been uploaded.`,
+    });
+  };
+
+  const handleAddNotes = (notes: string) => {
+    if (lead.verification) {
+      lead.verification.notes = notes;
+      updateLeadInStorage(lead);
+    }
+    
+    toast({
+      title: "Notes Saved",
+      description: "Your verification notes have been saved.",
+    });
+  };
+
+  const handleCompleteVerification = () => {
+    if (lead.verification) {
+      lead.verification.completionTime = new Date();
+      lead.verification.status = 'Completed';
+      lead.status = 'Completed';
+      updateLeadInStorage(lead);
+    }
+    
+    toast({
+      title: "Verification Completed",
+      description: "The verification process has been marked as complete.",
+    });
+  };
+
+  // Handle review actions for admins
+  const handleApproveVerification = (remarks: string) => {
+    if (lead.verification) {
+      lead.verification.adminRemarks = remarks;
+      lead.verification.reviewedBy = currentUser.id;
+      lead.verification.reviewedAt = new Date();
+      lead.status = 'Completed';
+      updateLeadInStorage(lead);
+    }
+    
+    toast({
+      title: "Verification Approved",
+      description: "The verification has been approved.",
+    });
+  };
+
+  const handleRejectVerification = (remarks: string) => {
+    if (lead.verification) {
+      lead.verification.adminRemarks = remarks;
+      lead.verification.reviewedBy = currentUser.id;
+      lead.verification.reviewedAt = new Date();
+      lead.verification.status = 'Rejected';
+      lead.status = 'Rejected';
+      updateLeadInStorage(lead);
+    }
+    
+    toast({
+      title: "Verification Rejected",
+      description: "The verification has been rejected.",
+    });
+  };
+
+  const handleForwardToBank = () => {
+    // Implementation would forward the verification to the bank
+    toast({
+      title: "Forwarded to Bank",
+      description: `The verification has been forwarded to ${bank?.name || 'the bank'}.`,
+    });
+  };
+
+  // Convert documents to proper format for DocumentViewer
+  const formattedDocuments = lead.documents?.map((doc: any) => {
+    if (typeof doc === 'string') {
+      return {
+        id: `doc-${Math.random()}`,
+        name: doc,
+        type: 'Document',
+        url: '/placeholder.svg',
+        uploadedBy: 'bank',
+        uploadDate: new Date()
+      };
+    }
+    return doc;
+  }) || [];
+
+  const isAdmin = currentUser?.role === 'admin';
+
+  // Format addresses from additionalDetails if available
+  const additionalAddresses = lead.additionalDetails?.addresses || [];
+  const homeAddress = additionalAddresses.find((a: any) => a?.type === 'Residence');
+  const officeAddress = additionalAddresses.find((a: any) => a?.type === 'Office');
+
   return (
-    <div className="flex min-h-screen bg-muted/30">
-      <Sidebar user={currentUser} isOpen={sidebarOpen} />
-      
-      <div className="flex flex-col flex-1">
-        <Header 
-          user={currentUser} 
-          onLogout={handleLogout} 
-          toggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
-        />
-        
-        <main className="flex-1 p-4 md:p-6">
-          <div className="max-w-7xl mx-auto space-y-6">
-            {/* Header Section */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Button
-                  variant="outline"
-                  onClick={() => navigate('/admin/leads')}
-                  className="flex items-center gap-2"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  Back to Leads
-                </Button>
-                <div>
-                  <h1 className="text-2xl font-semibold">{lead.name}</h1>
-                  <p className="text-muted-foreground">Lead ID: {lead.id}</p>
-                </div>
+    <div className="p-6 bg-muted/30 min-h-screen">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Button variant="outline" size="sm" onClick={() => navigate(-1)}>
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Back
+            </Button>
+            <h1 className="text-2xl font-bold">Lead Details</h1>
+            {lead.status && (
+              <div className="ml-4">
+                {getStatusBadge(lead.status)}
               </div>
-              <div className="flex items-center gap-2">
-                <Badge variant={getStatusBadgeVariant(lead.status)}>
-                  {lead.status}
-                </Badge>
-                <Button onClick={handleEdit} className="flex items-center gap-2">
-                  <Edit className="h-4 w-4" />
-                  Edit Lead
-                </Button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Basic Information */}
-              <Card className="lg:col-span-2">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <CreditCard className="h-5 w-5" />
-                    Lead Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Agency File No</label>
-                      <p className="text-sm">{lead.additionalDetails?.agencyFileNo || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Application Barcode</label>
-                      <p className="text-sm">{lead.additionalDetails?.applicationBarcode || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Case ID</label>
-                      <p className="text-sm">{lead.additionalDetails?.caseId || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Lead Type</label>
-                      <p className="text-sm">{lead.additionalDetails?.leadType || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Bank</label>
-                      <p className="text-sm">{getBankName(lead.bank || '')}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Branch</label>
-                      <p className="text-sm">{lead.additionalDetails?.bankBranch || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Loan Amount</label>
-                      <p className="text-sm">{lead.additionalDetails?.loanAmount ? `₹${lead.additionalDetails.loanAmount}` : 'N/A'}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Visit Type</label>
-                      <p className="text-sm">{lead.visitType || 'N/A'}</p>
-                    </div>
-                  </div>
-                  
-                  {lead.additionalDetails?.schemeDesc && (
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Scheme Description</label>
-                      <p className="text-sm">{lead.additionalDetails.schemeDesc}</p>
-                    </div>
-                  )}
-                  
-                  {lead.instructions && (
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Instructions</label>
-                      <p className="text-sm">{lead.instructions}</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Assignment & Status */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Assignment Details</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Assigned Agent</label>
-                    <p className="text-sm">{getAgentName(lead.assignedTo || '')}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Created Date</label>
-                    <p className="text-sm">{formatDate(lead.createdAt)}</p>
-                  </div>
-                  {lead.verificationDate && (
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Verification Date</label>
-                      <p className="text-sm">{formatDate(lead.verificationDate)}</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Personal Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Phone className="h-5 w-5" />
-                    Personal Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Age</label>
-                      <p className="text-sm">{lead.age || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Gender</label>
-                      <p className="text-sm">{lead.additionalDetails?.gender || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Date of Birth</label>
-                      <p className="text-sm">{lead.additionalDetails?.dateOfBirth || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Marital Status</label>
-                      <p className="text-sm">{lead.additionalDetails?.maritalStatus || 'N/A'}</p>
-                    </div>
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Father's Name</label>
-                    <p className="text-sm">{lead.additionalDetails?.fatherName || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Mother's Name</label>
-                    <p className="text-sm">{lead.additionalDetails?.motherName || 'N/A'}</p>
-                  </div>
-                  {lead.additionalDetails?.spouseName && (
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Spouse's Name</label>
-                      <p className="text-sm">{lead.additionalDetails.spouseName}</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Contact Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Mail className="h-5 w-5" />
-                    Contact Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Phone Number</label>
-                    <p className="text-sm">{lead.additionalDetails?.phoneNumber || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Email</label>
-                    <p className="text-sm">{lead.additionalDetails?.email || 'N/A'}</p>
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Residence Address</label>
-                    <p className="text-sm">{formatAddress(lead.address)}</p>
-                  </div>
-                  
-                  {lead.additionalDetails?.addresses?.find(addr => addr.type === 'Office') && (
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Office Address</label>
-                      <p className="text-sm">{formatAddress(lead.additionalDetails.addresses.find(addr => addr.type === 'Office'))}</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Employment Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Building className="h-5 w-5" />
-                    Employment Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Company</label>
-                    <p className="text-sm">{lead.additionalDetails?.company || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Designation</label>
-                    <p className="text-sm">{lead.additionalDetails?.designation || lead.job || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-muted-foreground">Work Experience</label>
-                    <p className="text-sm">{lead.additionalDetails?.workExperience || 'N/A'}</p>
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div className="grid grid-cols-1 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Monthly Income</label>
-                      <p className="text-sm">{lead.additionalDetails?.monthlyIncome ? `₹${lead.additionalDetails.monthlyIncome}` : 'N/A'}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Annual Income</label>
-                      <p className="text-sm">{lead.additionalDetails?.annualIncome ? `₹${lead.additionalDetails.annualIncome}` : 'N/A'}</p>
-                    </div>
-                    {lead.additionalDetails?.otherIncome && (
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Other Income</label>
-                        <p className="text-sm">₹{lead.additionalDetails.otherIncome}</p>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Vehicle Information (if applicable) */}
-              {(lead.additionalDetails?.vehicleBrandName || lead.additionalDetails?.vehicleModelName) && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Car className="h-5 w-5" />
-                      Vehicle Information
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Vehicle Brand</label>
-                      <p className="text-sm">{lead.additionalDetails?.vehicleBrandName || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Vehicle Model</label>
-                      <p className="text-sm">{lead.additionalDetails?.vehicleModelName || 'N/A'}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Property Information (if applicable) */}
-              {(lead.additionalDetails?.propertyType || lead.additionalDetails?.ownershipStatus) && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <MapPin className="h-5 w-5" />
-                      Property Information
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Property Type</label>
-                      <p className="text-sm">{lead.additionalDetails?.propertyType || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Ownership Status</label>
-                      <p className="text-sm">{lead.additionalDetails?.ownershipStatus || 'N/A'}</p>
-                    </div>
-                    {lead.additionalDetails?.propertyAge && (
-                      <div>
-                        <label className="text-sm font-medium text-muted-foreground">Property Age</label>
-                        <p className="text-sm">{lead.additionalDetails.propertyAge}</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-
-            {/* Additional Comments */}
-            {lead.additionalDetails?.additionalComments && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Additional Comments</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm">{lead.additionalDetails.additionalComments}</p>
-                </CardContent>
-              </Card>
             )}
           </div>
-        </main>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Lead Information - Left Column */}
+          <div className="lg:col-span-1 space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Customer Information</CardTitle>
+                <CardDescription>Basic details about the customer</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center space-x-3">
+                  <div className="bg-primary/10 p-2 rounded-full">
+                    <User className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Name</p>
+                    <p className="font-medium">{lead.name}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center space-x-3">
+                  <div className="bg-primary/10 p-2 rounded-full">
+                    <Phone className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Contact Number</p>
+                    <p className="font-medium">{lead.additionalDetails?.phoneNumber || "Not provided"}</p>
+                  </div>
+                </div>
+
+                {lead.additionalDetails?.email && (
+                  <div className="flex items-center space-x-3">
+                    <div className="bg-primary/10 p-2 rounded-full">
+                      <User className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Email</p>
+                      <p className="font-medium">{lead.additionalDetails.email}</p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center space-x-3">
+                  <div className="bg-primary/10 p-2 rounded-full">
+                    <MapPin className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Primary Address</p>
+                    <p className="font-medium">{lead.address?.street}</p>
+                    <p className="text-sm">{lead.address?.city}, {lead.address?.state}</p>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="flex items-center space-x-3">
+                  <div className="bg-primary/10 p-2 rounded-full">
+                    <Building className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Bank</p>
+                    <p className="font-medium">{bank?.name || 'Not Assigned'}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-3">
+                  <div className="bg-primary/10 p-2 rounded-full">
+                    <Calendar className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Created On</p>
+                    <p className="font-medium">
+                      {lead.createdAt ? format(new Date(lead.createdAt), 'MMM d, yyyy') : 'Not Available'}
+                    </p>
+                  </div>
+                </div>
+                
+                {lead.visitType && (
+                  <div className="flex items-center space-x-3">
+                    <div className="bg-primary/10 p-2 rounded-full">
+                      <Building className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Visit Type</p>
+                      <p className="font-medium">{lead.visitType}</p>
+                    </div>
+                  </div>
+                )}
+
+                {lead.assignedTo && (
+                  <div className="flex items-center space-x-3">
+                    <div className="bg-primary/10 p-2 rounded-full">
+                      <User className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Assigned Agent</p>
+                      <p className="font-medium">{agent?.name || 'Unknown'}</p>
+                    </div>
+                  </div>
+                )}
+                
+                {lead.verificationDate && (
+                  <div className="flex items-center space-x-3">
+                    <div className="bg-primary/10 p-2 rounded-full">
+                      <Calendar className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Scheduled Verification</p>
+                      <p className="font-medium">
+                        {format(new Date(lead.verificationDate), 'MMM d, yyyy')}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Documents Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Documents</CardTitle>
+                <CardDescription>Customer submitted documents</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {formattedDocuments.length > 0 ? (
+                  <div className="space-y-3">
+                    {formattedDocuments.map((doc: any, index: number) => (
+                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex items-center space-x-3">
+                          <FileText className="h-5 w-5 text-blue-600" />
+                          <div>
+                            <p className="font-medium text-sm">{doc.name || doc.type}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {doc.type} • {doc.uploadDate ? format(new Date(doc.uploadDate), 'MMM d, yyyy') : 'Unknown date'}
+                            </p>
+                          </div>
+                        </div>
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="sm" onClick={() => setSelectedDocument(doc)}>
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                            <DialogHeader>
+                              <DialogTitle>{doc.name || doc.type}</DialogTitle>
+                              <DialogDescription>
+                                Document uploaded on {doc.uploadDate ? format(new Date(doc.uploadDate), 'MMM d, yyyy') : 'Unknown date'}
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="mt-4">
+                              {doc.url && (
+                                <img 
+                                  src={doc.url} 
+                                  alt={doc.name || doc.type}
+                                  className="max-w-full h-auto rounded-lg"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                    const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
+                                    if (nextElement) {
+                                      nextElement.style.display = 'block';
+                                    }
+                                  }}
+                                />
+                              )}
+                              <div className="hidden text-center p-8 border-2 border-dashed border-gray-300 rounded-lg">
+                                <FileText className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                                <p className="text-gray-500">Document preview not available</p>
+                              </div>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No documents uploaded</p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Main Content - Right Column */}
+          <div className="lg:col-span-2 space-y-6">
+            <Tabs defaultValue="details" className="w-full">
+              <TabsList className="w-full justify-start">
+                <TabsTrigger value="details">Lead Details</TabsTrigger>
+                <TabsTrigger value="verification">Verification</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="details" className="pt-4 space-y-6">
+                {/* Basic Information */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Basic Information</CardTitle>
+                    <CardDescription>Lead type and basic details</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        {lead.additionalDetails?.leadType && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Lead Type</p>
+                            <p className="font-medium">{lead.additionalDetails.leadType}</p>
+                          </div>
+                        )}
+                        {lead.additionalDetails?.agencyFileNo && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Agency File No.</p>
+                            <p className="font-medium">{lead.additionalDetails.agencyFileNo}</p>
+                          </div>
+                        )}
+                        {lead.additionalDetails?.loanAmount && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Loan Amount</p>
+                            <p className="font-medium">₹{Number(lead.additionalDetails.loanAmount).toLocaleString()}</p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-4">
+                        {lead.additionalDetails?.gender && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Gender</p>
+                            <p className="font-medium">{lead.additionalDetails.gender}</p>
+                          </div>
+                        )}
+                        {lead.age && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Age</p>
+                            <p className="font-medium">{lead.age} years</p>
+                          </div>
+                        )}
+                        {lead.additionalDetails?.maritalStatus && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Marital Status</p>
+                            <p className="font-medium">{lead.additionalDetails.maritalStatus}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Family Details */}
+                {(lead.additionalDetails?.fatherName || lead.additionalDetails?.motherName || lead.additionalDetails?.spouseName) && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Family Details</CardTitle>
+                      <CardDescription>Family member information</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {lead.additionalDetails?.fatherName && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Father's Name</p>
+                            <p className="font-medium">{lead.additionalDetails.fatherName}</p>
+                          </div>
+                        )}
+                        {lead.additionalDetails?.motherName && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Mother's Name</p>
+                            <p className="font-medium">{lead.additionalDetails.motherName}</p>
+                          </div>
+                        )}
+                        {lead.additionalDetails?.spouseName && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Spouse Name</p>
+                            <p className="font-medium">{lead.additionalDetails.spouseName}</p>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Co-Applicant Details */}
+                {lead.additionalDetails?.coApplicant && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Co-Applicant Details</CardTitle>
+                      <CardDescription>Co-applicant information</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Name</p>
+                          <p className="font-medium">{lead.additionalDetails.coApplicant.name}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Phone</p>
+                          <p className="font-medium">{lead.additionalDetails.coApplicant.phone}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Relation</p>
+                          <p className="font-medium">{lead.additionalDetails.coApplicant.relation}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Vehicle Details (for Auto Loans) */}
+                {lead.additionalDetails?.leadType === 'Auto Loan' && (lead.additionalDetails?.vehicleBrandName || lead.additionalDetails?.vehicleModelName) && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Vehicle Details</CardTitle>
+                      <CardDescription>Vehicle information for auto loan</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {lead.additionalDetails.vehicleBrandName && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Vehicle Brand</p>
+                            <p className="font-medium">{lead.additionalDetails.vehicleBrandName}</p>
+                          </div>
+                        )}
+                        {lead.additionalDetails.vehicleModelName && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Vehicle Model</p>
+                            <p className="font-medium">{lead.additionalDetails.vehicleModelName}</p>
+                          </div>
+                        )}
+                        {lead.additionalDetails.vehicleVariant && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Vehicle Variant</p>
+                            <p className="font-medium">{lead.additionalDetails.vehicleVariant}</p>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Professional Details */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Professional Details</CardTitle>
+                    <CardDescription>Employment and business information</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Job Title</p>
+                          <p className="font-medium">{lead.job || 'Not specified'}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Company</p>
+                          <p className="font-medium">{lead.additionalDetails?.company || 'Not specified'}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Designation</p>
+                          <p className="font-medium">{lead.additionalDetails?.designation || 'Not specified'}</p>
+                        </div>
+                        {lead.additionalDetails?.employmentType && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Employment Type</p>
+                            <p className="font-medium">{lead.additionalDetails.employmentType}</p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-4">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Work Experience</p>
+                          <p className="font-medium">{lead.additionalDetails?.workExperience || 'Not specified'}</p>
+                        </div>
+                        {lead.additionalDetails?.currentJobDuration && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Current Job Duration</p>
+                            <p className="font-medium">{lead.additionalDetails.currentJobDuration}</p>
+                          </div>
+                        )}
+                        {officeAddress && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Office Address</p>
+                            <p className="font-medium">{officeAddress.street}</p>
+                            <p className="text-sm">{officeAddress.city}, {officeAddress.state} - {officeAddress.pincode}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Financial & Property Details */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Financial & Property Details</CardTitle>
+                    <CardDescription>Income and property information</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Monthly Income</p>
+                          <p className="font-medium">{lead.additionalDetails?.monthlyIncome ? `₹${Number(lead.additionalDetails.monthlyIncome).toLocaleString()}/month` : 'Not specified'}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Annual Income</p>
+                          <p className="font-medium">{lead.additionalDetails?.annualIncome ? `₹${Number(lead.additionalDetails.annualIncome).toLocaleString()}/year` : 'Not specified'}</p>
+                        </div>
+                        {lead.additionalDetails?.otherIncome && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Other Income</p>
+                            <p className="font-medium">{`₹${Number(lead.additionalDetails.otherIncome).toLocaleString()}`}</p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-4">
+                        {lead.additionalDetails?.propertyType && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Property Type</p>
+                            <p className="font-medium">{lead.additionalDetails.propertyType}</p>
+                          </div>
+                        )}
+                        {lead.additionalDetails?.ownershipStatus && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Ownership Status</p>
+                            <p className="font-medium">{lead.additionalDetails.ownershipStatus}</p>
+                          </div>
+                        )}
+                        {lead.additionalDetails?.propertyAge && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Property Age</p>
+                            <p className="font-medium">{lead.additionalDetails.propertyAge} years</p>
+                          </div>
+                        )}
+                        {homeAddress && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Home Address</p>
+                            <p className="font-medium">{homeAddress.street}</p>
+                            <p className="text-sm">{homeAddress.city}, {homeAddress.state} - {homeAddress.pincode}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Additional Information */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Additional Information</CardTitle>
+                    <CardDescription>Other important details</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Application ID</p>
+                          <p className="font-medium">{lead.id}</p>
+                        </div>
+                      </div>
+                      <div className="space-y-4">
+                        {lead.instructions && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Special Instructions</p>
+                            <p className="font-medium">{lead.instructions}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              
+              <TabsContent value="verification" className="pt-4">
+                {isAdmin ? (
+                  <LeadReview
+                    lead={lead}
+                    currentUser={currentUser}
+                    onApprove={handleApproveVerification}
+                    onReject={handleRejectVerification}
+                    onForwardToBank={handleForwardToBank}
+                  />
+                ) : (
+                  <VerificationProcess
+                    lead={lead}
+                    onStartVerification={handleStartVerification}
+                    onMarkArrival={handleMarkArrival}
+                    onUploadPhoto={handleUploadPhoto}
+                    onUploadDocument={handleUploadDocument}
+                    onAddNotes={handleAddNotes}
+                    onCompleteVerification={handleCompleteVerification}
+                  />
+                )}
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
       </div>
     </div>
   );

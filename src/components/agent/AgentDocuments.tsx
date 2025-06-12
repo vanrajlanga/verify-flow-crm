@@ -13,7 +13,7 @@ interface AgentDocumentsProps {
   onUpdate: (updatedUser: User) => void;
 }
 
-interface AgentDocument {
+interface Document {
   id: string;
   type: string;
   filename: string;
@@ -25,13 +25,7 @@ const AgentDocuments = ({ user, onUpdate }: AgentDocumentsProps) => {
   const [selectedDocType, setSelectedDocType] = useState<string>('');
   
   // Get documents from user or initialize empty array
-  const documents: AgentDocument[] = user.documents?.map(doc => ({
-    id: doc.id,
-    type: doc.type,
-    filename: doc.name,
-    url: doc.url,
-    uploadDate: doc.uploadedAt.toISOString()
-  })) || [];
+  const documents: Document[] = user.documents || [];
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -43,17 +37,16 @@ const AgentDocuments = ({ user, onUpdate }: AgentDocumentsProps) => {
     
     const newDocument = {
       id: `doc-${Date.now()}`,
-      title: selectedDocType,
-      name: file.name,
       type: selectedDocType,
+      filename: file.name,
       url: fakeUrl,
-      uploadedAt: new Date()
+      uploadDate: new Date().toISOString()
     };
     
     // Add document to user
     const updatedUser = {
       ...user,
-      documents: [...(user.documents || []), newDocument]
+      documents: [...documents, newDocument]
     };
     
     onUpdate(updatedUser);
@@ -99,7 +92,7 @@ const AgentDocuments = ({ user, onUpdate }: AgentDocumentsProps) => {
   
   const handleDeleteDocument = (docId: string) => {
     // Filter out the document to delete
-    const updatedDocuments = (user.documents || []).filter(doc => doc.id !== docId);
+    const updatedDocuments = documents.filter(doc => doc.id !== docId);
     
     // Update user
     const updatedUser = {
