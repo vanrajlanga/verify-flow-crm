@@ -36,23 +36,34 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
     console.log('Step1 - Available Products:', products);
     console.log('Step1 - Available Branches:', branches);
 
-    if (selectedBank && products && products.length > 0) {
-      // Filter products based on the selected bank ID
-      const bankProducts = products.filter(product => {
-        console.log('Checking product:', product, 'Banks:', product.banks, 'Looking for:', selectedBank);
-        return product.banks && product.banks.includes(selectedBank);
-      });
-      console.log('Step1 - Filtered Products:', bankProducts);
-      setFilteredProducts(bankProducts);
+    if (selectedBank) {
+      // Filter products - check if products array exists and has items
+      if (products && products.length > 0) {
+        const bankProducts = products.filter(product => {
+          console.log('Checking product:', product.name, 'Banks:', product.banks, 'Looking for:', selectedBank);
+          return product.banks && Array.isArray(product.banks) && product.banks.includes(selectedBank);
+        });
+        console.log('Step1 - Filtered Products:', bankProducts);
+        setFilteredProducts(bankProducts);
+      } else {
+        console.log('Step1 - No products available');
+        setFilteredProducts([]);
+      }
 
-      // Filter branches based on the selected bank ID
-      const bankBranches = branches.filter(branch => {
-        console.log('Checking branch:', branch, 'BankId:', branch.bankId, 'Looking for:', selectedBank);
-        return branch.bankId === selectedBank;
-      });
-      console.log('Step1 - Filtered Branches:', bankBranches);
-      setFilteredBranches(bankBranches);
+      // Filter branches - check if branches array exists and has items
+      if (branches && branches.length > 0) {
+        const bankBranches = branches.filter(branch => {
+          console.log('Checking branch:', branch.name, 'BankId:', branch.bankId, 'Looking for:', selectedBank);
+          return branch.bankId === selectedBank;
+        });
+        console.log('Step1 - Filtered Branches:', bankBranches);
+        setFilteredBranches(bankBranches);
+      } else {
+        console.log('Step1 - No branches available');
+        setFilteredBranches([]);
+      }
     } else {
+      console.log('Step1 - No bank selected, clearing filters');
       setFilteredProducts([]);
       setFilteredBranches([]);
     }
@@ -94,11 +105,11 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
                   onValueChange={(value) => {
                     console.log('Step1 - Bank selected:', value);
                     field.onChange(value);
-                    setValue('leadType', ''); // Reset lead type when bank changes
+                    setValue('leadType', '');
                     setValue('initiatedBranch', '');
                     setValue('buildBranch', '');
                   }} 
-                  value={field.value}
+                  value={field.value || ''}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -106,9 +117,11 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {banks && banks.map((bank) => (
+                    {banks && banks.length > 0 ? banks.map((bank) => (
                       <SelectItem key={bank.id} value={bank.id}>{bank.name}</SelectItem>
-                    ))}
+                    )) : (
+                      <SelectItem value="no-banks" disabled>No banks available</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -129,18 +142,20 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
                     setValue('vehicleBrand', '');
                     setValue('vehicleModel', '');
                   }} 
-                  value={field.value}
-                  disabled={!selectedBank || filteredProducts.length === 0}
+                  value={field.value || ''}
+                  disabled={!selectedBank}
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder={selectedBank ? "Select lead type" : "Select bank first"} />
+                      <SelectValue placeholder={!selectedBank ? "Select bank first" : filteredProducts.length === 0 ? "No products available" : "Select lead type"} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {filteredProducts.map((product) => (
+                    {filteredProducts.length > 0 ? filteredProducts.map((product) => (
                       <SelectItem key={product.id} value={product.id}>{product.name}</SelectItem>
-                    ))}
+                    )) : (
+                      <SelectItem value="no-products" disabled>No products available for this bank</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -162,7 +177,7 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
                         field.onChange(value);
                         setValue('vehicleModel', '');
                       }} 
-                      value={field.value}
+                      value={field.value || ''}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -170,9 +185,11 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {vehicleBrands && vehicleBrands.map((brand) => (
+                        {vehicleBrands && vehicleBrands.length > 0 ? vehicleBrands.map((brand) => (
                           <SelectItem key={brand.id} value={brand.id}>{brand.name}</SelectItem>
-                        ))}
+                        )) : (
+                          <SelectItem value="no-brands" disabled>No vehicle brands available</SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -191,18 +208,20 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
                         console.log('Step1 - Vehicle model selected:', value);
                         field.onChange(value);
                       }} 
-                      value={field.value}
-                      disabled={!selectedVehicleBrand || filteredVehicleModels.length === 0}
+                      value={field.value || ''}
+                      disabled={!selectedVehicleBrand}
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder={selectedVehicleBrand ? "Select vehicle model" : "Select brand first"} />
+                          <SelectValue placeholder={!selectedVehicleBrand ? "Select brand first" : filteredVehicleModels.length === 0 ? "No models available" : "Select vehicle model"} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {filteredVehicleModels.map((model) => (
+                        {filteredVehicleModels.length > 0 ? filteredVehicleModels.map((model) => (
                           <SelectItem key={model.id} value={model.id}>{model.name}</SelectItem>
-                        ))}
+                        )) : (
+                          <SelectItem value="no-models" disabled>No models available for this brand</SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -223,18 +242,20 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
                     console.log('Step1 - Initiated branch selected:', value);
                     field.onChange(value);
                   }} 
-                  value={field.value} 
-                  disabled={!selectedBank || filteredBranches.length === 0}
+                  value={field.value || ''} 
+                  disabled={!selectedBank}
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder={selectedBank ? "Select initiated branch" : "Select bank first"} />
+                      <SelectValue placeholder={!selectedBank ? "Select bank first" : filteredBranches.length === 0 ? "No branches available" : "Select initiated branch"} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {filteredBranches.map((branch) => (
+                    {filteredBranches.length > 0 ? filteredBranches.map((branch) => (
                       <SelectItem key={branch.id} value={branch.id}>{branch.name}</SelectItem>
-                    ))}
+                    )) : (
+                      <SelectItem value="no-branches" disabled>No branches available for this bank</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -253,18 +274,20 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
                     console.log('Step1 - Build branch selected:', value);
                     field.onChange(value);
                   }} 
-                  value={field.value} 
-                  disabled={!selectedBank || filteredBranches.length === 0}
+                  value={field.value || ''} 
+                  disabled={!selectedBank}
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder={selectedBank ? "Select build branch" : "Select bank first"} />
+                      <SelectValue placeholder={!selectedBank ? "Select bank first" : filteredBranches.length === 0 ? "No branches available" : "Select build branch"} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {filteredBranches.map((branch) => (
+                    {filteredBranches.length > 0 ? filteredBranches.map((branch) => (
                       <SelectItem key={branch.id} value={branch.id}>{branch.name}</SelectItem>
-                    ))}
+                    )) : (
+                      <SelectItem value="no-branches" disabled>No branches available for this bank</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -279,7 +302,7 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
               <FormItem>
                 <FormLabel>Agency File No. <span className="text-red-500">*</span></FormLabel>
                 <FormControl>
-                  <Input placeholder="Auto-generated" {...field} readOnly />
+                  <Input placeholder="Auto-generated" {...field} readOnly className="bg-muted" />
                 </FormControl>
                 <FormMessage />
               </FormItem>

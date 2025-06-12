@@ -90,7 +90,12 @@ const Step5HomeAddresses = ({ locationData }: Step5Props) => {
     }
     
     const state = locationData.states.find(s => s.id === stateId);
-    const districts = state?.districts || [];
+    if (!state) {
+      console.log('Step5 - State not found');
+      return [];
+    }
+    
+    const districts = state.districts || [];
     console.log('Step5 - Found districts:', districts);
     return districts;
   };
@@ -104,25 +109,35 @@ const Step5HomeAddresses = ({ locationData }: Step5Props) => {
     }
     
     const state = locationData.states.find(s => s.id === stateId);
-    const district = state?.districts.find(d => d.id === districtId);
-    const cities = district?.cities || [];
+    if (!state) {
+      console.log('Step5 - State not found for cities');
+      return [];
+    }
+    
+    const district = state.districts.find(d => d.id === districtId);
+    if (!district) {
+      console.log('Step5 - District not found for cities');
+      return [];
+    }
+    
+    const cities = district.cities || [];
     console.log('Step5 - Found cities:', cities);
     return cities;
   };
 
   const getStateName = (stateId: string) => {
-    if (!locationData?.states) return '';
+    if (!locationData?.states || !stateId) return '';
     return locationData.states.find(s => s.id === stateId)?.name || '';
   };
 
   const getDistrictName = (stateId: string, districtId: string) => {
-    if (!locationData?.states) return '';
+    if (!locationData?.states || !stateId || !districtId) return '';
     const state = locationData.states.find(s => s.id === stateId);
     return state?.districts.find(d => d.id === districtId)?.name || '';
   };
 
   const getCityName = (stateId: string, districtId: string, cityId: string) => {
-    if (!locationData?.states) return '';
+    if (!locationData?.states || !stateId || !districtId || !cityId) return '';
     const state = locationData.states.find(s => s.id === stateId);
     const district = state?.districts.find(d => d.id === districtId);
     return district?.cities.find(c => c.id === cityId)?.name || '';
@@ -159,6 +174,7 @@ const Step5HomeAddresses = ({ locationData }: Step5Props) => {
                   onValueChange={(value) => {
                     console.log('Step5 - State selected:', value);
                     updateAddress(address.id, 'state', value);
+                    // Clear dependent fields when state changes
                     updateAddress(address.id, 'district', '');
                     updateAddress(address.id, 'city', '');
                   }}
@@ -167,9 +183,13 @@ const Step5HomeAddresses = ({ locationData }: Step5Props) => {
                     <SelectValue placeholder="Select state" />
                   </SelectTrigger>
                   <SelectContent>
-                    {locationData?.states?.map((state) => (
-                      <SelectItem key={state.id} value={state.id}>{state.name}</SelectItem>
-                    ))}
+                    {locationData?.states && locationData.states.length > 0 ? 
+                      locationData.states.map((state) => (
+                        <SelectItem key={state.id} value={state.id}>{state.name}</SelectItem>
+                      )) : (
+                        <SelectItem value="no-states" disabled>No states available</SelectItem>
+                      )
+                    }
                   </SelectContent>
                 </Select>
               </div>
@@ -181,17 +201,25 @@ const Step5HomeAddresses = ({ locationData }: Step5Props) => {
                   onValueChange={(value) => {
                     console.log('Step5 - District selected:', value);
                     updateAddress(address.id, 'district', value);
+                    // Clear city when district changes
                     updateAddress(address.id, 'city', '');
                   }}
                   disabled={!address.state}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select district" />
+                    <SelectValue placeholder={!address.state ? "Select state first" : "Select district"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {getDistrictsForState(address.state).map((district) => (
-                      <SelectItem key={district.id} value={district.id}>{district.name}</SelectItem>
-                    ))}
+                    {address.state ? (
+                      getDistrictsForState(address.state).length > 0 ? 
+                        getDistrictsForState(address.state).map((district) => (
+                          <SelectItem key={district.id} value={district.id}>{district.name}</SelectItem>
+                        )) : (
+                          <SelectItem value="no-districts" disabled>No districts available</SelectItem>
+                        )
+                    ) : (
+                      <SelectItem value="select-state-first" disabled>Select state first</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -207,12 +235,19 @@ const Step5HomeAddresses = ({ locationData }: Step5Props) => {
                   disabled={!address.district}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select city" />
+                    <SelectValue placeholder={!address.district ? "Select district first" : "Select city"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {getCitiesForDistrict(address.state, address.district).map((city) => (
-                      <SelectItem key={city.id} value={city.id}>{city.name}</SelectItem>
-                    ))}
+                    {address.district ? (
+                      getCitiesForDistrict(address.state, address.district).length > 0 ? 
+                        getCitiesForDistrict(address.state, address.district).map((city) => (
+                          <SelectItem key={city.id} value={city.id}>{city.name}</SelectItem>
+                        )) : (
+                          <SelectItem value="no-cities" disabled>No cities available</SelectItem>
+                        )
+                    ) : (
+                      <SelectItem value="select-district-first" disabled>Select district first</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
