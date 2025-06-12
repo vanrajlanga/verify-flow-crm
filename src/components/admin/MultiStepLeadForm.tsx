@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
+
+import { useState, useEffect } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import * as z from 'zod';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Save } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
-import { User, Bank } from '@/utils/mockData';
 
 // Import all step components
 import Step1LeadTypeBasicInfo from './lead-form-steps/Step1LeadTypeBasicInfo';
@@ -20,11 +20,12 @@ import Step7DocumentUpload from './lead-form-steps/Step7DocumentUpload';
 import Step8VerificationOptions from './lead-form-steps/Step8VerificationOptions';
 import Step9AgentAssignment from './lead-form-steps/Step9AgentAssignment';
 
-// Form schema
 const formSchema = z.object({
-  // Step 1
+  // Step 1 - Lead Type & Basic Info
   bankName: z.string().min(1, "Bank name is required"),
   leadType: z.string().min(1, "Lead type is required"),
+  vehicleBrand: z.string().optional(),
+  vehicleModel: z.string().optional(),
   initiatedBranch: z.string().optional(),
   buildBranch: z.string().optional(),
   agencyFileNo: z.string().min(1, "Agency file number is required"),
@@ -32,32 +33,25 @@ const formSchema = z.object({
   caseId: z.string().optional(),
   schemeDescription: z.string().optional(),
   loanAmount: z.string().optional(),
-  vehicleBrand: z.string().optional(),
-  vehicleModel: z.string().optional(),
   
-  // Step 2
+  // Step 2 - Personal Info
   customerName: z.string().min(1, "Customer name is required"),
-  phoneNumber: z.string().min(10, "Phone number must be at least 10 digits"),
-  email: z.string().email().optional().or(z.literal('')),
-  age: z.string().optional(),
+  age: z.string().min(1, "Age is required"),
+  phoneNumber: z.string().min(1, "Phone number is required"),
+  email: z.string().email("Invalid email format").optional(),
+  dateOfBirth: z.string().optional(),
   gender: z.string().optional(),
+  maritalStatus: z.string().optional(),
   fatherName: z.string().optional(),
   motherName: z.string().optional(),
-  maritalStatus: z.string().optional(),
-  hasCoApplicant: z.boolean().optional(),
-  coApplicantName: z.string().optional(),
-  coApplicantPhone: z.string().optional(),
-  coApplicantRelation: z.string().optional(),
-  coApplicantEmail: z.string().email().optional().or(z.literal('')),
+  spouseName: z.string().optional(),
   
-  // Step 3
+  // Step 3 - Job Details
   companyName: z.string().optional(),
   designation: z.string().optional(),
   workExperience: z.string().optional(),
-  employmentType: z.string().optional(),
-  currentJobDuration: z.string().optional(),
   
-  // Step 4
+  // Step 4 - Property & Income
   propertyType: z.string().optional(),
   ownershipStatus: z.string().optional(),
   propertyAge: z.string().optional(),
@@ -65,220 +59,204 @@ const formSchema = z.object({
   annualIncome: z.string().optional(),
   otherIncome: z.string().optional(),
   
-  // Step 5 - Multiple home addresses
+  // Step 5 & 6 - Addresses
   addresses: z.array(z.object({
-    id: z.string().optional(),
-    state: z.string(),
-    district: z.string(),
-    city: z.string(),
+    type: z.string(),
     streetAddress: z.string(),
-    pincode: z.string(),
-    requireVerification: z.boolean()
+    city: z.string(),
+    district: z.string(),
+    state: z.string(),
+    pincode: z.string()
   })).optional(),
   
-  // Step 6 - Multiple office addresses
-  officeAddresses: z.array(z.object({
-    id: z.string().optional(),
-    state: z.string(),
-    district: z.string(),
-    city: z.string(),
-    streetAddress: z.string(),
-    pincode: z.string(),
-    requireVerification: z.boolean()
-  })).optional(),
+  // Step 7 - Documents (handled separately)
   
-  // Step 8
-  visitType: z.string().min(1, "Visit type is required"),
-  preferredDate: z.date().optional(),
+  // Step 8 - Verification Options
+  visitType: z.string().optional(),
+  preferredDate: z.string().optional(),
   specialInstructions: z.string().optional(),
   
-  // Step 9
+  // Step 9 - Agent Assignment
   assignedAgent: z.string().optional(),
 });
 
-type FormValues = z.infer<typeof formSchema>;
-
 interface MultiStepLeadFormProps {
-  banks: Bank[];
-  agents: User[];
-  onSubmit: (data: any) => Promise<void>;
+  banks: any[];
+  agents: any[];
+  onSubmit: (data: any) => void;
   onCancel: () => void;
   locationData: any;
   editingLead?: any;
 }
 
-const MultiStepLeadForm = ({ banks, agents, onSubmit, onCancel, locationData, editingLead }: MultiStepLeadFormProps) => {
+const MultiStepLeadForm = ({ 
+  banks, 
+  agents, 
+  onSubmit, 
+  onCancel, 
+  locationData,
+  editingLead 
+}: MultiStepLeadFormProps) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Load saved products, vehicle brands, and models
   const [products, setProducts] = useState<any[]>([]);
-  const [branches, setBranches] = useState<any[]>([]);
   const [vehicleBrands, setVehicleBrands] = useState<any[]>([]);
   const [vehicleModels, setVehicleModels] = useState<any[]>([]);
-  
-  // Set default values based on whether we're editing or creating
-  const getDefaultValues = () => {
-    if (editingLead) {
-      return {
-        bankName: editingLead.bank || '',
-        leadType: editingLead.additionalDetails?.leadType || '',
-        initiatedBranch: editingLead.additionalDetails?.bankBranch || '',
-        buildBranch: editingLead.additionalDetails?.bankBranch || '',
-        agencyFileNo: editingLead.additionalDetails?.agencyFileNo || '',
-        applicationBarcode: editingLead.additionalDetails?.applicationBarcode || '',
-        caseId: editingLead.additionalDetails?.caseId || '',
-        schemeDescription: editingLead.additionalDetails?.schemeDesc || '',
-        loanAmount: editingLead.additionalDetails?.loanAmount || '',
-        vehicleBrand: editingLead.additionalDetails?.vehicleBrandId || '',
-        vehicleModel: editingLead.additionalDetails?.vehicleModelId || '',
-        customerName: editingLead.name || '',
-        phoneNumber: editingLead.additionalDetails?.phoneNumber || '',
-        email: editingLead.additionalDetails?.email || '',
-        age: editingLead.age?.toString() || '',
-        gender: editingLead.additionalDetails?.gender || '',
-        fatherName: editingLead.additionalDetails?.fatherName || '',
-        motherName: editingLead.additionalDetails?.motherName || '',
-        maritalStatus: editingLead.additionalDetails?.maritalStatus || '',
-        hasCoApplicant: !!editingLead.additionalDetails?.coApplicant,
-        coApplicantName: editingLead.additionalDetails?.coApplicant?.name || '',
-        coApplicantPhone: editingLead.additionalDetails?.coApplicant?.phone || '',
-        coApplicantRelation: editingLead.additionalDetails?.coApplicant?.relation || '',
-        coApplicantEmail: editingLead.additionalDetails?.coApplicant?.email || '',
-        companyName: editingLead.additionalDetails?.company || '',
-        designation: editingLead.additionalDetails?.designation || '',
-        workExperience: editingLead.additionalDetails?.workExperience || '',
-        employmentType: '',
-        currentJobDuration: '',
-        propertyType: editingLead.additionalDetails?.propertyType || '',
-        ownershipStatus: editingLead.additionalDetails?.ownershipStatus || '',
-        propertyAge: editingLead.additionalDetails?.propertyAge || '',
-        monthlyIncome: editingLead.additionalDetails?.monthlyIncome || '',
-        annualIncome: editingLead.additionalDetails?.annualIncome || '',
-        otherIncome: editingLead.additionalDetails?.otherIncome || '',
-        addresses: editingLead.additionalDetails?.addresses || [],
-        officeAddresses: [],
-        visitType: editingLead.visitType || 'residence',
-        preferredDate: editingLead.verificationDate ? new Date(editingLead.verificationDate) : undefined,
-        specialInstructions: editingLead.instructions || '',
-        assignedAgent: editingLead.assignedTo || '',
-      };
-    } else {
-      return {
-        bankName: '',
-        leadType: '',
-        agencyFileNo: '',
-        customerName: '',
-        phoneNumber: '',
-        email: '',
-        visitType: 'residence',
-        hasCoApplicant: false,
-        addresses: [],
-        officeAddresses: []
-      };
-    }
-  };
-  
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: getDefaultValues()
-  });
+  const [branches, setBranches] = useState<any[]>([]);
 
   const totalSteps = 9;
-  const progress = (currentStep / totalSteps) * 100;
+  const progressPercentage = (currentStep / totalSteps) * 100;
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      bankName: '',
+      leadType: '',
+      vehicleBrand: '',
+      vehicleModel: '',
+      initiatedBranch: '',
+      buildBranch: '',
+      agencyFileNo: '',
+      applicationBarcode: '',
+      caseId: '',
+      schemeDescription: '',
+      loanAmount: '',
+      customerName: '',
+      age: '',
+      phoneNumber: '',
+      email: '',
+      dateOfBirth: '',
+      gender: 'Male',
+      maritalStatus: 'Single',
+      fatherName: '',
+      motherName: '',
+      spouseName: '',
+      companyName: '',
+      designation: '',
+      workExperience: '',
+      propertyType: '',
+      ownershipStatus: '',
+      propertyAge: '',
+      monthlyIncome: '',
+      annualIncome: '',
+      otherIncome: '',
+      addresses: [],
+      visitType: 'Residence',
+      preferredDate: '',
+      specialInstructions: '',
+      assignedAgent: '',
+    },
+  });
 
   useEffect(() => {
-    loadProducts();
-    loadBranches();
-    loadVehicleData();
-  }, []);
+    loadFormData();
+    
+    // If editing, populate form with existing data
+    if (editingLead) {
+      populateFormWithEditData();
+    }
+  }, [editingLead]);
 
-  const loadProducts = () => {
+  const populateFormWithEditData = () => {
+    if (!editingLead) return;
+
+    const formData = {
+      bankName: editingLead.bank || '',
+      leadType: editingLead.additionalDetails?.leadType || '',
+      vehicleBrand: editingLead.additionalDetails?.vehicleBrandId || '',
+      vehicleModel: editingLead.additionalDetails?.vehicleModelId || '',
+      initiatedBranch: editingLead.additionalDetails?.bankBranch || '',
+      buildBranch: editingLead.additionalDetails?.bankBranch || '',
+      agencyFileNo: editingLead.additionalDetails?.agencyFileNo || '',
+      applicationBarcode: editingLead.additionalDetails?.applicationBarcode || '',
+      caseId: editingLead.additionalDetails?.caseId || '',
+      schemeDescription: editingLead.additionalDetails?.schemeDesc || '',
+      loanAmount: editingLead.additionalDetails?.loanAmount || '',
+      customerName: editingLead.name || '',
+      age: editingLead.age?.toString() || '',
+      phoneNumber: editingLead.additionalDetails?.phoneNumber || '',
+      email: editingLead.additionalDetails?.email || '',
+      dateOfBirth: editingLead.additionalDetails?.dateOfBirth || '',
+      gender: editingLead.additionalDetails?.gender || 'Male',
+      maritalStatus: editingLead.additionalDetails?.maritalStatus || 'Single',
+      fatherName: editingLead.additionalDetails?.fatherName || '',
+      motherName: editingLead.additionalDetails?.motherName || '',
+      spouseName: editingLead.additionalDetails?.spouseName || '',
+      companyName: editingLead.additionalDetails?.company || '',
+      designation: editingLead.additionalDetails?.designation || editingLead.job || '',
+      workExperience: editingLead.additionalDetails?.workExperience || '',
+      propertyType: editingLead.additionalDetails?.propertyType || '',
+      ownershipStatus: editingLead.additionalDetails?.ownershipStatus || '',
+      propertyAge: editingLead.additionalDetails?.propertyAge || '',
+      monthlyIncome: editingLead.additionalDetails?.monthlyIncome || '',
+      annualIncome: editingLead.additionalDetails?.annualIncome || '',
+      otherIncome: editingLead.additionalDetails?.otherIncome || '',
+      addresses: editingLead.additionalDetails?.addresses || [
+        {
+          type: 'Residence',
+          streetAddress: editingLead.address?.street || '',
+          city: editingLead.address?.city || '',
+          district: editingLead.address?.district || '',
+          state: editingLead.address?.state || '',
+          pincode: editingLead.address?.pincode || ''
+        }
+      ],
+      visitType: editingLead.visitType || 'Residence',
+      preferredDate: editingLead.verificationDate ? new Date(editingLead.verificationDate).toISOString().split('T')[0] : '',
+      specialInstructions: editingLead.instructions || '',
+      assignedAgent: editingLead.assignedTo || '',
+    };
+
+    // Reset form with the populated data
+    form.reset(formData);
+  };
+
+  const loadFormData = () => {
+    // Load products
     const storedProducts = localStorage.getItem('products');
     if (storedProducts) {
       setProducts(JSON.parse(storedProducts));
-    } else {
-      // Create default products with correct bank IDs
-      const defaultProducts = [
-        { id: 'prod-1', name: 'Auto Loans', description: 'Vehicle financing', banks: banks.map(b => b.id) },
-        { id: 'prod-2', name: 'Commercial Vehicles', description: 'Commercial vehicle loans', banks: banks.map(b => b.id) },
-        { id: 'prod-3', name: 'Home Loans', description: 'Housing finance', banks: banks.map(b => b.id) },
-        { id: 'prod-4', name: 'Personal Loans', description: 'Personal financing', banks: banks.map(b => b.id) },
-        { id: 'prod-5', name: 'Business Loans', description: 'Business financing', banks: banks.map(b => b.id) }
-      ];
-      setProducts(defaultProducts);
-      localStorage.setItem('products', JSON.stringify(defaultProducts));
     }
-  };
 
-  const loadBranches = () => {
+    // Load vehicle brands
+    const storedBrands = localStorage.getItem('vehicleBrands');
+    if (storedBrands) {
+      setVehicleBrands(JSON.parse(storedBrands));
+    }
+
+    // Load vehicle models
+    const storedModels = localStorage.getItem('vehicleModels');
+    if (storedModels) {
+      setVehicleModels(JSON.parse(storedModels));
+    }
+
+    // Load branches
     const storedBranches = localStorage.getItem('branches');
     if (storedBranches) {
       setBranches(JSON.parse(storedBranches));
     } else {
-      // Create default branches with correct bank IDs matching mockBanks
+      // Set default branches
       const defaultBranches = [
-        { id: 'branch-1', name: 'Main Branch', bankId: banks[0]?.id || 'hdfc' },
-        { id: 'branch-2', name: 'City Center Branch', bankId: banks[0]?.id || 'hdfc' },
-        { id: 'branch-3', name: 'Airport Branch', bankId: banks[1]?.id || 'sbi' },
-        { id: 'branch-4', name: 'Mall Branch', bankId: banks[1]?.id || 'sbi' },
-        { id: 'branch-5', name: 'Downtown Branch', bankId: banks[2]?.id || 'icici' },
+        { id: 'branch-1', name: 'Main Branch', bankId: 'bank-1' },
+        { id: 'branch-2', name: 'City Center Branch', bankId: 'bank-1' },
+        { id: 'branch-3', name: 'Corporate Branch', bankId: 'bank-2' },
+        { id: 'branch-4', name: 'Business Branch', bankId: 'bank-2' },
+        { id: 'branch-5', name: 'Central Branch', bankId: 'bank-3' },
+        { id: 'branch-6', name: 'Metro Branch', bankId: 'bank-3' }
       ];
       setBranches(defaultBranches);
       localStorage.setItem('branches', JSON.stringify(defaultBranches));
     }
   };
 
-  const loadVehicleData = () => {
-    const storedBrands = localStorage.getItem('vehicleBrands');
-    const storedModels = localStorage.getItem('vehicleModels');
+  const nextStep = async () => {
+    // Validate current step before proceeding
+    const fieldsToValidate = getFieldsForStep(currentStep);
+    const isValid = await form.trigger(fieldsToValidate);
     
-    if (storedBrands) {
-      setVehicleBrands(JSON.parse(storedBrands));
-    } else {
-      const defaultBrands = [
-        { id: 'brand-1', name: 'Maruti Suzuki' },
-        { id: 'brand-2', name: 'Hyundai' },
-        { id: 'brand-3', name: 'Honda' },
-        { id: 'brand-4', name: 'Toyota' },
-        { id: 'brand-5', name: 'Tata Motors' }
-      ];
-      setVehicleBrands(defaultBrands);
-      localStorage.setItem('vehicleBrands', JSON.stringify(defaultBrands));
-    }
-    
-    if (storedModels) {
-      setVehicleModels(JSON.parse(storedModels));
-    } else {
-      const defaultModels = [
-        { id: 'model-1', name: 'Swift', brandId: 'brand-1' },
-        { id: 'model-2', name: 'Baleno', brandId: 'brand-1' },
-        { id: 'model-3', name: 'i20', brandId: 'brand-2' },
-        { id: 'model-4', name: 'Creta', brandId: 'brand-2' },
-        { id: 'model-5', name: 'City', brandId: 'brand-3' },
-        { id: 'model-6', name: 'Civic', brandId: 'brand-3' }
-      ];
-      setVehicleModels(defaultModels);
-      localStorage.setItem('vehicleModels', JSON.stringify(defaultModels));
-    }
-  };
-
-  const stepTitles = [
-    "Lead Type & Basic Info",
-    "Personal Information", 
-    "Job Details",
-    "Property & Income",
-    "Home Addresses",
-    "Work & Office Address",
-    "Document Upload",
-    "Verification Options",
-    "Agent Assignment"
-  ];
-
-  const goToStep = (step: number) => {
-    setCurrentStep(step);
-  };
-
-  const nextStep = () => {
-    if (currentStep < totalSteps) {
+    if (isValid && currentStep < totalSteps) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -289,20 +267,40 @@ const MultiStepLeadForm = ({ banks, agents, onSubmit, onCancel, locationData, ed
     }
   };
 
-  const handleSubmit = async (data: FormValues) => {
+  const getFieldsForStep = (step: number): (keyof z.infer<typeof formSchema>)[] => {
+    switch (step) {
+      case 1:
+        return ['bankName', 'leadType', 'agencyFileNo'];
+      case 2:
+        return ['customerName', 'age', 'phoneNumber'];
+      case 3:
+        return [];
+      case 4:
+        return [];
+      case 5:
+        return [];
+      case 6:
+        return [];
+      case 7:
+        return [];
+      case 8:
+        return [];
+      case 9:
+        return [];
+      default:
+        return [];
+    }
+  };
+
+  const onFormSubmit = async (data: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
     try {
-      console.log('Form data being submitted:', data);
       await onSubmit(data);
-      toast({
-        title: "Success",
-        description: editingLead ? "Lead updated successfully!" : "Lead created successfully!",
-      });
     } catch (error) {
-      console.error('Error submitting form:', error);
+      console.error('Form submission error:', error);
       toast({
         title: "Error",
-        description: editingLead ? "Failed to update lead. Please try again." : "Failed to create lead. Please try again.",
+        description: "Failed to submit form. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -310,16 +308,20 @@ const MultiStepLeadForm = ({ banks, agents, onSubmit, onCancel, locationData, ed
     }
   };
 
-  const renderCurrentStep = () => {
+  const renderStep = () => {
+    const stepProps = {
+      banks,
+      products,
+      branches,
+      vehicleBrands,
+      vehicleModels,
+      agents,
+      locationData
+    };
+
     switch (currentStep) {
       case 1:
-        return <Step1LeadTypeBasicInfo 
-          banks={banks} 
-          products={products} 
-          branches={branches}
-          vehicleBrands={vehicleBrands}
-          vehicleModels={vehicleModels}
-        />;
+        return <Step1LeadTypeBasicInfo {...stepProps} />;
       case 2:
         return <Step2PersonalInfo />;
       case 3:
@@ -337,92 +339,90 @@ const MultiStepLeadForm = ({ banks, agents, onSubmit, onCancel, locationData, ed
       case 9:
         return <Step9AgentAssignment agents={agents} />;
       default:
-        return <Step1LeadTypeBasicInfo 
-          banks={banks} 
-          products={products} 
-          branches={branches}
-          vehicleBrands={vehicleBrands}
-          vehicleModels={vehicleModels}
-        />;
+        return <Step1LeadTypeBasicInfo {...stepProps} />;
     }
   };
 
+  const getStepTitle = () => {
+    const titles = [
+      "Lead Type & Basic Information",
+      "Personal Information",
+      "Job Details",
+      "Property & Income Details",
+      "Home Address",
+      "Work/Office Address",
+      "Document Upload",
+      "Verification Options",
+      "Agent Assignment"
+    ];
+    return titles[currentStep - 1];
+  };
+
   return (
-    <FormProvider {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)}>
-        <Card className="w-full max-w-6xl mx-auto">
-          <CardHeader>
-            <div className="flex justify-between items-center">
-              <CardTitle>
-                {editingLead ? 'Edit Lead' : 'Add New Lead'} - Step {currentStep} of {totalSteps}
-              </CardTitle>
-              <Button variant="outline" onClick={onCancel}>Cancel</Button>
-            </div>
-            
-            {/* Step Navigation */}
-            <div className="grid grid-cols-3 md:grid-cols-9 gap-2 mt-4">
-              {stepTitles.map((title, index) => (
-                <Button
-                  key={index + 1}
-                  type="button"
-                  variant={currentStep === index + 1 ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => goToStep(index + 1)}
-                  className="text-xs p-2 h-auto"
-                >
-                  <div className="flex flex-col items-center">
-                    <span className="font-bold">{index + 1}</span>
-                    <span className="hidden md:block text-center leading-tight">{title}</span>
-                  </div>
-                </Button>
-              ))}
-            </div>
-
-            <div className="space-y-2 mt-4">
-              <div className="flex justify-between text-sm text-muted-foreground">
-                <span>{stepTitles[currentStep - 1]}</span>
-                <span>{Math.round(progress)}% Complete</span>
-              </div>
-              <Progress value={progress} className="w-full" />
-            </div>
-          </CardHeader>
-          
-          <CardContent>
-            {renderCurrentStep()}
-          </CardContent>
-
-          <CardFooter className="flex justify-between">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={prevStep}
-              disabled={currentStep === 1}
-            >
-              <ChevronLeft className="mr-2 h-4 w-4" />
-              Previous
+    <div className="max-w-4xl mx-auto">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>
+              {editingLead ? 'Edit Lead' : 'Add New Lead'} - Step {currentStep} of {totalSteps}
+            </CardTitle>
+            <Button variant="outline" onClick={onCancel}>
+              Cancel
             </Button>
-
-            {currentStep < totalSteps ? (
-              <Button type="button" onClick={nextStep}>
-                Next
-                <ChevronRight className="ml-2 h-4 w-4" />
-              </Button>
-            ) : (
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {editingLead ? 'Updating...' : 'Submitting...'}
-                  </>
-                ) : (
-                  editingLead ? 'Update Lead' : 'Save Lead'
-                )}
-              </Button>
-            )}
-          </CardFooter>
-        </Card>
-      </form>
-    </FormProvider>
+          </div>
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm text-muted-foreground">
+              <span>{getStepTitle()}</span>
+              <span>{Math.round(progressPercentage)}% Complete</span>
+            </div>
+            <Progress value={progressPercentage} className="h-2" />
+          </div>
+        </CardHeader>
+        
+        <CardContent>
+          <FormProvider {...form}>
+            <form onSubmit={form.handleSubmit(onFormSubmit)} className="space-y-6">
+              {renderStep()}
+              
+              <div className="flex justify-between pt-6 border-t">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={prevStep}
+                  disabled={currentStep === 1}
+                  className="flex items-center gap-2"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Previous
+                </Button>
+                
+                <div className="flex gap-2">
+                  {currentStep === totalSteps ? (
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="flex items-center gap-2"
+                    >
+                      <Save className="h-4 w-4" />
+                      {isSubmitting ? 'Saving...' : (editingLead ? 'Update Lead' : 'Save Lead')}
+                    </Button>
+                  ) : (
+                    <Button
+                      type="button"
+                      onClick={nextStep}
+                      className="flex items-center gap-2"
+                    >
+                      Next
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </form>
+          </FormProvider>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

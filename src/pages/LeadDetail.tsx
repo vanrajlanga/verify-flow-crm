@@ -1,19 +1,19 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Lead, User } from '@/utils/mockData';
+import { User, Lead } from '@/utils/mockData';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, MapPin, Phone, Mail, Building, CreditCard, Calendar, User as UserIcon, Edit } from 'lucide-react';
+import { ArrowLeft, Edit, Phone, Mail, MapPin, Building, Car, CreditCard } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { getLeadsFromDatabase } from '@/lib/lead-operations';
 
 const LeadDetail = () => {
-  const { id } = useParams<{ id: string }>();
+  const { leadId } = useParams();
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -31,24 +31,23 @@ const LeadDetail = () => {
     const parsedUser = JSON.parse(storedUser);
     setCurrentUser(parsedUser);
     loadLead();
-  }, [id, navigate]);
+  }, [navigate, leadId]);
 
   const loadLead = async () => {
-    if (!id) {
+    if (!leadId) {
       toast({
         title: "Error",
-        description: "Lead ID not provided.",
+        description: "No lead ID provided.",
         variant: "destructive",
       });
       navigate('/admin/leads');
       return;
     }
 
-    setLoading(true);
     try {
-      // Try to get leads from database first
+      // Try to get lead from database first
       const dbLeads = await getLeadsFromDatabase();
-      const foundLead = dbLeads.find(l => l.id === id);
+      const foundLead = dbLeads.find(l => l.id === leadId);
       
       if (foundLead) {
         setLead(foundLead);
@@ -60,24 +59,17 @@ const LeadDetail = () => {
       const storedLeads = localStorage.getItem('mockLeads');
       if (storedLeads) {
         const leads = JSON.parse(storedLeads);
-        const foundLead = leads.find((l: Lead) => l.id === id);
+        const foundLead = leads.find((l: any) => l.id === leadId);
         if (foundLead) {
           setLead(foundLead);
         } else {
           toast({
             title: "Lead not found",
-            description: "The requested lead could not be found.",
+            description: "The lead you're looking for could not be found.",
             variant: "destructive",
           });
           navigate('/admin/leads');
         }
-      } else {
-        toast({
-          title: "No leads found",
-          description: "No leads data available.",
-          variant: "destructive",
-        });
-        navigate('/admin/leads');
       }
     } catch (error) {
       console.error('Error loading lead:', error);
@@ -86,7 +78,6 @@ const LeadDetail = () => {
         description: "Failed to load lead details.",
         variant: "destructive",
       });
-      navigate('/admin/leads');
     } finally {
       setLoading(false);
     }
@@ -98,11 +89,30 @@ const LeadDetail = () => {
   };
 
   const handleEdit = () => {
-    if (currentUser?.role === 'admin') {
-      navigate(`/admin/add-lead/${lead?.id}`);
-    } else {
-      navigate(`/agent/leads/${lead?.id}/edit`);
+    navigate(`/admin/add-lead/${leadId}`);
+  };
+
+  const getBankName = (bankId: string) => {
+    const bankNames = {
+      'bank-1': 'State Bank of India',
+      'bank-2': 'HDFC Bank',
+      'bank-3': 'ICICI Bank'
+    };
+    return bankNames[bankId as keyof typeof bankNames] || bankId;
+  };
+
+  const getAgentName = (agentId: string) => {
+    try {
+      const storedUsers = localStorage.getItem('mockUsers');
+      if (storedUsers) {
+        const users = JSON.parse(storedUsers);
+        const agent = users.find((user: User) => user.id === agentId);
+        return agent ? agent.name : 'Unassigned';
+      }
+    } catch (error) {
+      console.error('Error getting agent name:', error);
     }
+    return 'Unassigned';
   };
 
   const getStatusBadgeVariant = (status: string) => {
@@ -129,35 +139,14 @@ const LeadDetail = () => {
 
   const formatAddress = (address: any) => {
     if (!address) return 'N/A';
-    return `${address.street || ''}, ${address.city || ''}, ${address.district || ''}, ${address.state || ''} - ${address.pincode || ''}`.replace(/^,\s*|,\s*$/g, '');
-  };
-
-  const getBankName = (bankId: string) => {
-    try {
-      const storedBanks = localStorage.getItem('mockBanks');
-      if (storedBanks) {
-        const banks = JSON.parse(storedBanks);
-        const bank = banks.find((b: any) => b.id === bankId);
-        return bank ? bank.name : bankId;
-      }
-    } catch (error) {
-      console.error('Error getting bank name:', error);
-    }
-    return bankId;
-  };
-
-  const getAgentName = (agentId: string) => {
-    try {
-      const storedUsers = localStorage.getItem('mockUsers');
-      if (storedUsers) {
-        const users = JSON.parse(storedUsers);
-        const agent = users.find((u: User) => u.id === agentId && u.role === 'agent');
-        return agent ? agent.name : 'Unassigned';
-      }
-    } catch (error) {
-      console.error('Error getting agent name:', error);
-    }
-    return 'Unassigned';
+    const parts = [
+      address.street,
+      address.city,
+      address.district,
+      address.state,
+      address.pincode
+    ].filter(Boolean);
+    return parts.join(', ') || 'N/A';
   };
 
   if (!currentUser) {
@@ -169,13 +158,15 @@ const LeadDetail = () => {
       <div className="flex min-h-screen bg-muted/30">
         <Sidebar user={currentUser} isOpen={sidebarOpen} />
         <div className="flex flex-col flex-1">
-          <Header
-            user={currentUser}
-            onLogout={handleLogout}
-            toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+          <Header 
+            user={currentUser} 
+            onLogout={handleLogout} 
+            toggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
           />
-          <main className="flex-1 p-4 md:p-6 flex items-center justify-center">
-            <p>Loading lead details...</p>
+          <main className="flex-1 p-4 md:p-6">
+            <div className="flex items-center justify-center h-48">
+              <p>Loading lead details...</p>
+            </div>
           </main>
         </div>
       </div>
@@ -187,13 +178,15 @@ const LeadDetail = () => {
       <div className="flex min-h-screen bg-muted/30">
         <Sidebar user={currentUser} isOpen={sidebarOpen} />
         <div className="flex flex-col flex-1">
-          <Header
-            user={currentUser}
-            onLogout={handleLogout}
-            toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+          <Header 
+            user={currentUser} 
+            onLogout={handleLogout} 
+            toggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
           />
-          <main className="flex-1 p-4 md:p-6 flex items-center justify-center">
-            <p>Lead not found.</p>
+          <main className="flex-1 p-4 md:p-6">
+            <div className="flex items-center justify-center h-48">
+              <p>Lead not found</p>
+            </div>
           </main>
         </div>
       </div>
@@ -203,25 +196,25 @@ const LeadDetail = () => {
   return (
     <div className="flex min-h-screen bg-muted/30">
       <Sidebar user={currentUser} isOpen={sidebarOpen} />
-
+      
       <div className="flex flex-col flex-1">
-        <Header
-          user={currentUser}
-          onLogout={handleLogout}
-          toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+        <Header 
+          user={currentUser} 
+          onLogout={handleLogout} 
+          toggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
         />
-
+        
         <main className="flex-1 p-4 md:p-6">
-          <div className="container mx-auto max-w-6xl">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-6">
+          <div className="max-w-7xl mx-auto space-y-6">
+            {/* Header Section */}
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => navigate(currentUser.role === 'admin' ? '/admin/leads' : '/agent/leads')}
+                <Button
+                  variant="outline"
+                  onClick={() => navigate('/admin/leads')}
+                  className="flex items-center gap-2"
                 >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  <ArrowLeft className="h-4 w-4" />
                   Back to Leads
                 </Button>
                 <div>
@@ -233,49 +226,143 @@ const LeadDetail = () => {
                 <Badge variant={getStatusBadgeVariant(lead.status)}>
                   {lead.status}
                 </Badge>
-                {currentUser.role === 'admin' && (
-                  <Button onClick={handleEdit}>
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit Lead
-                  </Button>
-                )}
+                <Button onClick={handleEdit} className="flex items-center gap-2">
+                  <Edit className="h-4 w-4" />
+                  Edit Lead
+                </Button>
               </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Basic Information */}
-              <Card>
+              <Card className="lg:col-span-2">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <UserIcon className="h-5 w-5" />
-                    Basic Information
+                    <CreditCard className="h-5 w-5" />
+                    Lead Information
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Agency File No</label>
+                      <p className="text-sm">{lead.additionalDetails?.agencyFileNo || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Application Barcode</label>
+                      <p className="text-sm">{lead.additionalDetails?.applicationBarcode || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Case ID</label>
+                      <p className="text-sm">{lead.additionalDetails?.caseId || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Lead Type</label>
+                      <p className="text-sm">{lead.additionalDetails?.leadType || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Bank</label>
+                      <p className="text-sm">{getBankName(lead.bank || '')}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Branch</label>
+                      <p className="text-sm">{lead.additionalDetails?.bankBranch || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Loan Amount</label>
+                      <p className="text-sm">{lead.additionalDetails?.loanAmount ? `₹${lead.additionalDetails.loanAmount}` : 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Visit Type</label>
+                      <p className="text-sm">{lead.visitType || 'N/A'}</p>
+                    </div>
+                  </div>
+                  
+                  {lead.additionalDetails?.schemeDesc && (
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Scheme Description</label>
+                      <p className="text-sm">{lead.additionalDetails.schemeDesc}</p>
+                    </div>
+                  )}
+                  
+                  {lead.instructions && (
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Instructions</label>
+                      <p className="text-sm">{lead.instructions}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Assignment & Status */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Assignment Details</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
                   <div>
-                    <p className="text-sm text-muted-foreground">Customer Name</p>
-                    <p className="font-medium">{lead.name}</p>
+                    <label className="text-sm font-medium text-muted-foreground">Assigned Agent</label>
+                    <p className="text-sm">{getAgentName(lead.assignedTo || '')}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Age</p>
-                    <p className="font-medium">{lead.age || 'N/A'}</p>
+                    <label className="text-sm font-medium text-muted-foreground">Created Date</label>
+                    <p className="text-sm">{formatDate(lead.createdAt)}</p>
+                  </div>
+                  {lead.verificationDate && (
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Verification Date</label>
+                      <p className="text-sm">{formatDate(lead.verificationDate)}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Personal Information */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Phone className="h-5 w-5" />
+                    Personal Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Age</label>
+                      <p className="text-sm">{lead.age || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Gender</label>
+                      <p className="text-sm">{lead.additionalDetails?.gender || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Date of Birth</label>
+                      <p className="text-sm">{lead.additionalDetails?.dateOfBirth || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Marital Status</label>
+                      <p className="text-sm">{lead.additionalDetails?.maritalStatus || 'N/A'}</p>
+                    </div>
+                  </div>
+                  
+                  <Separator />
+                  
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Father's Name</label>
+                    <p className="text-sm">{lead.additionalDetails?.fatherName || 'N/A'}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Job/Designation</p>
-                    <p className="font-medium">{lead.additionalDetails?.designation || lead.job || 'N/A'}</p>
+                    <label className="text-sm font-medium text-muted-foreground">Mother's Name</label>
+                    <p className="text-sm">{lead.additionalDetails?.motherName || 'N/A'}</p>
                   </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Agency File No</p>
-                    <p className="font-medium">{lead.additionalDetails?.agencyFileNo || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Application Barcode</p>
-                    <p className="font-medium">{lead.additionalDetails?.applicationBarcode || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Case ID</p>
-                    <p className="font-medium">{lead.additionalDetails?.caseId || 'N/A'}</p>
-                  </div>
+                  {lead.additionalDetails?.spouseName && (
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Spouse's Name</label>
+                      <p className="text-sm">{lead.additionalDetails.spouseName}</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
@@ -283,176 +370,138 @@ const LeadDetail = () => {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Phone className="h-5 w-5" />
+                    <Mail className="h-5 w-5" />
                     Contact Information
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <p className="text-sm text-muted-foreground">Phone Number</p>
-                    <p className="font-medium">{lead.additionalDetails?.phoneNumber || 'N/A'}</p>
+                    <label className="text-sm font-medium text-muted-foreground">Phone Number</label>
+                    <p className="text-sm">{lead.additionalDetails?.phoneNumber || 'N/A'}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Email</p>
-                    <p className="font-medium">{lead.additionalDetails?.email || 'N/A'}</p>
+                    <label className="text-sm font-medium text-muted-foreground">Email</label>
+                    <p className="text-sm">{lead.additionalDetails?.email || 'N/A'}</p>
                   </div>
+                  
+                  <Separator />
+                  
                   <div>
-                    <p className="text-sm text-muted-foreground">Date of Birth</p>
-                    <p className="font-medium">{lead.additionalDetails?.dateOfBirth || 'N/A'}</p>
+                    <label className="text-sm font-medium text-muted-foreground">Residence Address</label>
+                    <p className="text-sm">{formatAddress(lead.address)}</p>
                   </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Gender</p>
-                    <p className="font-medium">{lead.additionalDetails?.gender || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Marital Status</p>
-                    <p className="font-medium">{lead.additionalDetails?.maritalStatus || 'N/A'}</p>
-                  </div>
+                  
+                  {lead.additionalDetails?.addresses?.find(addr => addr.type === 'Office') && (
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Office Address</label>
+                      <p className="text-sm">{formatAddress(lead.additionalDetails.addresses.find(addr => addr.type === 'Office'))}</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
-              {/* Lead Details */}
+              {/* Employment Information */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <CreditCard className="h-5 w-5" />
-                    Lead Details
+                    <Building className="h-5 w-5" />
+                    Employment Information
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <p className="text-sm text-muted-foreground">Lead Type</p>
-                    <p className="font-medium">{lead.additionalDetails?.leadType || 'N/A'}</p>
+                    <label className="text-sm font-medium text-muted-foreground">Company</label>
+                    <p className="text-sm">{lead.additionalDetails?.company || 'N/A'}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Loan Amount</p>
-                    <p className="font-medium">{lead.additionalDetails?.loanAmount ? `₹${lead.additionalDetails.loanAmount}` : 'N/A'}</p>
+                    <label className="text-sm font-medium text-muted-foreground">Designation</label>
+                    <p className="text-sm">{lead.additionalDetails?.designation || lead.job || 'N/A'}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Bank</p>
-                    <p className="font-medium">{getBankName(lead.bank || '')}</p>
+                    <label className="text-sm font-medium text-muted-foreground">Work Experience</label>
+                    <p className="text-sm">{lead.additionalDetails?.workExperience || 'N/A'}</p>
                   </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Visit Type</p>
-                    <p className="font-medium">{lead.visitType}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Assigned Agent</p>
-                    <p className="font-medium">{getAgentName(lead.assignedTo || '')}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Created Date</p>
-                    <p className="font-medium">{formatDate(lead.createdAt)}</p>
+                  
+                  <Separator />
+                  
+                  <div className="grid grid-cols-1 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Monthly Income</label>
+                      <p className="text-sm">{lead.additionalDetails?.monthlyIncome ? `₹${lead.additionalDetails.monthlyIncome}` : 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Annual Income</label>
+                      <p className="text-sm">{lead.additionalDetails?.annualIncome ? `₹${lead.additionalDetails.annualIncome}` : 'N/A'}</p>
+                    </div>
+                    {lead.additionalDetails?.otherIncome && (
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Other Income</label>
+                        <p className="text-sm">₹{lead.additionalDetails.otherIncome}</p>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
-            </div>
 
-            {/* Address Information */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MapPin className="h-5 w-5" />
-                    Residence Address
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm">{formatAddress(lead.address)}</p>
-                </CardContent>
-              </Card>
-
-              {lead.additionalDetails?.addresses && lead.additionalDetails.addresses.length > 0 && (
+              {/* Vehicle Information (if applicable) */}
+              {(lead.additionalDetails?.vehicleBrandName || lead.additionalDetails?.vehicleModelName) && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <Building className="h-5 w-5" />
-                      Additional Addresses
+                      <Car className="h-5 w-5" />
+                      Vehicle Information
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-3">
-                    {lead.additionalDetails.addresses.map((addr, index) => (
-                      <div key={index}>
-                        <p className="text-sm font-medium">{addr.type}</p>
-                        <p className="text-sm text-muted-foreground">{formatAddress(addr)}</p>
-                        {index < lead.additionalDetails!.addresses!.length - 1 && <Separator className="mt-2" />}
+                  <CardContent className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Vehicle Brand</label>
+                      <p className="text-sm">{lead.additionalDetails?.vehicleBrandName || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Vehicle Model</label>
+                      <p className="text-sm">{lead.additionalDetails?.vehicleModelName || 'N/A'}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Property Information (if applicable) */}
+              {(lead.additionalDetails?.propertyType || lead.additionalDetails?.ownershipStatus) && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <MapPin className="h-5 w-5" />
+                      Property Information
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Property Type</label>
+                      <p className="text-sm">{lead.additionalDetails?.propertyType || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Ownership Status</label>
+                      <p className="text-sm">{lead.additionalDetails?.ownershipStatus || 'N/A'}</p>
+                    </div>
+                    {lead.additionalDetails?.propertyAge && (
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Property Age</label>
+                        <p className="text-sm">{lead.additionalDetails.propertyAge}</p>
                       </div>
-                    ))}
+                    )}
                   </CardContent>
                 </Card>
               )}
             </div>
 
-            {/* Financial Information */}
-            <Card className="mt-6">
-              <CardHeader>
-                <CardTitle>Financial Information</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Monthly Income</p>
-                    <p className="font-medium">{lead.additionalDetails?.monthlyIncome ? `₹${lead.additionalDetails.monthlyIncome}` : 'N/A'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Annual Income</p>
-                    <p className="font-medium">{lead.additionalDetails?.annualIncome ? `₹${lead.additionalDetails.annualIncome}` : 'N/A'}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Other Income</p>
-                    <p className="font-medium">{lead.additionalDetails?.otherIncome ? `₹${lead.additionalDetails.otherIncome}` : 'N/A'}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Additional Information */}
-            {(lead.instructions || lead.additionalDetails?.additionalComments) && (
-              <Card className="mt-6">
+            {/* Additional Comments */}
+            {lead.additionalDetails?.additionalComments && (
+              <Card>
                 <CardHeader>
-                  <CardTitle>Additional Information</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {lead.instructions && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Instructions</p>
-                      <p className="text-sm">{lead.instructions}</p>
-                    </div>
-                  )}
-                  {lead.additionalDetails?.additionalComments && (
-                    <div>
-                      <p className="text-sm text-muted-foreground">Additional Comments</p>
-                      <p className="text-sm">{lead.additionalDetails.additionalComments}</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Verification Status */}
-            {lead.verification && (
-              <Card className="mt-6">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5" />
-                    Verification Status
-                  </CardTitle>
+                  <CardTitle>Additional Comments</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Status</p>
-                      <Badge variant={getStatusBadgeVariant(lead.verification.status)}>
-                        {lead.verification.status}
-                      </Badge>
-                    </div>
-                    {lead.verification.notes && (
-                      <div>
-                        <p className="text-sm text-muted-foreground">Notes</p>
-                        <p className="text-sm">{lead.verification.notes}</p>
-                      </div>
-                    )}
-                  </div>
+                  <p className="text-sm">{lead.additionalDetails.additionalComments}</p>
                 </CardContent>
               </Card>
             )}
