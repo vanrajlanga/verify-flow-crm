@@ -185,7 +185,10 @@ const AddLeadFormMultiStep = ({
         { id: 'brand-2', name: 'Hyundai' },
         { id: 'brand-3', name: 'Tata Motors' },
         { id: 'brand-4', name: 'Mahindra' },
-        { id: 'brand-5', name: 'Honda' }
+        { id: 'brand-5', name: 'Honda' },
+        { id: 'brand-6', name: 'Toyota' },
+        { id: 'brand-7', name: 'Ford' },
+        { id: 'brand-8', name: 'Volkswagen' }
       ];
       setVehicleBrands(defaultBrands);
       localStorage.setItem('vehicleBrands', JSON.stringify(defaultBrands));
@@ -199,9 +202,14 @@ const AddLeadFormMultiStep = ({
       const defaultModels: VehicleModel[] = [
         { id: 'model-1', name: 'Swift', brandId: 'brand-1' },
         { id: 'model-2', name: 'Alto', brandId: 'brand-1' },
-        { id: 'model-3', name: 'i20', brandId: 'brand-2' },
-        { id: 'model-4', name: 'Creta', brandId: 'brand-2' },
-        { id: 'model-5', name: 'Nexon', brandId: 'brand-3' }
+        { id: 'model-3', name: 'Baleno', brandId: 'brand-1' },
+        { id: 'model-4', name: 'i20', brandId: 'brand-2' },
+        { id: 'model-5', name: 'Creta', brandId: 'brand-2' },
+        { id: 'model-6', name: 'Venue', brandId: 'brand-2' },
+        { id: 'model-7', name: 'Nexon', brandId: 'brand-3' },
+        { id: 'model-8', name: 'Tiago', brandId: 'brand-3' },
+        { id: 'model-9', name: 'XUV700', brandId: 'brand-4' },
+        { id: 'model-10', name: 'Scorpio', brandId: 'brand-4' }
       ];
       setVehicleModels(defaultModels);
       localStorage.setItem('vehicleModels', JSON.stringify(defaultModels));
@@ -215,9 +223,12 @@ const AddLeadFormMultiStep = ({
       const defaultBranches: BankBranch[] = [
         { id: 'branch-1', name: 'Bangalore Main Branch', code: 'BLR001', bankId: 'bank-1', state: 'Karnataka', district: 'Bangalore Urban', city: 'Bangalore' },
         { id: 'branch-2', name: 'Koramangala Branch', code: 'BLR002', bankId: 'bank-1', state: 'Karnataka', district: 'Bangalore Urban', city: 'Bangalore' },
-        { id: 'branch-3', name: 'Mumbai Central', code: 'MUM001', bankId: 'bank-2', state: 'Maharashtra', district: 'Mumbai', city: 'Mumbai' },
-        { id: 'branch-4', name: 'Andheri Branch', code: 'MUM002', bankId: 'bank-2', state: 'Maharashtra', district: 'Mumbai', city: 'Mumbai' },
-        { id: 'branch-5', name: 'Delhi Main', code: 'DEL001', bankId: 'bank-3', state: 'Delhi', district: 'Central Delhi', city: 'Delhi' }
+        { id: 'branch-3', name: 'Electronic City Branch', code: 'BLR003', bankId: 'bank-1', state: 'Karnataka', district: 'Bangalore Urban', city: 'Bangalore' },
+        { id: 'branch-4', name: 'Mumbai Central', code: 'MUM001', bankId: 'bank-2', state: 'Maharashtra', district: 'Mumbai', city: 'Mumbai' },
+        { id: 'branch-5', name: 'Andheri Branch', code: 'MUM002', bankId: 'bank-2', state: 'Maharashtra', district: 'Mumbai', city: 'Mumbai' },
+        { id: 'branch-6', name: 'Bandra Branch', code: 'MUM003', bankId: 'bank-2', state: 'Maharashtra', district: 'Mumbai', city: 'Mumbai' },
+        { id: 'branch-7', name: 'Delhi Main', code: 'DEL001', bankId: 'bank-3', state: 'Delhi', district: 'Central Delhi', city: 'Delhi' },
+        { id: 'branch-8', name: 'Connaught Place', code: 'DEL002', bankId: 'bank-3', state: 'Delhi', district: 'Central Delhi', city: 'Delhi' }
       ];
       setBankBranches(defaultBranches);
       localStorage.setItem('bankBranches', JSON.stringify(defaultBranches));
@@ -354,7 +365,7 @@ const AddLeadFormMultiStep = ({
 
   const shouldShowVehicleFields = () => {
     const vehicleRelatedTypes = ['Auto Loans', 'Commercial Vehicles', 'CVCE'];
-    return vehicleRelatedTypes.some(type => formData.leadType.includes(type));
+    return vehicleRelatedTypes.includes(formData.leadType);
   };
 
   const addPhoneNumber = () => {
@@ -1242,6 +1253,9 @@ const AddLeadFormMultiStep = ({
                   <p><strong>Bank:</strong> {banks.find(b => b.id === formData.bankName)?.name}</p>
                   <p><strong>Product:</strong> {formData.leadType}</p>
                   <p><strong>Phone:</strong> {formData.phoneNumbers.filter(p => p.trim()).join(', ')}</p>
+                  {shouldShowVehicleFields() && formData.vehicleBrandName && (
+                    <p><strong>Vehicle:</strong> {formData.vehicleBrandName} {formData.vehicleModelName}</p>
+                  )}
                   <p><strong>Verification Addresses:</strong> {getVerificationAddresses().length}</p>
                   <p><strong>Assigned Agent:</strong> {
                     formData.assignedAgent 
