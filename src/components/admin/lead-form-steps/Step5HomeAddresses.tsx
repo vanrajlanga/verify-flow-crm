@@ -84,8 +84,8 @@ const Step5HomeAddresses = ({ locationData }: Step5Props) => {
     console.log('Step5 - Getting districts for state:', stateId);
     console.log('Step5 - Available location data:', locationData);
     
-    if (!locationData?.states) {
-      console.log('Step5 - No location data available');
+    if (!locationData?.states || !stateId) {
+      console.log('Step5 - No location data or state ID');
       return [];
     }
     
@@ -98,8 +98,8 @@ const Step5HomeAddresses = ({ locationData }: Step5Props) => {
   const getCitiesForDistrict = (stateId: string, districtId: string) => {
     console.log('Step5 - Getting cities for state:', stateId, 'district:', districtId);
     
-    if (!locationData?.states) {
-      console.log('Step5 - No location data available');
+    if (!locationData?.states || !stateId || !districtId) {
+      console.log('Step5 - Missing required data for cities');
       return [];
     }
     
