@@ -1,11 +1,13 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Plus, Trash2 } from 'lucide-react';
 
 interface Step6Props {
   locationData: {
@@ -22,9 +24,41 @@ interface Step6Props {
 }
 
 const Step6WorkOfficeAddress = ({ locationData }: Step6Props) => {
-  const { control, watch } = useFormContext();
-  const selectedState = watch('officeState');
-  const selectedDistrict = watch('officeDistrict');
+  const { control, watch, setValue } = useFormContext();
+  const officeAddresses = watch('officeAddresses') || [];
+
+  const addOfficeAddress = () => {
+    const newAddress = {
+      id: `office-addr-${Date.now()}`,
+      state: '',
+      district: '',
+      city: '',
+      streetAddress: '',
+      pincode: '',
+      requireVerification: false
+    };
+    setValue('officeAddresses', [...officeAddresses, newAddress]);
+  };
+
+  const removeOfficeAddress = (index: number) => {
+    const updatedAddresses = officeAddresses.filter((_: any, i: number) => i !== index);
+    setValue('officeAddresses', updatedAddresses);
+  };
+
+  const updateOfficeAddress = (index: number, field: string, value: any) => {
+    const updatedAddresses = [...officeAddresses];
+    updatedAddresses[index] = { ...updatedAddresses[index], [field]: value };
+    
+    // Reset dependent fields when parent changes
+    if (field === 'state') {
+      updatedAddresses[index].district = '';
+      updatedAddresses[index].city = '';
+    } else if (field === 'district') {
+      updatedAddresses[index].city = '';
+    }
+    
+    setValue('officeAddresses', updatedAddresses);
+  };
 
   const getDistrictsForState = (stateId: string) => {
     const state = locationData.states.find(s => s.id === stateId);
@@ -37,111 +71,132 @@ const Step6WorkOfficeAddress = ({ locationData }: Step6Props) => {
     return district ? district.cities : [];
   };
 
+  // Initialize with one address if none exist
+  React.useEffect(() => {
+    if (officeAddresses.length === 0) {
+      addOfficeAddress();
+    }
+  }, []);
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Step 6: Work & Office Address</CardTitle>
-        <CardDescription>Enter work and office address</CardDescription>
+        <CardDescription>Enter work and office address details</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <FormField
-            control={control}
-            name="officeState"
-            render={({ field }) => (
-              <FormItem>
+        {officeAddresses.map((address: any, index: number) => (
+          <div key={address.id || index} className="border rounded-lg p-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <h4 className="font-medium">Office Address {index + 1}</h4>
+              {officeAddresses.length > 1 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => removeOfficeAddress(index)}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
                 <FormLabel>State</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select state" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
+                <Select 
+                  onValueChange={(value) => updateOfficeAddress(index, 'state', value)} 
+                  value={address.state || ''}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select state" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border border-border shadow-lg z-50">
                     {locationData.states.map((state) => (
                       <SelectItem key={state.id} value={state.id}>{state.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+              </div>
 
-          <FormField
-            control={control}
-            name="officeDistrict"
-            render={({ field }) => (
-              <FormItem>
+              <div>
                 <FormLabel>District</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!selectedState}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select district" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {getDistrictsForState(selectedState).map((district) => (
+                <Select 
+                  onValueChange={(value) => updateOfficeAddress(index, 'district', value)} 
+                  value={address.district || ''}
+                  disabled={!address.state}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select district" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border border-border shadow-lg z-50">
+                    {getDistrictsForState(address.state).map((district) => (
                       <SelectItem key={district.id} value={district.id}>{district.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+              </div>
 
-          <FormField
-            control={control}
-            name="officeCity"
-            render={({ field }) => (
-              <FormItem>
+              <div>
                 <FormLabel>City</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!selectedDistrict}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select city" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {getCitiesForDistrict(selectedState, selectedDistrict).map((city) => (
+                <Select 
+                  onValueChange={(value) => updateOfficeAddress(index, 'city', value)} 
+                  value={address.city || ''}
+                  disabled={!address.district}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select city" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border border-border shadow-lg z-50">
+                    {getCitiesForDistrict(address.state, address.district).map((city) => (
                       <SelectItem key={city.id} value={city.id}>{city.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+              </div>
 
-          <FormField
-            control={control}
-            name="officeAddress"
-            render={({ field }) => (
-              <FormItem className="md:col-span-2">
-                <FormLabel>Office Address</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter office address" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+              <div className="md:col-span-2">
+                <FormLabel>Street Address</FormLabel>
+                <Input
+                  placeholder="Enter office address"
+                  value={address.streetAddress || ''}
+                  onChange={(e) => updateOfficeAddress(index, 'streetAddress', e.target.value)}
+                />
+              </div>
 
-          <FormField
-            control={control}
-            name="officePincode"
-            render={({ field }) => (
-              <FormItem>
+              <div>
                 <FormLabel>Pincode</FormLabel>
-                <FormControl>
-                  <Input placeholder="Enter pincode" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+                <Input
+                  placeholder="Enter pincode"
+                  value={address.pincode || ''}
+                  onChange={(e) => updateOfficeAddress(index, 'pincode', e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id={`office-verification-${index}`}
+                checked={address.requireVerification || false}
+                onCheckedChange={(checked) => updateOfficeAddress(index, 'requireVerification', checked)}
+              />
+              <FormLabel htmlFor={`office-verification-${index}`} className="text-sm font-normal">
+                Require verification for this office address
+              </FormLabel>
+            </div>
+          </div>
+        ))}
+
+        <Button
+          type="button"
+          variant="outline"
+          onClick={addOfficeAddress}
+          className="w-full"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Add Another Office Address
+        </Button>
       </CardContent>
     </Card>
   );

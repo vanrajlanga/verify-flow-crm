@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -65,8 +66,9 @@ const formSchema = z.object({
   annualIncome: z.string().optional(),
   otherIncome: z.string().optional(),
   
-  // Step 5
+  // Step 5 - Multiple home addresses
   addresses: z.array(z.object({
+    id: z.string().optional(),
     state: z.string(),
     district: z.string(),
     city: z.string(),
@@ -75,12 +77,16 @@ const formSchema = z.object({
     requireVerification: z.boolean()
   })).optional(),
   
-  // Step 6
-  officeState: z.string().optional(),
-  officeDistrict: z.string().optional(),
-  officeCity: z.string().optional(),
-  officeAddress: z.string().optional(),
-  officePincode: z.string().optional(),
+  // Step 6 - Multiple office addresses
+  officeAddresses: z.array(z.object({
+    id: z.string().optional(),
+    state: z.string(),
+    district: z.string(),
+    city: z.string(),
+    streetAddress: z.string(),
+    pincode: z.string(),
+    requireVerification: z.boolean()
+  })).optional(),
   
   // Step 8
   visitType: z.string().min(1, "Visit type is required"),
@@ -120,7 +126,8 @@ const MultiStepLeadForm = ({ banks, agents, onSubmit, onCancel, locationData }: 
       email: '',
       visitType: 'residence',
       hasCoApplicant: false,
-      addresses: []
+      addresses: [],
+      officeAddresses: []
     }
   });
 
@@ -137,6 +144,17 @@ const MultiStepLeadForm = ({ banks, agents, onSubmit, onCancel, locationData }: 
     const storedProducts = localStorage.getItem('products');
     if (storedProducts) {
       setProducts(JSON.parse(storedProducts));
+    } else {
+      // Create default products with correct bank IDs
+      const defaultProducts = [
+        { id: 'prod-1', name: 'Auto Loans', description: 'Vehicle financing', banks: banks.map(b => b.id) },
+        { id: 'prod-2', name: 'Commercial Vehicles', description: 'Commercial vehicle loans', banks: banks.map(b => b.id) },
+        { id: 'prod-3', name: 'Home Loans', description: 'Housing finance', banks: banks.map(b => b.id) },
+        { id: 'prod-4', name: 'Personal Loans', description: 'Personal financing', banks: banks.map(b => b.id) },
+        { id: 'prod-5', name: 'Business Loans', description: 'Business financing', banks: banks.map(b => b.id) }
+      ];
+      setProducts(defaultProducts);
+      localStorage.setItem('products', JSON.stringify(defaultProducts));
     }
   };
 
@@ -164,9 +182,31 @@ const MultiStepLeadForm = ({ banks, agents, onSubmit, onCancel, locationData }: 
     
     if (storedBrands) {
       setVehicleBrands(JSON.parse(storedBrands));
+    } else {
+      const defaultBrands = [
+        { id: 'brand-1', name: 'Maruti Suzuki' },
+        { id: 'brand-2', name: 'Hyundai' },
+        { id: 'brand-3', name: 'Honda' },
+        { id: 'brand-4', name: 'Toyota' },
+        { id: 'brand-5', name: 'Tata Motors' }
+      ];
+      setVehicleBrands(defaultBrands);
+      localStorage.setItem('vehicleBrands', JSON.stringify(defaultBrands));
     }
+    
     if (storedModels) {
       setVehicleModels(JSON.parse(storedModels));
+    } else {
+      const defaultModels = [
+        { id: 'model-1', name: 'Swift', brandId: 'brand-1' },
+        { id: 'model-2', name: 'Baleno', brandId: 'brand-1' },
+        { id: 'model-3', name: 'i20', brandId: 'brand-2' },
+        { id: 'model-4', name: 'Creta', brandId: 'brand-2' },
+        { id: 'model-5', name: 'City', brandId: 'brand-3' },
+        { id: 'model-6', name: 'Civic', brandId: 'brand-3' }
+      ];
+      setVehicleModels(defaultModels);
+      localStorage.setItem('vehicleModels', JSON.stringify(defaultModels));
     }
   };
 
@@ -322,7 +362,7 @@ const MultiStepLeadForm = ({ banks, agents, onSubmit, onCancel, locationData }: 
                     Submitting...
                   </>
                 ) : (
-                  'Submit Lead'
+                  'Save Lead'
                 )}
               </Button>
             )}

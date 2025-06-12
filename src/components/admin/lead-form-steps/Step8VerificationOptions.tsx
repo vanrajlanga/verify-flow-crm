@@ -3,7 +3,6 @@ import React from 'react';
 import { useFormContext } from 'react-hook-form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
@@ -18,15 +17,24 @@ import { Badge } from '@/components/ui/badge';
 const Step8VerificationOptions = () => {
   const { control, watch } = useFormContext();
   const addresses = watch('addresses') || [];
-  const officeAddress = {
-    state: watch('officeState'),
-    district: watch('officeDistrict'),
-    city: watch('officeCity'),
-    address: watch('officeAddress'),
-    pincode: watch('officePincode')
-  };
+  const officeAddresses = watch('officeAddresses') || [];
 
-  const verificationAddresses = addresses.filter((addr: any) => addr.requireVerification);
+  // Filter addresses that require verification
+  const homeVerificationAddresses = addresses.filter((addr: any) => addr.requireVerification);
+  const officeVerificationAddresses = officeAddresses.filter((addr: any) => addr.requireVerification);
+  const totalVerificationAddresses = homeVerificationAddresses.length + officeVerificationAddresses.length;
+
+  const getLocationName = (locationData: any, stateId: string, districtId: string, cityId: string) => {
+    const state = locationData?.states?.find((s: any) => s.id === stateId);
+    const district = state?.districts?.find((d: any) => d.id === districtId);
+    const city = district?.cities?.find((c: any) => c.id === cityId);
+    
+    return {
+      stateName: state?.name || stateId,
+      districtName: district?.name || districtId,
+      cityName: city?.name || cityId
+    };
+  };
 
   return (
     <Card>
@@ -44,7 +52,7 @@ const Step8VerificationOptions = () => {
               <FormControl>
                 <RadioGroup
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  value={field.value || 'residence'}
                   className="flex flex-col space-y-2"
                 >
                   <div className="flex items-center space-x-2">
@@ -66,45 +74,62 @@ const Step8VerificationOptions = () => {
           )}
         />
 
-        {/* Show selected addresses for verification */}
-        {verificationAddresses.length > 0 && (
-          <div className="space-y-3">
-            <Label className="text-base font-medium">Addresses Selected for Verification:</Label>
-            <div className="space-y-2">
-              {verificationAddresses.map((addr: any, index: number) => (
-                <div key={addr.id || index} className="border rounded-lg p-3 bg-muted/20">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <Badge variant="outline" className="mb-2">Residence {index + 1}</Badge>
-                      <p className="text-sm">
-                        <strong>Address:</strong> {addr.streetAddress}
-                        {addr.streetAddress && ', '}
-                        {addr.city && `${addr.city}, `}
-                        {addr.district && `${addr.district}, `}
-                        {addr.state} - {addr.pincode}
-                      </p>
+        {/* Show addresses selected for verification */}
+        {totalVerificationAddresses > 0 ? (
+          <div className="space-y-4">
+            <Label className="text-base font-medium">Addresses Selected for Verification ({totalVerificationAddresses}):</Label>
+            
+            {/* Home Addresses */}
+            {homeVerificationAddresses.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="font-medium text-sm text-muted-foreground">Home Addresses:</h4>
+                {homeVerificationAddresses.map((addr: any, index: number) => (
+                  <div key={addr.id || index} className="border rounded-lg p-3 bg-muted/20">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <Badge variant="outline" className="mb-2">Home Address {index + 1}</Badge>
+                        <p className="text-sm">
+                          <strong>Address:</strong> {addr.streetAddress}
+                          {addr.streetAddress && addr.city && ', '}
+                          {addr.city && `${addr.city}, `}
+                          {addr.district && `${addr.district}, `}
+                          {addr.state} - {addr.pincode}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+                ))}
+              </div>
+            )}
 
-        {/* Show office address if provided */}
-        {(officeAddress.state || officeAddress.address) && (
-          <div className="space-y-3">
-            <Label className="text-base font-medium">Office Address:</Label>
-            <div className="border rounded-lg p-3 bg-muted/20">
-              <Badge variant="outline" className="mb-2">Office</Badge>
-              <p className="text-sm">
-                <strong>Address:</strong> {officeAddress.address}
-                {officeAddress.address && ', '}
-                {officeAddress.city && `${officeAddress.city}, `}
-                {officeAddress.district && `${officeAddress.district}, `}
-                {officeAddress.state} - {officeAddress.pincode}
-              </p>
-            </div>
+            {/* Office Addresses */}
+            {officeVerificationAddresses.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="font-medium text-sm text-muted-foreground">Office Addresses:</h4>
+                {officeVerificationAddresses.map((addr: any, index: number) => (
+                  <div key={addr.id || index} className="border rounded-lg p-3 bg-muted/20">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <Badge variant="outline" className="mb-2">Office Address {index + 1}</Badge>
+                        <p className="text-sm">
+                          <strong>Address:</strong> {addr.streetAddress}
+                          {addr.streetAddress && addr.city && ', '}
+                          {addr.city && `${addr.city}, `}
+                          {addr.district && `${addr.district}, `}
+                          {addr.state} - {addr.pincode}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="border rounded-lg p-4 bg-muted/10">
+            <p className="text-sm text-muted-foreground text-center">
+              No addresses selected for verification. Please go back to Step 5 or Step 6 to select addresses that require verification.
+            </p>
           </div>
         )}
 

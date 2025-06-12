@@ -1,10 +1,14 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Plus } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface Step1Props {
   banks: Array<{ id: string; name: string; }>;
@@ -16,6 +20,11 @@ interface Step1Props {
 
 const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehicleModels }: Step1Props) => {
   const { control, watch, setValue } = useFormContext();
+  const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
+  const [newProductName, setNewProductName] = useState('');
+  const [selectedBanksForProduct, setSelectedBanksForProduct] = useState<string[]>([]);
+  const [localProducts, setLocalProducts] = useState(products);
+  
   const selectedBank = watch('bankName');
   const selectedLeadType = watch('leadType');
   const selectedVehicleBrand = watch('vehicleBrand');
@@ -26,54 +35,14 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
     setValue('agencyFileNo', agencyFileNo);
   }, [setValue]);
 
-  // Initialize dummy data
+  // Update local products when props change
   useEffect(() => {
-    // Create dummy products
-    const dummyProducts = [
-      { id: 'home-loan', name: 'Home Loan', banks: banks.map(b => b.id) },
-      { id: 'personal-loan', name: 'Personal Loan', banks: banks.map(b => b.id) },
-      { id: 'auto-loan', name: 'Auto Loan', banks: banks.map(b => b.id) },
-      { id: 'business-loan', name: 'Business Loan', banks: banks.map(b => b.id) },
-      { id: 'credit-card', name: 'Credit Card', banks: banks.map(b => b.id) }
-    ];
-    
-    if (!localStorage.getItem('products')) {
-      localStorage.setItem('products', JSON.stringify(dummyProducts));
-    }
-
-    // Create dummy vehicle brands
-    const dummyBrands = [
-      { id: 'maruti', name: 'Maruti Suzuki' },
-      { id: 'hyundai', name: 'Hyundai' },
-      { id: 'honda', name: 'Honda' },
-      { id: 'toyota', name: 'Toyota' },
-      { id: 'tata', name: 'Tata Motors' }
-    ];
-    
-    if (!localStorage.getItem('vehicleBrands')) {
-      localStorage.setItem('vehicleBrands', JSON.stringify(dummyBrands));
-    }
-
-    // Create dummy vehicle models
-    const dummyModels = [
-      { id: 'swift', name: 'Swift', brandId: 'maruti' },
-      { id: 'baleno', name: 'Baleno', brandId: 'maruti' },
-      { id: 'i20', name: 'i20', brandId: 'hyundai' },
-      { id: 'creta', name: 'Creta', brandId: 'hyundai' },
-      { id: 'city', name: 'City', brandId: 'honda' },
-      { id: 'civic', name: 'Civic', brandId: 'honda' }
-    ];
-    
-    if (!localStorage.getItem('vehicleModels')) {
-      localStorage.setItem('vehicleModels', JSON.stringify(dummyModels));
-    }
-  }, [banks]);
+    setLocalProducts(products);
+  }, [products]);
 
   // Get products for selected bank
   const getProductsForBank = (bankId: string) => {
-    const storedProducts = localStorage.getItem('products');
-    const allProducts = storedProducts ? JSON.parse(storedProducts) : [];
-    return allProducts.filter((product: any) => product.banks && product.banks.includes(bankId));
+    return localProducts.filter((product: any) => product.banks && product.banks.includes(bankId));
   };
 
   // Get branches for selected bank
@@ -83,23 +52,51 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
 
   // Get vehicle models for selected brand
   const getModelsForBrand = (brandId: string) => {
-    const storedModels = localStorage.getItem('vehicleModels');
-    const allModels = storedModels ? JSON.parse(storedModels) : [];
-    return allModels.filter((model: any) => model.brandId === brandId);
+    return vehicleModels.filter((model: any) => model.brandId === brandId);
   };
 
-  // Get vehicle brands
-  const getVehicleBrands = () => {
-    const storedBrands = localStorage.getItem('vehicleBrands');
-    return storedBrands ? JSON.parse(storedBrands) : [];
+  const handleAddProduct = () => {
+    if (newProductName && selectedBanksForProduct.length > 0) {
+      const newProduct = {
+        id: `prod-${Date.now()}`,
+        name: newProductName,
+        banks: selectedBanksForProduct
+      };
+      
+      const updatedProducts = [...localProducts, newProduct];
+      setLocalProducts(updatedProducts);
+      
+      // Update localStorage
+      localStorage.setItem('products', JSON.stringify(updatedProducts));
+      
+      // Reset form
+      setNewProductName('');
+      setSelectedBanksForProduct([]);
+      setIsProductDialogOpen(false);
+      
+      // Auto-select the new product if current bank is included
+      if (selectedBank && selectedBanksForProduct.includes(selectedBank)) {
+        setValue('leadType', newProduct.id);
+      }
+    }
+  };
+
+  const handleBankToggleForProduct = (bankId: string) => {
+    setSelectedBanksForProduct(prev => 
+      prev.includes(bankId) 
+        ? prev.filter(id => id !== bankId)
+        : [...prev, bankId]
+    );
   };
 
   const filteredProducts = selectedBank ? getProductsForBank(selectedBank) : [];
   const filteredBranches = selectedBank ? getBranchesForBank(selectedBank) : [];
   const filteredVehicleModels = selectedVehicleBrand ? getModelsForBrand(selectedVehicleBrand) : [];
 
-  const isAutoLoan = selectedLeadType === 'auto-loan' || 
-    (selectedLeadType && filteredProducts.find(p => p.id === selectedLeadType)?.name?.toLowerCase().includes('auto'));
+  const isAutoLoan = selectedLeadType && (
+    selectedLeadType === 'auto-loan' || 
+    filteredProducts.find(p => p.id === selectedLeadType)?.name?.toLowerCase().includes('auto')
+  );
 
   return (
     <Card>
@@ -148,28 +145,82 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Lead Type/Product <span className="text-red-500">*</span></FormLabel>
-                <Select 
-                  onValueChange={(value) => {
-                    field.onChange(value);
-                    setValue('vehicleBrand', '');
-                    setValue('vehicleModel', '');
-                  }} 
-                  value={field.value || ''}
-                  disabled={!selectedBank}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder={!selectedBank ? "Select bank first" : "Select lead type"} />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent className="bg-background border border-border shadow-lg z-50">
-                    {filteredProducts.length > 0 ? filteredProducts.map((product) => (
-                      <SelectItem key={product.id} value={product.id}>{product.name}</SelectItem>
-                    )) : (
-                      <SelectItem value="no-products" disabled>No products available for this bank</SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
+                <div className="flex gap-2">
+                  <Select 
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      setValue('vehicleBrand', '');
+                      setValue('vehicleModel', '');
+                    }} 
+                    value={field.value || ''}
+                    disabled={!selectedBank}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder={!selectedBank ? "Select bank first" : "Select lead type"} />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="bg-background border border-border shadow-lg z-50">
+                      {filteredProducts.length > 0 ? filteredProducts.map((product) => (
+                        <SelectItem key={product.id} value={product.id}>{product.name}</SelectItem>
+                      )) : (
+                        <SelectItem value="no-products" disabled>No products available for this bank</SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                  
+                  <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button type="button" variant="outline" size="icon" disabled={!selectedBank}>
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Add New Product</DialogTitle>
+                        <DialogDescription>
+                          Create a new product type for the selected banks.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="text-sm font-medium">Product Name</label>
+                          <Input
+                            value={newProductName}
+                            onChange={(e) => setNewProductName(e.target.value)}
+                            placeholder="Enter product name"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Select Banks</label>
+                          <div className="space-y-2 mt-2">
+                            {banks.map((bank) => (
+                              <div key={bank.id} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={bank.id}
+                                  checked={selectedBanksForProduct.includes(bank.id)}
+                                  onCheckedChange={() => handleBankToggleForProduct(bank.id)}
+                                />
+                                <label htmlFor={bank.id} className="text-sm">{bank.name}</label>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsProductDialogOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button 
+                          onClick={handleAddProduct}
+                          disabled={!newProductName || selectedBanksForProduct.length === 0}
+                        >
+                          Add Product
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
                 <FormMessage />
               </FormItem>
             )}
@@ -196,7 +247,7 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="bg-background border border-border shadow-lg z-50">
-                        {getVehicleBrands().map((brand: any) => (
+                        {vehicleBrands.map((brand: any) => (
                           <SelectItem key={brand.id} value={brand.id}>{brand.name}</SelectItem>
                         ))}
                       </SelectContent>
