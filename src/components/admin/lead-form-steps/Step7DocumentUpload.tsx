@@ -120,7 +120,10 @@ const Step7DocumentUpload = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => document.getElementById(`file-${document.id}`)?.click()}
+                    onClick={() => {
+                      const fileInput = window.document.getElementById(`file-${document.id}`) as HTMLInputElement;
+                      fileInput?.click();
+                    }}
                     className="w-full"
                   >
                     <Upload className="h-4 w-4 mr-2" />
