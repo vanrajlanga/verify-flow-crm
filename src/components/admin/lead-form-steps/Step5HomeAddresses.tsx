@@ -51,6 +51,7 @@ const Step5HomeAddresses = ({ locationData }: Step5Props) => {
   // Update form value whenever addresses change
   useEffect(() => {
     setValue('addresses', addresses);
+    console.log('Step5 - Addresses updated:', addresses);
   }, [addresses, setValue]);
 
   const addAddress = () => {
@@ -73,32 +74,55 @@ const Step5HomeAddresses = ({ locationData }: Step5Props) => {
   };
 
   const updateAddress = (id: string, field: keyof Address, value: any) => {
+    console.log(`Step5 - Updating address ${id}, field: ${field}, value:`, value);
     setAddresses(addresses.map(addr => 
       addr.id === id ? { ...addr, [field]: value } : addr
     ));
   };
 
   const getDistrictsForState = (stateId: string) => {
+    console.log('Step5 - Getting districts for state:', stateId);
+    console.log('Step5 - Available location data:', locationData);
+    
+    if (!locationData || !locationData.states) {
+      console.log('Step5 - No location data available');
+      return [];
+    }
+    
     const state = locationData.states.find(s => s.id === stateId);
-    return state ? state.districts : [];
+    const districts = state ? state.districts : [];
+    console.log('Step5 - Found districts:', districts);
+    return districts;
   };
 
   const getCitiesForDistrict = (stateId: string, districtId: string) => {
+    console.log('Step5 - Getting cities for state:', stateId, 'district:', districtId);
+    
+    if (!locationData || !locationData.states) {
+      console.log('Step5 - No location data available');
+      return [];
+    }
+    
     const state = locationData.states.find(s => s.id === stateId);
     const district = state?.districts.find(d => d.id === districtId);
-    return district ? district.cities : [];
+    const cities = district ? district.cities : [];
+    console.log('Step5 - Found cities:', cities);
+    return cities;
   };
 
   const getStateName = (stateId: string) => {
+    if (!locationData || !locationData.states) return '';
     return locationData.states.find(s => s.id === stateId)?.name || '';
   };
 
   const getDistrictName = (stateId: string, districtId: string) => {
+    if (!locationData || !locationData.states) return '';
     const state = locationData.states.find(s => s.id === stateId);
     return state?.districts.find(d => d.id === districtId)?.name || '';
   };
 
   const getCityName = (stateId: string, districtId: string, cityId: string) => {
+    if (!locationData || !locationData.states) return '';
     const state = locationData.states.find(s => s.id === stateId);
     const district = state?.districts.find(d => d.id === districtId);
     return district?.cities.find(c => c.id === cityId)?.name || '';
@@ -133,6 +157,7 @@ const Step5HomeAddresses = ({ locationData }: Step5Props) => {
                 <Select 
                   value={address.state} 
                   onValueChange={(value) => {
+                    console.log('Step5 - State selected:', value);
                     updateAddress(address.id, 'state', value);
                     updateAddress(address.id, 'district', '');
                     updateAddress(address.id, 'city', '');
@@ -142,7 +167,7 @@ const Step5HomeAddresses = ({ locationData }: Step5Props) => {
                     <SelectValue placeholder="Select state" />
                   </SelectTrigger>
                   <SelectContent>
-                    {locationData.states.map((state) => (
+                    {locationData && locationData.states && locationData.states.map((state) => (
                       <SelectItem key={state.id} value={state.id}>{state.name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -154,6 +179,7 @@ const Step5HomeAddresses = ({ locationData }: Step5Props) => {
                 <Select 
                   value={address.district} 
                   onValueChange={(value) => {
+                    console.log('Step5 - District selected:', value);
                     updateAddress(address.id, 'district', value);
                     updateAddress(address.id, 'city', '');
                   }}
@@ -174,7 +200,10 @@ const Step5HomeAddresses = ({ locationData }: Step5Props) => {
                 <Label>City</Label>
                 <Select 
                   value={address.city} 
-                  onValueChange={(value) => updateAddress(address.id, 'city', value)}
+                  onValueChange={(value) => {
+                    console.log('Step5 - City selected:', value);
+                    updateAddress(address.id, 'city', value);
+                  }}
                   disabled={!address.district}
                 >
                   <SelectTrigger>

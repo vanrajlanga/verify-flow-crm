@@ -25,16 +25,29 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
   const [filteredBranches, setFilteredBranches] = useState<any[]>([]);
   const [filteredVehicleModels, setFilteredVehicleModels] = useState<any[]>([]);
 
+  // Generate automatic agency file number
   useEffect(() => {
-    if (selectedBank) {
+    const agencyFileNo = `AGN-${Date.now()}`;
+    setValue('agencyFileNo', agencyFileNo);
+  }, [setValue]);
+
+  useEffect(() => {
+    console.log('Step1 - Selected Bank:', selectedBank);
+    console.log('Step1 - Available Products:', products);
+    console.log('Step1 - Available Branches:', branches);
+
+    if (selectedBank && products && products.length > 0) {
       // Filter products based on selected bank
-      const bankProducts = products.filter(product => 
-        product.banks && product.banks.includes(selectedBank)
-      );
+      const bankProducts = products.filter(product => {
+        console.log('Checking product:', product, 'Banks:', product.banks);
+        return product.banks && product.banks.includes(selectedBank);
+      });
+      console.log('Filtered Products:', bankProducts);
       setFilteredProducts(bankProducts);
 
       // Filter branches based on selected bank
       const bankBranches = branches.filter(branch => branch.bankId === selectedBank);
+      console.log('Filtered Branches:', bankBranches);
       setFilteredBranches(bankBranches);
     } else {
       setFilteredProducts([]);
@@ -43,17 +56,22 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
   }, [selectedBank, products, branches]);
 
   useEffect(() => {
-    if (selectedVehicleBrand) {
+    console.log('Step1 - Selected Vehicle Brand:', selectedVehicleBrand);
+    console.log('Step1 - Available Vehicle Models:', vehicleModels);
+
+    if (selectedVehicleBrand && vehicleModels && vehicleModels.length > 0) {
       const brandModels = vehicleModels.filter(model => model.brandId === selectedVehicleBrand);
+      console.log('Filtered Vehicle Models:', brandModels);
       setFilteredVehicleModels(brandModels);
     } else {
       setFilteredVehicleModels([]);
     }
   }, [selectedVehicleBrand, vehicleModels]);
 
-  const isAutoLoan = selectedLeadType === 'auto-loan' || 
-    filteredProducts.find(p => p.id === selectedLeadType)?.name?.toLowerCase().includes('auto') ||
-    filteredProducts.find(p => p.id === selectedLeadType)?.name?.toLowerCase().includes('vehicle');
+  const isAutoLoan = selectedLeadType && filteredProducts.length > 0 && 
+    (selectedLeadType === 'auto-loan' || 
+     filteredProducts.find(p => p.id === selectedLeadType)?.name?.toLowerCase().includes('auto') ||
+     filteredProducts.find(p => p.id === selectedLeadType)?.name?.toLowerCase().includes('vehicle'));
 
   return (
     <Card>
@@ -71,6 +89,7 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
                 <FormLabel>Bank Name <span className="text-red-500">*</span></FormLabel>
                 <Select 
                   onValueChange={(value) => {
+                    console.log('Bank selected:', value);
                     field.onChange(value);
                     setValue('leadType', ''); // Reset lead type when bank changes
                     setValue('initiatedBranch', '');
@@ -84,7 +103,7 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {banks.map((bank) => (
+                    {banks && banks.map((bank) => (
                       <SelectItem key={bank.id} value={bank.id}>{bank.name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -102,12 +121,13 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
                 <FormLabel>Lead Type/Product <span className="text-red-500">*</span></FormLabel>
                 <Select 
                   onValueChange={(value) => {
+                    console.log('Lead type selected:', value);
                     field.onChange(value);
                     setValue('vehicleBrand', '');
                     setValue('vehicleModel', '');
                   }} 
                   defaultValue={field.value}
-                  disabled={!selectedBank}
+                  disabled={!selectedBank || filteredProducts.length === 0}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -135,6 +155,7 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
                     <FormLabel>Vehicle Brand</FormLabel>
                     <Select 
                       onValueChange={(value) => {
+                        console.log('Vehicle brand selected:', value);
                         field.onChange(value);
                         setValue('vehicleModel', '');
                       }} 
@@ -146,7 +167,7 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {vehicleBrands.map((brand) => (
+                        {vehicleBrands && vehicleBrands.map((brand) => (
                           <SelectItem key={brand.id} value={brand.id}>{brand.name}</SelectItem>
                         ))}
                       </SelectContent>
@@ -163,9 +184,12 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
                   <FormItem>
                     <FormLabel>Vehicle Model</FormLabel>
                     <Select 
-                      onValueChange={field.onChange} 
+                      onValueChange={(value) => {
+                        console.log('Vehicle model selected:', value);
+                        field.onChange(value);
+                      }} 
                       defaultValue={field.value}
-                      disabled={!selectedVehicleBrand}
+                      disabled={!selectedVehicleBrand || filteredVehicleModels.length === 0}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -191,7 +215,14 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Initiated Under Branch</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!selectedBank}>
+                <Select 
+                  onValueChange={(value) => {
+                    console.log('Initiated branch selected:', value);
+                    field.onChange(value);
+                  }} 
+                  defaultValue={field.value} 
+                  disabled={!selectedBank || filteredBranches.length === 0}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder={selectedBank ? "Select initiated branch" : "Select bank first"} />
@@ -214,7 +245,14 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Build Under Branch</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!selectedBank}>
+                <Select 
+                  onValueChange={(value) => {
+                    console.log('Build branch selected:', value);
+                    field.onChange(value);
+                  }} 
+                  defaultValue={field.value} 
+                  disabled={!selectedBank || filteredBranches.length === 0}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder={selectedBank ? "Select build branch" : "Select bank first"} />
@@ -238,7 +276,7 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
               <FormItem>
                 <FormLabel>Agency File No. <span className="text-red-500">*</span></FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter agency file number" {...field} />
+                  <Input placeholder="Auto-generated" {...field} readOnly />
                 </FormControl>
                 <FormMessage />
               </FormItem>
