@@ -12,27 +12,9 @@ export interface User {
   maxTravelDistance?: number;
   extraChargePerKm?: number;
   profilePicture?: string;
-  documents?: UserDocument[];
   totalVerifications?: number;
   completionRate?: number;
-  password?: string;
-}
-
-export interface UserDocument {
-  id: string;
-  type: string;
-  filename: string;
-  url: string;
-  uploadDate: string;
-}
-
-export interface Address {
-  type?: 'Residence' | 'Office' | 'Permanent';
-  street: string;
-  city: string;
-  district: string;
-  state: string;
-  pincode: string;
+  password: string;
 }
 
 export interface PhoneNumber {
@@ -40,6 +22,16 @@ export interface PhoneNumber {
   number: string;
   type: 'mobile' | 'landline' | 'work';
   isPrimary: boolean;
+}
+
+export interface Address {
+  id: string;
+  type: 'Residence' | 'Office' | 'Permanent';
+  street: string;
+  city: string;
+  district: string;
+  state: string;
+  pincode: string;
 }
 
 export interface CoApplicant {
@@ -66,89 +58,46 @@ export interface AdditionalDetails {
   company: string;
   designation: string;
   workExperience: string;
-  employmentType?: string;
-  currentJobDuration?: string;
   propertyType: string;
   ownershipStatus: string;
   propertyAge: string;
   monthlyIncome: string;
   annualIncome: string;
   otherIncome: string;
+  phoneNumber: string;
+  email: string;
+  dateOfBirth: string;
+  gender: string;
+  maritalStatus: string;
+  fatherName: string;
+  motherName: string;
+  spouseName: string;
+  agencyFileNo: string;
+  applicationBarcode: string;
+  caseId: string;
+  schemeDesc: string;
+  bankBranch: string;
+  additionalComments: string;
+  leadType: string;
+  leadTypeId: string;
+  loanAmount: string;
+  loanType: string;
+  vehicleBrandName: string;
+  vehicleBrandId: string;
+  vehicleModelName: string;
+  vehicleModelId: string;
   addresses: Address[];
-  phoneNumber?: string;
-  phoneNumbers?: PhoneNumber[];
-  secondaryPhones?: string[];
-  email?: string;
-  dateOfBirth?: string;
-  agencyFileNo?: string;
-  applicationBarcode?: string;
-  caseId?: string;
-  schemeDesc?: string;
-  bankBranch?: string;
-  additionalComments?: string;
-  leadType?: string;
-  leadTypeId?: string;
-  loanAmount?: string;
-  loanType?: string;
-  vehicleBrandName?: string;
-  vehicleBrandId?: string;
-  vehicleModelName?: string;
-  vehicleModelId?: string;
-  vehicleVariant?: string;
-  gender?: string;
-  fatherName?: string;
-  motherName?: string;
-  maritalStatus?: string;
-  spouseName?: string;
+  phoneNumbers: PhoneNumber[];
   coApplicant?: CoApplicant;
   vehicleDetails?: VehicleDetails;
 }
 
 export interface Document {
   id: string;
-  name: string;
-  type: 'ID Proof' | 'Address Proof' | 'Income Proof' | 'Other';
-  uploadedBy: 'agent' | 'bank' | 'admin';
-  url: string;
-  uploadDate: Date;
-  size?: number;
-}
-
-export interface VerificationPhoto {
-  id: string;
-  name: string;
-  url: string;
-  uploadDate: Date;
-}
-
-export interface VerificationDocument {
-  id: string;
-  name: string;
+  title: string;
   type: string;
   url: string;
-  uploadDate: Date;
-}
-
-export interface VerificationData {
-  id: string;
-  leadId: string;
-  status: 'Not Started' | 'In Progress' | 'Completed' | 'Rejected';
-  agentId: string;
-  photos: VerificationPhoto[];
-  documents: VerificationDocument[];
-  notes?: string;
-  startTime?: Date;
-  endTime?: Date;
-  arrivalTime?: Date;
-  completionTime?: Date;
-  reviewedAt?: Date;
-  reviewedBy?: string;
-  adminRemarks?: string;
-  location?: {
-    latitude: number;
-    longitude: number;
-    address: string;
-  };
+  uploadedAt: Date;
 }
 
 export interface Lead {
@@ -160,13 +109,12 @@ export interface Lead {
   additionalDetails: AdditionalDetails;
   status: 'Pending' | 'In Progress' | 'Completed' | 'Rejected';
   bank: string;
-  visitType: 'Office' | 'Residence' | 'Both';
+  visitType: 'Residence' | 'Office';
   assignedTo: string;
   createdAt: Date;
   verificationDate?: Date;
   documents: Document[];
-  instructions?: string;
-  verification?: VerificationData;
+  instructions: string;
 }
 
 export interface Bank {
@@ -175,140 +123,363 @@ export interface Bank {
   totalApplications: number;
 }
 
-export interface BankBranch {
-  id: string;
-  name: string;
-  bank: string;
-  location: string;
-}
-
-export interface LeadType {
-  id: string;
-  name: string;
-  description: string;
-}
-
-export interface Agent {
-  id: string;
-  name: string;
-  branch: string;
-  district: string;
-  city: string;
-}
-
-export interface VehicleBrand {
-  id: string;
-  name: string;
-}
-
-export interface VehicleModel {
-  id: string;
-  name: string;
-  brandId: string;
-}
-
-// Mock data for fallback/testing
 export const mockUsers: User[] = [
   {
-    id: '1',
-    name: 'System Administrator',
+    id: 'admin-1',
+    name: 'Admin User',
     role: 'admin',
-    email: 'admin@kycverification.com',
-    phone: '+91 98765 43210',
-    district: '',
-    status: 'Active',
-    password: 'password'
-  },
-  {
-    id: '2',
-    name: 'Rajesh Kumar',
-    role: 'agent',
-    email: 'rajesh@kycverification.com',
-    phone: '+91 98765 43211',
+    email: 'admin@example.com',
+    phone: '+91 9876543210',
     district: 'Bangalore Urban',
     status: 'Active',
     state: 'Karnataka',
     city: 'Bangalore',
-    baseLocation: 'HSR Layout, Bangalore',
-    maxTravelDistance: 25,
-    extraChargePerKm: 10,
-    totalVerifications: 45,
-    completionRate: 92,
-    password: 'password'
+    password: 'admin123'
   },
   {
-    id: '3',
-    name: 'Priya Sharma',
+    id: 'agent-1',
+    name: 'John Doe',
     role: 'agent',
-    email: 'priya@kycverification.com',
-    phone: '+91 98765 43212',
+    email: 'john.doe@example.com',
+    phone: '+91 9876543211',
+    district: 'Bangalore Urban',
+    status: 'Active',
+    state: 'Karnataka',
+    city: 'Bangalore',
+    baseLocation: 'Koramangala',
+    maxTravelDistance: 25,
+    extraChargePerKm: 10,
+    totalVerifications: 145,
+    completionRate: 95,
+    password: 'agent123'
+  },
+  {
+    id: 'agent-2',
+    name: 'Jane Smith',
+    role: 'agent',
+    email: 'jane.smith@example.com',
+    phone: '+91 9876543212',
     district: 'Mumbai',
     status: 'Active',
     state: 'Maharashtra',
     city: 'Mumbai',
-    baseLocation: 'Andheri West, Mumbai',
-    maxTravelDistance: 20,
+    baseLocation: 'Andheri',
+    maxTravelDistance: 30,
     extraChargePerKm: 12,
-    totalVerifications: 38,
+    totalVerifications: 98,
     completionRate: 87,
-    password: 'password'
+    password: 'agent123'
   },
   {
-    id: '4',
-    name: 'Amit Patel',
+    id: 'agent-3',
+    name: 'Mike Johnson',
     role: 'agent',
-    email: 'amit@kycverification.com',
-    phone: '+91 98765 43213',
+    email: 'mike.johnson@example.com',
+    phone: '+91 9876543213',
     district: 'Bangalore Urban',
-    status: 'Active',
+    status: 'Inactive',
     state: 'Karnataka',
     city: 'Bangalore',
-    baseLocation: 'Koramangala, Bangalore',
-    maxTravelDistance: 30,
+    baseLocation: 'Whitefield',
+    maxTravelDistance: 20,
     extraChargePerKm: 8,
-    totalVerifications: 52,
-    completionRate: 95,
-    password: 'password'
+    totalVerifications: 67,
+    completionRate: 78,
+    password: 'agent123'
   }
 ];
 
-export const mockLeads: Lead[] = [];
-
 export const mockBanks: Bank[] = [
-  { id: '1', name: 'State Bank of India', totalApplications: 156 },
-  { id: '2', name: 'HDFC Bank', totalApplications: 134 },
-  { id: '3', name: 'ICICI Bank', totalApplications: 98 },
-  { id: '4', name: 'Axis Bank', totalApplications: 87 },
-  { id: '5', name: 'Punjab National Bank', totalApplications: 76 }
+  { id: 'hdfc', name: 'HDFC Bank', totalApplications: 45 },
+  { id: 'icici', name: 'ICICI Bank', totalApplications: 32 },
+  { id: 'sbi', name: 'State Bank of India', totalApplications: 28 },
+  { id: 'axis', name: 'Axis Bank', totalApplications: 19 },
+  { id: 'kotak', name: 'Kotak Mahindra Bank', totalApplications: 15 }
 ];
 
-// Export banks with the name that AddLeadForm expects
-export const banks = mockBanks;
-
-// Export bank branches
-export const bankBranches: BankBranch[] = [
-  { id: 'branch-1', name: 'SBI Mumbai Central', bank: 'State Bank of India', location: 'Mumbai Central' },
-  { id: 'branch-2', name: 'SBI Andheri', bank: 'State Bank of India', location: 'Andheri' },
-  { id: 'branch-3', name: 'HDFC Bandra', bank: 'HDFC Bank', location: 'Bandra' },
-  { id: 'branch-4', name: 'HDFC Powai', bank: 'HDFC Bank', location: 'Powai' },
-  { id: 'branch-5', name: 'ICICI Kurla', bank: 'ICICI Bank', location: 'Kurla' },
-  { id: 'branch-6', name: 'Axis Bank Worli', bank: 'Axis Bank', location: 'Worli' },
-  { id: 'branch-7', name: 'PNB Dadar', bank: 'Punjab National Bank', location: 'Dadar' }
-];
-
-// Export lead types
-export const leadTypes: LeadType[] = [
-  { id: 'lead-1', name: 'Home Loan', description: 'Residential property loan verification' },
-  { id: 'lead-2', name: 'Personal Loan', description: 'Personal loan verification' },
-  { id: 'lead-3', name: 'Auto Loan', description: 'Vehicle loan verification' },
-  { id: 'lead-4', name: 'Business Loan', description: 'Business loan verification' },
-  { id: 'lead-5', name: 'Credit Card', description: 'Credit card application verification' }
-];
-
-// Export agents
-export const agents: Agent[] = [
-  { id: 'agent-1', name: 'Rajesh Kumar', branch: 'SBI Mumbai Central', district: 'Mumbai', city: 'Mumbai' },
-  { id: 'agent-2', name: 'Priya Sharma', branch: 'HDFC Bandra', district: 'Mumbai', city: 'Mumbai' },
-  { id: 'agent-3', name: 'Amit Patel', branch: 'ICICI Kurla', district: 'Mumbai', city: 'Mumbai' },
-  { id: 'agent-4', name: 'Neha Singh', branch: 'Axis Bank Worli', district: 'Mumbai', city: 'Mumbai' }
+export const mockLeads: Lead[] = [
+  {
+    id: 'lead-1',
+    name: 'Rajesh Kumar',
+    age: 35,
+    job: 'Software Engineer',
+    address: {
+      id: 'addr-1',
+      type: 'Residence',
+      street: '123 MG Road',
+      city: 'Bangalore',
+      district: 'Bangalore Urban',
+      state: 'Karnataka',
+      pincode: '560001'
+    },
+    additionalDetails: {
+      company: 'Tech Corp',
+      designation: 'Senior Developer',
+      workExperience: '8',
+      propertyType: 'Apartment',
+      ownershipStatus: 'Rented',
+      propertyAge: '5',
+      monthlyIncome: '₹80,000',
+      annualIncome: '₹9,60,000',
+      otherIncome: '₹20,000',
+      phoneNumber: '+91 9876543214',
+      email: 'rajesh@example.com',
+      dateOfBirth: '1989-05-15',
+      gender: 'Male',
+      maritalStatus: 'Married',
+      fatherName: 'Ram Kumar',
+      motherName: 'Sita Kumar',
+      spouseName: 'Priya Kumar',
+      agencyFileNo: 'AGY001',
+      applicationBarcode: 'BC123456',
+      caseId: 'CASE001',
+      schemeDesc: 'Home Loan Premium',
+      bankBranch: 'MG Road Branch',
+      additionalComments: 'Good credit history',
+      leadType: 'Home Loan',
+      leadTypeId: 'hl-001',
+      loanAmount: '₹50,00,000',
+      loanType: 'New',
+      vehicleBrandName: '',
+      vehicleBrandId: '',
+      vehicleModelName: '',
+      vehicleModelId: '',
+      addresses: [{
+        id: 'addr-1',
+        type: 'Residence',
+        street: '123 MG Road',
+        city: 'Bangalore',
+        district: 'Bangalore Urban',
+        state: 'Karnataka',
+        pincode: '560001'
+      }],
+      phoneNumbers: [{
+        id: 'ph-1',
+        number: '+91 9876543214',
+        type: 'mobile',
+        isPrimary: true
+      }]
+    },
+    status: 'Pending',
+    bank: 'hdfc',
+    visitType: 'Residence',
+    assignedTo: 'agent-1',
+    createdAt: new Date('2024-01-15'),
+    verificationDate: new Date('2024-01-20'),
+    documents: [],
+    instructions: 'Please verify income documents'
+  },
+  {
+    id: 'lead-2',
+    name: 'Priya Sharma',
+    age: 28,
+    job: 'Marketing Manager',
+    address: {
+      id: 'addr-2',
+      type: 'Residence',
+      street: '456 Brigade Road',
+      city: 'Bangalore',
+      district: 'Bangalore Urban',
+      state: 'Karnataka',
+      pincode: '560025'
+    },
+    additionalDetails: {
+      company: 'Marketing Solutions',
+      designation: 'Manager',
+      workExperience: '5',
+      propertyType: 'Independent House',
+      ownershipStatus: 'Self Owned',
+      propertyAge: '10',
+      monthlyIncome: '₹60,000',
+      annualIncome: '₹7,20,000',
+      otherIncome: '₹10,000',
+      phoneNumber: '+91 9876543215',
+      email: 'priya@example.com',
+      dateOfBirth: '1996-08-22',
+      gender: 'Female',
+      maritalStatus: 'Single',
+      fatherName: 'Vinod Sharma',
+      motherName: 'Sunita Sharma',
+      spouseName: '',
+      agencyFileNo: 'AGY002',
+      applicationBarcode: 'BC123457',
+      caseId: 'CASE002',
+      schemeDesc: 'Personal Loan Quick',
+      bankBranch: 'Brigade Road Branch',
+      additionalComments: 'First time applicant',
+      leadType: 'Personal Loan',
+      leadTypeId: 'pl-001',
+      loanAmount: '₹5,00,000',
+      loanType: 'New',
+      vehicleBrandName: '',
+      vehicleBrandId: '',
+      vehicleModelName: '',
+      vehicleModelId: '',
+      addresses: [{
+        id: 'addr-2',
+        type: 'Residence',
+        street: '456 Brigade Road',
+        city: 'Bangalore',
+        district: 'Bangalore Urban',
+        state: 'Karnataka',
+        pincode: '560025'
+      }],
+      phoneNumbers: [{
+        id: 'ph-2',
+        number: '+91 9876543215',
+        type: 'mobile',
+        isPrimary: true
+      }]
+    },
+    status: 'In Progress',
+    bank: 'icici',
+    visitType: 'Office',
+    assignedTo: 'agent-2',
+    createdAt: new Date('2024-01-16'),
+    verificationDate: new Date('2024-01-22'),
+    documents: [],
+    instructions: 'Verify employment status'
+  },
+  {
+    id: 'lead-3',
+    name: 'Amit Patel',
+    age: 42,
+    job: 'Business Owner',
+    address: {
+      id: 'addr-3',
+      type: 'Residence',
+      street: '789 Commercial Street',
+      city: 'Bangalore',
+      district: 'Bangalore Urban',
+      state: 'Karnataka',
+      pincode: '560001'
+    },
+    additionalDetails: {
+      company: 'Patel Enterprises',
+      designation: 'Owner',
+      workExperience: '15',
+      propertyType: 'Commercial',
+      ownershipStatus: 'Self Owned',
+      propertyAge: '8',
+      monthlyIncome: '₹1,50,000',
+      annualIncome: '₹18,00,000',
+      otherIncome: '₹50,000',
+      phoneNumber: '+91 9876543216',
+      email: 'amit@example.com',
+      dateOfBirth: '1982-03-10',
+      gender: 'Male',
+      maritalStatus: 'Married',
+      fatherName: 'Bharat Patel',
+      motherName: 'Kiran Patel',
+      spouseName: 'Meera Patel',
+      agencyFileNo: 'AGY003',
+      applicationBarcode: 'BC123458',
+      caseId: 'CASE003',
+      schemeDesc: 'Business Loan Premium',
+      bankBranch: 'Commercial Street Branch',
+      additionalComments: 'Existing customer',
+      leadType: 'Business Loan',
+      leadTypeId: 'bl-001',
+      loanAmount: '₹25,00,000',
+      loanType: 'Top-up',
+      vehicleBrandName: '',
+      vehicleBrandId: '',
+      vehicleModelName: '',
+      vehicleModelId: '',
+      addresses: [{
+        id: 'addr-3',
+        type: 'Residence',
+        street: '789 Commercial Street',
+        city: 'Bangalore',
+        district: 'Bangalore Urban',
+        state: 'Karnataka',
+        pincode: '560001'
+      }],
+      phoneNumbers: [{
+        id: 'ph-3',
+        number: '+91 9876543216',
+        type: 'mobile',
+        isPrimary: true
+      }]
+    },
+    status: 'Completed',
+    bank: 'sbi',
+    visitType: 'Residence',
+    assignedTo: 'agent-1',
+    createdAt: new Date('2024-01-10'),
+    verificationDate: new Date('2024-01-18'),
+    documents: [],
+    instructions: 'Verify business documents and turnover'
+  },
+  {
+    id: 'lead-4',
+    name: 'Sneha Reddy',
+    age: 31,
+    job: 'Teacher',
+    address: {
+      id: 'addr-4',
+      type: 'Residence',
+      street: '321 Residency Road',
+      city: 'Bangalore',
+      district: 'Bangalore Urban',
+      state: 'Karnataka',
+      pincode: '560025'
+    },
+    additionalDetails: {
+      company: 'Delhi Public School',
+      designation: 'Senior Teacher',
+      workExperience: '7',
+      propertyType: 'Apartment',
+      ownershipStatus: 'Family Owned',
+      propertyAge: '3',
+      monthlyIncome: '₹45,000',
+      annualIncome: '₹5,40,000',
+      otherIncome: '₹5,000',
+      phoneNumber: '+91 9876543217',
+      email: 'sneha@example.com',
+      dateOfBirth: '1993-11-18',
+      gender: 'Female',
+      maritalStatus: 'Married',
+      fatherName: 'Ravi Reddy',
+      motherName: 'Lakshmi Reddy',
+      spouseName: 'Kiran Reddy',
+      agencyFileNo: 'AGY004',
+      applicationBarcode: 'BC123459',
+      caseId: 'CASE004',
+      schemeDesc: 'Education Loan Standard',
+      bankBranch: 'Residency Road Branch',
+      additionalComments: 'Stable employment',
+      leadType: 'Education Loan',
+      leadTypeId: 'el-001',
+      loanAmount: '₹8,00,000',
+      loanType: 'New',
+      vehicleBrandName: '',
+      vehicleBrandId: '',
+      vehicleModelName: '',
+      vehicleModelId: '',
+      addresses: [{
+        id: 'addr-4',
+        type: 'Residence',
+        street: '321 Residency Road',
+        city: 'Bangalore',
+        district: 'Bangalore Urban',
+        state: 'Karnataka',
+        pincode: '560025'
+      }],
+      phoneNumbers: [{
+        id: 'ph-4',
+        number: '+91 9876543217',
+        type: 'mobile',
+        isPrimary: true
+      }]
+    },
+    status: 'Rejected',
+    bank: 'axis',
+    visitType: 'Residence',
+    assignedTo: 'agent-3',
+    createdAt: new Date('2024-01-12'),
+    verificationDate: new Date('2024-01-19'),
+    documents: [],
+    instructions: 'Verify salary slips and employment letter'
+  }
 ];
