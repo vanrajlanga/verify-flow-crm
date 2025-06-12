@@ -1,403 +1,272 @@
-
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Edit, Trash2, Save, X } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 
-interface Role {
+export interface Role {
   id: string;
   name: string;
   description: string;
   permissions: string[];
-  isSystem: boolean;
-}
-
-interface Permission {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
+  status: 'Active' | 'Inactive';
+  createdAt: Date;
 }
 
 const RoleManager = () => {
   const [roles, setRoles] = useState<Role[]>([]);
-  const [permissions, setPermissions] = useState<Permission[]>([]);
-  const [editingRole, setEditingRole] = useState<string | null>(null);
-  const [newRole, setNewRole] = useState({ name: '', description: '', permissions: [] as string[] });
-  const [showAddRole, setShowAddRole] = useState(false);
+  const [newRole, setNewRole] = useState({
+    name: '',
+    description: '',
+    permissions: [],
+    status: 'Active' as 'Active' | 'Inactive',
+  });
+  const [editingRole, setEditingRole] = useState<Role | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    loadRolesAndPermissions();
+    // Mock data for roles
+    const mockRoles: Role[] = [
+      {
+        id: '1',
+        name: 'Admin',
+        description: 'Administrator role with full access',
+        permissions: ['read', 'write', 'update', 'delete'],
+        status: 'Active',
+        createdAt: new Date(),
+      },
+      {
+        id: '2',
+        name: 'Agent',
+        description: 'Agent role with limited access',
+        permissions: ['read', 'write'],
+        status: 'Active',
+        createdAt: new Date(),
+      },
+    ];
+    setRoles(mockRoles);
   }, []);
 
-  const loadRolesAndPermissions = () => {
-    // Load from localStorage or set defaults
-    const storedRoles = localStorage.getItem('roles');
-    const storedPermissions = localStorage.getItem('permissions');
-
-    const defaultPermissions: Permission[] = [
-      { id: 'leads.view', name: 'View Leads', description: 'Can view lead information', category: 'Leads' },
-      { id: 'leads.create', name: 'Create Leads', description: 'Can create new leads', category: 'Leads' },
-      { id: 'leads.edit', name: 'Edit Leads', description: 'Can edit lead information', category: 'Leads' },
-      { id: 'leads.delete', name: 'Delete Leads', description: 'Can delete leads', category: 'Leads' },
-      { id: 'leads.assign', name: 'Assign Leads', description: 'Can assign leads to agents', category: 'Leads' },
-      { id: 'agents.view', name: 'View Agents', description: 'Can view agent information', category: 'Users' },
-      { id: 'agents.manage', name: 'Manage Agents', description: 'Can create, edit, and delete agents', category: 'Users' },
-      { id: 'verifications.view', name: 'View Verifications', description: 'Can view verification data', category: 'Verifications' },
-      { id: 'verifications.conduct', name: 'Conduct Verifications', description: 'Can perform verifications', category: 'Verifications' },
-      { id: 'verifications.approve', name: 'Approve Verifications', description: 'Can approve verification results', category: 'Verifications' },
-      { id: 'reports.view', name: 'View Reports', description: 'Can view system reports', category: 'Reports' },
-      { id: 'settings.manage', name: 'Manage Settings', description: 'Can manage system settings', category: 'System' },
-      { id: 'roles.manage', name: 'Manage Roles', description: 'Can manage user roles and permissions', category: 'System' }
-    ];
-
-    const defaultRoles: Role[] = [
-      {
-        id: 'admin',
-        name: 'Admin',
-        description: 'Full system access and management capabilities',
-        permissions: defaultPermissions.map(p => p.id),
-        isSystem: true
-      },
-      {
-        id: 'agent',
-        name: 'Agent',
-        description: 'Field verification agent with limited access',
-        permissions: ['leads.view', 'verifications.view', 'verifications.conduct'],
-        isSystem: true
-      },
-      {
-        id: 'inhouse-team',
-        name: 'Inhouse Team',
-        description: 'Internal team members with verification capabilities',
-        permissions: ['leads.view', 'verifications.view', 'verifications.conduct', 'verifications.approve'],
-        isSystem: false
-      }
-    ];
-
-    if (storedRoles) {
-      try {
-        const parsedRoles = JSON.parse(storedRoles);
-        // Ensure Inhouse Team role exists
-        const hasInhouseTeam = parsedRoles.some((role: Role) => role.id === 'inhouse-team');
-        if (!hasInhouseTeam) {
-          parsedRoles.push(defaultRoles.find(r => r.id === 'inhouse-team'));
-        }
-        setRoles(parsedRoles);
-      } catch (error) {
-        console.error('Error parsing stored roles:', error);
-        setRoles(defaultRoles);
-      }
-    } else {
-      setRoles(defaultRoles);
-      localStorage.setItem('roles', JSON.stringify(defaultRoles));
-    }
-
-    if (storedPermissions) {
-      try {
-        setPermissions(JSON.parse(storedPermissions));
-      } catch (error) {
-        console.error('Error parsing stored permissions:', error);
-        setPermissions(defaultPermissions);
-      }
-    } else {
-      setPermissions(defaultPermissions);
-      localStorage.setItem('permissions', JSON.stringify(defaultPermissions));
-    }
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setNewRole({ ...newRole, [e.target.name]: e.target.value });
   };
 
-  const saveRoles = (updatedRoles: Role[]) => {
-    setRoles(updatedRoles);
-    localStorage.setItem('roles', JSON.stringify(updatedRoles));
+  const handleStatusChange = (status: 'Active' | 'Inactive') => {
+    setNewRole({ ...newRole, status });
   };
 
-  const handleAddRole = () => {
-    if (!newRole.name.trim()) {
+  const addRole = () => {
+    if (newRole.name && newRole.description) {
+      const newRoleWithId: Role = {
+        id: Date.now().toString(),
+        name: newRole.name,
+        description: newRole.description,
+        permissions: [],
+        status: newRole.status,
+        createdAt: new Date(),
+      };
+      setRoles([...roles, newRoleWithId]);
+      setNewRole({ name: '', description: '', permissions: [], status: 'Active' });
       toast({
-        title: "Error",
-        description: "Role name is required",
-        variant: "destructive"
+        title: "Role added",
+        description: `New role ${newRoleWithId.name} has been created successfully.`,
       });
-      return;
+    } else {
+      alert('Please fill in all fields.');
     }
-
-    const roleExists = roles.some(role => role.name.toLowerCase() === newRole.name.toLowerCase());
-    if (roleExists) {
-      toast({
-        title: "Error",
-        description: "A role with this name already exists",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const role: Role = {
-      id: `role-${Date.now()}`,
-      name: newRole.name,
-      description: newRole.description,
-      permissions: newRole.permissions,
-      isSystem: false
-    };
-
-    const updatedRoles = [...roles, role];
-    saveRoles(updatedRoles);
-    setNewRole({ name: '', description: '', permissions: [] });
-    setShowAddRole(false);
-
-    toast({
-      title: "Success",
-      description: "Role created successfully"
-    });
   };
 
-  const handleEditRole = (roleId: string, updatedRole: Partial<Role>) => {
-    const updatedRoles = roles.map(role =>
-      role.id === roleId ? { ...role, ...updatedRole } : role
-    );
-    saveRoles(updatedRoles);
+  const startEditing = (role: Role) => {
+    setEditingRole(role);
+    setIsModalOpen(true);
+  };
+
+  const cancelEditing = () => {
     setEditingRole(null);
+    setIsModalOpen(false);
+  };
 
+  const updateRole = () => {
+    if (!editingRole) return;
+
+    setRoles(
+      roles.map((role) =>
+        role.id === editingRole.id ? { ...editingRole } : role
+      )
+    );
+    setEditingRole(null);
+    setIsModalOpen(false);
     toast({
-      title: "Success",
-      description: "Role updated successfully"
+      title: "Role updated",
+      description: `Role ${editingRole.name} has been updated successfully.`,
     });
   };
 
-  const handleDeleteRole = (roleId: string) => {
-    const role = roles.find(r => r.id === roleId);
-    if (role?.isSystem) {
-      toast({
-        title: "Error",
-        description: "Cannot delete system roles",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const updatedRoles = roles.filter(role => role.id !== roleId);
-    saveRoles(updatedRoles);
-
+  const deleteRole = (id: string) => {
+    setRoles(roles.filter((role) => role.id !== id));
     toast({
-      title: "Success",
-      description: "Role deleted successfully"
+      title: "Role deleted",
+      description: `Role has been deleted successfully.`,
     });
   };
-
-  const togglePermission = (roleId: string, permissionId: string) => {
-    const role = roles.find(r => r.id === roleId);
-    if (!role) return;
-
-    const hasPermission = role.permissions.includes(permissionId);
-    const updatedPermissions = hasPermission
-      ? role.permissions.filter(p => p !== permissionId)
-      : [...role.permissions, permissionId];
-
-    handleEditRole(roleId, { permissions: updatedPermissions });
-  };
-
-  const groupedPermissions = permissions.reduce((acc, permission) => {
-    if (!acc[permission.category]) {
-      acc[permission.category] = [];
-    }
-    acc[permission.category].push(permission);
-    return acc;
-  }, {} as Record<string, Permission[]>);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">Roles & Permissions</h2>
-          <p className="text-muted-foreground">Manage user roles and their permissions</p>
-        </div>
-        <Button onClick={() => setShowAddRole(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Role
-        </Button>
-      </div>
-
-      <Tabs defaultValue="roles" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="roles">Manage Roles</TabsTrigger>
-          <TabsTrigger value="permissions">View Permissions</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="roles" className="space-y-4">
-          {showAddRole && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Add New Role</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="roleName">Role Name</Label>
-                    <Input
-                      id="roleName"
-                      value={newRole.name}
-                      onChange={(e) => setNewRole(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="Enter role name"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="roleDescription">Description</Label>
-                    <Textarea
-                      id="roleDescription"
-                      value={newRole.description}
-                      onChange={(e) => setNewRole(prev => ({ ...prev, description: e.target.value }))}
-                      placeholder="Enter role description"
-                    />
+    <div className="container mx-auto mt-8">
+      <Card>
+        <CardHeader>
+          <CardTitle>Role Management</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h3 className="text-xl font-semibold mb-4">Add New Role</h3>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="name">Role Name</Label>
+                  <Input
+                    type="text"
+                    id="name"
+                    name="name"
+                    value={newRole.name}
+                    onChange={handleInputChange}
+                    placeholder="Enter role name"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    name="description"
+                    value={newRole.description}
+                    onChange={handleInputChange}
+                    placeholder="Enter description"
+                  />
+                </div>
+                <div>
+                  <Label>Status</Label>
+                  <div className="flex items-center space-x-4">
+                    <Button
+                      variant={newRole.status === 'Active' ? 'default' : 'outline'}
+                      onClick={() => handleStatusChange('Active')}
+                    >
+                      Active
+                    </Button>
+                    <Button
+                      variant={newRole.status === 'Inactive' ? 'default' : 'outline'}
+                      onClick={() => handleStatusChange('Inactive')}
+                    >
+                      Inactive
+                    </Button>
                   </div>
                 </div>
-                <div className="space-y-4">
-                  <Label>Permissions</Label>
-                  {Object.entries(groupedPermissions).map(([category, categoryPermissions]) => (
-                    <div key={category} className="space-y-2">
-                      <h4 className="font-medium text-sm">{category}</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                        {categoryPermissions.map((permission) => (
-                          <div key={permission.id} className="flex items-center space-x-2">
-                            <Switch
-                              checked={newRole.permissions.includes(permission.id)}
-                              onCheckedChange={(checked) => {
-                                if (checked) {
-                                  setNewRole(prev => ({
-                                    ...prev,
-                                    permissions: [...prev.permissions, permission.id]
-                                  }));
-                                } else {
-                                  setNewRole(prev => ({
-                                    ...prev,
-                                    permissions: prev.permissions.filter(p => p !== permission.id)
-                                  }));
-                                }
-                              }}
-                            />
-                            <Label className="text-sm">{permission.name}</Label>
-                          </div>
-                        ))}
+                <Button onClick={addRole}>Add Role</Button>
+              </div>
+            </div>
+            <div>
+              <h3 className="text-xl font-semibold mb-4">Existing Roles</h3>
+              <div className="space-y-4">
+                {roles.map((role) => (
+                  <Card key={role.id}>
+                    <CardContent className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-medium">{role.name}</h4>
+                        <p className="text-sm text-muted-foreground">{role.description}</p>
+                        <Badge variant={role.status === 'Active' ? 'default' : 'secondary'}>
+                          {role.status}
+                        </Badge>
                       </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex gap-2">
-                  <Button onClick={handleAddRole}>
-                    <Save className="w-4 h-4 mr-2" />
-                    Save Role
-                  </Button>
-                  <Button variant="outline" onClick={() => setShowAddRole(false)}>
-                    <X className="w-4 h-4 mr-2" />
-                    Cancel
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          <div className="grid gap-4">
-            {roles.map((role) => (
-              <Card key={role.id}>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <CardTitle className="text-lg">{role.name}</CardTitle>
-                      {role.isSystem && <Badge variant="secondary">System</Badge>}
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setEditingRole(editingRole === role.id ? null : role.id)}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      {!role.isSystem && (
+                      <div className="space-x-2">
                         <Button
                           variant="outline"
-                          size="sm"
-                          onClick={() => handleDeleteRole(role.id)}
+                          size="icon"
+                          onClick={() => startEditing(role)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          onClick={() => deleteRole(role.id)}
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
-                      )}
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground mb-4">{role.description}</p>
-                  {editingRole === role.id && (
-                    <div className="space-y-4">
-                      <h4 className="font-medium">Permissions</h4>
-                      {Object.entries(groupedPermissions).map(([category, categoryPermissions]) => (
-                        <div key={category} className="space-y-2">
-                          <h5 className="font-medium text-sm text-muted-foreground">{category}</h5>
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                            {categoryPermissions.map((permission) => (
-                              <div key={permission.id} className="flex items-center space-x-2">
-                                <Switch
-                                  checked={role.permissions.includes(permission.id)}
-                                  onCheckedChange={() => togglePermission(role.id, permission.id)}
-                                  disabled={role.isSystem}
-                                />
-                                <Label className="text-sm">{permission.name}</Label>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {editingRole !== role.id && (
-                    <div className="space-y-2">
-                      <h4 className="font-medium text-sm">Assigned Permissions:</h4>
-                      <div className="flex flex-wrap gap-1">
-                        {role.permissions.map((permissionId) => {
-                          const permission = permissions.find(p => p.id === permissionId);
-                          return permission ? (
-                            <Badge key={permissionId} variant="outline">
-                              {permission.name}
-                            </Badge>
-                          ) : null;
-                        })}
                       </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
           </div>
-        </TabsContent>
+        </CardContent>
+      </Card>
 
-        <TabsContent value="permissions" className="space-y-4">
-          {Object.entries(groupedPermissions).map(([category, categoryPermissions]) => (
-            <Card key={category}>
-              <CardHeader>
-                <CardTitle>{category} Permissions</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {categoryPermissions.map((permission) => (
-                    <div key={permission.id} className="flex justify-between items-center p-2 border rounded">
-                      <div>
-                        <span className="font-medium">{permission.name}</span>
-                        <p className="text-sm text-muted-foreground">{permission.description}</p>
-                      </div>
-                      <Badge variant="outline">{permission.id}</Badge>
-                    </div>
-                  ))}
+      {/* Edit Role Modal */}
+      {isModalOpen && editingRole && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <Card className="max-w-md w-full">
+            <CardHeader>
+              <CardTitle>Edit Role</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="editName">Role Name</Label>
+                <Input
+                  type="text"
+                  id="editName"
+                  value={editingRole.name}
+                  onChange={(e) =>
+                    setEditingRole({ ...editingRole, name: e.target.value })
+                  }
+                />
+              </div>
+              <div>
+                <Label htmlFor="editDescription">Description</Label>
+                <Textarea
+                  id="editDescription"
+                  value={editingRole.description}
+                  onChange={(e) =>
+                    setEditingRole({ ...editingRole, description: e.target.value })
+                  }
+                />
+              </div>
+              <div>
+                <Label>Status</Label>
+                <div className="flex items-center space-x-4">
+                  <Button
+                    variant={editingRole.status === 'Active' ? 'default' : 'outline'}
+                    onClick={() =>
+                      setEditingRole({ ...editingRole, status: 'Active' })
+                    }
+                  >
+                    Active
+                  </Button>
+                  <Button
+                    variant={editingRole.status === 'Inactive' ? 'default' : 'outline'}
+                    onClick={() =>
+                      setEditingRole({ ...editingRole, status: 'Inactive' })
+                    }
+                  >
+                    Inactive
+                  </Button>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </TabsContent>
-      </Tabs>
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button variant="ghost" onClick={cancelEditing}>
+                  Cancel
+                </Button>
+                <Button onClick={updateRole}>
+                  Update
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };

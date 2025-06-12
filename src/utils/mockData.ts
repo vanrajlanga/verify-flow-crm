@@ -1,22 +1,20 @@
-
 export interface User {
   id: string;
   name: string;
-  role: 'admin' | 'agent';
+  role: 'admin' | 'agent' | 'Inhouse Team';
   email: string;
   phone: string;
   district: string;
-  status: 'Active' | 'Inactive';
+  status: string;
   state?: string;
   city?: string;
   baseLocation?: string;
   maxTravelDistance?: number;
   extraChargePerKm?: number;
-  profilePicture?: string;
-  documents?: UserDocument[];
+  profilePicture?: string | null;
   totalVerifications?: number;
   completionRate?: number;
-  password?: string;
+  password: string;
 }
 
 export interface UserDocument {

@@ -286,11 +286,8 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
   };
 
   const handleSubmit = () => {
-    if (!formData.customerName.trim() || !formData.phoneNumber.trim() || !formData.bankName) {
-      alert('Please fill in all required fields.');
-      return;
-    }
-
+    // Remove all required field validations
+    
     // Check if addresses requiring verification have agents assigned
     const addressesRequiringVerification = addresses.filter(addr => addr.requiresVerification);
     const hasUnassignedAddresses = addressesRequiringVerification.some(addr => !addr.assignedAgent);
@@ -302,7 +299,7 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
 
     const leadData = {
       id: `lead-${Date.now()}`,
-      name: formData.customerName,
+      name: formData.customerName || 'Unknown Customer',
       age: parseInt(formData.age) || 30,
       job: formData.designation || 'Not specified',
       address: {
