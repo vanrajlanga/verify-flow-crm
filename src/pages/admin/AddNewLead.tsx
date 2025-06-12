@@ -1,12 +1,12 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { User, mockBanks } from '@/utils/mockData';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
-import AddLeadFormMultiStep from '@/components/admin/AddLeadFormMultiStep';
+import MultiStepLeadForm from '@/components/admin/MultiStepLeadForm';
 import { toast } from '@/components/ui/use-toast';
 import { saveLeadToDatabase } from '@/lib/lead-operations';
-import { getLeadById } from '@/lib/supabase-queries';
 import { supabase } from '@/integrations/supabase/client';
 
 interface LocationData {
@@ -31,7 +31,6 @@ const AddNewLead = () => {
   const [locationData, setLocationData] = useState<LocationData>({
     states: []
   });
-  const [editLead, setEditLead] = useState(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { leadId } = useParams();
@@ -53,48 +52,7 @@ const AddNewLead = () => {
     setCurrentUser(parsedUser);
     loadAgents();
     loadLocationData();
-
-    // If leadId exists, load the lead for editing
-    if (leadId) {
-      loadLeadForEdit(leadId);
-    }
   }, [navigate, leadId]);
-
-  const loadLeadForEdit = async (id: string) => {
-    setLoading(true);
-    try {
-      const lead = await getLeadById(id);
-      if (lead) {
-        setEditLead(lead);
-      } else {
-        // Try localStorage as fallback
-        const storedLeads = localStorage.getItem('mockLeads');
-        if (storedLeads) {
-          const leads = JSON.parse(storedLeads);
-          const foundLead = leads.find((l: any) => l.id === id);
-          if (foundLead) {
-            setEditLead(foundLead);
-          } else {
-            toast({
-              title: "Lead not found",
-              description: "The lead you're trying to edit was not found.",
-              variant: "destructive"
-            });
-            navigate('/admin/leads');
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error loading lead:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load lead for editing.",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const loadAgents = async () => {
     try {
@@ -110,6 +68,7 @@ const AddNewLead = () => {
           name: agent.name,
           role: agent.role,
           email: agent.email,
+          password: agent.password || 'default123',
           phone: agent.phone || '',
           district: agent.district || '',
           status: agent.status || 'Active',
@@ -120,8 +79,7 @@ const AddNewLead = () => {
           extraChargePerKm: agent.extra_charge_per_km,
           profilePicture: agent.profile_picture,
           totalVerifications: agent.total_verifications || 0,
-          completionRate: agent.completion_rate || 0,
-          password: agent.password
+          completionRate: agent.completion_rate || 0
         }));
         setAgents(transformedAgents);
         return;
@@ -147,23 +105,7 @@ const AddNewLead = () => {
   };
 
   const loadLocationData = () => {
-    // Get location data from localStorage or initialize empty structure
-    const storedLocationData = localStorage.getItem('locationData');
-    if (storedLocationData) {
-      try {
-        const parsedLocationData = JSON.parse(storedLocationData);
-        setLocationData(parsedLocationData);
-      } catch (error) {
-        console.error("Error parsing stored location data:", error);
-        initializeDefaultLocationData();
-      }
-    } else {
-      initializeDefaultLocationData();
-    }
-  };
-
-  // Function to initialize default location data
-  const initializeDefaultLocationData = () => {
+    // Initialize default location data
     const defaultLocationData = {
       states: [
         {
@@ -177,6 +119,14 @@ const AddNewLead = () => {
                 { id: 'city-1', name: 'Bangalore' },
                 { id: 'city-2', name: 'Electronic City' }
               ]
+            },
+            {
+              id: 'district-2',
+              name: 'Mysore',
+              cities: [
+                { id: 'city-3', name: 'Mysore' },
+                { id: 'city-4', name: 'Mandya' }
+              ]
             }
           ]
         },
@@ -185,11 +135,33 @@ const AddNewLead = () => {
           name: 'Maharashtra',
           districts: [
             {
-              id: 'district-2',
+              id: 'district-3',
               name: 'Mumbai',
               cities: [
-                { id: 'city-3', name: 'Mumbai' },
-                { id: 'city-4', name: 'Navi Mumbai' }
+                { id: 'city-5', name: 'Mumbai' },
+                { id: 'city-6', name: 'Navi Mumbai' }
+              ]
+            },
+            {
+              id: 'district-4',
+              name: 'Pune',
+              cities: [
+                { id: 'city-7', name: 'Pune' },
+                { id: 'city-8', name: 'Pimpri-Chinchwad' }
+              ]
+            }
+          ]
+        },
+        {
+          id: 'state-3',
+          name: 'Tamil Nadu',
+          districts: [
+            {
+              id: 'district-5',
+              name: 'Chennai',
+              cities: [
+                { id: 'city-9', name: 'Chennai' },
+                { id: 'city-10', name: 'Tambaram' }
               ]
             }
           ]
@@ -197,7 +169,6 @@ const AddNewLead = () => {
       ]
     };
     setLocationData(defaultLocationData);
-    localStorage.setItem('locationData', JSON.stringify(defaultLocationData));
   };
 
   const handleLogout = () => {
@@ -205,22 +176,82 @@ const AddNewLead = () => {
     navigate('/');
   };
 
-  const handleAddLead = async (newLead: any) => {
+  const handleSubmitLead = async (formData: any) => {
     try {
-      console.log('Saving lead:', newLead);
+      console.log('Submitting lead:', formData);
       
+      // Transform form data to lead format
+      const newLead = {
+        id: `lead-${Date.now()}`,
+        name: formData.customerName,
+        age: Number(formData.age) || 30,
+        job: formData.designation || '',
+        address: {
+          id: `addr-${Date.now()}`,
+          type: 'Residence' as const,
+          street: formData.streetAddress || '',
+          city: formData.city || '',
+          district: formData.district || '',
+          state: formData.state || '',
+          pincode: formData.pincode || ''
+        },
+        additionalDetails: {
+          company: formData.companyName || '',
+          designation: formData.designation || '',
+          workExperience: formData.workExperience || '',
+          propertyType: formData.propertyType || '',
+          ownershipStatus: formData.ownershipStatus || '',
+          propertyAge: formData.propertyAge || '',
+          monthlyIncome: formData.monthlyIncome || '',
+          annualIncome: formData.annualIncome || '',
+          otherIncome: formData.otherIncome || '',
+          phoneNumber: formData.phoneNumber || '',
+          email: formData.email || '',
+          dateOfBirth: '',
+          gender: formData.gender || 'Male',
+          maritalStatus: formData.maritalStatus || 'Single',
+          fatherName: formData.fatherName || '',
+          motherName: formData.motherName || '',
+          spouseName: '',
+          agencyFileNo: formData.agencyFileNo || '',
+          applicationBarcode: formData.applicationBarcode || '',
+          caseId: formData.caseId || '',
+          schemeDesc: formData.schemeDescription || '',
+          bankBranch: formData.buildBranch || '',
+          additionalComments: formData.specialInstructions || '',
+          leadType: formData.leadType || '',
+          leadTypeId: formData.leadType || '',
+          loanAmount: formData.loanAmount || '',
+          loanType: 'New',
+          vehicleBrandName: '',
+          vehicleBrandId: '',
+          vehicleModelName: '',
+          vehicleModelId: '',
+          addresses: [],
+          phoneNumbers: []
+        },
+        status: 'Pending' as const,
+        bank: formData.bankName,
+        visitType: formData.visitType as 'Residence' | 'Office' | 'Both',
+        assignedTo: formData.assignedAgent || '',
+        createdAt: new Date(),
+        verificationDate: formData.preferredDate,
+        documents: [],
+        instructions: formData.specialInstructions || ''
+      };
+
       // Save to database
       await saveLeadToDatabase(newLead);
 
       toast({
-        title: editLead ? "Lead updated" : "Lead added",
-        description: `Lead ${newLead.name} has been ${editLead ? 'updated' : 'created'} successfully and saved to database.`,
+        title: "Success",
+        description: "Lead created successfully and saved to database.",
       });
 
       // Navigate back to leads list
       navigate('/admin/leads');
     } catch (error) {
-      console.error('Error saving lead to database:', error);
+      console.error('Error saving lead:', error);
       
       // Fall back to localStorage if database save fails
       const storedLeads = localStorage.getItem('mockLeads');
@@ -234,21 +265,9 @@ const AddNewLead = () => {
         }
       }
 
-      if (editLead) {
-        // Update existing lead
-        const updatedLeads = currentLeads.map((lead: any) => 
-          lead.id === newLead.id ? newLead : lead
-        );
-        localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
-      } else {
-        // Add new lead
-        const updatedLeads = [...currentLeads, newLead];
-        localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
-      }
-
       toast({
-        title: editLead ? "Lead updated" : "Lead added",
-        description: `Lead ${newLead.name} has been ${editLead ? 'updated' : 'created'} successfully (saved locally).`,
+        title: "Error",
+        description: "Failed to save to database, but saved locally.",
         variant: "destructive"
       });
 
@@ -256,16 +275,12 @@ const AddNewLead = () => {
     }
   };
 
-  const handleClose = () => {
+  const handleCancel = () => {
     navigate('/admin/leads');
   };
 
   if (!currentUser) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
-  }
-
-  if (loading) {
-    return <div className="flex items-center justify-center h-screen">Loading lead data...</div>;
   }
 
   return (
@@ -281,13 +296,12 @@ const AddNewLead = () => {
         
         <main className="flex-1 p-4 md:p-6">
           <div className="max-w-7xl mx-auto">
-            <AddLeadFormMultiStep 
-              agents={agents}
+            <MultiStepLeadForm
               banks={mockBanks}
-              onAddLead={handleAddLead}
-              onClose={handleClose}
+              agents={agents}
+              onSubmit={handleSubmitLead}
+              onCancel={handleCancel}
               locationData={locationData}
-              editLead={editLead}
             />
           </div>
         </main>
