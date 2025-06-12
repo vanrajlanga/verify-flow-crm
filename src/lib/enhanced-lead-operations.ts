@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { Lead, Address, AdditionalDetails } from '@/utils/mockData';
+import { Lead, Address, AdditionalDetails, VerificationData } from '@/utils/mockData';
 
 // Enhanced save function that saves all lead data to database
 export const saveCompleteLeadToDatabase = async (leadData: Lead) => {
@@ -350,6 +350,183 @@ export const getCompleteLeadsFromDatabase = async () => {
     return transformedLeads;
   } catch (error) {
     console.error('Error in getCompleteLeadsFromDatabase:', error);
+    return [];
+  }
+};
+
+// Get all leads from the database with enhanced error handling
+export const getEnhancedLeadsFromDatabase = async (): Promise<Lead[]> => {
+  try {
+    const { data: leads, error } = await supabase
+      .from('leads')
+      .select(`
+        *,
+        addresses!leads_address_id_fkey(*),
+        banks!leads_bank_id_fkey(*),
+        users!leads_assigned_to_fkey(*),
+        additional_details(*),
+        verifications(*),
+        lead_addresses(
+          addresses(*)
+        ),
+        phone_numbers(*),
+        co_applicants(*),
+        vehicle_details(*)
+      `);
+
+    if (error) {
+      console.error('Error fetching leads from database:', error);
+      return [];
+    }
+
+    if (!leads) return [];
+
+    // Transform database leads to match our Lead interface
+    const transformedLeads: Lead[] = leads.map((lead: any) => {
+      // Transform address with required properties
+      const address: Address = {
+        id: lead.addresses?.id || 'addr-1',
+        type: lead.addresses?.type || 'Residence',
+        street: lead.addresses?.street || '',
+        city: lead.addresses?.city || '',
+        district: lead.addresses?.district || '',
+        state: lead.addresses?.state || '',
+        pincode: lead.addresses?.pincode || ''
+      };
+
+      // Transform additional details with all required properties
+      const additionalDetails: AdditionalDetails = lead.additional_details?.[0] ? {
+        company: lead.additional_details[0].company || '',
+        designation: lead.additional_details[0].designation || '',
+        workExperience: lead.additional_details[0].work_experience || '',
+        propertyType: lead.additional_details[0].property_type || '',
+        ownershipStatus: lead.additional_details[0].ownership_status || '',
+        propertyAge: lead.additional_details[0].property_age || '',
+        monthlyIncome: lead.additional_details[0].monthly_income || '',
+        annualIncome: lead.additional_details[0].annual_income || '',
+        otherIncome: lead.additional_details[0].other_income || '',
+        phoneNumber: lead.additional_details[0].phone_number || '',
+        email: lead.additional_details[0].email || '',
+        dateOfBirth: lead.additional_details[0].date_of_birth || '',
+        gender: 'Male',
+        maritalStatus: 'Single',
+        fatherName: '',
+        motherName: '',
+        spouseName: '',
+        agencyFileNo: lead.additional_details[0].agency_file_no || '',
+        applicationBarcode: lead.additional_details[0].application_barcode || '',
+        caseId: lead.additional_details[0].case_id || '',
+        schemeDesc: lead.additional_details[0].scheme_desc || '',
+        bankBranch: lead.additional_details[0].bank_branch || '',
+        additionalComments: lead.additional_details[0].additional_comments || '',
+        leadType: lead.additional_details[0].lead_type || '',
+        leadTypeId: lead.additional_details[0].lead_type_id || '',
+        loanAmount: lead.additional_details[0].loan_amount || '',
+        loanType: lead.additional_details[0].loan_type || '',
+        vehicleBrandName: lead.additional_details[0].vehicle_brand_name || '',
+        vehicleBrandId: lead.additional_details[0].vehicle_brand_id || '',
+        vehicleModelName: lead.additional_details[0].vehicle_model_name || '',
+        vehicleModelId: lead.additional_details[0].vehicle_model_id || '',
+        addresses: lead.lead_addresses?.map((la: any) => ({
+          id: la.addresses.id,
+          type: la.addresses.type,
+          street: la.addresses.street,
+          city: la.addresses.city,
+          district: la.addresses.district,
+          state: la.addresses.state,
+          pincode: la.addresses.pincode
+        })) || [],
+        phoneNumbers: lead.phone_numbers?.map((pn: any) => ({
+          id: pn.id,
+          number: pn.number,
+          type: pn.type,
+          isPrimary: pn.is_primary
+        })) || [],
+        coApplicant: lead.co_applicants?.[0] ? {
+          name: lead.co_applicants[0].name,
+          phone: lead.co_applicants[0].phone_number,
+          relation: lead.co_applicants[0].relationship,
+          email: lead.co_applicants[0].email,
+          occupation: lead.co_applicants[0].occupation,
+          monthlyIncome: lead.co_applicants[0].monthly_income
+        } : undefined,
+        vehicleDetails: lead.vehicle_details?.[0] ? {
+          brandId: lead.vehicle_details[0].vehicle_brand_id,
+          brandName: lead.vehicle_details[0].vehicle_brand_name,
+          modelId: lead.vehicle_details[0].vehicle_model_id,
+          modelName: lead.vehicle_details[0].vehicle_model_name,
+          type: lead.vehicle_details[0].vehicle_type,
+          year: lead.vehicle_details[0].vehicle_year,
+          price: lead.vehicle_details[0].vehicle_price,
+          downPayment: lead.vehicle_details[0].down_payment
+        } : undefined
+      } : {
+        company: '',
+        designation: '',
+        workExperience: '',
+        propertyType: '',
+        ownershipStatus: '',
+        propertyAge: '',
+        monthlyIncome: '',
+        annualIncome: '',
+        otherIncome: '',
+        phoneNumber: '',
+        email: '',
+        dateOfBirth: '',
+        gender: 'Male',
+        maritalStatus: 'Single',
+        fatherName: '',
+        motherName: '',
+        spouseName: '',
+        agencyFileNo: '',
+        applicationBarcode: '',
+        caseId: '',
+        schemeDesc: '',
+        bankBranch: '',
+        additionalComments: '',
+        leadType: '',
+        leadTypeId: '',
+        loanAmount: '',
+        loanType: '',
+        vehicleBrandName: '',
+        vehicleBrandId: '',
+        vehicleModelName: '',
+        vehicleModelId: '',
+        addresses: [],
+        phoneNumbers: []
+      };
+
+      return {
+        id: lead.id,
+        name: lead.name,
+        age: lead.age || 0,
+        job: lead.job || '',
+        address: address,
+        additionalDetails: additionalDetails,
+        status: lead.status as Lead['status'],
+        bank: lead.bank_id || '',
+        visitType: lead.visit_type || 'Residence',
+        assignedTo: lead.assigned_to || '',
+        createdAt: new Date(lead.created_at),
+        verificationDate: lead.verification_date ? new Date(lead.verification_date) : undefined,
+        documents: [],
+        instructions: lead.instructions || '',
+        verification: lead.verifications?.[0] ? {
+          id: lead.verifications[0].id,
+          leadId: lead.id,
+          status: lead.verifications[0].status as "Not Started" | "In Progress" | "Completed" | "Rejected",
+          agentId: lead.verifications[0].agent_id,
+          photos: [],
+          documents: [],
+          notes: lead.verifications[0].notes || ""
+        } : undefined
+      };
+    });
+
+    console.log('Loaded enhanced leads from database:', transformedLeads.length);
+    return transformedLeads;
+  } catch (error) {
+    console.error('Error in getEnhancedLeadsFromDatabase:', error);
     return [];
   }
 };

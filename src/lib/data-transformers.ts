@@ -1,96 +1,102 @@
 
-import { User, Lead, Bank, Address, AdditionalDetails, VerificationData } from '@/utils/mockData';
+import { Lead, AdditionalDetails, Address, VerificationData } from '@/utils/mockData';
 
-export const transformSupabaseUser = (supabaseUser: any): User => {
-  return {
-    id: supabaseUser.id,
-    name: supabaseUser.name,
-    role: supabaseUser.role,
-    email: supabaseUser.email,
-    phone: supabaseUser.phone || '',
-    district: supabaseUser.district || '',
-    status: supabaseUser.status,
-    state: supabaseUser.state,
-    city: supabaseUser.city,
-    baseLocation: supabaseUser.base_location,
-    maxTravelDistance: supabaseUser.max_travel_distance,
-    extraChargePerKm: supabaseUser.extra_charge_per_km,
-    profilePicture: supabaseUser.profile_picture,
-    totalVerifications: supabaseUser.total_verifications,
-    completionRate: supabaseUser.completion_rate,
-    password: supabaseUser.password
+export const transformLeadFromDatabase = (dbLead: any): Lead => {
+  // Transform address with required properties
+  const address: Address = {
+    id: dbLead.addresses?.id || 'addr-1',
+    type: dbLead.addresses?.type || 'Residence',
+    street: dbLead.addresses?.street || '',
+    city: dbLead.addresses?.city || '',
+    district: dbLead.addresses?.district || '',
+    state: dbLead.addresses?.state || '',
+    pincode: dbLead.addresses?.pincode || ''
   };
-};
 
-export const transformSupabaseAddress = (supabaseAddress: any): Address => {
-  return {
-    type: supabaseAddress.type,
-    street: supabaseAddress.street,
-    city: supabaseAddress.city,
-    district: supabaseAddress.district,
-    state: supabaseAddress.state,
-    pincode: supabaseAddress.pincode
+  // Transform additional details with all required properties
+  const additionalDetails: AdditionalDetails = {
+    company: dbLead.additional_details?.[0]?.company || '',
+    designation: dbLead.additional_details?.[0]?.designation || '',
+    workExperience: dbLead.additional_details?.[0]?.work_experience || '',
+    propertyType: dbLead.additional_details?.[0]?.property_type || '',
+    ownershipStatus: dbLead.additional_details?.[0]?.ownership_status || '',
+    propertyAge: dbLead.additional_details?.[0]?.property_age || '',
+    monthlyIncome: dbLead.additional_details?.[0]?.monthly_income || '',
+    annualIncome: dbLead.additional_details?.[0]?.annual_income || '',
+    otherIncome: dbLead.additional_details?.[0]?.other_income || '',
+    addresses: [],
+    phoneNumbers: [],
+    phoneNumber: dbLead.additional_details?.[0]?.phone_number || '',
+    email: dbLead.additional_details?.[0]?.email || '',
+    dateOfBirth: dbLead.additional_details?.[0]?.date_of_birth || '',
+    gender: 'Male',
+    maritalStatus: 'Single',
+    fatherName: '',
+    motherName: '',
+    spouseName: '',
+    agencyFileNo: dbLead.additional_details?.[0]?.agency_file_no || '',
+    applicationBarcode: dbLead.additional_details?.[0]?.application_barcode || '',
+    caseId: dbLead.additional_details?.[0]?.case_id || '',
+    schemeDesc: dbLead.additional_details?.[0]?.scheme_desc || '',
+    bankBranch: dbLead.additional_details?.[0]?.bank_branch || '',
+    additionalComments: dbLead.additional_details?.[0]?.additional_comments || '',
+    leadType: dbLead.additional_details?.[0]?.lead_type || '',
+    leadTypeId: dbLead.additional_details?.[0]?.lead_type_id || '',
+    loanAmount: dbLead.additional_details?.[0]?.loan_amount || '',
+    loanType: dbLead.additional_details?.[0]?.loan_type || '',
+    vehicleBrandName: dbLead.additional_details?.[0]?.vehicle_brand_name || '',
+    vehicleBrandId: dbLead.additional_details?.[0]?.vehicle_brand_id || '',
+    vehicleModelName: dbLead.additional_details?.[0]?.vehicle_model_name || '',
+    vehicleModelId: dbLead.additional_details?.[0]?.vehicle_model_id || ''
   };
-};
 
-export const transformSupabaseAdditionalDetails = (details: any): AdditionalDetails => {
   return {
-    company: details.company || '',
-    designation: details.designation || '',
-    workExperience: details.work_experience || '',
-    propertyType: details.property_type || '',
-    ownershipStatus: details.ownership_status || '',
-    propertyAge: details.property_age || '',
-    monthlyIncome: details.monthly_income || '',
-    annualIncome: details.annual_income || '',
-    otherIncome: details.other_income || '',
-    addresses: [], // Will be populated from lead_addresses join
-    phoneNumber: details.phone_number,
-    email: details.email,
-    dateOfBirth: details.date_of_birth,
-    agencyFileNo: details.agency_file_no,
-    applicationBarcode: details.application_barcode,
-    caseId: details.case_id,
-    schemeDesc: details.scheme_desc,
-    bankBranch: details.bank_branch,
-    additionalComments: details.additional_comments,
-    leadType: details.lead_type,
-    leadTypeId: details.lead_type_id,
-    loanAmount: details.loan_amount,
-    loanType: details.loan_type,
-    vehicleBrandName: details.vehicle_brand_name,
-    vehicleBrandId: details.vehicle_brand_id,
-    vehicleModelName: details.vehicle_model_name,
-    vehicleModelId: details.vehicle_model_id
-  };
-};
-
-export const transformSupabaseVerification = (verification: any): VerificationData => {
-  return {
-    id: verification.id,
-    leadId: verification.lead_id,
-    status: verification.status,
-    agentId: verification.agent_id,
-    photos: [], // Will be populated from verification_photos join
-    documents: [], // Will be populated from verification_documents join
-    notes: verification.notes,
-    startTime: verification.start_time ? new Date(verification.start_time) : undefined,
-    endTime: verification.end_time ? new Date(verification.end_time) : undefined,
-    arrivalTime: verification.arrival_time ? new Date(verification.arrival_time) : undefined,
-    completionTime: verification.completion_time ? new Date(verification.completion_time) : undefined,
-    reviewedAt: verification.reviewed_at ? new Date(verification.reviewed_at) : undefined,
-    reviewedBy: verification.reviewed_by,
-    adminRemarks: verification.admin_remarks,
-    location: verification.location_latitude && verification.location_longitude ? {
-      latitude: verification.location_latitude,
-      longitude: verification.location_longitude,
-      address: verification.location_address || ''
+    id: dbLead.id,
+    name: dbLead.name,
+    age: dbLead.age || 0,
+    job: dbLead.job || '',
+    address: address,
+    additionalDetails: additionalDetails,
+    status: dbLead.status as Lead['status'],
+    bank: dbLead.bank_id || '',
+    visitType: dbLead.visit_type || 'Residence',
+    assignedTo: dbLead.assigned_to || '',
+    createdAt: new Date(dbLead.created_at),
+    verificationDate: dbLead.verification_date ? new Date(dbLead.verification_date) : undefined,
+    documents: [],
+    instructions: dbLead.instructions || '',
+    verification: dbLead.verifications?.[0] ? {
+      id: dbLead.verifications[0].id,
+      leadId: dbLead.id,
+      status: dbLead.verifications[0].status as "Not Started" | "In Progress" | "Completed" | "Rejected",
+      agentId: dbLead.verifications[0].agent_id,
+      photos: [],
+      documents: [],
+      notes: dbLead.verifications[0].notes || ""
     } : undefined
   };
 };
 
-export const transformSupabaseLead = (supabaseLead: any): Lead => {
-  const address = supabaseLead.addresses ? transformSupabaseAddress(supabaseLead.addresses) : {
+export const transformLeadToDatabase = (lead: Lead) => {
+  return {
+    id: lead.id,
+    name: lead.name,
+    age: lead.age,
+    job: lead.job,
+    status: lead.status,
+    bank_id: lead.bank,
+    visit_type: lead.visitType,
+    assigned_to: lead.assignedTo,
+    verification_date: lead.verificationDate?.toISOString(),
+    instructions: lead.instructions,
+    created_at: lead.createdAt.toISOString()
+  };
+};
+
+export const transformLeadForLocalStorage = (lead: any): Lead => {
+  const address: Address = lead.address || {
+    id: 'addr-1',
+    type: 'Residence',
     street: '',
     city: '',
     district: '',
@@ -98,55 +104,57 @@ export const transformSupabaseLead = (supabaseLead: any): Lead => {
     pincode: ''
   };
 
-  const additionalDetails = supabaseLead.additional_details?.[0] 
-    ? transformSupabaseAdditionalDetails(supabaseLead.additional_details[0])
-    : {
-        company: '',
-        designation: '',
-        workExperience: '',
-        propertyType: '',
-        ownershipStatus: '',
-        propertyAge: '',
-        monthlyIncome: '',
-        annualIncome: '',
-        otherIncome: '',
-        addresses: []
-      };
-
-  // Add multiple addresses if they exist
-  if (supabaseLead.lead_addresses) {
-    additionalDetails.addresses = supabaseLead.lead_addresses.map((la: any) => 
-      transformSupabaseAddress(la.addresses)
-    );
-  }
-
-  const verification = supabaseLead.verifications?.[0] 
-    ? transformSupabaseVerification(supabaseLead.verifications[0])
-    : undefined;
-
-  return {
-    id: supabaseLead.id,
-    name: supabaseLead.name,
-    age: supabaseLead.age || 0,
-    job: supabaseLead.job || '',
-    address,
-    additionalDetails,
-    status: supabaseLead.status,
-    bank: supabaseLead.banks?.name || '',
-    visitType: supabaseLead.visit_type,
-    assignedTo: supabaseLead.assigned_to,
-    createdAt: new Date(supabaseLead.created_at),
-    verificationDate: supabaseLead.verification_date ? new Date(supabaseLead.verification_date) : undefined,
-    documents: [], // Will be populated from documents join
-    instructions: supabaseLead.instructions,
-    verification
+  const additionalDetails: AdditionalDetails = lead.additionalDetails || {
+    company: '',
+    designation: '',
+    workExperience: '',
+    propertyType: '',
+    ownershipStatus: '',
+    propertyAge: '',
+    monthlyIncome: '',
+    annualIncome: '',
+    otherIncome: '',
+    addresses: [],
+    phoneNumbers: [],
+    phoneNumber: '',
+    email: '',
+    dateOfBirth: '',
+    gender: 'Male',
+    maritalStatus: 'Single',
+    fatherName: '',
+    motherName: '',
+    spouseName: '',
+    agencyFileNo: '',
+    applicationBarcode: '',
+    caseId: '',
+    schemeDesc: '',
+    bankBranch: '',
+    additionalComments: '',
+    leadType: '',
+    leadTypeId: '',
+    loanAmount: '',
+    loanType: '',
+    vehicleBrandName: '',
+    vehicleBrandId: '',
+    vehicleModelName: '',
+    vehicleModelId: ''
   };
-};
 
-export const transformSupabaseBank = (supabaseBank: any): Bank => {
   return {
-    id: supabaseBank.id,
-    name: supabaseBank.name,
-    totalApplications: supabaseBank.total_applications
+    id: lead.id,
+    name: lead.name,
+    age: lead.age || 0,
+    job: lead.job || '',
+    address: address,
+    additionalDetails: additionalDetails,
+    status: lead.status || 'Pending',
+    bank: lead.bank || '',
+    visitType: lead.visitType || 'Residence',
+    assignedTo: lead.assignedTo || '',
+    createdAt: lead.createdAt ? new Date(lead.createdAt) : new Date(),
+    verificationDate: lead.verificationDate ? new Date(lead.verificationDate) : undefined,
+    documents: lead.documents || [],
+    instructions: lead.instructions || '',
+    verification: lead.verification
   };
 };

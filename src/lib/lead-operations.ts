@@ -176,6 +176,17 @@ export const getLeadsFromDatabase = async () => {
 
     // Transform database leads to match our Lead interface
     const transformedLeads: Lead[] = leads.map((lead: any) => {
+      // Transform address with required properties
+      const address: Address = {
+        id: lead.addresses?.id || 'addr-1',
+        type: lead.addresses?.type || 'Residence',
+        street: lead.addresses?.street || '',
+        city: lead.addresses?.city || '',
+        district: lead.addresses?.district || '',
+        state: lead.addresses?.state || '',
+        pincode: lead.addresses?.pincode || ''
+      };
+
       const additionalDetails: AdditionalDetails = lead.additional_details?.[0] ? {
         company: lead.additional_details[0].company || '',
         designation: lead.additional_details[0].designation || '',
@@ -186,31 +197,38 @@ export const getLeadsFromDatabase = async () => {
         monthlyIncome: lead.additional_details[0].monthly_income || '',
         annualIncome: lead.additional_details[0].annual_income || '',
         otherIncome: lead.additional_details[0].other_income || '',
-        phoneNumber: lead.additional_details[0].phone_number,
-        email: lead.additional_details[0].email,
-        dateOfBirth: lead.additional_details[0].date_of_birth,
-        agencyFileNo: lead.additional_details[0].agency_file_no,
-        applicationBarcode: lead.additional_details[0].application_barcode,
-        caseId: lead.additional_details[0].case_id,
-        schemeDesc: lead.additional_details[0].scheme_desc,
-        bankBranch: lead.additional_details[0].bank_branch,
-        additionalComments: lead.additional_details[0].additional_comments,
-        leadType: lead.additional_details[0].lead_type,
-        leadTypeId: lead.additional_details[0].lead_type_id,
-        loanAmount: lead.additional_details[0].loan_amount,
-        loanType: lead.additional_details[0].loan_type,
-        vehicleBrandName: lead.additional_details[0].vehicle_brand_name,
-        vehicleBrandId: lead.additional_details[0].vehicle_brand_id,
-        vehicleModelName: lead.additional_details[0].vehicle_model_name,
-        vehicleModelId: lead.additional_details[0].vehicle_model_id,
+        phoneNumber: lead.additional_details[0].phone_number || '',
+        email: lead.additional_details[0].email || '',
+        dateOfBirth: lead.additional_details[0].date_of_birth || '',
+        gender: 'Male',
+        maritalStatus: 'Single',
+        fatherName: '',
+        motherName: '',
+        spouseName: '',
+        agencyFileNo: lead.additional_details[0].agency_file_no || '',
+        applicationBarcode: lead.additional_details[0].application_barcode || '',
+        caseId: lead.additional_details[0].case_id || '',
+        schemeDesc: lead.additional_details[0].scheme_desc || '',
+        bankBranch: lead.additional_details[0].bank_branch || '',
+        additionalComments: lead.additional_details[0].additional_comments || '',
+        leadType: lead.additional_details[0].lead_type || '',
+        leadTypeId: lead.additional_details[0].lead_type_id || '',
+        loanAmount: lead.additional_details[0].loan_amount || '',
+        loanType: lead.additional_details[0].loan_type || '',
+        vehicleBrandName: lead.additional_details[0].vehicle_brand_name || '',
+        vehicleBrandId: lead.additional_details[0].vehicle_brand_id || '',
+        vehicleModelName: lead.additional_details[0].vehicle_model_name || '',
+        vehicleModelId: lead.additional_details[0].vehicle_model_id || '',
         addresses: lead.lead_addresses?.map((la: any) => ({
+          id: la.addresses.id,
           type: la.addresses.type,
           street: la.addresses.street,
           city: la.addresses.city,
           district: la.addresses.district,
           state: la.addresses.state,
           pincode: la.addresses.pincode
-        })) || []
+        })) || [],
+        phoneNumbers: []
       } : {
         company: '',
         designation: '',
@@ -221,7 +239,30 @@ export const getLeadsFromDatabase = async () => {
         monthlyIncome: '',
         annualIncome: '',
         otherIncome: '',
-        addresses: []
+        phoneNumber: '',
+        email: '',
+        dateOfBirth: '',
+        gender: 'Male',
+        maritalStatus: 'Single',
+        fatherName: '',
+        motherName: '',
+        spouseName: '',
+        agencyFileNo: '',
+        applicationBarcode: '',
+        caseId: '',
+        schemeDesc: '',
+        bankBranch: '',
+        additionalComments: '',
+        leadType: '',
+        leadTypeId: '',
+        loanAmount: '',
+        loanType: '',
+        vehicleBrandName: '',
+        vehicleBrandId: '',
+        vehicleModelName: '',
+        vehicleModelId: '',
+        addresses: [],
+        phoneNumbers: []
       };
 
       return {
@@ -229,14 +270,8 @@ export const getLeadsFromDatabase = async () => {
         name: lead.name,
         age: lead.age || 0,
         job: lead.job || '',
-        address: {
-          street: lead.addresses?.street || '',
-          city: lead.addresses?.city || '',
-          district: lead.addresses?.district || '',
-          state: lead.addresses?.state || '',
-          pincode: lead.addresses?.pincode || ''
-        },
-        additionalDetails,
+        address: address,
+        additionalDetails: additionalDetails,
         status: lead.status as Lead['status'],
         bank: lead.bank_id || '',
         visitType: lead.visit_type || 'Residence',
