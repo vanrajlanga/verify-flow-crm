@@ -1,14 +1,10 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus } from 'lucide-react';
-import { Checkbox } from '@/components/ui/checkbox';
 
 interface Step1Props {
   banks: Array<{ id: string; name: string; }>;
@@ -20,10 +16,6 @@ interface Step1Props {
 
 const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehicleModels }: Step1Props) => {
   const { control, watch, setValue } = useFormContext();
-  const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
-  const [newProductName, setNewProductName] = useState('');
-  const [selectedBanksForProduct, setSelectedBanksForProduct] = useState<string[]>([]);
-  const [localProducts, setLocalProducts] = useState(products);
   
   const selectedBank = watch('bankName');
   const selectedLeadType = watch('leadType');
@@ -35,16 +27,6 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
     setValue('agencyFileNo', agencyFileNo);
   }, [setValue]);
 
-  // Update local products when props change
-  useEffect(() => {
-    setLocalProducts(products);
-  }, [products]);
-
-  // Get products for selected bank
-  const getProductsForBank = (bankId: string) => {
-    return localProducts.filter((product: any) => product.banks && product.banks.includes(bankId));
-  };
-
   // Get branches for selected bank
   const getBranchesForBank = (bankId: string) => {
     return branches.filter(branch => branch.bankId === bankId);
@@ -55,47 +37,13 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
     return vehicleModels.filter((model: any) => model.brandId === brandId);
   };
 
-  const handleAddProduct = () => {
-    if (newProductName && selectedBanksForProduct.length > 0) {
-      const newProduct = {
-        id: `prod-${Date.now()}`,
-        name: newProductName,
-        banks: selectedBanksForProduct
-      };
-      
-      const updatedProducts = [...localProducts, newProduct];
-      setLocalProducts(updatedProducts);
-      
-      // Update localStorage
-      localStorage.setItem('products', JSON.stringify(updatedProducts));
-      
-      // Reset form
-      setNewProductName('');
-      setSelectedBanksForProduct([]);
-      setIsProductDialogOpen(false);
-      
-      // Auto-select the new product if current bank is included
-      if (selectedBank && selectedBanksForProduct.includes(selectedBank)) {
-        setValue('leadType', newProduct.id);
-      }
-    }
-  };
-
-  const handleBankToggleForProduct = (bankId: string) => {
-    setSelectedBanksForProduct(prev => 
-      prev.includes(bankId) 
-        ? prev.filter(id => id !== bankId)
-        : [...prev, bankId]
-    );
-  };
-
-  const filteredProducts = selectedBank ? getProductsForBank(selectedBank) : [];
   const filteredBranches = selectedBank ? getBranchesForBank(selectedBank) : [];
   const filteredVehicleModels = selectedVehicleBrand ? getModelsForBrand(selectedVehicleBrand) : [];
 
   const isAutoLoan = selectedLeadType && (
-    selectedLeadType === 'auto-loan' || 
-    filteredProducts.find(p => p.id === selectedLeadType)?.name?.toLowerCase().includes('auto')
+    selectedLeadType.toLowerCase().includes('auto') || 
+    selectedLeadType.toLowerCase().includes('vehicle') ||
+    selectedLeadType.toLowerCase().includes('car')
   );
 
   return (
@@ -115,7 +63,6 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
                 <Select 
                   onValueChange={(value) => {
                     field.onChange(value);
-                    setValue('leadType', '');
                     setValue('initiatedBranch', '');
                     setValue('buildBranch', '');
                   }} 
@@ -145,82 +92,17 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Lead Type/Product <span className="text-red-500">*</span></FormLabel>
-                <div className="flex gap-2">
-                  <Select 
-                    onValueChange={(value) => {
-                      field.onChange(value);
+                <FormControl>
+                  <Input 
+                    placeholder="Enter lead type (e.g., Auto Loan, Home Loan, Personal Loan)" 
+                    {...field} 
+                    onChange={(e) => {
+                      field.onChange(e.target.value);
                       setValue('vehicleBrand', '');
                       setValue('vehicleModel', '');
-                    }} 
-                    value={field.value || ''}
-                    disabled={!selectedBank}
-                  >
-                    <FormControl>
-                      <SelectTrigger className="flex-1">
-                        <SelectValue placeholder={!selectedBank ? "Select bank first" : "Select lead type"} />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent className="bg-background border border-border shadow-lg z-50">
-                      {filteredProducts.length > 0 ? filteredProducts.map((product) => (
-                        <SelectItem key={product.id} value={product.id}>{product.name}</SelectItem>
-                      )) : (
-                        <SelectItem value="no-products" disabled>No products available for this bank</SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                  
-                  <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button type="button" variant="outline" size="icon" disabled={!selectedBank}>
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Add New Product</DialogTitle>
-                        <DialogDescription>
-                          Create a new product type for the selected banks.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <div>
-                          <label className="text-sm font-medium">Product Name</label>
-                          <Input
-                            value={newProductName}
-                            onChange={(e) => setNewProductName(e.target.value)}
-                            placeholder="Enter product name"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium">Select Banks</label>
-                          <div className="space-y-2 mt-2">
-                            {banks.map((bank) => (
-                              <div key={bank.id} className="flex items-center space-x-2">
-                                <Checkbox
-                                  id={bank.id}
-                                  checked={selectedBanksForProduct.includes(bank.id)}
-                                  onCheckedChange={() => handleBankToggleForProduct(bank.id)}
-                                />
-                                <label htmlFor={bank.id} className="text-sm">{bank.name}</label>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsProductDialogOpen(false)}>
-                          Cancel
-                        </Button>
-                        <Button 
-                          onClick={handleAddProduct}
-                          disabled={!newProductName || selectedBanksForProduct.length === 0}
-                        >
-                          Add Product
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-                </div>
+                    }}
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
