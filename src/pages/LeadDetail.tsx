@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -355,7 +356,7 @@ const LeadDetail = () => {
   };
 
   // Convert documents to proper format for DocumentViewer
-  const formattedDocuments = lead.documents?.map((doc: any) => {
+  const formattedDocuments = lead?.documents?.map((doc: any) => {
     if (typeof doc === 'string') {
       return {
         id: `doc-${Math.random()}`,
@@ -373,12 +374,11 @@ const LeadDetail = () => {
   const isTVT = currentUser?.role === 'tvt';
 
   // Format addresses from additionalDetails if available
-  const additionalAddresses = lead.additionalDetails?.addresses || [];
+  const additionalAddresses = lead?.additionalDetails?.addresses || [];
   const homeAddress = additionalAddresses.find((a: any) => a?.type === 'Residence');
   const officeAddress = additionalAddresses.find((a: any) => a?.type === 'Office');
 
   const renderFieldWithVerification = (label: string, value: string, fieldKey: string) => {
-    const isTVT = currentUser?.role === 'tvt';
     const verification = fieldVerifications[fieldKey];
     
     if (!isTVT) {
@@ -436,189 +436,6 @@ const LeadDetail = () => {
       </div>
     );
   }
-
-  // Handle verification actions for agents
-  const handleStartVerification = () => {
-    if (!lead.verification) {
-      lead.verification = {
-        id: `verification-${lead.id}`,
-        leadId: lead.id,
-        agentId: currentUser.id,
-        status: 'In Progress',
-        photos: [],
-        documents: [],
-        notes: ''
-      };
-    }
-    
-    lead.verification.startTime = new Date();
-    lead.verification.status = 'In Progress';
-    lead.status = 'In Progress';
-    
-    updateLeadInStorage(lead);
-    
-    toast({
-      title: "Verification Started",
-      description: "You've started the verification process.",
-    });
-  };
-
-  const handleMarkArrival = () => {
-    if (lead.verification) {
-      lead.verification.arrivalTime = new Date();
-      updateLeadInStorage(lead);
-    }
-    
-    toast({
-      title: "Arrival Marked",
-      description: "Your arrival at the verification location has been recorded.",
-    });
-  };
-
-  const handleUploadPhoto = (files: FileList) => {
-    if (!lead.verification.photos) {
-      lead.verification.photos = [];
-    }
-    
-    // Convert FileList to array and create photo objects
-    Array.from(files).forEach((file, index) => {
-      const photoId = `photo-${new Date().getTime()}-${index}`;
-      const photoUrl = URL.createObjectURL(file); // Create preview URL
-      lead.verification.photos.push({
-        id: photoId,
-        name: file.name,
-        type: 'Photo',
-        uploadedBy: 'agent',
-        url: photoUrl,
-        uploadDate: new Date(),
-        size: file.size
-      });
-    });
-    
-    updateLeadInStorage(lead);
-    
-    toast({
-      title: "Photos Uploaded",
-      description: `${files.length} photo(s) have been uploaded.`,
-    });
-  };
-
-  const handleUploadDocument = (files: FileList, type: string) => {
-    if (!lead.verification.documents) {
-      lead.verification.documents = [];
-    }
-    
-    // Convert FileList to array and create document objects
-    Array.from(files).forEach((file, index) => {
-      const docId = `doc-${new Date().getTime()}-${index}`;
-      const docUrl = URL.createObjectURL(file); // Create preview URL
-      lead.verification.documents.push({
-        id: docId,
-        name: file.name,
-        type: type as any,
-        uploadedBy: 'agent',
-        url: docUrl,
-        uploadDate: new Date(),
-        size: file.size
-      });
-    });
-    
-    updateLeadInStorage(lead);
-    
-    toast({
-      title: "Documents Uploaded",
-      description: `${files.length} ${type} document(s) have been uploaded.`,
-    });
-  };
-
-  const handleAddNotes = (notes: string) => {
-    if (lead.verification) {
-      lead.verification.notes = notes;
-      updateLeadInStorage(lead);
-    }
-    
-    toast({
-      title: "Notes Saved",
-      description: "Your verification notes have been saved.",
-    });
-  };
-
-  const handleCompleteVerification = () => {
-    if (lead.verification) {
-      lead.verification.completionTime = new Date();
-      lead.verification.status = 'Completed';
-      lead.status = 'Completed';
-      updateLeadInStorage(lead);
-    }
-    
-    toast({
-      title: "Verification Completed",
-      description: "The verification process has been marked as complete.",
-    });
-  };
-
-  // Handle review actions for admins
-  const handleApproveVerification = (remarks: string) => {
-    if (lead.verification) {
-      lead.verification.adminRemarks = remarks;
-      lead.verification.reviewedBy = currentUser.id;
-      lead.verification.reviewedAt = new Date();
-      lead.status = 'Completed';
-      updateLeadInStorage(lead);
-    }
-    
-    toast({
-      title: "Verification Approved",
-      description: "The verification has been approved.",
-    });
-  };
-
-  const handleRejectVerification = (remarks: string) => {
-    if (lead.verification) {
-      lead.verification.adminRemarks = remarks;
-      lead.verification.reviewedBy = currentUser.id;
-      lead.verification.reviewedAt = new Date();
-      lead.verification.status = 'Rejected';
-      lead.status = 'Rejected';
-      updateLeadInStorage(lead);
-    }
-    
-    toast({
-      title: "Verification Rejected",
-      description: "The verification has been rejected.",
-    });
-  };
-
-  const handleForwardToBank = () => {
-    // Implementation would forward the verification to the bank
-    toast({
-      title: "Forwarded to Bank",
-      description: `The verification has been forwarded to ${bank?.name || 'the bank'}.`,
-    });
-  };
-
-  // Convert documents to proper format for DocumentViewer
-  const formattedDocuments = lead.documents?.map((doc: any) => {
-    if (typeof doc === 'string') {
-      return {
-        id: `doc-${Math.random()}`,
-        name: doc,
-        type: 'Document',
-        url: '/placeholder.svg',
-        uploadedBy: 'bank',
-        uploadDate: new Date()
-      };
-    }
-    return doc;
-  }) || [];
-
-  const isAdmin = currentUser?.role === 'admin';
-  const isTVT = currentUser?.role === 'tvt';
-
-  // Format addresses from additionalDetails if available
-  const additionalAddresses = lead.additionalDetails?.addresses || [];
-  const homeAddress = additionalAddresses.find((a: any) => a?.type === 'Residence');
-  const officeAddress = additionalAddresses.find((a: any) => a?.type === 'Office');
 
   return (
     <div className="p-6 bg-muted/30 min-h-screen">
