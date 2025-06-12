@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +35,7 @@ interface Address {
   street: string;
   pincode: string;
   requiresVerification: boolean;
+  assignedAgent?: string;
 }
 
 interface Document {
@@ -122,7 +122,9 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
     specialInstructions: '',
     
     // Step 9: Agent Assignment
-    assignedAgent: ''
+    assignedAgent: '',
+    assignInhouseTeam: false,
+    inhouseTeamAgent: ''
   });
 
   const [addresses, setAddresses] = useState<Address[]>([{
@@ -132,7 +134,8 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
     city: '',
     street: '',
     pincode: '',
-    requiresVerification: false
+    requiresVerification: false,
+    assignedAgent: ''
   }]);
 
   const [documents, setDocuments] = useState<Document[]>([
@@ -145,6 +148,7 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
   
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
+  const [inhouseTeamAgents, setInhouseTeamAgents] = useState<any[]>([]);
 
   // Auto-generate Agency File No.
   const generateAgencyFileNo = () => {
@@ -166,7 +170,16 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
       setProducts(parsedProducts);
       setFilteredProducts(parsedProducts);
     }
+
+    // Load Inhouse Team agents
+    loadInhouseTeamAgents();
   }, []);
+
+  const loadInhouseTeamAgents = () => {
+    // Filter agents with role 'Inhouse Team'
+    const inhouseAgents = agents.filter(agent => agent.role === 'Inhouse Team');
+    setInhouseTeamAgents(inhouseAgents);
+  };
 
   // Filter products when bank is selected
   useEffect(() => {
@@ -210,7 +223,8 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
       city: '',
       street: '',
       pincode: '',
-      requiresVerification: false
+      requiresVerification: false,
+      assignedAgent: ''
     };
     setAddresses([...addresses, newAddress]);
   };
@@ -272,8 +286,17 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
   };
 
   const handleSubmit = () => {
-    if (!formData.customerName.trim() || !formData.phoneNumber.trim() || !formData.bankName || !formData.assignedAgent) {
+    if (!formData.customerName.trim() || !formData.phoneNumber.trim() || !formData.bankName) {
       alert('Please fill in all required fields.');
+      return;
+    }
+
+    // Check if addresses requiring verification have agents assigned
+    const addressesRequiringVerification = addresses.filter(addr => addr.requiresVerification);
+    const hasUnassignedAddresses = addressesRequiringVerification.some(addr => !addr.assignedAgent);
+    
+    if (hasUnassignedAddresses) {
+      alert('Please assign agents to all addresses that require verification.');
       return;
     }
 
@@ -317,7 +340,8 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
         motherName: formData.motherName,
         maritalStatus: formData.maritalStatus,
         addresses: addresses,
-        coApplicants: coApplicants
+        coApplicants: coApplicants,
+        inhouseTeamAgent: formData.assignInhouseTeam ? formData.inhouseTeamAgent : null
       },
       status: 'Pending' as const,
       bank: formData.bankName,
@@ -1078,21 +1102,100 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
           <Card>
             <CardHeader>
               <CardTitle>Agent Assignment</CardTitle>
-              <p className="text-sm text-muted-foreground">Assign agent and review</p>
+              <p className="text-sm text-muted-foreground">Assign agents for verification and review</p>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="assignedAgent">Assign to Agent</Label>
-                <Select value={formData.assignedAgent} onValueChange={(value) => handleInputChange('assignedAgent', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select agent to assign" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {agents.map((agent) => (
-                      <SelectItem key={agent.id} value={agent.name}>{agent.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            <CardContent className="space-y-6">
+              {/* Address-specific agent assignment */}
+              <div className="space-y-4">
+                <h4 className="font-medium text-lg">Address Verification Assignment</h4>
+                {addresses.filter(addr => addr.requiresVerification).length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No addresses require verification</p>
+                ) : (
+                  addresses.filter(addr => addr.requiresVerification).map((address, index) => (
+                    <div key={address.id} className="p-4 border rounded-lg space-y-3">
+                      <div className="space-y-2">
+                        <Label className="font-medium">Address {addresses.indexOf(address) + 1}</Label>
+                        <p className="text-sm text-muted-foreground">
+                          {address.street}, {address.city}, {address.district}, {address.state} - {address.pincode}
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Assign Agent for this Address</Label>
+                        <Select 
+                          value={address.assignedAgent || ''} 
+                          onValueChange={(value) => updateAddress(address.id, 'assignedAgent', value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select agent for this address" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {agents.filter(agent => agent.role === 'agent').map((agent) => (
+                              <SelectItem key={agent.id} value={agent.name}>
+                                {agent.name} ({agent.district || 'No District'})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Primary agent assignment */}
+              <div className="space-y-4">
+                <h4 className="font-medium text-lg">Primary Agent Assignment</h4>
+                <div className="space-y-2">
+                  <Label htmlFor="assignedAgent">Primary Assigned Agent</Label>
+                  <Select value={formData.assignedAgent} onValueChange={(value) => handleInputChange('assignedAgent', value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select primary agent" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {agents.filter(agent => agent.role === 'agent').map((agent) => (
+                        <SelectItem key={agent.id} value={agent.name}>{agent.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Inhouse Team Assignment */}
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="assignInhouseTeam"
+                    checked={formData.assignInhouseTeam}
+                    onCheckedChange={(checked) => handleInputChange('assignInhouseTeam', checked)}
+                  />
+                  <Label htmlFor="assignInhouseTeam" className="font-medium">
+                    Assign this lead to Inhouse Team Agent too
+                  </Label>
+                </div>
+
+                {formData.assignInhouseTeam && (
+                  <div className="space-y-2 ml-6">
+                    <Label htmlFor="inhouseTeamAgent">Select Inhouse Team Agent</Label>
+                    <Select value={formData.inhouseTeamAgent} onValueChange={(value) => handleInputChange('inhouseTeamAgent', value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Inhouse Team agent" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {inhouseTeamAgents.length > 0 ? (
+                          inhouseTeamAgents.map((agent) => (
+                            <SelectItem key={agent.id} value={agent.name}>
+                              {agent.name} ({agent.email})
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="no-agents" disabled>
+                            No Inhouse Team agents available
+                          </SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

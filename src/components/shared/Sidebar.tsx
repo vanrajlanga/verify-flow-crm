@@ -52,7 +52,27 @@ const Sidebar = ({ user, isOpen }: SidebarProps) => {
     { icon: Clock, label: 'Profile', path: '/agent/profile' },
   ];
 
-  const menuItems = user.role === 'admin' ? adminMenuItems : agentMenuItems;
+  const inhouseTeamMenuItems = [
+    { icon: Home, label: 'Dashboard', path: '/agent/dashboard' },
+    { icon: FileText, label: 'My Leads', path: '/agent/leads' },
+    { icon: Calendar, label: 'History', path: '/agent/history' },
+    { icon: Clock, label: 'Profile', path: '/agent/profile' },
+  ];
+
+  const getMenuItems = () => {
+    switch (user.role) {
+      case 'admin':
+        return adminMenuItems;
+      case 'agent':
+        return agentMenuItems;
+      case 'Inhouse Team':
+        return inhouseTeamMenuItems;
+      default:
+        return agentMenuItems;
+    }
+  };
+
+  const menuItems = getMenuItems();
 
   return (
     <div className={`bg-white border-r border-gray-200 transition-all duration-300 ${
@@ -83,7 +103,7 @@ const Sidebar = ({ user, isOpen }: SidebarProps) => {
                 <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
                   {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                 </Badge>
-                {user.role === 'agent' && user.district && (
+                {(user.role === 'agent' || user.role === 'Inhouse Team') && user.district && (
                   <Badge variant="outline" className="text-xs">
                     {user.district}
                   </Badge>
@@ -120,7 +140,7 @@ const Sidebar = ({ user, isOpen }: SidebarProps) => {
       </nav>
 
       {/* Footer - Agent Stats */}
-      {user.role === 'agent' && isOpen && (
+      {(user.role === 'agent' || user.role === 'Inhouse Team') && isOpen && (
         <div className="p-4 border-t border-gray-200">
           <Card>
             <CardContent className="p-3">

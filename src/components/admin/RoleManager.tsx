@@ -1,126 +1,125 @@
 
 import { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Plus, Edit, Trash2 } from 'lucide-react';
-import { toast } from '@/components/ui/use-toast';
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, Edit, Trash2, Save, X } from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
 
-export interface Permission {
-  id: string;
-  name: string;
-  module: string;
-  description: string;
-}
-
-export interface Role {
+interface Role {
   id: string;
   name: string;
   description: string;
   permissions: string[];
-  createdAt: Date;
+  isSystem: boolean;
 }
 
-const defaultPermissions: Permission[] = [
-  // Dashboard permissions
-  { id: 'dashboard_view', name: 'View Dashboard', module: 'Dashboard', description: 'View dashboard statistics and overview' },
-  
-  // Leads permissions
-  { id: 'leads_view', name: 'View Leads', module: 'Leads', description: 'View leads list and details' },
-  { id: 'leads_create', name: 'Create Leads', module: 'Leads', description: 'Create new leads' },
-  { id: 'leads_edit', name: 'Edit Leads', module: 'Leads', description: 'Edit existing leads' },
-  { id: 'leads_delete', name: 'Delete Leads', module: 'Leads', description: 'Delete leads' },
-  { id: 'leads_assign', name: 'Assign Leads', module: 'Leads', description: 'Assign leads to agents' },
-  { id: 'leads_export', name: 'Export Leads', module: 'Leads', description: 'Export leads data' },
-  
-  // Agent permissions
-  { id: 'agents_view', name: 'View Agents', module: 'Agents', description: 'View agents list and details' },
-  { id: 'agents_create', name: 'Create Agents', module: 'Agents', description: 'Create new agents' },
-  { id: 'agents_edit', name: 'Edit Agents', module: 'Agents', description: 'Edit agent details' },
-  { id: 'agents_delete', name: 'Delete Agents', module: 'Agents', description: 'Delete agents' },
-  
-  // Reports permissions
-  { id: 'reports_view', name: 'View Reports', module: 'Reports', description: 'View reports and analytics' },
-  { id: 'reports_export', name: 'Export Reports', module: 'Reports', description: 'Export reports data' },
-  
-  // Settings permissions
-  { id: 'settings_view', name: 'View Settings', module: 'Settings', description: 'View system settings' },
-  { id: 'settings_edit', name: 'Edit Settings', module: 'Settings', description: 'Modify system settings' },
-  
-  // Role permissions
-  { id: 'roles_view', name: 'View Roles', module: 'Roles', description: 'View roles and permissions' },
-  { id: 'roles_create', name: 'Create Roles', module: 'Roles', description: 'Create new roles' },
-  { id: 'roles_edit', name: 'Edit Roles', module: 'Roles', description: 'Edit existing roles' },
-  { id: 'roles_delete', name: 'Delete Roles', module: 'Roles', description: 'Delete roles' },
-];
+interface Permission {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+}
 
 const RoleManager = () => {
   const [roles, setRoles] = useState<Role[]>([]);
-  const [permissions] = useState<Permission[]>(defaultPermissions);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [editingRole, setEditingRole] = useState<Role | null>(null);
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    permissions: [] as string[]
-  });
+  const [permissions, setPermissions] = useState<Permission[]>([]);
+  const [editingRole, setEditingRole] = useState<string | null>(null);
+  const [newRole, setNewRole] = useState({ name: '', description: '', permissions: [] as string[] });
+  const [showAddRole, setShowAddRole] = useState(false);
 
   useEffect(() => {
-    const storedRoles = localStorage.getItem('systemRoles');
-    if (storedRoles) {
-      try {
-        const parsedRoles = JSON.parse(storedRoles);
-        setRoles(parsedRoles);
-      } catch (error) {
-        console.error('Error parsing stored roles:', error);
-        initializeDefaultRoles();
-      }
-    } else {
-      initializeDefaultRoles();
-    }
+    loadRolesAndPermissions();
   }, []);
 
-  const initializeDefaultRoles = () => {
+  const loadRolesAndPermissions = () => {
+    // Load from localStorage or set defaults
+    const storedRoles = localStorage.getItem('roles');
+    const storedPermissions = localStorage.getItem('permissions');
+
+    const defaultPermissions: Permission[] = [
+      { id: 'leads.view', name: 'View Leads', description: 'Can view lead information', category: 'Leads' },
+      { id: 'leads.create', name: 'Create Leads', description: 'Can create new leads', category: 'Leads' },
+      { id: 'leads.edit', name: 'Edit Leads', description: 'Can edit lead information', category: 'Leads' },
+      { id: 'leads.delete', name: 'Delete Leads', description: 'Can delete leads', category: 'Leads' },
+      { id: 'leads.assign', name: 'Assign Leads', description: 'Can assign leads to agents', category: 'Leads' },
+      { id: 'agents.view', name: 'View Agents', description: 'Can view agent information', category: 'Users' },
+      { id: 'agents.manage', name: 'Manage Agents', description: 'Can create, edit, and delete agents', category: 'Users' },
+      { id: 'verifications.view', name: 'View Verifications', description: 'Can view verification data', category: 'Verifications' },
+      { id: 'verifications.conduct', name: 'Conduct Verifications', description: 'Can perform verifications', category: 'Verifications' },
+      { id: 'verifications.approve', name: 'Approve Verifications', description: 'Can approve verification results', category: 'Verifications' },
+      { id: 'reports.view', name: 'View Reports', description: 'Can view system reports', category: 'Reports' },
+      { id: 'settings.manage', name: 'Manage Settings', description: 'Can manage system settings', category: 'System' },
+      { id: 'roles.manage', name: 'Manage Roles', description: 'Can manage user roles and permissions', category: 'System' }
+    ];
+
     const defaultRoles: Role[] = [
       {
         id: 'admin',
-        name: 'Administrator',
-        description: 'Full system access with all permissions',
-        permissions: permissions.map(p => p.id),
-        createdAt: new Date()
+        name: 'Admin',
+        description: 'Full system access and management capabilities',
+        permissions: defaultPermissions.map(p => p.id),
+        isSystem: true
       },
       {
         id: 'agent',
-        name: 'Field Agent',
-        description: 'Limited access for field verification work',
-        permissions: ['dashboard_view', 'leads_view', 'leads_edit'],
-        createdAt: new Date()
+        name: 'Agent',
+        description: 'Field verification agent with limited access',
+        permissions: ['leads.view', 'verifications.view', 'verifications.conduct'],
+        isSystem: true
       },
       {
-        id: 'manager',
-        name: 'Manager',
-        description: 'Management level access with reporting capabilities',
-        permissions: ['dashboard_view', 'leads_view', 'leads_create', 'leads_edit', 'leads_assign', 'agents_view', 'reports_view', 'reports_export'],
-        createdAt: new Date()
+        id: 'inhouse-team',
+        name: 'Inhouse Team',
+        description: 'Internal team members with verification capabilities',
+        permissions: ['leads.view', 'verifications.view', 'verifications.conduct', 'verifications.approve'],
+        isSystem: false
       }
     ];
-    
-    setRoles(defaultRoles);
-    localStorage.setItem('systemRoles', JSON.stringify(defaultRoles));
+
+    if (storedRoles) {
+      try {
+        const parsedRoles = JSON.parse(storedRoles);
+        // Ensure Inhouse Team role exists
+        const hasInhouseTeam = parsedRoles.some((role: Role) => role.id === 'inhouse-team');
+        if (!hasInhouseTeam) {
+          parsedRoles.push(defaultRoles.find(r => r.id === 'inhouse-team'));
+        }
+        setRoles(parsedRoles);
+      } catch (error) {
+        console.error('Error parsing stored roles:', error);
+        setRoles(defaultRoles);
+      }
+    } else {
+      setRoles(defaultRoles);
+      localStorage.setItem('roles', JSON.stringify(defaultRoles));
+    }
+
+    if (storedPermissions) {
+      try {
+        setPermissions(JSON.parse(storedPermissions));
+      } catch (error) {
+        console.error('Error parsing stored permissions:', error);
+        setPermissions(defaultPermissions);
+      }
+    } else {
+      setPermissions(defaultPermissions);
+      localStorage.setItem('permissions', JSON.stringify(defaultPermissions));
+    }
   };
 
-  const handleSubmit = () => {
-    if (!formData.name.trim()) {
+  const saveRoles = (updatedRoles: Role[]) => {
+    setRoles(updatedRoles);
+    localStorage.setItem('roles', JSON.stringify(updatedRoles));
+  };
+
+  const handleAddRole = () => {
+    if (!newRole.name.trim()) {
       toast({
         title: "Error",
         description: "Role name is required",
@@ -129,231 +128,276 @@ const RoleManager = () => {
       return;
     }
 
-    if (editingRole) {
-      // Update existing role
-      const updatedRoles = roles.map(role =>
-        role.id === editingRole.id
-          ? { ...role, name: formData.name, description: formData.description, permissions: formData.permissions }
-          : role
-      );
-      setRoles(updatedRoles);
-      localStorage.setItem('systemRoles', JSON.stringify(updatedRoles));
-      
-      toast({
-        title: "Success",
-        description: "Role updated successfully"
-      });
-    } else {
-      // Create new role
-      const newRole: Role = {
-        id: `role-${Date.now()}`,
-        name: formData.name,
-        description: formData.description,
-        permissions: formData.permissions,
-        createdAt: new Date()
-      };
-      
-      const updatedRoles = [...roles, newRole];
-      setRoles(updatedRoles);
-      localStorage.setItem('systemRoles', JSON.stringify(updatedRoles));
-      
-      toast({
-        title: "Success",
-        description: "Role created successfully"
-      });
-    }
-
-    resetForm();
-  };
-
-  const resetForm = () => {
-    setFormData({ name: '', description: '', permissions: [] });
-    setEditingRole(null);
-    setIsCreateDialogOpen(false);
-  };
-
-  const startEdit = (role: Role) => {
-    setEditingRole(role);
-    setFormData({
-      name: role.name,
-      description: role.description,
-      permissions: [...role.permissions]
-    });
-    setIsCreateDialogOpen(true);
-  };
-
-  const deleteRole = (roleId: string) => {
-    if (roleId === 'admin' || roleId === 'agent') {
+    const roleExists = roles.some(role => role.name.toLowerCase() === newRole.name.toLowerCase());
+    if (roleExists) {
       toast({
         title: "Error",
-        description: "Cannot delete system default roles",
+        description: "A role with this name already exists",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const role: Role = {
+      id: `role-${Date.now()}`,
+      name: newRole.name,
+      description: newRole.description,
+      permissions: newRole.permissions,
+      isSystem: false
+    };
+
+    const updatedRoles = [...roles, role];
+    saveRoles(updatedRoles);
+    setNewRole({ name: '', description: '', permissions: [] });
+    setShowAddRole(false);
+
+    toast({
+      title: "Success",
+      description: "Role created successfully"
+    });
+  };
+
+  const handleEditRole = (roleId: string, updatedRole: Partial<Role>) => {
+    const updatedRoles = roles.map(role =>
+      role.id === roleId ? { ...role, ...updatedRole } : role
+    );
+    saveRoles(updatedRoles);
+    setEditingRole(null);
+
+    toast({
+      title: "Success",
+      description: "Role updated successfully"
+    });
+  };
+
+  const handleDeleteRole = (roleId: string) => {
+    const role = roles.find(r => r.id === roleId);
+    if (role?.isSystem) {
+      toast({
+        title: "Error",
+        description: "Cannot delete system roles",
         variant: "destructive"
       });
       return;
     }
 
     const updatedRoles = roles.filter(role => role.id !== roleId);
-    setRoles(updatedRoles);
-    localStorage.setItem('systemRoles', JSON.stringify(updatedRoles));
-    
+    saveRoles(updatedRoles);
+
     toast({
       title: "Success",
       description: "Role deleted successfully"
     });
   };
 
-  const togglePermission = (permissionId: string) => {
-    setFormData(prev => ({
-      ...prev,
-      permissions: prev.permissions.includes(permissionId)
-        ? prev.permissions.filter(id => id !== permissionId)
-        : [...prev.permissions, permissionId]
-    }));
+  const togglePermission = (roleId: string, permissionId: string) => {
+    const role = roles.find(r => r.id === roleId);
+    if (!role) return;
+
+    const hasPermission = role.permissions.includes(permissionId);
+    const updatedPermissions = hasPermission
+      ? role.permissions.filter(p => p !== permissionId)
+      : [...role.permissions, permissionId];
+
+    handleEditRole(roleId, { permissions: updatedPermissions });
   };
 
   const groupedPermissions = permissions.reduce((acc, permission) => {
-    if (!acc[permission.module]) {
-      acc[permission.module] = [];
+    if (!acc[permission.category]) {
+      acc[permission.category] = [];
     }
-    acc[permission.module].push(permission);
+    acc[permission.category].push(permission);
     return acc;
   }, {} as Record<string, Permission[]>);
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold">Roles & Permissions</h2>
-          <p className="text-muted-foreground">Create and manage user roles with specific permissions</p>
+          <h2 className="text-2xl font-bold tracking-tight">Roles & Permissions</h2>
+          <p className="text-muted-foreground">Manage user roles and their permissions</p>
         </div>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setFormData({ name: '', description: '', permissions: [] })}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create Role
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{editingRole ? 'Edit Role' : 'Create New Role'}</DialogTitle>
-              <DialogDescription>
-                {editingRole ? 'Update role details and permissions' : 'Define a new role with specific permissions'}
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Role Name</label>
-                  <Input
-                    value={formData.name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="Enter role name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Description</label>
-                  <Textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Role description"
-                    rows={3}
-                  />
-                </div>
-              </div>
+        <Button onClick={() => setShowAddRole(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          Add Role
+        </Button>
+      </div>
 
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Permissions</h3>
-                {Object.entries(groupedPermissions).map(([module, modulePermissions]) => (
-                  <Card key={module}>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">{module}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-2 gap-3">
-                        {modulePermissions.map((permission) => (
-                          <div key={permission.id} className="flex items-start space-x-2">
-                            <Checkbox
-                              id={permission.id}
-                              checked={formData.permissions.includes(permission.id)}
-                              onCheckedChange={() => togglePermission(permission.id)}
+      <Tabs defaultValue="roles" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="roles">Manage Roles</TabsTrigger>
+          <TabsTrigger value="permissions">View Permissions</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="roles" className="space-y-4">
+          {showAddRole && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Add New Role</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="roleName">Role Name</Label>
+                    <Input
+                      id="roleName"
+                      value={newRole.name}
+                      onChange={(e) => setNewRole(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Enter role name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="roleDescription">Description</Label>
+                    <Textarea
+                      id="roleDescription"
+                      value={newRole.description}
+                      onChange={(e) => setNewRole(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Enter role description"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <Label>Permissions</Label>
+                  {Object.entries(groupedPermissions).map(([category, categoryPermissions]) => (
+                    <div key={category} className="space-y-2">
+                      <h4 className="font-medium text-sm">{category}</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                        {categoryPermissions.map((permission) => (
+                          <div key={permission.id} className="flex items-center space-x-2">
+                            <Switch
+                              checked={newRole.permissions.includes(permission.id)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setNewRole(prev => ({
+                                    ...prev,
+                                    permissions: [...prev.permissions, permission.id]
+                                  }));
+                                } else {
+                                  setNewRole(prev => ({
+                                    ...prev,
+                                    permissions: prev.permissions.filter(p => p !== permission.id)
+                                  }));
+                                }
+                              }}
                             />
-                            <div className="grid gap-1.5 leading-none">
-                              <label
-                                htmlFor={permission.id}
-                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                              >
-                                {permission.name}
-                              </label>
-                              <p className="text-xs text-muted-foreground">
-                                {permission.description}
-                              </p>
-                            </div>
+                            <Label className="text-sm">{permission.name}</Label>
                           </div>
                         ))}
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={resetForm}>
-                Cancel
-              </Button>
-              <Button onClick={handleSubmit}>
-                {editingRole ? 'Update Role' : 'Create Role'}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
-
-      <div className="grid gap-4">
-        {roles.map((role) => (
-          <Card key={role.id}>
-            <CardHeader>
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle className="text-lg">{role.name}</CardTitle>
-                  <p className="text-sm text-muted-foreground mt-1">{role.description}</p>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    {role.permissions.length} permissions assigned
-                  </p>
+                    </div>
+                  ))}
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="ghost" size="sm" onClick={() => startEdit(role)}>
-                    <Edit className="h-4 w-4" />
+                  <Button onClick={handleAddRole}>
+                    <Save className="w-4 h-4 mr-2" />
+                    Save Role
                   </Button>
-                  {role.id !== 'admin' && role.id !== 'agent' && (
-                    <Button variant="ghost" size="sm" onClick={() => deleteRole(role.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
+                  <Button variant="outline" onClick={() => setShowAddRole(false)}>
+                    <X className="w-4 h-4 mr-2" />
+                    Cancel
+                  </Button>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {role.permissions.slice(0, 6).map((permissionId) => {
-                  const permission = permissions.find(p => p.id === permissionId);
-                  return permission ? (
-                    <span key={permissionId} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
-                      {permission.name}
-                    </span>
-                  ) : null;
-                })}
-                {role.permissions.length > 6 && (
-                  <span className="text-xs text-muted-foreground">
-                    +{role.permissions.length - 6} more
-                  </span>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <div className="grid gap-4">
+            {roles.map((role) => (
+              <Card key={role.id}>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <CardTitle className="text-lg">{role.name}</CardTitle>
+                      {role.isSystem && <Badge variant="secondary">System</Badge>}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditingRole(editingRole === role.id ? null : role.id)}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      {!role.isSystem && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteRole(role.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground mb-4">{role.description}</p>
+                  {editingRole === role.id && (
+                    <div className="space-y-4">
+                      <h4 className="font-medium">Permissions</h4>
+                      {Object.entries(groupedPermissions).map(([category, categoryPermissions]) => (
+                        <div key={category} className="space-y-2">
+                          <h5 className="font-medium text-sm text-muted-foreground">{category}</h5>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                            {categoryPermissions.map((permission) => (
+                              <div key={permission.id} className="flex items-center space-x-2">
+                                <Switch
+                                  checked={role.permissions.includes(permission.id)}
+                                  onCheckedChange={() => togglePermission(role.id, permission.id)}
+                                  disabled={role.isSystem}
+                                />
+                                <Label className="text-sm">{permission.name}</Label>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {editingRole !== role.id && (
+                    <div className="space-y-2">
+                      <h4 className="font-medium text-sm">Assigned Permissions:</h4>
+                      <div className="flex flex-wrap gap-1">
+                        {role.permissions.map((permissionId) => {
+                          const permission = permissions.find(p => p.id === permissionId);
+                          return permission ? (
+                            <Badge key={permissionId} variant="outline">
+                              {permission.name}
+                            </Badge>
+                          ) : null;
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="permissions" className="space-y-4">
+          {Object.entries(groupedPermissions).map(([category, categoryPermissions]) => (
+            <Card key={category}>
+              <CardHeader>
+                <CardTitle>{category} Permissions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {categoryPermissions.map((permission) => (
+                    <div key={permission.id} className="flex justify-between items-center p-2 border rounded">
+                      <div>
+                        <span className="font-medium">{permission.name}</span>
+                        <p className="text-sm text-muted-foreground">{permission.description}</p>
+                      </div>
+                      <Badge variant="outline">{permission.id}</Badge>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
