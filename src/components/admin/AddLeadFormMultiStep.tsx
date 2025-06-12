@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
 import { v4 as uuidv4 } from 'uuid';
-import { Lead } from '@/utils/mockData';
+import { Lead, PhoneNumber, Address } from '@/utils/mockData';
 import { saveCompleteLeadToDatabase } from '@/lib/enhanced-lead-operations';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -106,9 +106,13 @@ type LeadFormValues = z.infer<typeof leadFormSchema>;
 interface AddLeadFormMultiStepProps {
   banks: any[];
   agents: any[];
-  vehicleBrands: any[];
-  vehicleModels: any[];
-  leadTypes: any[];
+  vehicleBrands?: any[];
+  vehicleModels?: any[];
+  leadTypes?: any[];
+  onAddLead?: (leadData: Lead) => Promise<void>;
+  onClose?: () => void;
+  locationData?: any;
+  editLead?: any;
 }
 
 interface PhoneNumber {
@@ -131,15 +135,15 @@ interface Address {
 const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
   banks,
   agents,
-  vehicleBrands,
-  vehicleModels,
-  leadTypes
+  vehicleBrands = [],
+  vehicleModels = [],
+  leadTypes = []
 }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([]);
   const [homeAddresses, setHomeAddresses] = useState<Address[]>([
-    { id: uuidv4(), type: 'Residence', street: '', city: '', district: '', state: '', pincode: '' }
+    { type: 'Residence', street: '', city: '', district: '', state: '', pincode: '' }
   ]);
   const [officeAddresses, setOfficeAddresses] = useState<Address[]>([]);
   const [selectedVehicleBrand, setSelectedVehicleBrand] = useState<string>('');
@@ -313,7 +317,7 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
     form.reset();
     setPhoneNumbers([]);
     setHomeAddresses([
-      { id: uuidv4(), type: 'Residence', street: '', city: '', district: '', state: '', pincode: '' }
+      { type: 'Residence', street: '', city: '', district: '', state: '', pincode: '' }
     ]);
     setOfficeAddresses([]);
     setSelectedVehicleBrand('');
@@ -373,12 +377,7 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
             ...homeAddresses,
             ...officeAddresses
           ] as any[],
-          phoneNumbers: phoneNumbers.map(phone => ({
-            id: phone.id,
-            number: phone.number,
-            type: phone.type as 'mobile' | 'landline' | 'work',
-            isPrimary: phone.isPrimary
-          })),
+          phoneNumbers: phoneNumbers,
           coApplicant: formData.hasCoApplicant ? {
             name: formData.coApplicantName || '',
             phone: formData.coApplicantPhone || '',

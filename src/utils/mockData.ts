@@ -35,6 +35,33 @@ export interface Address {
   pincode: string;
 }
 
+export interface PhoneNumber {
+  id: string;
+  number: string;
+  type: 'mobile' | 'landline' | 'work';
+  isPrimary: boolean;
+}
+
+export interface CoApplicant {
+  name: string;
+  phone: string;
+  relation: string;
+  email?: string;
+  occupation?: string;
+  monthlyIncome?: string;
+}
+
+export interface VehicleDetails {
+  brandId: string;
+  brandName: string;
+  modelId: string;
+  modelName: string;
+  type: string;
+  year?: number;
+  price: string;
+  downPayment: string;
+}
+
 export interface AdditionalDetails {
   company: string;
   designation: string;
@@ -49,7 +76,7 @@ export interface AdditionalDetails {
   otherIncome: string;
   addresses: Address[];
   phoneNumber?: string;
-  phoneNumbers?: string[];
+  phoneNumbers?: PhoneNumber[];
   secondaryPhones?: string[];
   email?: string;
   dateOfBirth?: string;
@@ -73,11 +100,8 @@ export interface AdditionalDetails {
   motherName?: string;
   maritalStatus?: string;
   spouseName?: string;
-  coApplicant?: {
-    name: string;
-    phone: string;
-    relation: string;
-  };
+  coApplicant?: CoApplicant;
+  vehicleDetails?: VehicleDetails;
 }
 
 export interface Document {
