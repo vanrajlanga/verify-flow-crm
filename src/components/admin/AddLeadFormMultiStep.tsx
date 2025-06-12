@@ -149,6 +149,7 @@ const AddLeadFormMultiStep = ({
   });
 
   useEffect(() => {
+    console.log('Component mounting, initializing data...');
     loadData();
     if (editLead) {
       populateFormData(editLead);
@@ -158,60 +159,15 @@ const AddLeadFormMultiStep = ({
   }, [editLead]);
 
   const loadData = () => {
-    // Load products
-    const storedProducts = localStorage.getItem('products');
-    if (storedProducts) {
-      try {
-        setProducts(JSON.parse(storedProducts));
-      } catch (error) {
-        console.error('Error parsing products:', error);
-        initializeDefaultProducts();
-      }
-    } else {
-      initializeDefaultProducts();
-    }
-
-    // Load vehicle brands
-    const storedBrands = localStorage.getItem('vehicleBrands');
-    if (storedBrands) {
-      try {
-        setVehicleBrands(JSON.parse(storedBrands));
-      } catch (error) {
-        console.error('Error parsing vehicle brands:', error);
-        initializeDefaultVehicleBrands();
-      }
-    } else {
-      initializeDefaultVehicleBrands();
-    }
-
-    // Load vehicle models
-    const storedModels = localStorage.getItem('vehicleModels');
-    if (storedModels) {
-      try {
-        setVehicleModels(JSON.parse(storedModels));
-      } catch (error) {
-        console.error('Error parsing vehicle models:', error);
-        initializeDefaultVehicleModels();
-      }
-    } else {
-      initializeDefaultVehicleModels();
-    }
-
-    // Load bank branches
-    const storedBranches = localStorage.getItem('bankBranches');
-    if (storedBranches) {
-      try {
-        setBankBranches(JSON.parse(storedBranches));
-      } catch (error) {
-        console.error('Error parsing bank branches:', error);
-        initializeDefaultBankBranches();
-      }
-    } else {
-      initializeDefaultBankBranches();
-    }
+    console.log('Loading all data...');
+    initializeDefaultProducts();
+    initializeDefaultVehicleBrands();
+    initializeDefaultVehicleModels();
+    initializeDefaultBankBranches();
   };
 
   const initializeDefaultProducts = () => {
+    console.log('Initializing products...');
     const defaultProducts: Product[] = [
       { id: 'prod-1', name: 'Auto Loans', description: 'Vehicle financing', banks: ['bank-1', 'bank-2'] },
       { id: 'prod-2', name: 'Commercial Vehicles', description: 'Commercial vehicle loans', banks: ['bank-1', 'bank-3'] },
@@ -221,9 +177,11 @@ const AddLeadFormMultiStep = ({
     ];
     setProducts(defaultProducts);
     localStorage.setItem('products', JSON.stringify(defaultProducts));
+    console.log('Products initialized:', defaultProducts);
   };
 
   const initializeDefaultVehicleBrands = () => {
+    console.log('Initializing vehicle brands...');
     const defaultBrands: VehicleBrand[] = [
       { id: 'brand-1', name: 'Maruti Suzuki' },
       { id: 'brand-2', name: 'Hyundai' },
@@ -236,9 +194,11 @@ const AddLeadFormMultiStep = ({
     ];
     setVehicleBrands(defaultBrands);
     localStorage.setItem('vehicleBrands', JSON.stringify(defaultBrands));
+    console.log('Vehicle brands initialized:', defaultBrands);
   };
 
   const initializeDefaultVehicleModels = () => {
+    console.log('Initializing vehicle models...');
     const defaultModels: VehicleModel[] = [
       { id: 'model-1', name: 'Swift', brandId: 'brand-1' },
       { id: 'model-2', name: 'Alto', brandId: 'brand-1' },
@@ -253,9 +213,11 @@ const AddLeadFormMultiStep = ({
     ];
     setVehicleModels(defaultModels);
     localStorage.setItem('vehicleModels', JSON.stringify(defaultModels));
+    console.log('Vehicle models initialized:', defaultModels);
   };
 
   const initializeDefaultBankBranches = () => {
+    console.log('Initializing bank branches...');
     const defaultBranches: BankBranch[] = [
       { id: 'branch-1', name: 'Bangalore Main Branch', code: 'BLR001', bankId: 'bank-1', state: 'Karnataka', district: 'Bangalore Urban', city: 'Bangalore' },
       { id: 'branch-2', name: 'Koramangala Branch', code: 'BLR002', bankId: 'bank-1', state: 'Karnataka', district: 'Bangalore Urban', city: 'Bangalore' },
@@ -268,6 +230,7 @@ const AddLeadFormMultiStep = ({
     ];
     setBankBranches(defaultBranches);
     localStorage.setItem('bankBranches', JSON.stringify(defaultBranches));
+    console.log('Bank branches initialized:', defaultBranches);
   };
 
   const generateAgencyFileNo = () => {
@@ -382,7 +345,10 @@ const AddLeadFormMultiStep = ({
   };
 
   const getAvailableProducts = () => {
-    if (!formData.bankName) return [];
+    if (!formData.bankName) {
+      console.log('No bank selected, returning empty products');
+      return [];
+    }
     const filtered = products.filter(product => 
       product.banks && product.banks.includes(formData.bankName)
     );
@@ -391,15 +357,23 @@ const AddLeadFormMultiStep = ({
   };
 
   const getBankBranchesByBank = () => {
-    if (!formData.bankName) return [];
+    if (!formData.bankName) {
+      console.log('No bank selected, returning empty branches');
+      return [];
+    }
     const filtered = bankBranches.filter(branch => branch.bankId === formData.bankName);
     console.log('Available branches for bank:', formData.bankName, filtered);
     return filtered;
   };
 
   const getAvailableVehicleModels = () => {
-    if (!formData.vehicleBrandId) return [];
-    return vehicleModels.filter(model => model.brandId === formData.vehicleBrandId);
+    if (!formData.vehicleBrandId) {
+      console.log('No vehicle brand selected, returning empty models');
+      return [];
+    }
+    const filtered = vehicleModels.filter(model => model.brandId === formData.vehicleBrandId);
+    console.log('Available models for brand:', formData.vehicleBrandId, filtered);
+    return filtered;
   };
 
   const shouldShowVehicleFields = () => {
@@ -411,10 +385,7 @@ const AddLeadFormMultiStep = ({
 
   const validatePhoneNumber = (phone: string) => {
     const cleanPhone = phone.replace(/\D/g, '');
-    if (cleanPhone.length > 10) {
-      return false;
-    }
-    return true;
+    return cleanPhone.length <= 10 && cleanPhone.length > 0;
   };
 
   const validateAge = (age: string) => {
@@ -448,6 +419,7 @@ const AddLeadFormMultiStep = ({
   };
 
   const handlePhoneNumberChange = (index: number, value: string) => {
+    // Only allow digits and limit to 10 characters
     const cleanValue = value.replace(/\D/g, '');
     if (cleanValue.length <= 10) {
       updatePhoneNumber(index, cleanValue);
@@ -461,13 +433,14 @@ const AddLeadFormMultiStep = ({
   };
 
   const handleAgeChange = (value: string) => {
+    // Only allow digits
     const cleanValue = value.replace(/\D/g, '');
-    if (validateAge(cleanValue) || cleanValue === '') {
+    if (cleanValue === '' || validateAge(cleanValue)) {
       setFormData(prev => ({ ...prev, age: cleanValue }));
     } else {
       toast({
         title: "Invalid Age",
-        description: "Please enter a valid age",
+        description: "Please enter a valid age (1-149)",
         variant: "destructive"
       });
     }
@@ -588,7 +561,7 @@ const AddLeadFormMultiStep = ({
       status: 'Pending' as const,
       bank: formData.bankName,
       visitType: formData.visitType,
-      assignedTo: formData.assignedAgent,
+      assignedTo: formData.assignedAgent === 'no-assignment' ? '' : formData.assignedAgent,
       createdAt: editLead?.createdAt || new Date(),
       documents: editLead?.documents || [],
       instructions: formData.instructions
@@ -804,15 +777,21 @@ const AddLeadFormMultiStep = ({
                     <SelectValue placeholder={formData.bankName ? "Select lead type/product" : "First select a bank"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {getAvailableProducts().length > 0 ? (
-                      getAvailableProducts().map((product) => (
-                        <SelectItem key={product.id} value={product.name}>
-                          {product.name}
+                    {formData.bankName ? (
+                      getAvailableProducts().length > 0 ? (
+                        getAvailableProducts().map((product) => (
+                          <SelectItem key={product.id} value={product.name}>
+                            {product.name}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="no-products" disabled>
+                          No products available for this bank
                         </SelectItem>
-                      ))
+                      )
                     ) : (
-                      <SelectItem value="no-products" disabled>
-                        {formData.bankName ? "No products available for this bank" : "Select a bank first"}
+                      <SelectItem value="select-bank" disabled>
+                        Select a bank first
                       </SelectItem>
                     )}
                   </SelectContent>
@@ -834,15 +813,21 @@ const AddLeadFormMultiStep = ({
                       <SelectValue placeholder={formData.bankName ? "Select branch" : "First select a bank"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {getBankBranchesByBank().length > 0 ? (
-                        getBankBranchesByBank().map((branch) => (
-                          <SelectItem key={branch.id} value={branch.id}>
-                            {branch.name} ({branch.code})
+                      {formData.bankName ? (
+                        getBankBranchesByBank().length > 0 ? (
+                          getBankBranchesByBank().map((branch) => (
+                            <SelectItem key={branch.id} value={branch.id}>
+                              {branch.name} ({branch.code})
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="no-branches" disabled>
+                            No branches available for this bank
                           </SelectItem>
-                        ))
+                        )
                       ) : (
-                        <SelectItem value="no-branches" disabled>
-                          {formData.bankName ? "No branches available for this bank" : "Select a bank first"}
+                        <SelectItem value="select-bank" disabled>
+                          Select a bank first
                         </SelectItem>
                       )}
                     </SelectContent>
@@ -863,15 +848,21 @@ const AddLeadFormMultiStep = ({
                       <SelectValue placeholder={formData.bankName ? "Select branch" : "First select a bank"} />
                     </SelectTrigger>
                     <SelectContent>
-                      {getBankBranchesByBank().length > 0 ? (
-                        getBankBranchesByBank().map((branch) => (
-                          <SelectItem key={branch.id} value={branch.id}>
-                            {branch.name} ({branch.code})
+                      {formData.bankName ? (
+                        getBankBranchesByBank().length > 0 ? (
+                          getBankBranchesByBank().map((branch) => (
+                            <SelectItem key={branch.id} value={branch.id}>
+                              {branch.name} ({branch.code})
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="no-branches" disabled>
+                            No branches available for this bank
                           </SelectItem>
-                        ))
+                        )
                       ) : (
-                        <SelectItem value="no-branches" disabled>
-                          {formData.bankName ? "No branches available for this bank" : "Select a bank first"}
+                        <SelectItem value="select-bank" disabled>
+                          Select a bank first
                         </SelectItem>
                       )}
                     </SelectContent>
@@ -881,7 +872,12 @@ const AddLeadFormMultiStep = ({
 
               {shouldShowVehicleFields() && (
                 <div className="border-t pt-4 mt-4">
-                  <h3 className="text-lg font-medium mb-4 text-blue-600">Vehicle Details Required</h3>
+                  <div className="bg-blue-50 p-3 rounded-lg mb-4">
+                    <h3 className="text-lg font-medium text-blue-700 mb-2">🚗 Vehicle Details Required</h3>
+                    <p className="text-sm text-blue-600">
+                      Since you selected "{formData.leadType}", please provide vehicle information below.
+                    </p>
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label>Vehicle Brand *</Label>
@@ -931,15 +927,21 @@ const AddLeadFormMultiStep = ({
                           <SelectValue placeholder={formData.vehicleBrandId ? "Select vehicle model" : "First select brand"} />
                         </SelectTrigger>
                         <SelectContent>
-                          {getAvailableVehicleModels().length > 0 ? (
-                            getAvailableVehicleModels().map((model) => (
-                              <SelectItem key={model.id} value={model.id}>
-                                {model.name}
+                          {formData.vehicleBrandId ? (
+                            getAvailableVehicleModels().length > 0 ? (
+                              getAvailableVehicleModels().map((model) => (
+                                <SelectItem key={model.id} value={model.id}>
+                                  {model.name}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <SelectItem value="no-models" disabled>
+                                No models available for this brand
                               </SelectItem>
-                            ))
+                            )
                           ) : (
-                            <SelectItem value="no-models" disabled>
-                              {formData.vehicleBrandId ? "No models available for this brand" : "Select a brand first"}
+                            <SelectItem value="select-brand" disabled>
+                              Select a brand first
                             </SelectItem>
                           )}
                         </SelectContent>
@@ -1016,59 +1018,23 @@ const AddLeadFormMultiStep = ({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <Label>Vehicle Brand *</Label>
-                      <Select
-                        value={formData.vehicleBrandId}
-                        onValueChange={(value) => {
-                          const brand = vehicleBrands.find(b => b.id === value);
-                          setFormData(prev => ({ 
-                            ...prev, 
-                            vehicleBrandId: value,
-                            vehicleBrandName: brand?.name || '',
-                            vehicleModelId: '',
-                            vehicleModelName: ''
-                          }));
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select vehicle brand" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {vehicleBrands.map((brand) => (
-                            <SelectItem key={brand.id} value={brand.id}>
-                              {brand.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
+                        {formData.vehicleBrandName || 'Not selected'}
+                      </div>
                     </div>
 
                     <div>
                       <Label>Vehicle Model *</Label>
-                      <Select
-                        value={formData.vehicleModelId}
-                        onValueChange={(value) => {
-                          const model = vehicleModels.find(m => m.id === value);
-                          setFormData(prev => ({ 
-                            ...prev, 
-                            vehicleModelId: value,
-                            vehicleModelName: model?.name || ''
-                          }));
-                        }}
-                        disabled={!formData.vehicleBrandId}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder={formData.vehicleBrandId ? "Select vehicle model" : "First select brand"} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {getAvailableVehicleModels().map((model) => (
-                            <SelectItem key={model.id} value={model.id}>
-                              {model.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
+                        {formData.vehicleModelName || 'Not selected'}
+                      </div>
                     </div>
                   </div>
+                  {(!formData.vehicleBrandName || !formData.vehicleModelName) && (
+                    <p className="text-sm text-red-600 mt-2">
+                      Please go back to Step 1 to select vehicle details.
+                    </p>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -1093,12 +1059,13 @@ const AddLeadFormMultiStep = ({
                 </div>
 
                 <div>
-                  <Label>Age</Label>
+                  <Label>Age (Numbers only, 1-149)</Label>
                   <Input
                     value={formData.age}
                     onChange={(e) => handleAgeChange(e.target.value)}
-                    placeholder="Enter age (numbers only)"
+                    placeholder="Enter age"
                     type="text"
+                    maxLength={3}
                   />
                 </div>
               </div>
@@ -1126,7 +1093,7 @@ const AddLeadFormMultiStep = ({
               </div>
 
               <div>
-                <Label>Phone Numbers * (Max 10 digits each)</Label>
+                <Label>Phone Numbers * (10 digits max each)</Label>
                 <div className="space-y-2">
                   {formData.phoneNumbers.map((phone, index) => (
                     <div key={index} className="flex gap-2">
@@ -1135,6 +1102,7 @@ const AddLeadFormMultiStep = ({
                         onChange={(e) => handlePhoneNumberChange(index, e.target.value)}
                         placeholder="Enter 10-digit phone number"
                         maxLength={10}
+                        type="tel"
                       />
                       {formData.phoneNumbers.length > 1 && (
                         <Button
@@ -1454,7 +1422,7 @@ const AddLeadFormMultiStep = ({
                   value={formData.assignedAgent}
                   onValueChange={(value) => setFormData(prev => ({ 
                     ...prev, 
-                    assignedAgent: value === 'no-assignment' ? '' : value 
+                    assignedAgent: value 
                   }))}
                 >
                   <SelectTrigger>
@@ -1462,11 +1430,15 @@ const AddLeadFormMultiStep = ({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="no-assignment">No assignment (assign later)</SelectItem>
-                    {agents.map((agent) => (
-                      <SelectItem key={agent.id} value={agent.id}>
-                        {agent.name} - {agent.district || 'No district'}
-                      </SelectItem>
-                    ))}
+                    {agents.length > 0 ? (
+                      agents.map((agent) => (
+                        <SelectItem key={agent.id} value={agent.id}>
+                          {agent.name} - {agent.district || 'No district'}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="no-agents" disabled>No agents available</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -1474,16 +1446,16 @@ const AddLeadFormMultiStep = ({
               <div className="bg-blue-50 p-4 rounded-lg">
                 <h3 className="font-medium mb-2">Review Summary</h3>
                 <div className="text-sm space-y-1">
-                  <p><strong>Customer:</strong> {formData.customerName}</p>
-                  <p><strong>Bank:</strong> {banks.find(b => b.id === formData.bankName)?.name}</p>
-                  <p><strong>Product:</strong> {formData.leadType}</p>
-                  <p><strong>Phone:</strong> {formData.phoneNumbers.filter(p => p.trim()).join(', ')}</p>
+                  <p><strong>Customer:</strong> {formData.customerName || 'Not entered'}</p>
+                  <p><strong>Bank:</strong> {banks.find(b => b.id === formData.bankName)?.name || 'Not selected'}</p>
+                  <p><strong>Product:</strong> {formData.leadType || 'Not selected'}</p>
+                  <p><strong>Phone:</strong> {formData.phoneNumbers.filter(p => p.trim()).join(', ') || 'Not entered'}</p>
                   {shouldShowVehicleFields() && formData.vehicleBrandName && (
                     <p><strong>Vehicle:</strong> {formData.vehicleBrandName} {formData.vehicleModelName}</p>
                   )}
                   <p><strong>Verification Addresses:</strong> {getVerificationAddresses().length}</p>
                   <p><strong>Assigned Agent:</strong> {
-                    formData.assignedAgent 
+                    formData.assignedAgent && formData.assignedAgent !== 'no-assignment'
                       ? agents.find(a => a.id === formData.assignedAgent)?.name || 'Unknown'
                       : 'Not assigned'
                   }</p>
