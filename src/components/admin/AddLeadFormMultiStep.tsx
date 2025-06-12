@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,6 +55,16 @@ interface VehicleModel {
   brandId: string;
 }
 
+interface BankBranch {
+  id: string;
+  name: string;
+  code: string;
+  bankId: string;
+  state: string;
+  district: string;
+  city: string;
+}
+
 interface AddLeadFormMultiStepProps {
   agents: User[];
   banks: Bank[];
@@ -89,7 +98,7 @@ const AddLeadFormMultiStep = ({
   const [products, setProducts] = useState<Product[]>([]);
   const [vehicleBrands, setVehicleBrands] = useState<VehicleBrand[]>([]);
   const [vehicleModels, setVehicleModels] = useState<VehicleModel[]>([]);
-  const [bankBranches, setBankBranches] = useState<any[]>([]);
+  const [bankBranches, setBankBranches] = useState<BankBranch[]>([]);
 
   const [formData, setFormData] = useState({
     // Bank & Product Info
@@ -153,24 +162,65 @@ const AddLeadFormMultiStep = ({
     const storedProducts = localStorage.getItem('products');
     if (storedProducts) {
       setProducts(JSON.parse(storedProducts));
+    } else {
+      // Initialize default products
+      const defaultProducts: Product[] = [
+        { id: 'prod-1', name: 'Auto Loans', description: 'Vehicle financing', banks: ['bank-1', 'bank-2'] },
+        { id: 'prod-2', name: 'Commercial Vehicles', description: 'Commercial vehicle loans', banks: ['bank-1', 'bank-3'] },
+        { id: 'prod-3', name: 'CVCE', description: 'Commercial Vehicle Customer Enquiry', banks: ['bank-2', 'bank-3'] },
+        { id: 'prod-4', name: 'Home Loans', description: 'Housing finance', banks: ['bank-1', 'bank-2', 'bank-3'] },
+        { id: 'prod-5', name: 'Personal Loans', description: 'Personal financing', banks: ['bank-1', 'bank-2'] }
+      ];
+      setProducts(defaultProducts);
+      localStorage.setItem('products', JSON.stringify(defaultProducts));
     }
 
     // Load vehicle brands
     const storedBrands = localStorage.getItem('vehicleBrands');
     if (storedBrands) {
       setVehicleBrands(JSON.parse(storedBrands));
+    } else {
+      const defaultBrands: VehicleBrand[] = [
+        { id: 'brand-1', name: 'Maruti Suzuki' },
+        { id: 'brand-2', name: 'Hyundai' },
+        { id: 'brand-3', name: 'Tata Motors' },
+        { id: 'brand-4', name: 'Mahindra' },
+        { id: 'brand-5', name: 'Honda' }
+      ];
+      setVehicleBrands(defaultBrands);
+      localStorage.setItem('vehicleBrands', JSON.stringify(defaultBrands));
     }
 
     // Load vehicle models
     const storedModels = localStorage.getItem('vehicleModels');
     if (storedModels) {
       setVehicleModels(JSON.parse(storedModels));
+    } else {
+      const defaultModels: VehicleModel[] = [
+        { id: 'model-1', name: 'Swift', brandId: 'brand-1' },
+        { id: 'model-2', name: 'Alto', brandId: 'brand-1' },
+        { id: 'model-3', name: 'i20', brandId: 'brand-2' },
+        { id: 'model-4', name: 'Creta', brandId: 'brand-2' },
+        { id: 'model-5', name: 'Nexon', brandId: 'brand-3' }
+      ];
+      setVehicleModels(defaultModels);
+      localStorage.setItem('vehicleModels', JSON.stringify(defaultModels));
     }
 
     // Load bank branches
     const storedBranches = localStorage.getItem('bankBranches');
     if (storedBranches) {
       setBankBranches(JSON.parse(storedBranches));
+    } else {
+      const defaultBranches: BankBranch[] = [
+        { id: 'branch-1', name: 'Bangalore Main Branch', code: 'BLR001', bankId: 'bank-1', state: 'Karnataka', district: 'Bangalore Urban', city: 'Bangalore' },
+        { id: 'branch-2', name: 'Koramangala Branch', code: 'BLR002', bankId: 'bank-1', state: 'Karnataka', district: 'Bangalore Urban', city: 'Bangalore' },
+        { id: 'branch-3', name: 'Mumbai Central', code: 'MUM001', bankId: 'bank-2', state: 'Maharashtra', district: 'Mumbai', city: 'Mumbai' },
+        { id: 'branch-4', name: 'Andheri Branch', code: 'MUM002', bankId: 'bank-2', state: 'Maharashtra', district: 'Mumbai', city: 'Mumbai' },
+        { id: 'branch-5', name: 'Delhi Main', code: 'DEL001', bankId: 'bank-3', state: 'Delhi', district: 'Central Delhi', city: 'Delhi' }
+      ];
+      setBankBranches(defaultBranches);
+      localStorage.setItem('bankBranches', JSON.stringify(defaultBranches));
     }
   };
 
@@ -304,7 +354,7 @@ const AddLeadFormMultiStep = ({
 
   const shouldShowVehicleFields = () => {
     const vehicleRelatedTypes = ['Auto Loans', 'Commercial Vehicles', 'CVCE'];
-    return vehicleRelatedTypes.includes(formData.leadType);
+    return vehicleRelatedTypes.some(type => formData.leadType.includes(type));
   };
 
   const addPhoneNumber = () => {
@@ -580,7 +630,9 @@ const AddLeadFormMultiStep = ({
                   onValueChange={(value) => setFormData(prev => ({ 
                     ...prev, 
                     bankName: value,
-                    leadType: '' // Reset lead type when bank changes
+                    leadType: '', // Reset lead type when bank changes
+                    initiatedBranch: '',
+                    buildBranch: ''
                   }))}
                 >
                   <SelectTrigger>
@@ -600,7 +652,14 @@ const AddLeadFormMultiStep = ({
                 <Label>Lead Type/Product *</Label>
                 <Select
                   value={formData.leadType}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, leadType: value }))}
+                  onValueChange={(value) => setFormData(prev => ({ 
+                    ...prev, 
+                    leadType: value,
+                    vehicleBrandId: '',
+                    vehicleBrandName: '',
+                    vehicleModelId: '',
+                    vehicleModelName: ''
+                  }))}
                   disabled={!formData.bankName}
                 >
                   <SelectTrigger>
@@ -673,8 +732,6 @@ const AddLeadFormMultiStep = ({
                   <Label>Agency File No. *</Label>
                   <Input
                     value={formData.agencyFileNo}
-                    onChange={(e) => setFormData(prev => ({ ...prev, agencyFileNo: e.target.value }))}
-                    placeholder="Auto-generated"
                     readOnly
                     className="bg-gray-50"
                   />
@@ -722,67 +779,65 @@ const AddLeadFormMultiStep = ({
               </div>
 
               {shouldShowVehicleFields() && (
-                <>
-                  <div className="border-t pt-4">
-                    <h3 className="text-lg font-medium mb-4">Vehicle Details</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label>Vehicle Brand *</Label>
-                        <Select
-                          value={formData.vehicleBrandId}
-                          onValueChange={(value) => {
-                            const brand = vehicleBrands.find(b => b.id === value);
-                            setFormData(prev => ({ 
-                              ...prev, 
-                              vehicleBrandId: value,
-                              vehicleBrandName: brand?.name || '',
-                              vehicleModelId: '',
-                              vehicleModelName: ''
-                            }));
-                          }}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select vehicle brand" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {vehicleBrands.map((brand) => (
-                              <SelectItem key={brand.id} value={brand.id}>
-                                {brand.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                <div className="border-t pt-4">
+                  <h3 className="text-lg font-medium mb-4">Vehicle Details</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label>Vehicle Brand *</Label>
+                      <Select
+                        value={formData.vehicleBrandId}
+                        onValueChange={(value) => {
+                          const brand = vehicleBrands.find(b => b.id === value);
+                          setFormData(prev => ({ 
+                            ...prev, 
+                            vehicleBrandId: value,
+                            vehicleBrandName: brand?.name || '',
+                            vehicleModelId: '',
+                            vehicleModelName: ''
+                          }));
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select vehicle brand" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {vehicleBrands.map((brand) => (
+                            <SelectItem key={brand.id} value={brand.id}>
+                              {brand.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                      <div>
-                        <Label>Vehicle Model *</Label>
-                        <Select
-                          value={formData.vehicleModelId}
-                          onValueChange={(value) => {
-                            const model = vehicleModels.find(m => m.id === value);
-                            setFormData(prev => ({ 
-                              ...prev, 
-                              vehicleModelId: value,
-                              vehicleModelName: model?.name || ''
-                            }));
-                          }}
-                          disabled={!formData.vehicleBrandId}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select vehicle model" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {getAvailableVehicleModels().map((model) => (
-                              <SelectItem key={model.id} value={model.id}>
-                                {model.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                    <div>
+                      <Label>Vehicle Model *</Label>
+                      <Select
+                        value={formData.vehicleModelId}
+                        onValueChange={(value) => {
+                          const model = vehicleModels.find(m => m.id === value);
+                          setFormData(prev => ({ 
+                            ...prev, 
+                            vehicleModelId: value,
+                            vehicleModelName: model?.name || ''
+                          }));
+                        }}
+                        disabled={!formData.vehicleBrandId}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select vehicle model" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {getAvailableVehicleModels().map((model) => (
+                            <SelectItem key={model.id} value={model.id}>
+                              {model.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
-                </>
+                </div>
               )}
             </CardContent>
           </Card>

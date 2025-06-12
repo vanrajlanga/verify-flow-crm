@@ -4,32 +4,16 @@ import { useNavigate } from 'react-router-dom';
 import { User } from '@/utils/mockData';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import ProductManager from '@/components/admin/ProductManager';
 import LocationManager from '@/components/admin/LocationManager';
-import RoleManager from '@/components/admin/RoleManager';
-import TeamMemberManager from '@/components/admin/TeamMemberManager';
+import ProductManager from '@/components/admin/ProductManager';
 import BankBranchManager from '@/components/admin/BankBranchManager';
-
-interface LocationData {
-  states: {
-    id: string;
-    name: string;
-    districts: {
-      id: string;
-      name: string;
-      cities: {
-        id: string;
-        name: string;
-      }[];
-    }[];
-  }[];
-}
+import VehicleManager from '@/components/admin/VehicleManager';
 
 const AdminSettings = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [locationData, setLocationData] = useState<LocationData>({ states: [] });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -46,18 +30,6 @@ const AdminSettings = () => {
     }
 
     setCurrentUser(parsedUser);
-
-    // Load location data from localStorage
-    const storedLocationData = localStorage.getItem('locationData');
-    if (storedLocationData) {
-      try {
-        const parsedLocationData = JSON.parse(storedLocationData);
-        setLocationData(parsedLocationData);
-      } catch (error) {
-        console.error('Error parsing location data:', error);
-        setLocationData({ states: [] });
-      }
-    }
   }, [navigate]);
 
   const handleLogout = () => {
@@ -83,44 +55,46 @@ const AdminSettings = () => {
         <main className="flex-1 p-4 md:p-6">
           <div className="max-w-7xl mx-auto space-y-6">
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
+              <h1 className="text-2xl font-bold tracking-tight">System Settings</h1>
               <p className="text-muted-foreground">
-                Manage system configuration and settings
+                Manage system configuration and master data
               </p>
             </div>
-
-            <Tabs defaultValue="products" className="space-y-4">
-              <TabsList>
-                <TabsTrigger value="products">Products</TabsTrigger>
-                <TabsTrigger value="branches">Bank Branches</TabsTrigger>
-                <TabsTrigger value="locations">Locations</TabsTrigger>
-                <TabsTrigger value="permissions">Permissions</TabsTrigger>
-                <TabsTrigger value="team">Team Members</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="products">
-                <ProductManager />
-              </TabsContent>
-
-              <TabsContent value="branches">
-                <BankBranchManager />
-              </TabsContent>
-
-              <TabsContent value="locations">
-                <LocationManager 
-                  locationData={locationData}
-                  setLocationData={setLocationData}
-                />
-              </TabsContent>
-
-              <TabsContent value="permissions">
-                <RoleManager />
-              </TabsContent>
-
-              <TabsContent value="team">
-                <TeamMemberManager />
-              </TabsContent>
-            </Tabs>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Configuration Management</CardTitle>
+                <CardDescription>
+                  Configure locations, products, bank branches, and vehicle data
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="locations" className="space-y-4">
+                  <TabsList className="grid w-full grid-cols-4">
+                    <TabsTrigger value="locations">Locations</TabsTrigger>
+                    <TabsTrigger value="products">Products</TabsTrigger>
+                    <TabsTrigger value="branches">Bank Branches</TabsTrigger>
+                    <TabsTrigger value="vehicles">Vehicle Data</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="locations">
+                    <LocationManager />
+                  </TabsContent>
+                  
+                  <TabsContent value="products">
+                    <ProductManager />
+                  </TabsContent>
+                  
+                  <TabsContent value="branches">
+                    <BankBranchManager />
+                  </TabsContent>
+                  
+                  <TabsContent value="vehicles">
+                    <VehicleManager />
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
           </div>
         </main>
       </div>
