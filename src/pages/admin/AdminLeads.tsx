@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User } from '@/utils/mockData';
+import { User, Lead } from '@/utils/mockData';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
 import { Button } from '@/components/ui/button';
@@ -10,9 +10,30 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Eye, Edit, Trash2, Plus } from 'lucide-react';
+import { Eye, Edit, Trash2, Plus, Download, Upload, FileDown, UserPlus, MoreVertical } from 'lucide-react';
 import { toast } from "@/components/ui/use-toast";
-import { getLeadsFromDatabase } from '@/lib/lead-operations';
+import { getLeadsFromDatabase, updateLeadInDatabase, deleteLeadFromDatabase } from '@/lib/lead-operations';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 // Simple search criteria interface
 interface SearchCriteria {
@@ -24,9 +45,12 @@ interface SearchCriteria {
 const AdminLeads = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [leads, setLeads] = useState<any[]>([]);
+  const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchCriteria, setSearchCriteria] = useState<SearchCriteria>({});
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [leadToAssign, setLeadToAssign] = useState<string>('');
+  const [selectedAgent, setSelectedAgent] = useState<string>('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -73,54 +97,7 @@ const AdminLeads = () => {
     if (storedLeads) {
       try {
         const parsedLeads = JSON.parse(storedLeads);
-        const transformedLeads = parsedLeads.map((lead: any) => ({
-          ...lead,
-          address: {
-            id: lead.address?.id || `addr-${Date.now()}`,
-            type: lead.address?.type || 'Residence',
-            street: lead.address?.street || '',
-            city: lead.address?.city || '',
-            district: lead.address?.district || '',
-            state: lead.address?.state || '',
-            pincode: lead.address?.pincode || ''
-          },
-          additionalDetails: {
-            company: lead.additionalDetails?.company || '',
-            designation: lead.additionalDetails?.designation || '',
-            workExperience: lead.additionalDetails?.workExperience || '',
-            propertyType: lead.additionalDetails?.propertyType || '',
-            ownershipStatus: lead.additionalDetails?.ownershipStatus || '',
-            propertyAge: lead.additionalDetails?.propertyAge || '',
-            monthlyIncome: lead.additionalDetails?.monthlyIncome || '',
-            annualIncome: lead.additionalDetails?.annualIncome || '',
-            otherIncome: lead.additionalDetails?.otherIncome || '',
-            phoneNumber: lead.additionalDetails?.phoneNumber || '',
-            email: lead.additionalDetails?.email || '',
-            dateOfBirth: lead.additionalDetails?.dateOfBirth || '',
-            gender: lead.additionalDetails?.gender || 'Male',
-            maritalStatus: lead.additionalDetails?.maritalStatus || 'Single',
-            fatherName: lead.additionalDetails?.fatherName || '',
-            motherName: lead.additionalDetails?.motherName || '',
-            spouseName: lead.additionalDetails?.spouseName || '',
-            agencyFileNo: lead.additionalDetails?.agencyFileNo || '',
-            applicationBarcode: lead.additionalDetails?.applicationBarcode || '',
-            caseId: lead.additionalDetails?.caseId || '',
-            schemeDesc: lead.additionalDetails?.schemeDesc || '',
-            bankBranch: lead.additionalDetails?.bankBranch || '',
-            additionalComments: lead.additionalDetails?.additionalComments || '',
-            leadType: lead.additionalDetails?.leadType || '',
-            leadTypeId: lead.additionalDetails?.leadTypeId || '',
-            loanAmount: lead.additionalDetails?.loanAmount || '',
-            loanType: lead.additionalDetails?.loanType || '',
-            vehicleBrandName: lead.additionalDetails?.vehicleBrandName || '',
-            vehicleBrandId: lead.additionalDetails?.vehicleBrandId || '',
-            vehicleModelName: lead.additionalDetails?.vehicleModelName || '',
-            vehicleModelId: lead.additionalDetails?.vehicleModelId || '',
-            addresses: lead.additionalDetails?.addresses || [],
-            phoneNumbers: lead.additionalDetails?.phoneNumbers || []
-          }
-        }));
-        setLeads(transformedLeads);
+        setLeads(parsedLeads);
       } catch (error) {
         console.error("Error parsing stored leads:", error);
         setLeads([]);
@@ -139,11 +116,109 @@ const AdminLeads = () => {
     navigate('/admin/add-lead');
   };
 
+  const handleEditLead = (leadId: string) => {
+    navigate(`/admin/add-lead/${leadId}`);
+  };
+
+  const handleViewLead = (leadId: string) => {
+    navigate(`/lead/${leadId}`);
+  };
+
+  const handleDeleteLead = async (leadId: string) => {
+    try {
+      await deleteLeadFromDatabase(leadId);
+      const updatedLeads = leads.filter(lead => lead.id !== leadId);
+      setLeads(updatedLeads);
+      localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+      toast({
+        title: "Lead deleted",
+        description: "Lead has been deleted successfully.",
+      });
+    } catch (error) {
+      console.error('Error deleting lead:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete lead.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleAssignLead = (leadId: string, agentId: string) => {
+    const updatedLeads = leads.map(lead => 
+      lead.id === leadId 
+        ? { ...lead, assignedTo: agentId, status: 'Assigned' as Lead['status'] }
+        : lead
+    );
+    setLeads(updatedLeads);
+    localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+    
+    toast({
+      title: "Lead assigned",
+      description: "Lead has been assigned successfully.",
+    });
+  };
+
+  const openAssignDialog = (leadId: string) => {
+    setLeadToAssign(leadId);
+    setAssignDialogOpen(true);
+  };
+
+  const confirmAssignment = () => {
+    if (!selectedAgent) {
+      toast({
+        title: "No agent selected",
+        description: "Please select an agent to assign the lead",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    handleAssignLead(leadToAssign, selectedAgent);
+    setAssignDialogOpen(false);
+    setLeadToAssign('');
+    setSelectedAgent('');
+  };
+
+  const getAvailableAgents = () => {
+    try {
+      const storedUsers = localStorage.getItem('mockUsers');
+      if (storedUsers) {
+        const users = JSON.parse(storedUsers);
+        return users.filter((user: User) => user.role === 'agent');
+      }
+    } catch (error) {
+      console.error('Error getting agents:', error);
+    }
+    return [];
+  };
+
+  const getAgentName = (agentId: string) => {
+    const agents = getAvailableAgents();
+    const agent = agents.find(a => a.id === agentId);
+    return agent ? agent.name : 'Unassigned';
+  };
+
+  const getBankName = (bankId: string) => {
+    try {
+      const storedBanks = localStorage.getItem('mockBanks');
+      if (storedBanks) {
+        const banks = JSON.parse(storedBanks);
+        const bank = banks.find((b: any) => b.id === bankId);
+        return bank ? bank.name : bankId;
+      }
+    } catch (error) {
+      console.error('Error getting bank name:', error);
+    }
+    return bankId;
+  };
+
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
       case 'Completed':
         return 'default';
       case 'In Progress':
+      case 'Assigned':
         return 'secondary';
       case 'Pending':
         return 'outline';
@@ -152,6 +227,239 @@ const AdminLeads = () => {
       default:
         return 'outline';
     }
+  };
+
+  const formatDate = (date: Date | string) => {
+    if (!date) return 'N/A';
+    const d = typeof date === 'string' ? new Date(date) : date;
+    return d.toLocaleDateString();
+  };
+
+  const formatAddress = (address: any) => {
+    if (!address) return 'N/A';
+    return `${address.street || ''}, ${address.city || ''}, ${address.district || ''}, ${address.state || ''} - ${address.pincode || ''}`.replace(/^,\s*|,\s*$/g, '');
+  };
+
+  const exportToCSV = () => {
+    const headers = [
+      'Lead ID', 'Agency File No', 'Application Barcode', 'Case ID', 'Customer Name', 
+      'Age', 'Job/Designation', 'Phone', 'Email', 'Date of Birth', 'Gender', 'Marital Status',
+      'Father Name', 'Mother Name', 'Spouse Name', 'Company', 'Work Experience', 
+      'Property Type', 'Ownership Status', 'Property Age', 'Monthly Income', 'Annual Income', 
+      'Other Income', 'Lead Type', 'Loan Amount', 'Loan Type', 'Vehicle Brand', 'Vehicle Model',
+      'Bank', 'Branch', 'Status', 'Visit Type', 'Assigned Agent', 'Created Date',
+      'Residence Address', 'Office Address', 'Scheme Description', 'Instructions',
+      'Additional Comments', 'Verification Status', 'Verification Notes'
+    ];
+
+    const csvContent = [
+      headers.join(','),
+      ...leads.map(lead => {
+        const officeAddress = lead.additionalDetails?.addresses?.find(addr => addr.type === 'Office');
+        return [
+          lead.id,
+          lead.additionalDetails?.agencyFileNo || '',
+          lead.additionalDetails?.applicationBarcode || '',
+          lead.additionalDetails?.caseId || '',
+          lead.name,
+          lead.age || '',
+          lead.additionalDetails?.designation || lead.job || '',
+          lead.additionalDetails?.phoneNumber || '',
+          lead.additionalDetails?.email || '',
+          lead.additionalDetails?.dateOfBirth || '',
+          lead.additionalDetails?.gender || '',
+          lead.additionalDetails?.maritalStatus || '',
+          lead.additionalDetails?.fatherName || '',
+          lead.additionalDetails?.motherName || '',
+          lead.additionalDetails?.spouseName || '',
+          lead.additionalDetails?.company || '',
+          lead.additionalDetails?.workExperience || '',
+          lead.additionalDetails?.propertyType || '',
+          lead.additionalDetails?.ownershipStatus || '',
+          lead.additionalDetails?.propertyAge || '',
+          lead.additionalDetails?.monthlyIncome || '',
+          lead.additionalDetails?.annualIncome || '',
+          lead.additionalDetails?.otherIncome || '',
+          lead.additionalDetails?.leadType || '',
+          lead.additionalDetails?.loanAmount || '',
+          lead.additionalDetails?.loanType || '',
+          lead.additionalDetails?.vehicleBrandName || '',
+          lead.additionalDetails?.vehicleModelName || '',
+          getBankName(lead.bank || ''),
+          lead.additionalDetails?.bankBranch || '',
+          lead.status,
+          lead.visitType,
+          getAgentName(lead.assignedTo || ''),
+          formatDate(lead.createdAt),
+          `"${formatAddress(lead.address)}"`,
+          `"${formatAddress(officeAddress)}"`,
+          lead.additionalDetails?.schemeDesc || '',
+          lead.instructions || '',
+          lead.additionalDetails?.additionalComments || '',
+          lead.verification?.status || 'Not Started',
+          lead.verification?.notes || ''
+        ].join(',');
+      })
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `leads_export_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+
+    toast({
+      title: "Export completed",
+      description: "Lead data exported successfully.",
+    });
+  };
+
+  const downloadSampleCSV = () => {
+    const sampleHeaders = [
+      'Lead ID', 'Agency File No', 'Application Barcode', 'Case ID', 'Customer Name', 
+      'Age', 'Job/Designation', 'Phone', 'Email', 'Date of Birth', 'Gender', 'Marital Status',
+      'Father Name', 'Mother Name', 'Spouse Name', 'Company', 'Work Experience', 
+      'Property Type', 'Ownership Status', 'Property Age', 'Monthly Income', 'Annual Income', 
+      'Other Income', 'Lead Type', 'Loan Amount', 'Loan Type', 'Vehicle Brand', 'Vehicle Model',
+      'Bank', 'Branch', 'Status', 'Visit Type', 'Assigned Agent', 'Created Date',
+      'Residence Address', 'Office Address', 'Scheme Description', 'Instructions',
+      'Additional Comments', 'Verification Status', 'Verification Notes'
+    ];
+
+    const sampleData = [
+      'LEAD001', 'AGN-123456', 'BC123456', 'CASE001', 'John Doe',
+      '30', 'Software Engineer', '9876543210', 'john@example.com', '1993-01-15', 'Male', 'Single',
+      'Father Name', 'Mother Name', '', 'Tech Corp', '5 years',
+      'Apartment', 'Owned', '5 years', '50000', '600000',
+      '10000', 'Auto Loan', '500000', 'Vehicle Loan', 'Toyota', 'Camry',
+      'HDFC Bank', 'Main Branch', 'Pending', 'Residence', 'Agent Name', '2024-01-15',
+      '123 Main St, City, District, State - 123456', '456 Office St, City, District, State - 123456',
+      'Standard Scheme', 'Please verify documents', 'No additional comments', 'Not Started', ''
+    ];
+
+    const csvContent = [sampleHeaders.join(','), sampleData.join(',')].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'sample_lead_format.csv';
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+
+    toast({
+      title: "Sample downloaded",
+      description: "Sample CSV format downloaded successfully.",
+    });
+  };
+
+  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const lines = content.split('\n');
+        const headers = lines[0].split(',');
+        
+        const importedLeads: Lead[] = [];
+        
+        for (let i = 1; i < lines.length; i++) {
+          const values = lines[i].split(',');
+          if (values.length >= 5 && values[4].trim()) {
+            const newLead: Lead = {
+              id: values[0] || `imported-lead-${Date.now()}-${i}`,
+              name: values[4].trim(),
+              age: parseInt(values[5]) || 30,
+              job: values[6] || 'Not specified',
+              address: {
+                id: `addr-imported-${i}`,
+                type: 'Residence',
+                street: values[34] ? values[34].replace(/"/g, '') : '',
+                city: 'Imported',
+                district: 'Imported',
+                state: 'Imported',
+                pincode: '000000'
+              },
+              additionalDetails: {
+                agencyFileNo: values[1] || '',
+                applicationBarcode: values[2] || '',
+                caseId: values[3] || '',
+                phoneNumber: values[7] || '',
+                email: values[8] || '',
+                dateOfBirth: values[9] || '',
+                gender: values[10] || 'Male',
+                maritalStatus: values[11] || 'Single',
+                fatherName: values[12] || '',
+                motherName: values[13] || '',
+                spouseName: values[14] || '',
+                company: values[15] || '',
+                workExperience: values[16] || '',
+                propertyType: values[17] || '',
+                ownershipStatus: values[18] || '',
+                propertyAge: values[19] || '',
+                monthlyIncome: values[20] || '',
+                annualIncome: values[21] || '',
+                otherIncome: values[22] || '',
+                leadType: values[23] || '',
+                loanAmount: values[24] || '',
+                loanType: values[25] || '',
+                vehicleBrandName: values[26] || '',
+                vehicleModelName: values[27] || '',
+                bankBranch: values[29] || '',
+                schemeDesc: values[36] || '',
+                additionalComments: values[38] || '',
+                designation: values[6] || '',
+                addresses: [],
+                phoneNumbers: []
+              },
+              status: (values[30] as Lead['status']) || 'Pending',
+              bank: values[28] || 'bank-1',
+              visitType: (values[31] as Lead['visitType']) || 'Residence',
+              assignedTo: '',
+              createdAt: values[33] ? new Date(values[33]) : new Date(),
+              documents: [],
+              instructions: values[37] || '',
+            };
+            importedLeads.push(newLead);
+          }
+        }
+        
+        if (importedLeads.length > 0) {
+          const updatedLeads = [...leads, ...importedLeads];
+          setLeads(updatedLeads);
+          localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+          
+          toast({
+            title: "Import successful",
+            description: `${importedLeads.length} leads imported successfully.`,
+          });
+        } else {
+          toast({
+            title: "Import failed",
+            description: "No valid leads found in the file.",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        console.error('Import error:', error);
+        toast({
+          title: "Import failed",
+          description: "Error reading the file. Please check the format and try again.",
+          variant: "destructive",
+        });
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
   };
 
   if (!currentUser) {
@@ -170,13 +478,46 @@ const AdminLeads = () => {
         />
 
         <main className="flex-1 p-4 md:p-6">
-          <div className="container mx-auto max-w-7xl">
+          <div className="container mx-auto max-w-full">
             <div className="flex justify-between items-center mb-6">
               <h1 className="text-2xl font-semibold">Lead Management</h1>
-              <Button onClick={handleAddLead} className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Add New Lead
-              </Button>
+              <div className="flex gap-2">
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={handleImport}
+                  className="hidden"
+                  id="import-leads"
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => document.getElementById('import-leads')?.click()}
+                  className="flex items-center gap-2"
+                >
+                  <Upload className="h-4 w-4" />
+                  Import CSV
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={exportToCSV}
+                  className="flex items-center gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Export CSV
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={downloadSampleCSV}
+                  className="flex items-center gap-2"
+                >
+                  <FileDown className="h-4 w-4" />
+                  Sample CSV
+                </Button>
+                <Button onClick={handleAddLead} className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add New Lead
+                </Button>
+              </div>
             </div>
 
             {/* Search and Filter Section */}
@@ -197,6 +538,7 @@ const AdminLeads = () => {
                         <SelectItem value="all">All Statuses</SelectItem>
                         <SelectItem value="Pending">Pending</SelectItem>
                         <SelectItem value="In Progress">In Progress</SelectItem>
+                        <SelectItem value="Assigned">Assigned</SelectItem>
                         <SelectItem value="Completed">Completed</SelectItem>
                         <SelectItem value="Rejected">Rejected</SelectItem>
                       </SelectContent>
@@ -235,91 +577,138 @@ const AdminLeads = () => {
               </CardContent>
             </Card>
 
-            {/* Leads List */}
+            {/* Comprehensive Leads Table */}
             {loading ? (
               <div className="flex items-center justify-center h-48">
                 <p>Loading leads...</p>
               </div>
             ) : (
-              <div className="grid gap-4">
-                {leads.length === 0 ? (
-                  <Card>
-                    <CardContent className="p-8 text-center">
-                      <p className="text-muted-foreground mb-4">No leads found</p>
-                      <Button onClick={handleAddLead}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Your First Lead
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  leads.map((lead) => (
-                    <Card key={lead.id} className="hover:shadow-md transition-shadow">
-                      <CardContent className="p-6">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                              <h3 className="font-semibold text-lg">{lead.name}</h3>
-                              <Badge variant={getStatusBadgeVariant(lead.status)}>
-                                {lead.status}
-                              </Badge>
-                            </div>
-                            
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground">
-                              <div>
-                                <p><strong>Bank:</strong> {lead.bank || 'Not specified'}</p>
-                                <p><strong>Visit Type:</strong> {lead.visitType}</p>
-                              </div>
-                              <div>
-                                <p><strong>Phone:</strong> {lead.additionalDetails?.phoneNumber || 'Not provided'}</p>
-                                <p><strong>Email:</strong> {lead.additionalDetails?.email || 'Not provided'}</p>
-                              </div>
-                              <div>
-                                <p><strong>City:</strong> {lead.address?.city || 'Not specified'}</p>
-                                <p><strong>Created:</strong> {new Date(lead.createdAt).toLocaleDateString()}</p>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          <div className="flex gap-2 ml-4">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => navigate(`/lead/${lead.id}`)}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => navigate(`/admin/add-lead/${lead.id}`)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => {
-                                // Handle delete
-                                toast({
-                                  title: "Lead deleted",
-                                  description: `Lead ${lead.name} has been deleted.`,
-                                });
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                )}
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Lead ID</TableHead>
+                      <TableHead>Agency File No</TableHead>
+                      <TableHead>Customer Name</TableHead>
+                      <TableHead>Age</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Lead Type</TableHead>
+                      <TableHead>Loan Amount</TableHead>
+                      <TableHead>Bank</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Assigned Agent</TableHead>
+                      <TableHead>Visit Type</TableHead>
+                      <TableHead>Created Date</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {leads.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={14} className="h-24 text-center">
+                          No leads found.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      leads.map((lead) => (
+                        <TableRow key={lead.id}>
+                          <TableCell className="font-medium">{lead.id}</TableCell>
+                          <TableCell>{lead.additionalDetails?.agencyFileNo || 'N/A'}</TableCell>
+                          <TableCell className="font-medium">{lead.name}</TableCell>
+                          <TableCell>{lead.age || 'N/A'}</TableCell>
+                          <TableCell>{lead.additionalDetails?.phoneNumber || 'N/A'}</TableCell>
+                          <TableCell>{lead.additionalDetails?.email || 'N/A'}</TableCell>
+                          <TableCell>{lead.additionalDetails?.leadType || 'N/A'}</TableCell>
+                          <TableCell>{lead.additionalDetails?.loanAmount ? `₹${lead.additionalDetails.loanAmount}` : 'N/A'}</TableCell>
+                          <TableCell>{getBankName(lead.bank || '')}</TableCell>
+                          <TableCell>
+                            <Badge variant={getStatusBadgeVariant(lead.status)}>
+                              {lead.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{getAgentName(lead.assignedTo || '')}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{lead.visitType}</Badge>
+                          </TableCell>
+                          <TableCell>{formatDate(lead.createdAt)}</TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent>
+                                <DropdownMenuItem onClick={() => handleViewLead(lead.id)}>
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  View Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleEditLead(lead.id)}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit Lead
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => openAssignDialog(lead.id)}>
+                                  <UserPlus className="h-4 w-4 mr-2" />
+                                  Assign Agent
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => handleDeleteLead(lead.id)}
+                                  className="text-red-600"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
               </div>
             )}
           </div>
         </main>
       </div>
+
+      {/* Assign Agent Dialog */}
+      <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assign Lead to Agent</DialogTitle>
+            <DialogDescription>
+              Select an agent to assign this lead to.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Available Agents</label>
+              <Select value={selectedAgent} onValueChange={setSelectedAgent}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select an agent" />
+                </SelectTrigger>
+                <SelectContent>
+                  {getAvailableAgents().map((agent) => (
+                    <SelectItem key={agent.id} value={agent.id}>
+                      {agent.name} - {agent.district || 'No district'} ({agent.email})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setAssignDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={confirmAssignment} disabled={!selectedAgent}>
+                Assign Lead
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
