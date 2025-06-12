@@ -175,6 +175,7 @@ export interface Bank {
   id: string;
   name: string;
   totalApplications: number;
+  branches: BankBranch[];
 }
 
 export interface BankBranch {

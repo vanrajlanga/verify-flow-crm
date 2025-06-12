@@ -271,3 +271,7 @@ export const getLeadsFromEnhancedOperations = async () => {
     return [];
   }
 };
+
+export const getCompleteLeadsFromDatabase = async () => {
+  return await getLeadsFromEnhancedOperations();
+};
