@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -105,9 +104,10 @@ interface MultiStepLeadFormProps {
   onSubmit: (data: any) => Promise<void>;
   onCancel: () => void;
   locationData: any;
+  editingLead?: any;
 }
 
-const MultiStepLeadForm = ({ banks, agents, onSubmit, onCancel, locationData }: MultiStepLeadFormProps) => {
+const MultiStepLeadForm = ({ banks, agents, onSubmit, onCancel, locationData, editingLead }: MultiStepLeadFormProps) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [products, setProducts] = useState<any[]>([]);
@@ -115,20 +115,71 @@ const MultiStepLeadForm = ({ banks, agents, onSubmit, onCancel, locationData }: 
   const [vehicleBrands, setVehicleBrands] = useState<any[]>([]);
   const [vehicleModels, setVehicleModels] = useState<any[]>([]);
   
+  // Set default values based on whether we're editing or creating
+  const getDefaultValues = () => {
+    if (editingLead) {
+      return {
+        bankName: editingLead.bank || '',
+        leadType: editingLead.additionalDetails?.leadType || '',
+        initiatedBranch: editingLead.additionalDetails?.bankBranch || '',
+        buildBranch: editingLead.additionalDetails?.bankBranch || '',
+        agencyFileNo: editingLead.additionalDetails?.agencyFileNo || '',
+        applicationBarcode: editingLead.additionalDetails?.applicationBarcode || '',
+        caseId: editingLead.additionalDetails?.caseId || '',
+        schemeDescription: editingLead.additionalDetails?.schemeDesc || '',
+        loanAmount: editingLead.additionalDetails?.loanAmount || '',
+        vehicleBrand: editingLead.additionalDetails?.vehicleBrandId || '',
+        vehicleModel: editingLead.additionalDetails?.vehicleModelId || '',
+        customerName: editingLead.name || '',
+        phoneNumber: editingLead.additionalDetails?.phoneNumber || '',
+        email: editingLead.additionalDetails?.email || '',
+        age: editingLead.age?.toString() || '',
+        gender: editingLead.additionalDetails?.gender || '',
+        fatherName: editingLead.additionalDetails?.fatherName || '',
+        motherName: editingLead.additionalDetails?.motherName || '',
+        maritalStatus: editingLead.additionalDetails?.maritalStatus || '',
+        hasCoApplicant: !!editingLead.additionalDetails?.coApplicant,
+        coApplicantName: editingLead.additionalDetails?.coApplicant?.name || '',
+        coApplicantPhone: editingLead.additionalDetails?.coApplicant?.phone || '',
+        coApplicantRelation: editingLead.additionalDetails?.coApplicant?.relation || '',
+        coApplicantEmail: editingLead.additionalDetails?.coApplicant?.email || '',
+        companyName: editingLead.additionalDetails?.company || '',
+        designation: editingLead.additionalDetails?.designation || '',
+        workExperience: editingLead.additionalDetails?.workExperience || '',
+        employmentType: '',
+        currentJobDuration: '',
+        propertyType: editingLead.additionalDetails?.propertyType || '',
+        ownershipStatus: editingLead.additionalDetails?.ownershipStatus || '',
+        propertyAge: editingLead.additionalDetails?.propertyAge || '',
+        monthlyIncome: editingLead.additionalDetails?.monthlyIncome || '',
+        annualIncome: editingLead.additionalDetails?.annualIncome || '',
+        otherIncome: editingLead.additionalDetails?.otherIncome || '',
+        addresses: editingLead.additionalDetails?.addresses || [],
+        officeAddresses: [],
+        visitType: editingLead.visitType || 'residence',
+        preferredDate: editingLead.verificationDate ? new Date(editingLead.verificationDate) : undefined,
+        specialInstructions: editingLead.instructions || '',
+        assignedAgent: editingLead.assignedTo || '',
+      };
+    } else {
+      return {
+        bankName: '',
+        leadType: '',
+        agencyFileNo: '',
+        customerName: '',
+        phoneNumber: '',
+        email: '',
+        visitType: 'residence',
+        hasCoApplicant: false,
+        addresses: [],
+        officeAddresses: []
+      };
+    }
+  };
+  
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      bankName: '',
-      leadType: '',
-      agencyFileNo: '',
-      customerName: '',
-      phoneNumber: '',
-      email: '',
-      visitType: 'residence',
-      hasCoApplicant: false,
-      addresses: [],
-      officeAddresses: []
-    }
+    defaultValues: getDefaultValues()
   });
 
   const totalSteps = 9;
@@ -245,13 +296,13 @@ const MultiStepLeadForm = ({ banks, agents, onSubmit, onCancel, locationData }: 
       await onSubmit(data);
       toast({
         title: "Success",
-        description: "Lead created successfully!",
+        description: editingLead ? "Lead updated successfully!" : "Lead created successfully!",
       });
     } catch (error) {
       console.error('Error submitting form:', error);
       toast({
         title: "Error",
-        description: "Failed to create lead. Please try again.",
+        description: editingLead ? "Failed to update lead. Please try again." : "Failed to create lead. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -302,7 +353,9 @@ const MultiStepLeadForm = ({ banks, agents, onSubmit, onCancel, locationData }: 
         <Card className="w-full max-w-6xl mx-auto">
           <CardHeader>
             <div className="flex justify-between items-center">
-              <CardTitle>Add New Lead - Step {currentStep} of {totalSteps}</CardTitle>
+              <CardTitle>
+                {editingLead ? 'Edit Lead' : 'Add New Lead'} - Step {currentStep} of {totalSteps}
+              </CardTitle>
               <Button variant="outline" onClick={onCancel}>Cancel</Button>
             </div>
             
@@ -359,10 +412,10 @@ const MultiStepLeadForm = ({ banks, agents, onSubmit, onCancel, locationData }: 
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Submitting...
+                    {editingLead ? 'Updating...' : 'Submitting...'}
                   </>
                 ) : (
-                  'Save Lead'
+                  editingLead ? 'Update Lead' : 'Save Lead'
                 )}
               </Button>
             )}
