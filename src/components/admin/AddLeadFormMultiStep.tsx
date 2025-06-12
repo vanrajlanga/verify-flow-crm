@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1230,13 +1231,16 @@ const AddLeadFormMultiStep = ({
                 <Label>Assign to Agent</Label>
                 <Select
                   value={formData.assignedAgent}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, assignedAgent: value }))}
+                  onValueChange={(value) => setFormData(prev => ({ 
+                    ...prev, 
+                    assignedAgent: value === 'no-assignment' ? '' : value 
+                  }))}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select an agent (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No assignment (assign later)</SelectItem>
+                    <SelectItem value="no-assignment">No assignment (assign later)</SelectItem>
                     {agents.map((agent) => (
                       <SelectItem key={agent.id} value={agent.id}>
                         {agent.name} - {agent.district || 'No district'}
