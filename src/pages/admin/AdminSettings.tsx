@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User } from '@/utils/mockData';
@@ -10,6 +9,7 @@ import LocationManager from '@/components/admin/LocationManager';
 import RoleManager from '@/components/admin/RoleManager';
 import TeamMemberManager from '@/components/admin/TeamMemberManager';
 import BankBranchManager from '@/components/admin/BankBranchManager';
+import VehicleManager from '@/components/admin/VehicleManager';
 
 interface LocationData {
   states: {
@@ -93,6 +93,7 @@ const AdminSettings = () => {
               <TabsList>
                 <TabsTrigger value="products">Products</TabsTrigger>
                 <TabsTrigger value="branches">Bank Branches</TabsTrigger>
+                <TabsTrigger value="vehicles">Vehicle Brands</TabsTrigger>
                 <TabsTrigger value="locations">Locations</TabsTrigger>
                 <TabsTrigger value="permissions">Permissions</TabsTrigger>
                 <TabsTrigger value="team">Team Members</TabsTrigger>
@@ -104,6 +105,10 @@ const AdminSettings = () => {
 
               <TabsContent value="branches">
                 <BankBranchManager />
+              </TabsContent>
+
+              <TabsContent value="vehicles">
+                <VehicleManager />
               </TabsContent>
 
               <TabsContent value="locations">

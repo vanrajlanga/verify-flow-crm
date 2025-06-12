@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon, Plus, Trash2 } from 'lucide-react';
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { Lead, User, Bank, Address } from '@/utils/mockData';
+import { Lead, User, Bank, Address, VehicleBrand, VehicleModel } from '@/utils/mockData';
 import { v4 as uuidv4 } from 'uuid';
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -100,9 +99,12 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData,
   const [currentStep, setCurrentStep] = useState(1);
   const [products, setProducts] = useState<Product[]>([]);
   const [bankBranches, setBankBranches] = useState<BankBranch[]>([]);
+  const [vehicleBrands, setVehicleBrands] = useState<VehicleBrand[]>([]);
+  const [vehicleModels, setVehicleModels] = useState<VehicleModel[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [filteredInitiatedBranches, setFilteredInitiatedBranches] = useState<BankBranch[]>([]);
   const [filteredBuildBranches, setFilteredBuildBranches] = useState<BankBranch[]>([]);
+  const [filteredVehicleModels, setFilteredVehicleModels] = useState<VehicleModel[]>([]);
   
   const [formData, setFormData] = useState({
     // Step 1: Lead Type & Basic Info
@@ -173,7 +175,15 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData,
     selectedAddressesForVerification: [] as string[],
     
     // Step 9: Agent Assignment
-    assignedTo: editLead?.assignedTo || ''
+    assignedTo: editLead?.assignedTo || '',
+    
+    // Add vehicle fields
+    vehicleBrandId: editLead?.additionalDetails?.vehicleBrandId || '',
+    vehicleBrandName: editLead?.additionalDetails?.vehicleBrandName || '',
+    vehicleModelId: editLead?.additionalDetails?.vehicleModelId || '',
+    vehicleModelName: editLead?.additionalDetails?.vehicleModelName || '',
+    vehicleVariant: editLead?.additionalDetails?.vehicleVariant || '',
+    loanType: editLead?.additionalDetails?.loanType || '',
   });
 
   // Auto-generate Agency File No on component mount if not editing
@@ -187,6 +197,7 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData,
   }, [editLead]);
 
   useEffect(() => {
+    // Load products
     const storedProducts = localStorage.getItem('products');
     if (storedProducts) {
       try {
@@ -198,6 +209,7 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData,
       }
     }
 
+    // Load bank branches
     const storedBranches = localStorage.getItem('bankBranches');
     if (storedBranches) {
       try {
@@ -206,6 +218,30 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData,
       } catch (error) {
         console.error('Error parsing stored bank branches:', error);
         setBankBranches([]);
+      }
+    }
+
+    // Load vehicle brands
+    const storedBrands = localStorage.getItem('vehicleBrands');
+    if (storedBrands) {
+      try {
+        const parsedBrands = JSON.parse(storedBrands);
+        setVehicleBrands(parsedBrands);
+      } catch (error) {
+        console.error('Error parsing stored vehicle brands:', error);
+        setVehicleBrands([]);
+      }
+    }
+
+    // Load vehicle models
+    const storedModels = localStorage.getItem('vehicleModels');
+    if (storedModels) {
+      try {
+        const parsedModels = JSON.parse(storedModels);
+        setVehicleModels(parsedModels);
+      } catch (error) {
+        console.error('Error parsing stored vehicle models:', error);
+        setVehicleModels([]);
       }
     }
   }, []);
@@ -245,6 +281,17 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData,
     }
   }, [formData.bankName, bankBranches, banks]);
 
+  useEffect(() => {
+    if (formData.vehicleBrandId && vehicleModels.length > 0) {
+      const availableModels = vehicleModels.filter(model => 
+        model.brandId === formData.vehicleBrandId
+      );
+      setFilteredVehicleModels(availableModels);
+    } else {
+      setFilteredVehicleModels([]);
+    }
+  }, [formData.vehicleBrandId, vehicleModels]);
+
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({
       ...prev,
@@ -269,6 +316,37 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData,
           leadTypeId: selectedProduct.id
         }));
       }
+      
+      // Reset vehicle fields when lead type changes
+      if (value !== 'Auto Loan') {
+        setFormData(prev => ({
+          ...prev,
+          vehicleBrandId: '',
+          vehicleBrandName: '',
+          vehicleModelId: '',
+          vehicleModelName: '',
+          vehicleVariant: '',
+          loanType: ''
+        }));
+      }
+    }
+
+    if (field === 'vehicleBrandId') {
+      const selectedBrand = vehicleBrands.find(b => b.id === value);
+      setFormData(prev => ({
+        ...prev,
+        vehicleBrandName: selectedBrand?.name || '',
+        vehicleModelId: '',
+        vehicleModelName: ''
+      }));
+    }
+
+    if (field === 'vehicleModelId') {
+      const selectedModel = vehicleModels.find(m => m.id === value);
+      setFormData(prev => ({
+        ...prev,
+        vehicleModelName: selectedModel?.name || ''
+      }));
     }
   };
 
@@ -462,7 +540,13 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData,
           district: addr.district,
           state: addr.state,
           pincode: addr.pincode
-        }))
+        })),
+        vehicleBrandId: formData.vehicleBrandId,
+        vehicleBrandName: formData.vehicleBrandName,
+        vehicleModelId: formData.vehicleModelId,
+        vehicleModelName: formData.vehicleModelName,
+        vehicleVariant: formData.vehicleVariant,
+        loanType: formData.loanType
       },
       status: editLead?.status || 'Pending',
       bank: formData.bankName,
@@ -524,59 +608,83 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData,
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Initiated Under Branch</label>
-                <Select 
-                  value={formData.initiatedUnderBranch} 
-                  onValueChange={(value) => handleInputChange('initiatedUnderBranch', value)}
-                  disabled={!formData.bankName}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select initiated branch" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {filteredInitiatedBranches.length > 0 ? (
-                      filteredInitiatedBranches.map((branch) => (
-                        <SelectItem key={branch.id} value={branch.name}>
-                          {branch.name} ({branch.code}) - {branch.city}
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem value="no-branches" disabled>
-                        {formData.bankName ? 'No branches available for this bank' : 'Please select a bank first'}
-                      </SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
+            {/* Vehicle fields for Auto Loan */}
+            {formData.leadType === 'Auto Loan' && (
+              <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                <h4 className="text-md font-medium">Vehicle Information</h4>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Vehicle Brand</label>
+                    <Select 
+                      value={formData.vehicleBrandId} 
+                      onValueChange={(value) => handleInputChange('vehicleBrandId', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select vehicle brand" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {vehicleBrands.map((brand) => (
+                          <SelectItem key={brand.id} value={brand.id}>
+                            {brand.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">Build Under Branch</label>
-                <Select 
-                  value={formData.buildUnderBranch} 
-                  onValueChange={(value) => handleInputChange('buildUnderBranch', value)}
-                  disabled={!formData.bankName}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select build branch" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {filteredBuildBranches.length > 0 ? (
-                      filteredBuildBranches.map((branch) => (
-                        <SelectItem key={branch.id} value={branch.name}>
-                          {branch.name} ({branch.code}) - {branch.city}
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem value="no-branches" disabled>
-                        {formData.bankName ? 'No branches available for this bank' : 'Please select a bank first'}
-                      </SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Vehicle Model</label>
+                    <Select 
+                      value={formData.vehicleModelId} 
+                      onValueChange={(value) => handleInputChange('vehicleModelId', value)}
+                      disabled={!formData.vehicleBrandId}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select vehicle model" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {filteredVehicleModels.length > 0 ? (
+                          filteredVehicleModels.map((model) => (
+                            <SelectItem key={model.id} value={model.id}>
+                              {model.name}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="no-models" disabled>
+                            {formData.vehicleBrandId ? 'No models available for this brand' : 'Please select a brand first'}
+                          </SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Vehicle Variant</label>
+                    <Input
+                      value={formData.vehicleVariant}
+                      onChange={(e) => handleInputChange('vehicleVariant', e.target.value)}
+                      placeholder="Enter vehicle variant"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Loan Type</label>
+                    <Select value={formData.loanType} onValueChange={(value) => handleInputChange('loanType', value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select loan type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="New Vehicle">New Vehicle</SelectItem>
+                        <SelectItem value="Used Vehicle">Used Vehicle</SelectItem>
+                        <SelectItem value="Refinance">Refinance</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -680,11 +788,12 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData,
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-2">Phone Number</label>
+                      <label className="block text-sm font-medium mb-2">Phone Number (max 10 digits)</label>
                       <Input
                         value={phone.number}
-                        onChange={(e) => updatePhoneNumber(phone.id, 'number', e.target.value)}
+                        onChange={(e) => handlePhoneChange(phone.id, e.target.value)}
                         placeholder="Enter phone number"
+                        maxLength={10}
                       />
                     </div>
                     <div>
@@ -1068,11 +1177,12 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData,
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-2">Pincode</label>
+                      <label className="block text-sm font-medium mb-2">Pincode (numbers only)</label>
                       <Input
                         value={address.pincode}
-                        onChange={(e) => updateHomeAddress(address.id, 'pincode', e.target.value)}
+                        onChange={(e) => handlePincodeChange(address.id, e.target.value)}
                         placeholder="Enter pincode"
+                        maxLength={6}
                       />
                     </div>
                   </div>
@@ -1152,11 +1262,12 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData,
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Pincode</label>
+                <label className="block text-sm font-medium mb-2">Pincode (numbers only)</label>
                 <Input
                   value={formData.workPincode}
-                  onChange={(e) => handleInputChange('workPincode', e.target.value)}
+                  onChange={(e) => handleWorkPincodeChange(e.target.value)}
                   placeholder="Enter pincode"
+                  maxLength={6}
                 />
               </div>
             </div>

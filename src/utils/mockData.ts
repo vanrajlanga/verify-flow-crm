@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   name: string;
@@ -171,6 +170,17 @@ export interface Agent {
   branch: string;
   district: string;
   city: string;
+}
+
+export interface VehicleBrand {
+  id: string;
+  name: string;
+}
+
+export interface VehicleModel {
+  id: string;
+  name: string;
+  brandId: string;
 }
 
 // Mock data for fallback/testing
