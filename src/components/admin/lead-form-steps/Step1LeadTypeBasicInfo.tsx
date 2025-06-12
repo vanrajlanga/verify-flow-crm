@@ -1,8 +1,7 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
@@ -21,128 +20,86 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
   const selectedLeadType = watch('leadType');
   const selectedVehicleBrand = watch('vehicleBrand');
 
-  const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
-  const [filteredBranches, setFilteredBranches] = useState<any[]>([]);
-  const [filteredVehicleModels, setFilteredVehicleModels] = useState<any[]>([]);
-
   // Generate automatic agency file number
   useEffect(() => {
     const agencyFileNo = `AGN-${Date.now()}`;
     setValue('agencyFileNo', agencyFileNo);
   }, [setValue]);
 
-  // Initialize dummy data if needed
+  // Initialize dummy data
   useEffect(() => {
-    // Add dummy products if none exist
-    const storedProducts = localStorage.getItem('products');
-    if (!storedProducts || JSON.parse(storedProducts).length === 0) {
-      const dummyProducts = [
-        { id: 'home-loan', name: 'Home Loan', description: 'Residential property loan', banks: banks.map(b => b.id) },
-        { id: 'personal-loan', name: 'Personal Loan', description: 'Personal loan verification', banks: banks.map(b => b.id) },
-        { id: 'auto-loan', name: 'Auto Loan', description: 'Vehicle loan verification', banks: banks.map(b => b.id) },
-        { id: 'business-loan', name: 'Business Loan', description: 'Business loan verification', banks: banks.map(b => b.id) },
-        { id: 'credit-card', name: 'Credit Card', description: 'Credit card application', banks: banks.map(b => b.id) }
-      ];
+    // Create dummy products
+    const dummyProducts = [
+      { id: 'home-loan', name: 'Home Loan', banks: banks.map(b => b.id) },
+      { id: 'personal-loan', name: 'Personal Loan', banks: banks.map(b => b.id) },
+      { id: 'auto-loan', name: 'Auto Loan', banks: banks.map(b => b.id) },
+      { id: 'business-loan', name: 'Business Loan', banks: banks.map(b => b.id) },
+      { id: 'credit-card', name: 'Credit Card', banks: banks.map(b => b.id) }
+    ];
+    
+    if (!localStorage.getItem('products')) {
       localStorage.setItem('products', JSON.stringify(dummyProducts));
     }
 
-    // Add dummy vehicle brands if none exist
-    const storedBrands = localStorage.getItem('vehicleBrands');
-    if (!storedBrands || JSON.parse(storedBrands).length === 0) {
-      const dummyBrands = [
-        { id: 'maruti', name: 'Maruti Suzuki' },
-        { id: 'hyundai', name: 'Hyundai' },
-        { id: 'honda', name: 'Honda' },
-        { id: 'toyota', name: 'Toyota' },
-        { id: 'tata', name: 'Tata Motors' }
-      ];
+    // Create dummy vehicle brands
+    const dummyBrands = [
+      { id: 'maruti', name: 'Maruti Suzuki' },
+      { id: 'hyundai', name: 'Hyundai' },
+      { id: 'honda', name: 'Honda' },
+      { id: 'toyota', name: 'Toyota' },
+      { id: 'tata', name: 'Tata Motors' }
+    ];
+    
+    if (!localStorage.getItem('vehicleBrands')) {
       localStorage.setItem('vehicleBrands', JSON.stringify(dummyBrands));
     }
 
-    // Add dummy vehicle models if none exist
-    const storedModels = localStorage.getItem('vehicleModels');
-    if (!storedModels || JSON.parse(storedModels).length === 0) {
-      const dummyModels = [
-        { id: 'swift', name: 'Swift', brandId: 'maruti' },
-        { id: 'baleno', name: 'Baleno', brandId: 'maruti' },
-        { id: 'i20', name: 'i20', brandId: 'hyundai' },
-        { id: 'creta', name: 'Creta', brandId: 'hyundai' },
-        { id: 'city', name: 'City', brandId: 'honda' },
-        { id: 'civic', name: 'Civic', brandId: 'honda' }
-      ];
+    // Create dummy vehicle models
+    const dummyModels = [
+      { id: 'swift', name: 'Swift', brandId: 'maruti' },
+      { id: 'baleno', name: 'Baleno', brandId: 'maruti' },
+      { id: 'i20', name: 'i20', brandId: 'hyundai' },
+      { id: 'creta', name: 'Creta', brandId: 'hyundai' },
+      { id: 'city', name: 'City', brandId: 'honda' },
+      { id: 'civic', name: 'Civic', brandId: 'honda' }
+    ];
+    
+    if (!localStorage.getItem('vehicleModels')) {
       localStorage.setItem('vehicleModels', JSON.stringify(dummyModels));
     }
   }, [banks]);
 
-  useEffect(() => {
-    console.log('Step1 - Selected Bank:', selectedBank);
-    console.log('Step1 - Available Products:', products);
-    console.log('Step1 - Available Branches:', branches);
-
-    if (selectedBank) {
-      // Get updated products from localStorage
-      const storedProducts = localStorage.getItem('products');
-      const allProducts = storedProducts ? JSON.parse(storedProducts) : products;
-      
-      // Filter products - check if products array exists and has items
-      if (allProducts && allProducts.length > 0) {
-        const bankProducts = allProducts.filter((product: any) => {
-          console.log('Checking product:', product.name, 'Banks:', product.banks, 'Looking for:', selectedBank);
-          return product.banks && Array.isArray(product.banks) && product.banks.includes(selectedBank);
-        });
-        console.log('Step1 - Filtered Products for bank:', selectedBank, 'Result:', bankProducts);
-        setFilteredProducts(bankProducts);
-      } else {
-        console.log('Step1 - No products available');
-        setFilteredProducts([]);
-      }
-
-      // Filter branches - check if branches array exists and has items
-      if (branches && branches.length > 0) {
-        const bankBranches = branches.filter(branch => {
-          console.log('Checking branch:', branch.name, 'BankId:', branch.bankId, 'Looking for:', selectedBank);
-          return branch.bankId === selectedBank;
-        });
-        console.log('Step1 - Filtered Branches for bank:', selectedBank, 'Result:', bankBranches);
-        setFilteredBranches(bankBranches);
-      } else {
-        console.log('Step1 - No branches available');
-        setFilteredBranches([]);
-      }
-    } else {
-      console.log('Step1 - No bank selected, clearing filters');
-      setFilteredProducts([]);
-      setFilteredBranches([]);
-    }
-  }, [selectedBank, products, branches]);
-
-  useEffect(() => {
-    console.log('Step1 - Selected Vehicle Brand:', selectedVehicleBrand);
-    
-    // Get updated vehicle models from localStorage
-    const storedModels = localStorage.getItem('vehicleModels');
-    const allModels = storedModels ? JSON.parse(storedModels) : vehicleModels;
-    console.log('Step1 - Available Vehicle Models:', allModels);
-
-    if (selectedVehicleBrand && allModels && allModels.length > 0) {
-      const brandModels = allModels.filter((model: any) => model.brandId === selectedVehicleBrand);
-      console.log('Step1 - Filtered Vehicle Models:', brandModels);
-      setFilteredVehicleModels(brandModels);
-    } else {
-      setFilteredVehicleModels([]);
-    }
-  }, [selectedVehicleBrand, vehicleModels]);
-
-  // Get updated vehicle brands from localStorage
-  const getVehicleBrands = () => {
-    const storedBrands = localStorage.getItem('vehicleBrands');
-    return storedBrands ? JSON.parse(storedBrands) : vehicleBrands;
+  // Get products for selected bank
+  const getProductsForBank = (bankId: string) => {
+    const storedProducts = localStorage.getItem('products');
+    const allProducts = storedProducts ? JSON.parse(storedProducts) : [];
+    return allProducts.filter((product: any) => product.banks && product.banks.includes(bankId));
   };
 
-  const isAutoLoan = selectedLeadType && filteredProducts.length > 0 && 
-    (selectedLeadType === 'auto-loan' || 
-     filteredProducts.find(p => p.id === selectedLeadType)?.name?.toLowerCase().includes('auto') ||
-     filteredProducts.find(p => p.id === selectedLeadType)?.name?.toLowerCase().includes('vehicle'));
+  // Get branches for selected bank
+  const getBranchesForBank = (bankId: string) => {
+    return branches.filter(branch => branch.bankId === bankId);
+  };
+
+  // Get vehicle models for selected brand
+  const getModelsForBrand = (brandId: string) => {
+    const storedModels = localStorage.getItem('vehicleModels');
+    const allModels = storedModels ? JSON.parse(storedModels) : [];
+    return allModels.filter((model: any) => model.brandId === brandId);
+  };
+
+  // Get vehicle brands
+  const getVehicleBrands = () => {
+    const storedBrands = localStorage.getItem('vehicleBrands');
+    return storedBrands ? JSON.parse(storedBrands) : [];
+  };
+
+  const filteredProducts = selectedBank ? getProductsForBank(selectedBank) : [];
+  const filteredBranches = selectedBank ? getBranchesForBank(selectedBank) : [];
+  const filteredVehicleModels = selectedVehicleBrand ? getModelsForBrand(selectedVehicleBrand) : [];
+
+  const isAutoLoan = selectedLeadType === 'auto-loan' || 
+    (selectedLeadType && filteredProducts.find(p => p.id === selectedLeadType)?.name?.toLowerCase().includes('auto'));
 
   return (
     <Card>
@@ -160,7 +117,6 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
                 <FormLabel>Bank Name <span className="text-red-500">*</span></FormLabel>
                 <Select 
                   onValueChange={(value) => {
-                    console.log('Step1 - Bank selected:', value);
                     field.onChange(value);
                     setValue('leadType', '');
                     setValue('initiatedBranch', '');
@@ -194,7 +150,6 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
                 <FormLabel>Lead Type/Product <span className="text-red-500">*</span></FormLabel>
                 <Select 
                   onValueChange={(value) => {
-                    console.log('Step1 - Lead type selected:', value);
                     field.onChange(value);
                     setValue('vehicleBrand', '');
                     setValue('vehicleModel', '');
@@ -204,7 +159,7 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder={!selectedBank ? "Select bank first" : filteredProducts.length === 0 ? "No products available" : "Select lead type"} />
+                      <SelectValue placeholder={!selectedBank ? "Select bank first" : "Select lead type"} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent className="bg-background border border-border shadow-lg z-50">
@@ -230,7 +185,6 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
                     <FormLabel>Vehicle Brand</FormLabel>
                     <Select 
                       onValueChange={(value) => {
-                        console.log('Step1 - Vehicle brand selected:', value);
                         field.onChange(value);
                         setValue('vehicleModel', '');
                       }} 
@@ -242,11 +196,9 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="bg-background border border-border shadow-lg z-50">
-                        {getVehicleBrands() && getVehicleBrands().length > 0 ? getVehicleBrands().map((brand: any) => (
+                        {getVehicleBrands().map((brand: any) => (
                           <SelectItem key={brand.id} value={brand.id}>{brand.name}</SelectItem>
-                        )) : (
-                          <SelectItem value="no-brands" disabled>No vehicle brands available</SelectItem>
-                        )}
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -261,24 +213,19 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
                   <FormItem>
                     <FormLabel>Vehicle Model</FormLabel>
                     <Select 
-                      onValueChange={(value) => {
-                        console.log('Step1 - Vehicle model selected:', value);
-                        field.onChange(value);
-                      }} 
+                      onValueChange={field.onChange} 
                       value={field.value || ''}
                       disabled={!selectedVehicleBrand}
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder={!selectedVehicleBrand ? "Select brand first" : filteredVehicleModels.length === 0 ? "No models available" : "Select vehicle model"} />
+                          <SelectValue placeholder={!selectedVehicleBrand ? "Select brand first" : "Select vehicle model"} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="bg-background border border-border shadow-lg z-50">
-                        {filteredVehicleModels.length > 0 ? filteredVehicleModels.map((model) => (
+                        {filteredVehicleModels.map((model) => (
                           <SelectItem key={model.id} value={model.id}>{model.name}</SelectItem>
-                        )) : (
-                          <SelectItem value="no-models" disabled>No models available for this brand</SelectItem>
-                        )}
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -295,16 +242,13 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
               <FormItem>
                 <FormLabel>Initiated Under Branch</FormLabel>
                 <Select 
-                  onValueChange={(value) => {
-                    console.log('Step1 - Initiated branch selected:', value);
-                    field.onChange(value);
-                  }} 
+                  onValueChange={field.onChange} 
                   value={field.value || ''} 
                   disabled={!selectedBank}
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder={!selectedBank ? "Select bank first" : filteredBranches.length === 0 ? "No branches available" : "Select initiated branch"} />
+                      <SelectValue placeholder={!selectedBank ? "Select bank first" : "Select initiated branch"} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent className="bg-background border border-border shadow-lg z-50">
@@ -327,16 +271,13 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
               <FormItem>
                 <FormLabel>Build Under Branch</FormLabel>
                 <Select 
-                  onValueChange={(value) => {
-                    console.log('Step1 - Build branch selected:', value);
-                    field.onChange(value);
-                  }} 
+                  onValueChange={field.onChange} 
                   value={field.value || ''} 
                   disabled={!selectedBank}
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder={!selectedBank ? "Select bank first" : filteredBranches.length === 0 ? "No branches available" : "Select build branch"} />
+                      <SelectValue placeholder={!selectedBank ? "Select bank first" : "Select build branch"} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent className="bg-background border border-border shadow-lg z-50">

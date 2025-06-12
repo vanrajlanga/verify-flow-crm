@@ -1,24 +1,11 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useFormContext } from 'react-hook-form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
-import { Plus, Trash2 } from 'lucide-react';
-
-interface Address {
-  id: string;
-  state: string;
-  district: string;
-  city: string;
-  streetAddress: string;
-  pincode: string;
-  requireVerification: boolean;
-}
 
 interface Step5Props {
   locationData: {
@@ -35,245 +22,126 @@ interface Step5Props {
 }
 
 const Step5HomeAddresses = ({ locationData }: Step5Props) => {
-  const { setValue, watch } = useFormContext();
-  const [addresses, setAddresses] = useState<Address[]>([
-    {
-      id: '1',
-      state: '',
-      district: '',
-      city: '',
-      streetAddress: '',
-      pincode: '',
-      requireVerification: true
-    }
-  ]);
+  const { control, watch } = useFormContext();
+  const selectedState = watch('homeState');
+  const selectedDistrict = watch('homeDistrict');
 
-  // Update form value whenever addresses change
-  useEffect(() => {
-    setValue('addresses', addresses);
-    console.log('Step5 - Addresses updated:', addresses);
-  }, [addresses, setValue]);
-
-  // Log locationData to debug
-  useEffect(() => {
-    console.log('Step5 - LocationData received:', locationData);
-    console.log('Step5 - States available:', locationData?.states);
-  }, [locationData]);
-
-  const addAddress = () => {
-    const newAddress: Address = {
-      id: Date.now().toString(),
-      state: '',
-      district: '',
-      city: '',
-      streetAddress: '',
-      pincode: '',
-      requireVerification: false
-    };
-    setAddresses([...addresses, newAddress]);
-  };
-
-  const removeAddress = (id: string) => {
-    if (addresses.length > 1) {
-      setAddresses(addresses.filter(addr => addr.id !== id));
-    }
-  };
-
-  const updateAddress = (id: string, field: keyof Address, value: any) => {
-    console.log(`Step5 - Updating address ${id}, field: ${field}, value:`, value);
-    setAddresses(addresses.map(addr => 
-      addr.id === id ? { ...addr, [field]: value } : addr
-    ));
-  };
-
-  // Using the same logic as Step 6
   const getDistrictsForState = (stateId: string) => {
-    if (!locationData?.states || !stateId) return [];
     const state = locationData.states.find(s => s.id === stateId);
     return state ? state.districts : [];
   };
 
   const getCitiesForDistrict = (stateId: string, districtId: string) => {
-    if (!locationData?.states || !stateId || !districtId) return [];
     const state = locationData.states.find(s => s.id === stateId);
     const district = state?.districts.find(d => d.id === districtId);
     return district ? district.cities : [];
-  };
-
-  const getStateName = (stateId: string) => {
-    if (!locationData?.states || !stateId) return '';
-    return locationData.states.find(s => s.id === stateId)?.name || '';
-  };
-
-  const getDistrictName = (stateId: string, districtId: string) => {
-    if (!locationData?.states || !stateId || !districtId) return '';
-    const state = locationData.states.find(s => s.id === stateId);
-    return state?.districts.find(d => d.id === districtId)?.name || '';
-  };
-
-  const getCityName = (stateId: string, districtId: string, cityId: string) => {
-    if (!locationData?.states || !stateId || !districtId || !cityId) return '';
-    const state = locationData.states.find(s => s.id === stateId);
-    const district = state?.districts.find(d => d.id === districtId);
-    return district?.cities.find(c => c.id === cityId)?.name || '';
   };
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Step 5: Home Addresses</CardTitle>
-        <CardDescription>Enter home address details (you can add multiple addresses)</CardDescription>
+        <CardDescription>Enter home address details</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {addresses.map((address, index) => (
-          <div key={address.id} className="border rounded-lg p-4 space-y-4">
-            <div className="flex justify-between items-center">
-              <h4 className="font-medium">Address {index + 1}</h4>
-              {addresses.length > 1 && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => removeAddress(address.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div>
-                <Label>State</Label>
-                <Select 
-                  value={address.state} 
-                  onValueChange={(value) => {
-                    console.log('Step5 - State selected:', value);
-                    updateAddress(address.id, 'state', value);
-                    // Clear dependent fields when state changes
-                    updateAddress(address.id, 'district', '');
-                    updateAddress(address.id, 'city', '');
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select state" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background border border-border shadow-lg z-50 max-h-60 overflow-y-auto">
-                    {locationData?.states && locationData.states.length > 0 ? 
-                      locationData.states.map((state) => (
-                        <SelectItem key={state.id} value={state.id}>{state.name}</SelectItem>
-                      )) : (
-                        <SelectItem value="no-states" disabled>No states available</SelectItem>
-                      )
-                    }
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <FormField
+            control={control}
+            name="homeState"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>State</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select state" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {locationData.states.map((state) => (
+                      <SelectItem key={state.id} value={state.id}>{state.name}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
-              </div>
-
-              <div>
-                <Label>District</Label>
-                <Select 
-                  value={address.district} 
-                  onValueChange={(value) => {
-                    console.log('Step5 - District selected:', value);
-                    updateAddress(address.id, 'district', value);
-                    // Clear city when district changes
-                    updateAddress(address.id, 'city', '');
-                  }}
-                  disabled={!address.state}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={!address.state ? "Select state first" : "Select district"} />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background border border-border shadow-lg z-50 max-h-60 overflow-y-auto">
-                    {address.state ? (
-                      getDistrictsForState(address.state).length > 0 ? 
-                        getDistrictsForState(address.state).map((district) => (
-                          <SelectItem key={district.id} value={district.id}>{district.name}</SelectItem>
-                        )) : (
-                          <SelectItem value="no-districts" disabled>No districts available</SelectItem>
-                        )
-                    ) : (
-                      <SelectItem value="select-state-first" disabled>Select state first</SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label>City</Label>
-                <Select 
-                  value={address.city} 
-                  onValueChange={(value) => {
-                    console.log('Step5 - City selected:', value);
-                    updateAddress(address.id, 'city', value);
-                  }}
-                  disabled={!address.district}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={!address.district ? "Select district first" : "Select city"} />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background border border-border shadow-lg z-50 max-h-60 overflow-y-auto">
-                    {address.district ? (
-                      getCitiesForDistrict(address.state, address.district).length > 0 ? 
-                        getCitiesForDistrict(address.state, address.district).map((city) => (
-                          <SelectItem key={city.id} value={city.id}>{city.name}</SelectItem>
-                        )) : (
-                          <SelectItem value="no-cities" disabled>No cities available</SelectItem>
-                        )
-                    ) : (
-                      <SelectItem value="select-district-first" disabled>Select district first</SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="md:col-span-2">
-                <Label>Street Address</Label>
-                <Input 
-                  placeholder="Enter complete address" 
-                  value={address.streetAddress}
-                  onChange={(e) => updateAddress(address.id, 'streetAddress', e.target.value)}
-                />
-              </div>
-
-              <div>
-                <Label>Pincode</Label>
-                <Input 
-                  placeholder="Enter pincode" 
-                  value={address.pincode}
-                  onChange={(e) => updateAddress(address.id, 'pincode', e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id={`verification-${address.id}`}
-                checked={address.requireVerification}
-                onCheckedChange={(checked) => 
-                  updateAddress(address.id, 'requireVerification', checked === true)
-                }
-              />
-              <Label htmlFor={`verification-${address.id}`}>
-                Require verification for this address
-              </Label>
-            </div>
-
-            {address.state && address.district && address.city && (
-              <div className="text-sm text-muted-foreground bg-muted/20 p-2 rounded">
-                <strong>Complete Address:</strong> {address.streetAddress && `${address.streetAddress}, `}
-                {getCityName(address.state, address.district, address.city)}, 
-                {getDistrictName(address.state, address.district)}, 
-                {getStateName(address.state)} - {address.pincode}
-              </div>
+                <FormMessage />
+              </FormItem>
             )}
-          </div>
-        ))}
+          />
 
-        <Button type="button" variant="outline" onClick={addAddress} className="w-full">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Address
-        </Button>
+          <FormField
+            control={control}
+            name="homeDistrict"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>District</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!selectedState}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select district" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {getDistrictsForState(selectedState).map((district) => (
+                      <SelectItem key={district.id} value={district.id}>{district.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={control}
+            name="homeCity"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>City</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!selectedDistrict}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select city" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {getCitiesForDistrict(selectedState, selectedDistrict).map((city) => (
+                      <SelectItem key={city.id} value={city.id}>{city.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={control}
+            name="homeAddress"
+            render={({ field }) => (
+              <FormItem className="md:col-span-2">
+                <FormLabel>Home Address</FormLabel>
+                <FormControl>
+                  <Input placeholder="Enter home address" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={control}
+            name="homePincode"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Pincode</FormLabel>
+                <FormControl>
+                  <Input placeholder="Enter pincode" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
       </CardContent>
     </Card>
   );
