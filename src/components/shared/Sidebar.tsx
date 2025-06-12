@@ -1,144 +1,103 @@
-
-import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { User } from '@/utils/mockData';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 import { 
-  Home, 
+  LayoutDashboard, 
   Users, 
+  Building2, 
   FileText, 
   BarChart3, 
   Settings, 
-  Building2, 
-  UserCheck, 
-  MapPin,
-  ChevronLeft,
-  ChevronRight,
-  Calendar,
-  Clock,
-  UserPlus,
-  FileSpreadsheet,
-  List
+  UserCheck,
+  Plus,
+  History,
+  User,
+  Shield,
+  Phone
 } from 'lucide-react';
 
 interface SidebarProps {
-  user: User;
+  user: any;
   isOpen: boolean;
 }
 
 const Sidebar = ({ user, isOpen }: SidebarProps) => {
-  const navigate = useNavigate();
   const location = useLocation();
 
-  const isActive = (path: string) => location.pathname === path;
+  const getMenuItems = () => {
+    if (user.role === 'admin') {
+      return [
+        { icon: LayoutDashboard, label: 'Dashboard', href: '/admin' },
+        { icon: FileText, label: 'Leads', href: '/admin/leads' },
+        { icon: Users, label: 'Agents', href: '/admin/agents' },
+        { icon: Building2, label: 'Banks', href: '/admin/banks' },
+        { icon: UserCheck, label: 'Verifications', href: '/admin/verifications' },
+        { icon: BarChart3, label: 'Reports', href: '/admin/reports' },
+        { icon: Shield, label: 'Roles', href: '/admin/roles' },
+        { icon: Settings, label: 'Settings', href: '/admin/settings' },
+      ];
+    } else if (user.role === 'agent') {
+      return [
+        { icon: LayoutDashboard, label: 'Dashboard', href: '/agent' },
+        { icon: FileText, label: 'My Leads', href: '/agent/leads' },
+        { icon: History, label: 'History', href: '/agent/history' },
+        { icon: User, label: 'Profile', href: '/agent/profile' },
+      ];
+    } else if (user.role === 'tvt') {
+      return [
+        { icon: LayoutDashboard, label: 'Dashboard', href: '/tvt' },
+        { icon: Phone, label: 'Televerification', href: '/tvt' },
+      ];
+    }
+    return [];
+  };
 
-  const adminMenuItems = [
-    { icon: Home, label: 'Dashboard', path: '/admin/dashboard' },
-    { icon: List, label: 'Lead List', path: '/admin/leads' },
-    { icon: FileSpreadsheet, label: 'Lead Sheet', path: '/admin/leads-sheet' },
-    { icon: Users, label: 'Agents', path: '/admin/agents' },
-    { icon: Building2, label: 'Banks', path: '/admin/banks' },
-    { icon: UserCheck, label: 'Verifications', path: '/admin/verifications' },
-    { icon: BarChart3, label: 'Reports', path: '/admin/reports' },
-    { icon: Settings, label: 'Settings', path: '/admin/settings' },
-  ];
-
-  const agentMenuItems = [
-    { icon: Home, label: 'Dashboard', path: '/agent/dashboard' },
-    { icon: FileText, label: 'My Leads', path: '/agent/leads' },
-    { icon: Calendar, label: 'History', path: '/agent/history' },
-    { icon: Clock, label: 'Profile', path: '/agent/profile' },
-  ];
-
-  const menuItems = user.role === 'admin' ? adminMenuItems : agentMenuItems;
+  const menuItems = getMenuItems();
 
   return (
-    <div className={`bg-white border-r border-gray-200 transition-all duration-300 ${
-      isOpen ? 'w-64' : 'w-16'
-    } flex flex-col h-screen`}>
-      {/* Header */}
+    <div className={cn(
+      "bg-white border-r border-gray-200 transition-all duration-300 flex flex-col",
+      isOpen ? "w-64" : "w-16"
+    )}>
       <div className="p-4 border-b border-gray-200">
-        <div className="flex items-center justify-between">
-          {isOpen && (
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">KYC System</h2>
-              <p className="text-sm text-gray-500">Verification Platform</p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* User Info */}
-      <div className="p-4 border-b border-gray-200">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-medium">
-            {user.name.charAt(0).toUpperCase()}
+        <div className="flex items-center space-x-2">
+          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+            <span className="text-white font-semibold text-sm">K</span>
           </div>
           {isOpen && (
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 truncate">{user.name}</p>
-              <div className="flex items-center space-x-2">
-                <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
-                  {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                </Badge>
-                {user.role === 'agent' && user.district && (
-                  <Badge variant="outline" className="text-xs">
-                    {user.district}
-                  </Badge>
-                )}
-              </div>
+            <div>
+              <h2 className="text-sm font-semibold text-gray-900">KYC System</h2>
+              <p className="text-xs text-gray-500 capitalize">{user.role} Panel</p>
             </div>
           )}
         </div>
       </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 p-4">
-        <ul className="space-y-2">
+      
+      <nav className="flex-1 p-2">
+        <ul className="space-y-1">
           {menuItems.map((item) => {
             const Icon = item.icon;
-            const active = isActive(item.path);
+            const isActive = location.pathname === item.href;
             
             return (
-              <li key={item.path}>
-                <Button
-                  variant={active ? "default" : "ghost"}
-                  className={`w-full justify-start ${!isOpen ? 'px-2' : ''} ${
-                    active ? 'bg-blue-600 text-white hover:bg-blue-700' : 'hover:bg-gray-100'
-                  }`}
-                  onClick={() => navigate(item.path)}
+              <li key={item.href}>
+                <Link
+                  to={item.href}
+                  className={cn(
+                    "flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                    isActive 
+                      ? "bg-primary text-primary-foreground" 
+                      : "text-gray-700 hover:bg-gray-100"
+                  )}
                 >
-                  <Icon className={`h-5 w-5 ${isOpen ? 'mr-3' : ''}`} />
+                  <Icon className="h-5 w-5 flex-shrink-0" />
                   {isOpen && <span>{item.label}</span>}
-                </Button>
+                </Link>
               </li>
             );
           })}
         </ul>
       </nav>
-
-      {/* Footer - Agent Stats */}
-      {user.role === 'agent' && isOpen && (
-        <div className="p-4 border-t border-gray-200">
-          <Card>
-            <CardContent className="p-3">
-              <div className="text-center">
-                <div className="text-lg font-semibold text-blue-600">
-                  {user.totalVerifications || 0}
-                </div>
-                <div className="text-xs text-gray-500">Total Verifications</div>
-                <div className="mt-2">
-                  <div className="text-sm font-medium text-green-600">
-                    {user.completionRate || 0}% Success Rate
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
     </div>
   );
 };
