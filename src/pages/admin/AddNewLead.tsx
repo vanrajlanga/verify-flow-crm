@@ -30,6 +30,9 @@ const AddNewLead = () => {
   const [locationData, setLocationData] = useState<LocationData>({
     states: []
   });
+  const [products, setProducts] = useState<any[]>([]);
+  const [vehicleBrands, setVehicleBrands] = useState<any[]>([]);
+  const [vehicleModels, setVehicleModels] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { leadId } = useParams();
@@ -51,7 +54,28 @@ const AddNewLead = () => {
     setCurrentUser(parsedUser);
     loadAgents();
     loadLocationData();
+    loadProducts();
+    loadVehicleData();
   }, [navigate, leadId]);
+
+  const loadProducts = () => {
+    const storedProducts = localStorage.getItem('products');
+    if (storedProducts) {
+      setProducts(JSON.parse(storedProducts));
+    }
+  };
+
+  const loadVehicleData = () => {
+    const storedBrands = localStorage.getItem('vehicleBrands');
+    const storedModels = localStorage.getItem('vehicleModels');
+    
+    if (storedBrands) {
+      setVehicleBrands(JSON.parse(storedBrands));
+    }
+    if (storedModels) {
+      setVehicleModels(JSON.parse(storedModels));
+    }
+  };
 
   const loadAgents = async () => {
     try {
@@ -236,7 +260,7 @@ const AddNewLead = () => {
             {
               id: `phone-${Date.now()}`,
               number: formData.phoneNumber,
-              type: 'mobile',
+              type: 'mobile' as const,
               isPrimary: true
             }
           ]
