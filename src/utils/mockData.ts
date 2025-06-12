@@ -1,3 +1,4 @@
+
 export interface Lead {
   id: string;
   name: string;
@@ -11,17 +12,28 @@ export interface Lead {
   assignedTo?: string;
   createdAt: Date;
   verificationDate?: Date;
-  documents?: any[];
+  documents?: Document[];
   instructions?: string;
   verification?: Verification;
 }
 
 export interface Address {
+  type?: string;
   street: string;
   city: string;
   district: string;
   state: string;
   pincode: string;
+}
+
+export interface Document {
+  id: string;
+  name: string;
+  type: string;
+  url: string;
+  uploadedBy: string;
+  uploadDate: Date;
+  size?: number;
 }
 
 export interface AdditionalDetails {
@@ -82,12 +94,34 @@ export interface User {
   state?: string;
   maxTravelDistance?: number;
   extraChargePerKm?: number;
+  documents?: Document[];
 }
 
 export interface Bank {
   id: string;
   name: string;
   totalApplications: number;
+}
+
+export interface BankBranch {
+  id: string;
+  name: string;
+  bank: string;
+  city: string;
+  district: string;
+}
+
+export interface LeadType {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export interface Agent {
+  id: string;
+  name: string;
+  branch: string;
+  district: string;
 }
 
 export interface Verification {
@@ -98,12 +132,18 @@ export interface Verification {
   startTime?: Date;
   arrivalTime?: Date;
   completionTime?: Date;
-  photos?: any[];
-  documents?: any[];
+  endTime?: Date;
+  photos?: Document[];
+  documents?: Document[];
   notes?: string;
   adminRemarks?: string;
   reviewedBy?: string;
   reviewedAt?: Date;
+  location?: {
+    latitude: number;
+    longitude: number;
+    address: string;
+  };
 }
 
 export const mockUsers: User[] = [
@@ -192,6 +232,27 @@ export const mockBanks: Bank[] = [
   { id: 'bank-3', name: 'State Bank of India', totalApplications: 150 },
 ];
 
+export const banks = mockBanks;
+
+export const bankBranches: BankBranch[] = [
+  { id: 'branch-1', name: 'HDFC Fort Branch', bank: 'HDFC Bank', city: 'Mumbai', district: 'Mumbai City' },
+  { id: 'branch-2', name: 'HDFC Andheri Branch', bank: 'HDFC Bank', city: 'Mumbai', district: 'Mumbai Suburban' },
+  { id: 'branch-3', name: 'ICICI Bandra Branch', bank: 'ICICI Bank', city: 'Mumbai', district: 'Mumbai Suburban' },
+  { id: 'branch-4', name: 'SBI Main Branch', bank: 'State Bank of India', city: 'Mumbai', district: 'Mumbai City' },
+];
+
+export const leadTypes: LeadType[] = [
+  { id: 'lt-1', name: 'Home Loan', description: 'Residential property loan verification' },
+  { id: 'lt-2', name: 'Personal Loan', description: 'Personal loan verification' },
+  { id: 'lt-3', name: 'Vehicle Loan', description: 'Vehicle loan verification' },
+  { id: 'lt-4', name: 'Business Loan', description: 'Business loan verification' },
+];
+
+export const agents: Agent[] = [
+  { id: 'agent-1', name: 'John Agent', branch: 'HDFC Fort Branch', district: 'Mumbai City' },
+  { id: 'agent-2', name: 'Sarah Verifier', branch: 'ICICI Bandra Branch', district: 'Mumbai Suburban' },
+];
+
 export const mockLeads: Lead[] = [
   {
     id: 'lead-1',
@@ -199,6 +260,7 @@ export const mockLeads: Lead[] = [
     age: 32,
     job: 'Software Engineer',
     address: {
+      type: 'Office',
       street: '123 Highland Rd',
       city: 'Kolkata',
       district: 'North 24 Parganas',
@@ -297,6 +359,7 @@ export const mockLeads: Lead[] = [
     age: 45,
     job: 'Business Analyst',
     address: {
+      type: 'Office',
       street: '456 Park Ave',
       city: 'Mumbai',
       district: 'Mumbai Suburban',
@@ -395,6 +458,7 @@ export const mockLeads: Lead[] = [
     age: 28,
     job: 'Teacher',
     address: {
+      type: 'Office',
       street: '789 Pine St',
       city: 'Chennai',
       district: 'Chennai',
@@ -487,6 +551,7 @@ export const mockLeads: Lead[] = [
     age: 50,
     job: 'Accountant',
     address: {
+      type: 'Office',
       street: '101 Oak St',
       city: 'Bangalore',
       district: 'Bangalore Urban',

@@ -1,5 +1,5 @@
 
-import { User, Lead, Bank, Address, AdditionalDetails, VerificationData } from '@/utils/mockData';
+import { User, Lead, Bank, Address, AdditionalDetails, Verification } from '@/utils/mockData';
 
 export const transformSupabaseUser = (supabaseUser: any): User => {
   return {
@@ -65,7 +65,7 @@ export const transformSupabaseAdditionalDetails = (details: any): AdditionalDeta
   };
 };
 
-export const transformSupabaseVerification = (verification: any): VerificationData => {
+export const transformSupabaseVerification = (verification: any): Verification => {
   return {
     id: verification.id,
     leadId: verification.lead_id,
