@@ -37,17 +37,30 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
     console.log('Step1 - Available Branches:', branches);
 
     if (selectedBank && products && products.length > 0) {
-      // Filter products based on selected bank
+      // Map bank names to IDs for filtering
+      const bankMap: { [key: string]: string } = {
+        'hdfc': 'bank-1',
+        'icici': 'bank-2', 
+        'sbi': 'bank-3'
+      };
+
+      const bankId = bankMap[selectedBank] || selectedBank;
+      console.log('Step1 - Mapped Bank ID:', bankId);
+
+      // Filter products based on mapped bank ID
       const bankProducts = products.filter(product => {
-        console.log('Checking product:', product, 'Banks:', product.banks);
-        return product.banks && product.banks.includes(selectedBank);
+        console.log('Checking product:', product, 'Banks:', product.banks, 'Looking for:', bankId);
+        return product.banks && product.banks.includes(bankId);
       });
-      console.log('Filtered Products:', bankProducts);
+      console.log('Step1 - Filtered Products:', bankProducts);
       setFilteredProducts(bankProducts);
 
-      // Filter branches based on selected bank
-      const bankBranches = branches.filter(branch => branch.bankId === selectedBank);
-      console.log('Filtered Branches:', bankBranches);
+      // Filter branches based on mapped bank ID  
+      const bankBranches = branches.filter(branch => {
+        console.log('Checking branch:', branch, 'BankId:', branch.bankId, 'Looking for:', bankId);
+        return branch.bankId === bankId;
+      });
+      console.log('Step1 - Filtered Branches:', bankBranches);
       setFilteredBranches(bankBranches);
     } else {
       setFilteredProducts([]);
@@ -61,7 +74,7 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
 
     if (selectedVehicleBrand && vehicleModels && vehicleModels.length > 0) {
       const brandModels = vehicleModels.filter(model => model.brandId === selectedVehicleBrand);
-      console.log('Filtered Vehicle Models:', brandModels);
+      console.log('Step1 - Filtered Vehicle Models:', brandModels);
       setFilteredVehicleModels(brandModels);
     } else {
       setFilteredVehicleModels([]);
@@ -89,13 +102,13 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
                 <FormLabel>Bank Name <span className="text-red-500">*</span></FormLabel>
                 <Select 
                   onValueChange={(value) => {
-                    console.log('Bank selected:', value);
+                    console.log('Step1 - Bank selected:', value);
                     field.onChange(value);
                     setValue('leadType', ''); // Reset lead type when bank changes
                     setValue('initiatedBranch', '');
                     setValue('buildBranch', '');
                   }} 
-                  defaultValue={field.value}
+                  value={field.value}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -121,12 +134,12 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
                 <FormLabel>Lead Type/Product <span className="text-red-500">*</span></FormLabel>
                 <Select 
                   onValueChange={(value) => {
-                    console.log('Lead type selected:', value);
+                    console.log('Step1 - Lead type selected:', value);
                     field.onChange(value);
                     setValue('vehicleBrand', '');
                     setValue('vehicleModel', '');
                   }} 
-                  defaultValue={field.value}
+                  value={field.value}
                   disabled={!selectedBank || filteredProducts.length === 0}
                 >
                   <FormControl>
@@ -155,11 +168,11 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
                     <FormLabel>Vehicle Brand</FormLabel>
                     <Select 
                       onValueChange={(value) => {
-                        console.log('Vehicle brand selected:', value);
+                        console.log('Step1 - Vehicle brand selected:', value);
                         field.onChange(value);
                         setValue('vehicleModel', '');
                       }} 
-                      defaultValue={field.value}
+                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -185,10 +198,10 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
                     <FormLabel>Vehicle Model</FormLabel>
                     <Select 
                       onValueChange={(value) => {
-                        console.log('Vehicle model selected:', value);
+                        console.log('Step1 - Vehicle model selected:', value);
                         field.onChange(value);
                       }} 
-                      defaultValue={field.value}
+                      value={field.value}
                       disabled={!selectedVehicleBrand || filteredVehicleModels.length === 0}
                     >
                       <FormControl>
@@ -217,10 +230,10 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
                 <FormLabel>Initiated Under Branch</FormLabel>
                 <Select 
                   onValueChange={(value) => {
-                    console.log('Initiated branch selected:', value);
+                    console.log('Step1 - Initiated branch selected:', value);
                     field.onChange(value);
                   }} 
-                  defaultValue={field.value} 
+                  value={field.value} 
                   disabled={!selectedBank || filteredBranches.length === 0}
                 >
                   <FormControl>
@@ -247,10 +260,10 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
                 <FormLabel>Build Under Branch</FormLabel>
                 <Select 
                   onValueChange={(value) => {
-                    console.log('Build branch selected:', value);
+                    console.log('Step1 - Build branch selected:', value);
                     field.onChange(value);
                   }} 
-                  defaultValue={field.value} 
+                  value={field.value} 
                   disabled={!selectedBank || filteredBranches.length === 0}
                 >
                   <FormControl>

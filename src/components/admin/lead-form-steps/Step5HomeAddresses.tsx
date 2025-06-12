@@ -84,13 +84,13 @@ const Step5HomeAddresses = ({ locationData }: Step5Props) => {
     console.log('Step5 - Getting districts for state:', stateId);
     console.log('Step5 - Available location data:', locationData);
     
-    if (!locationData || !locationData.states) {
+    if (!locationData?.states) {
       console.log('Step5 - No location data available');
       return [];
     }
     
     const state = locationData.states.find(s => s.id === stateId);
-    const districts = state ? state.districts : [];
+    const districts = state?.districts || [];
     console.log('Step5 - Found districts:', districts);
     return districts;
   };
@@ -98,31 +98,31 @@ const Step5HomeAddresses = ({ locationData }: Step5Props) => {
   const getCitiesForDistrict = (stateId: string, districtId: string) => {
     console.log('Step5 - Getting cities for state:', stateId, 'district:', districtId);
     
-    if (!locationData || !locationData.states) {
+    if (!locationData?.states) {
       console.log('Step5 - No location data available');
       return [];
     }
     
     const state = locationData.states.find(s => s.id === stateId);
     const district = state?.districts.find(d => d.id === districtId);
-    const cities = district ? district.cities : [];
+    const cities = district?.cities || [];
     console.log('Step5 - Found cities:', cities);
     return cities;
   };
 
   const getStateName = (stateId: string) => {
-    if (!locationData || !locationData.states) return '';
+    if (!locationData?.states) return '';
     return locationData.states.find(s => s.id === stateId)?.name || '';
   };
 
   const getDistrictName = (stateId: string, districtId: string) => {
-    if (!locationData || !locationData.states) return '';
+    if (!locationData?.states) return '';
     const state = locationData.states.find(s => s.id === stateId);
     return state?.districts.find(d => d.id === districtId)?.name || '';
   };
 
   const getCityName = (stateId: string, districtId: string, cityId: string) => {
-    if (!locationData || !locationData.states) return '';
+    if (!locationData?.states) return '';
     const state = locationData.states.find(s => s.id === stateId);
     const district = state?.districts.find(d => d.id === districtId);
     return district?.cities.find(c => c.id === cityId)?.name || '';
@@ -167,7 +167,7 @@ const Step5HomeAddresses = ({ locationData }: Step5Props) => {
                     <SelectValue placeholder="Select state" />
                   </SelectTrigger>
                   <SelectContent>
-                    {locationData && locationData.states && locationData.states.map((state) => (
+                    {locationData?.states?.map((state) => (
                       <SelectItem key={state.id} value={state.id}>{state.name}</SelectItem>
                     ))}
                   </SelectContent>
