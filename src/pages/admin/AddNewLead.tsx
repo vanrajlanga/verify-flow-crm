@@ -5,7 +5,7 @@ import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
 import MultiStepLeadForm from '@/components/admin/MultiStepLeadForm';
 import { toast } from '@/components/ui/use-toast';
-import { saveLeadToDatabase } from '@/lib/lead-operations';
+import { saveLeadToDatabase, getLeadsFromDatabase } from '@/lib/lead-operations';
 import { supabase } from '@/integrations/supabase/client';
 
 interface LocationData {
@@ -34,6 +34,7 @@ const AddNewLead = () => {
   const [vehicleBrands, setVehicleBrands] = useState<any[]>([]);
   const [vehicleModels, setVehicleModels] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [editingLead, setEditingLead] = useState<any>(null);
   const navigate = useNavigate();
   const { leadId } = useParams();
 
@@ -56,7 +57,50 @@ const AddNewLead = () => {
     loadLocationDataFromSupabase();
     loadProducts();
     loadVehicleData();
+    
+    // If leadId is provided, load the lead for editing
+    if (leadId) {
+      loadLeadForEditing(leadId);
+    }
   }, [navigate, leadId]);
+
+  const loadLeadForEditing = async (id: string) => {
+    try {
+      // Try to get lead from database first
+      const dbLeads = await getLeadsFromDatabase();
+      const foundLead = dbLeads.find(l => l.id === id);
+      
+      if (foundLead) {
+        setEditingLead(foundLead);
+        return;
+      }
+
+      // Fall back to localStorage
+      const storedLeads = localStorage.getItem('mockLeads');
+      if (storedLeads) {
+        const leads = JSON.parse(storedLeads);
+        const foundLead = leads.find((l: any) => l.id === id);
+        if (foundLead) {
+          setEditingLead(foundLead);
+        } else {
+          toast({
+            title: "Lead not found",
+            description: "The lead you're trying to edit could not be found.",
+            variant: "destructive",
+          });
+          navigate('/admin/leads');
+        }
+      }
+    } catch (error) {
+      console.error('Error loading lead for editing:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load lead for editing.",
+        variant: "destructive",
+      });
+      navigate('/admin/leads');
+    }
+  };
 
   const loadProducts = () => {
     // Load from localStorage but ensure bank IDs match mockBanks
@@ -279,13 +323,13 @@ const AddNewLead = () => {
       const selectedVehicleModel = vehicleModels.find(m => m.id === formData.vehicleModel);
       
       // Transform form data to lead format with all data
-      const newLead = {
-        id: `lead-${Date.now()}`,
+      const leadData = {
+        id: editingLead ? editingLead.id : `lead-${Date.now()}`,
         name: formData.customerName,
         age: Number(formData.age) || 30,
         job: formData.designation || '',
         address: {
-          id: `addr-${Date.now()}`,
+          id: editingLead?.address?.id || `addr-${Date.now()}`,
           type: 'Residence' as const,
           street: formData.addresses?.[0]?.streetAddress || '',
           city: formData.addresses?.[0]?.city || '',
@@ -335,32 +379,22 @@ const AddNewLead = () => {
             }
           ]
         },
-        status: 'Pending' as const,
+        status: editingLead?.status || 'Pending' as const,
         bank: formData.bankName,
         visitType: formData.visitType as 'Residence' | 'Office' | 'Both',
         assignedTo: formData.assignedAgent || '',
-        createdAt: new Date(),
+        createdAt: editingLead?.createdAt || new Date(),
         verificationDate: formData.preferredDate,
-        documents: [],
+        documents: editingLead?.documents || [],
         instructions: formData.specialInstructions || ''
       };
 
-      console.log('Transformed lead data:', newLead);
+      console.log('Transformed lead data:', leadData);
 
       // Save to database
-      await saveLeadToDatabase(newLead);
+      await saveLeadToDatabase(leadData);
 
-      toast({
-        title: "Success",
-        description: "Lead created successfully and saved to database.",
-      });
-
-      // Navigate back to leads list
-      navigate('/admin/leads');
-    } catch (error) {
-      console.error('Error saving lead:', error);
-      
-      // Fall back to localStorage if database save fails
+      // Update localStorage for immediate sync
       const storedLeads = localStorage.getItem('mockLeads');
       let currentLeads = [];
       if (storedLeads) {
@@ -372,9 +406,34 @@ const AddNewLead = () => {
         }
       }
 
+      if (editingLead) {
+        // Update existing lead
+        const updatedLeads = currentLeads.map((lead: any) => 
+          lead.id === editingLead.id ? leadData : lead
+        );
+        localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+        toast({
+          title: "Success",
+          description: "Lead updated successfully.",
+        });
+      } else {
+        // Add new lead
+        const updatedLeads = [...currentLeads, leadData];
+        localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+        toast({
+          title: "Success",
+          description: "Lead created successfully.",
+        });
+      }
+
+      // Navigate back to leads list
+      navigate('/admin/leads');
+    } catch (error) {
+      console.error('Error saving lead:', error);
+      
       toast({
         title: "Warning",
-        description: "Lead saved locally. Database connection failed.",
+        description: editingLead ? "Lead updated locally. Database connection failed." : "Lead saved locally. Database connection failed.",
         variant: "destructive"
       });
 
@@ -409,6 +468,7 @@ const AddNewLead = () => {
               onSubmit={handleSubmitLead}
               onCancel={handleCancel}
               locationData={locationData}
+              editingLead={editingLead}
             />
           </div>
         </main>

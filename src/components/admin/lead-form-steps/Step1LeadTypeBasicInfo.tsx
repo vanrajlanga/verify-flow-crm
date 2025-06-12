@@ -1,10 +1,15 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
+import { Check, ChevronsUpDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface Step1Props {
   banks: Array<{ id: string; name: string; }>;
@@ -16,10 +21,36 @@ interface Step1Props {
 
 const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehicleModels }: Step1Props) => {
   const { control, watch, setValue } = useFormContext();
+  const [availableProducts, setAvailableProducts] = useState<Array<{ id: string; name: string; }>>([]);
+  const [leadTypeOpen, setLeadTypeOpen] = useState(false);
   
   const selectedBank = watch('bankName');
   const selectedLeadType = watch('leadType');
   const selectedVehicleBrand = watch('vehicleBrand');
+
+  // Load products from localStorage
+  useEffect(() => {
+    const storedProducts = localStorage.getItem('products');
+    if (storedProducts) {
+      try {
+        const parsedProducts = JSON.parse(storedProducts);
+        setAvailableProducts(parsedProducts.map((p: any) => ({ id: p.id, name: p.name })));
+      } catch (error) {
+        console.error('Error parsing products:', error);
+        setAvailableProducts([]);
+      }
+    } else {
+      // Default products if none stored
+      const defaultProducts = [
+        { id: 'prod-1', name: 'Auto Loans' },
+        { id: 'prod-2', name: 'Commercial Vehicles' },
+        { id: 'prod-3', name: 'CVCE' },
+        { id: 'prod-4', name: 'Home Loans' },
+        { id: 'prod-5', name: 'Personal Loans' }
+      ];
+      setAvailableProducts(defaultProducts);
+    }
+  }, []);
 
   // Generate automatic agency file number
   useEffect(() => {
@@ -40,10 +71,13 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
   const filteredBranches = selectedBank ? getBranchesForBank(selectedBank) : [];
   const filteredVehicleModels = selectedVehicleBrand ? getModelsForBrand(selectedVehicleBrand) : [];
 
-  const isAutoLoan = selectedLeadType && (
-    selectedLeadType.toLowerCase().includes('auto') || 
-    selectedLeadType.toLowerCase().includes('vehicle') ||
-    selectedLeadType.toLowerCase().includes('car')
+  // Check if lead type requires vehicle selection
+  const requiresVehicleSelection = selectedLeadType && availableProducts.find(p => p.id === selectedLeadType)?.name && (
+    availableProducts.find(p => p.id === selectedLeadType)?.name.toLowerCase().includes('auto') || 
+    availableProducts.find(p => p.id === selectedLeadType)?.name.toLowerCase().includes('vehicle') ||
+    availableProducts.find(p => p.id === selectedLeadType)?.name.toLowerCase().includes('car') ||
+    availableProducts.find(p => p.id === selectedLeadType)?.name.toLowerCase().includes('cvce') ||
+    availableProducts.find(p => p.id === selectedLeadType)?.name.toLowerCase().includes('commercial')
   );
 
   return (
@@ -92,23 +126,57 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Lead Type/Product <span className="text-red-500">*</span></FormLabel>
-                <FormControl>
-                  <Input 
-                    placeholder="Enter lead type (e.g., Auto Loan, Home Loan, Personal Loan)" 
-                    {...field} 
-                    onChange={(e) => {
-                      field.onChange(e.target.value);
-                      setValue('vehicleBrand', '');
-                      setValue('vehicleModel', '');
-                    }}
-                  />
-                </FormControl>
+                <Popover open={leadTypeOpen} onOpenChange={setLeadTypeOpen}>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={leadTypeOpen}
+                        className="w-full justify-between"
+                      >
+                        {field.value
+                          ? availableProducts.find((product) => product.id === field.value)?.name
+                          : "Select lead type..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Search lead type..." />
+                      <CommandEmpty>No lead type found.</CommandEmpty>
+                      <CommandGroup>
+                        {availableProducts.map((product) => (
+                          <CommandItem
+                            key={product.id}
+                            value={product.name}
+                            onSelect={() => {
+                              field.onChange(product.id);
+                              setValue('vehicleBrand', '');
+                              setValue('vehicleModel', '');
+                              setLeadTypeOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                field.value === product.id ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {product.name}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 <FormMessage />
               </FormItem>
             )}
           />
 
-          {isAutoLoan && (
+          {requiresVehicleSelection && (
             <>
               <FormField
                 control={control}

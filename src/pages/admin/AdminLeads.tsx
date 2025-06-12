@@ -116,10 +116,12 @@ const AdminLeads = () => {
   };
 
   const handleEditLead = (leadId: string) => {
+    console.log('Editing lead:', leadId);
     navigate(`/admin/add-lead/${leadId}`);
   };
 
   const handleViewLead = (leadId: string) => {
+    console.log('Viewing lead:', leadId);
     navigate(`/lead/${leadId}`);
   };
 
@@ -334,7 +336,7 @@ const AdminLeads = () => {
       '30', 'Software Engineer', '9876543210', 'john@example.com', '1993-01-15', 'Male', 'Single',
       'Father Name', 'Mother Name', '', 'Tech Corp', '5 years',
       'Apartment', 'Owned', '5 years', '50000', '600000',
-      '10000', 'Auto Loan', '500000', 'Vehicle Loan', 'Toyota', 'Camry',
+      '10000', 'Auto Loans', '500000', 'Vehicle Loan', 'Toyota', 'Camry',
       'HDFC Bank', 'Main Branch', 'Pending', 'Residence', 'Agent Name', '2024-01-15',
       '123 Main St, City, District, State - 123456', '456 Office St, City, District, State - 123456',
       'Standard Scheme', 'Please verify documents', 'No additional comments', 'Not Started', ''
