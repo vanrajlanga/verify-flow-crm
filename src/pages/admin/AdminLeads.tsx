@@ -48,6 +48,7 @@ const AdminLeads = () => {
     states: []
   });
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -65,94 +66,101 @@ const AdminLeads = () => {
     }
 
     setCurrentUser(parsedUser);
-    loadLeadsAndAgents();
-    loadLocationData();
+    initializeData();
   }, [navigate]);
+
+  const initializeData = async () => {
+    try {
+      setLoading(true);
+      
+      // Load all data in parallel but don't let any single operation block the others
+      await Promise.allSettled([
+        loadLeadsAndAgents(),
+        loadLocationData()
+      ]);
+      
+    } catch (error) {
+      console.error('Error initializing data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadLeadsAndAgents = async () => {
     try {
-      // Load leads from database
-      const dbLeads = await getLeadsFromDatabase();
-      if (dbLeads.length > 0) {
-        console.log('Loaded leads from database:', dbLeads.length);
-        setLeads(dbLeads);
-      } else {
-        // Fall back to localStorage if no database leads
-        const storedLeads = localStorage.getItem('mockLeads');
-        if (storedLeads) {
-          try {
-            const parsedLeads = JSON.parse(storedLeads);
-            console.log('Loaded leads from localStorage:', parsedLeads.length);
-            setLeads(parsedLeads);
-          } catch (error) {
-            console.error("Error parsing stored leads:", error);
-            setLeads([]);
-          }
-        } else {
+      // Load leads - prioritize localStorage for immediate loading
+      const storedLeads = localStorage.getItem('mockLeads');
+      if (storedLeads) {
+        try {
+          const parsedLeads = JSON.parse(storedLeads);
+          console.log('Loaded leads from localStorage:', parsedLeads.length);
+          setLeads(parsedLeads);
+        } catch (error) {
+          console.error("Error parsing stored leads:", error);
           setLeads([]);
         }
       }
-
-      // Load agents from database
-      try {
-        const { data: dbAgents, error } = await supabase
-          .from('users')
-          .select('*')
-          .eq('role', 'agent');
-
-        if (!error && dbAgents && dbAgents.length > 0) {
-          const transformedAgents = dbAgents.map((agent: any) => ({
-            id: agent.id,
-            name: agent.name,
-            role: agent.role,
-            email: agent.email,
-            phone: agent.phone || '',
-            district: agent.district || '',
-            status: agent.status || 'Active',
-            state: agent.state,
-            city: agent.city,
-            baseLocation: agent.base_location,
-            maxTravelDistance: agent.max_travel_distance,
-            extraChargePerKm: agent.extra_charge_per_km,
-            profilePicture: agent.profile_picture,
-            totalVerifications: agent.total_verifications || 0,
-            completionRate: agent.completion_rate || 0,
-            password: agent.password
-          }));
-          setAgents(transformedAgents);
-        } else {
-          // Fall back to localStorage for agents
-          const storedUsers = localStorage.getItem('mockUsers');
-          if (storedUsers) {
-            try {
-              const parsedUsers = JSON.parse(storedUsers);
-              const filteredAgents = parsedUsers.filter((user: User) => user.role === 'agent');
-              setAgents(filteredAgents);
-            } catch (error) {
-              console.error("Error parsing stored users:", error);
-              setAgents([]);
-            }
-          } else {
-            setAgents([]);
+      
+      // Try to load from database in background
+      setTimeout(async () => {
+        try {
+          const dbLeads = await getLeadsFromDatabase();
+          if (dbLeads.length > 0) {
+            console.log('Loaded leads from database:', dbLeads.length);
+            setLeads(dbLeads);
           }
+        } catch (error) {
+          console.error('Error loading leads from database:', error);
         }
-      } catch (error) {
-        console.error('Error loading agents from database:', error);
-        // Fall back to localStorage
-        const storedUsers = localStorage.getItem('mockUsers');
-        if (storedUsers) {
-          try {
-            const parsedUsers = JSON.parse(storedUsers);
-            const filteredAgents = parsedUsers.filter((user: User) => user.role === 'agent');
-            setAgents(filteredAgents);
-          } catch (error) {
-            console.error("Error parsing stored users:", error);
-            setAgents([]);
-          }
-        } else {
+      }, 100);
+
+      // Load agents - prioritize localStorage
+      const storedUsers = localStorage.getItem('mockUsers');
+      if (storedUsers) {
+        try {
+          const parsedUsers = JSON.parse(storedUsers);
+          const filteredAgents = parsedUsers.filter((user: User) => user.role === 'agent');
+          setAgents(filteredAgents);
+        } catch (error) {
+          console.error("Error parsing stored users:", error);
           setAgents([]);
         }
       }
+
+      // Try to load agents from database in background
+      setTimeout(async () => {
+        try {
+          const { data: dbAgents, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('role', 'agent');
+
+          if (!error && dbAgents && dbAgents.length > 0) {
+            const transformedAgents = dbAgents.map((agent: any) => ({
+              id: agent.id,
+              name: agent.name,
+              role: agent.role,
+              email: agent.email,
+              phone: agent.phone || '',
+              district: agent.district || '',
+              status: agent.status || 'Active',
+              state: agent.state,
+              city: agent.city,
+              baseLocation: agent.base_location,
+              maxTravelDistance: agent.max_travel_distance,
+              extraChargePerKm: agent.extra_charge_per_km,
+              profilePicture: agent.profile_picture,
+              totalVerifications: agent.total_verifications || 0,
+              completionRate: agent.completion_rate || 0,
+              password: agent.password
+            }));
+            setAgents(transformedAgents);
+          }
+        } catch (error) {
+          console.error('Error loading agents from database:', error);
+        }
+      }, 100);
+      
     } catch (error) {
       console.error('Error in loadLeadsAndAgents:', error);
     }
@@ -219,35 +227,31 @@ const AdminLeads = () => {
 
   const handleUpdateLead = async (leadId: string, newStatus: Lead['status']) => {
     try {
-      // Update in database
-      await updateLeadInDatabase(leadId, { status: newStatus });
-      
-      // Update local state
-      const updatedLeads = leads.map(lead =>
-        lead.id === leadId ? { ...lead, status: newStatus } : lead
-      );
-      setLeads(updatedLeads);
-
-      toast({
-        title: "Lead updated",
-        description: `Lead ${leadId} status updated to ${newStatus}.`,
-      });
-
-      // Reload data from database
-      loadLeadsAndAgents();
-    } catch (error) {
-      console.error('Error updating lead:', error);
-      
-      // Fall back to localStorage update
+      // Update local state immediately for better UX
       const updatedLeads = leads.map(lead =>
         lead.id === leadId ? { ...lead, status: newStatus } : lead
       );
       setLeads(updatedLeads);
       localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
 
+      // Update in database in background
+      setTimeout(async () => {
+        try {
+          await updateLeadInDatabase(leadId, { status: newStatus });
+        } catch (error) {
+          console.error('Error updating lead in database:', error);
+        }
+      }, 0);
+
       toast({
         title: "Lead updated",
-        description: `Lead ${leadId} status updated to ${newStatus} (saved locally).`,
+        description: `Lead ${leadId} status updated to ${newStatus}.`,
+      });
+    } catch (error) {
+      console.error('Error updating lead:', error);
+      toast({
+        title: "Error updating lead",
+        description: "Please try again.",
         variant: "destructive"
       });
     }
@@ -259,27 +263,7 @@ const AdminLeads = () => {
 
   const handleUpdateLeadData = async (updatedLead: Lead) => {
     try {
-      // Update in database
-      await updateLeadInDatabase(updatedLead.id, updatedLead);
-      
-      // Update local state
-      const updatedLeads = leads.map(lead =>
-        lead.id === updatedLead.id ? updatedLead : lead
-      );
-      setLeads(updatedLeads);
-
-      toast({
-        title: "Lead updated",
-        description: `Lead ${updatedLead.name} has been updated successfully.`,
-      });
-      setEditingLead(null);
-      
-      // Reload data from database
-      loadLeadsAndAgents();
-    } catch (error) {
-      console.error('Error updating lead data:', error);
-      
-      // Fall back to localStorage update
+      // Update local state immediately
       const updatedLeads = leads.map(lead =>
         lead.id === updatedLead.id ? updatedLead : lead
       );
@@ -288,7 +272,23 @@ const AdminLeads = () => {
 
       toast({
         title: "Lead updated",
-        description: `Lead ${updatedLead.name} has been updated successfully (saved locally).`,
+        description: `Lead ${updatedLead.name} has been updated successfully.`,
+      });
+      setEditingLead(null);
+      
+      // Update in database in background
+      setTimeout(async () => {
+        try {
+          await updateLeadInDatabase(updatedLead.id, updatedLead);
+        } catch (error) {
+          console.error('Error updating lead in database:', error);
+        }
+      }, 0);
+    } catch (error) {
+      console.error('Error updating lead data:', error);
+      toast({
+        title: "Error updating lead",
+        description: "Please try again.",
         variant: "destructive"
       });
       setEditingLead(null);
@@ -301,31 +301,29 @@ const AdminLeads = () => {
 
   const handleDeleteLead = async (leadId: string) => {
     try {
-      // Delete from database
-      await deleteLeadFromDatabase(leadId);
-      
-      // Update local state
-      const updatedLeads = leads.filter(lead => lead.id !== leadId);
-      setLeads(updatedLeads);
-
-      toast({
-        title: "Lead deleted",
-        description: `Lead ${leadId} has been removed.`,
-      });
-
-      // Reload data from database
-      loadLeadsAndAgents();
-    } catch (error) {
-      console.error('Error deleting lead:', error);
-      
-      // Fall back to localStorage delete
+      // Update local state immediately
       const updatedLeads = leads.filter(lead => lead.id !== leadId);
       setLeads(updatedLeads);
       localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
 
       toast({
         title: "Lead deleted",
-        description: `Lead ${leadId} has been removed (saved locally).`,
+        description: `Lead ${leadId} has been removed.`,
+      });
+
+      // Delete from database in background
+      setTimeout(async () => {
+        try {
+          await deleteLeadFromDatabase(leadId);
+        } catch (error) {
+          console.error('Error deleting lead from database:', error);
+        }
+      }, 0);
+    } catch (error) {
+      console.error('Error deleting lead:', error);
+      toast({
+        title: "Error deleting lead",
+        description: "Please try again.",
         variant: "destructive"
       });
     }
@@ -335,21 +333,9 @@ const AdminLeads = () => {
     try {
       console.log('Bulk deleting leads:', leadIds);
       
-      // Delete from database one by one
-      for (const leadId of leadIds) {
-        try {
-          await deleteLeadFromDatabase(leadId);
-          console.log('Deleted lead from database:', leadId);
-        } catch (error) {
-          console.error('Error deleting lead from database:', leadId, error);
-        }
-      }
-      
-      // Update local state by filtering out deleted leads
+      // Update local state immediately
       const updatedLeads = leads.filter(lead => !leadIds.includes(lead.id));
       setLeads(updatedLeads);
-      
-      // Update localStorage as well
       localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
 
       console.log('Bulk delete completed. Remaining leads:', updatedLeads.length);
@@ -359,8 +345,17 @@ const AdminLeads = () => {
         description: `${leadIds.length} leads have been permanently removed.`,
       });
 
-      // Don't reload data automatically to prevent regeneration
-      // loadLeadsAndAgents();
+      // Delete from database in background
+      setTimeout(async () => {
+        for (const leadId of leadIds) {
+          try {
+            await deleteLeadFromDatabase(leadId);
+            console.log('Deleted lead from database:', leadId);
+          } catch (error) {
+            console.error('Error deleting lead from database:', leadId, error);
+          }
+        }
+      }, 0);
     } catch (error) {
       console.error('Error bulk deleting leads:', error);
       
@@ -376,44 +371,7 @@ const AdminLeads = () => {
     try {
       console.log('Assigning lead in AdminLeads:', leadId, 'to agent:', agentId);
       
-      // Update in database
-      await updateLeadInDatabase(leadId, { 
-        assignedTo: agentId, 
-        status: 'Pending' as Lead['status'] 
-      });
-      
-      // Update local state
-      const updatedLeads = leads.map(lead => {
-        if (lead.id === leadId) {
-          const updatedLead = {
-            ...lead,
-            assignedTo: agentId,
-            status: 'Pending' as Lead['status'],
-            verification: {
-              ...lead.verification,
-              agentId: agentId,
-              status: 'Not Started'
-            }
-          } as Lead;
-          return updatedLead;
-        }
-        return lead;
-      });
-      
-      setLeads(updatedLeads);
-
-      const agent = agents.find(a => a.id === agentId);
-      toast({
-        title: "Lead assigned",
-        description: `Lead has been assigned to ${agent?.name || 'the selected agent'}.`,
-      });
-
-      // Reload data from database
-      loadLeadsAndAgents();
-    } catch (error) {
-      console.error('Error assigning lead:', error);
-      
-      // Fall back to localStorage update
+      // Update local state immediately
       const updatedLeads = leads.map(lead => {
         if (lead.id === leadId) {
           const updatedLead = {
@@ -437,7 +395,25 @@ const AdminLeads = () => {
       const agent = agents.find(a => a.id === agentId);
       toast({
         title: "Lead assigned",
-        description: `Lead has been assigned to ${agent?.name || 'the selected agent'} (saved locally).`,
+        description: `Lead has been assigned to ${agent?.name || 'the selected agent'}.`,
+      });
+
+      // Update in database in background
+      setTimeout(async () => {
+        try {
+          await updateLeadInDatabase(leadId, { 
+            assignedTo: agentId, 
+            status: 'Pending' as Lead['status'] 
+          });
+        } catch (error) {
+          console.error('Error updating lead assignment in database:', error);
+        }
+      }, 0);
+    } catch (error) {
+      console.error('Error assigning lead:', error);
+      toast({
+        title: "Error assigning lead",
+        description: "Please try again.",
         variant: "destructive"
       });
     }
@@ -516,9 +492,6 @@ const AdminLeads = () => {
           title: "Import successful",
           description: `${importedLeads.length} leads have been imported with complete data.`,
         });
-
-        // Reload data from database
-        loadLeadsAndAgents();
       } else {
         toast({
           title: "Import failed",
@@ -717,7 +690,32 @@ const AdminLeads = () => {
 
   if (!currentUser) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
-  };
+  }
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen bg-muted/30">
+        <Sidebar user={currentUser} isOpen={sidebarOpen} />
+        <div className="flex flex-col flex-1">
+          <Header 
+            user={currentUser} 
+            onLogout={handleLogout} 
+            toggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
+          />
+          <main className="flex-1 p-4 md:p-6">
+            <div className="max-w-7xl mx-auto">
+              <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                  <p className="text-muted-foreground">Loading leads data...</p>
+                </div>
+              </div>
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-muted/30">
@@ -740,26 +738,6 @@ const AdminLeads = () => {
                 </p>
               </div>
               <div className="flex gap-2 flex-wrap">
-                <Button onClick={downloadSampleCSV} variant="outline">
-                  <Download className="h-4 w-4 mr-2" />
-                  Download Sample Data
-                </Button>
-                <Button onClick={exportToCSV} variant="outline">
-                  <Download className="h-4 w-4 mr-2" />
-                  Export CSV
-                </Button>
-                <div className="relative">
-                  <input
-                    type="file"
-                    accept=".csv"
-                    onChange={importFromCSV}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  />
-                  <Button variant="outline">
-                    <Upload className="h-4 w-4 mr-2" />
-                    Import CSV
-                  </Button>
-                </div>
                 <Button asChild>
                   <Link to="/admin/add-lead">
                     <Plus className="h-4 w-4 mr-2" />
