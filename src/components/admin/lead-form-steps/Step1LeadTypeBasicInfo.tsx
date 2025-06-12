@@ -43,7 +43,7 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
           console.log('Checking product:', product.name, 'Banks:', product.banks, 'Looking for:', selectedBank);
           return product.banks && Array.isArray(product.banks) && product.banks.includes(selectedBank);
         });
-        console.log('Step1 - Filtered Products:', bankProducts);
+        console.log('Step1 - Filtered Products for bank:', selectedBank, 'Result:', bankProducts);
         setFilteredProducts(bankProducts);
       } else {
         console.log('Step1 - No products available');
@@ -56,7 +56,7 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
           console.log('Checking branch:', branch.name, 'BankId:', branch.bankId, 'Looking for:', selectedBank);
           return branch.bankId === selectedBank;
         });
-        console.log('Step1 - Filtered Branches:', bankBranches);
+        console.log('Step1 - Filtered Branches for bank:', selectedBank, 'Result:', bankBranches);
         setFilteredBranches(bankBranches);
       } else {
         console.log('Step1 - No branches available');
@@ -116,7 +116,7 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
                       <SelectValue placeholder="Select bank" />
                     </SelectTrigger>
                   </FormControl>
-                  <SelectContent>
+                  <SelectContent className="bg-background border border-border shadow-lg z-50">
                     {banks && banks.length > 0 ? banks.map((bank) => (
                       <SelectItem key={bank.id} value={bank.id}>{bank.name}</SelectItem>
                     )) : (
@@ -150,7 +150,7 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
                       <SelectValue placeholder={!selectedBank ? "Select bank first" : filteredProducts.length === 0 ? "No products available" : "Select lead type"} />
                     </SelectTrigger>
                   </FormControl>
-                  <SelectContent>
+                  <SelectContent className="bg-background border border-border shadow-lg z-50">
                     {filteredProducts.length > 0 ? filteredProducts.map((product) => (
                       <SelectItem key={product.id} value={product.id}>{product.name}</SelectItem>
                     )) : (
@@ -184,7 +184,7 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
                           <SelectValue placeholder="Select vehicle brand" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent className="bg-background border border-border shadow-lg z-50">
                         {vehicleBrands && vehicleBrands.length > 0 ? vehicleBrands.map((brand) => (
                           <SelectItem key={brand.id} value={brand.id}>{brand.name}</SelectItem>
                         )) : (
@@ -216,7 +216,7 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
                           <SelectValue placeholder={!selectedVehicleBrand ? "Select brand first" : filteredVehicleModels.length === 0 ? "No models available" : "Select vehicle model"} />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent className="bg-background border border-border shadow-lg z-50">
                         {filteredVehicleModels.length > 0 ? filteredVehicleModels.map((model) => (
                           <SelectItem key={model.id} value={model.id}>{model.name}</SelectItem>
                         )) : (
@@ -250,7 +250,7 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
                       <SelectValue placeholder={!selectedBank ? "Select bank first" : filteredBranches.length === 0 ? "No branches available" : "Select initiated branch"} />
                     </SelectTrigger>
                   </FormControl>
-                  <SelectContent>
+                  <SelectContent className="bg-background border border-border shadow-lg z-50">
                     {filteredBranches.length > 0 ? filteredBranches.map((branch) => (
                       <SelectItem key={branch.id} value={branch.id}>{branch.name}</SelectItem>
                     )) : (
@@ -282,7 +282,7 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
                       <SelectValue placeholder={!selectedBank ? "Select bank first" : filteredBranches.length === 0 ? "No branches available" : "Select build branch"} />
                     </SelectTrigger>
                   </FormControl>
-                  <SelectContent>
+                  <SelectContent className="bg-background border border-border shadow-lg z-50">
                     {filteredBranches.length > 0 ? filteredBranches.map((branch) => (
                       <SelectItem key={branch.id} value={branch.id}>{branch.name}</SelectItem>
                     )) : (

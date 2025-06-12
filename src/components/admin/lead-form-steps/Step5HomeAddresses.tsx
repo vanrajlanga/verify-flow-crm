@@ -54,6 +54,12 @@ const Step5HomeAddresses = ({ locationData }: Step5Props) => {
     console.log('Step5 - Addresses updated:', addresses);
   }, [addresses, setValue]);
 
+  // Log locationData to debug
+  useEffect(() => {
+    console.log('Step5 - LocationData received:', locationData);
+    console.log('Step5 - States available:', locationData?.states);
+  }, [locationData]);
+
   const addAddress = () => {
     const newAddress: Address = {
       id: Date.now().toString(),
@@ -182,7 +188,7 @@ const Step5HomeAddresses = ({ locationData }: Step5Props) => {
                   <SelectTrigger>
                     <SelectValue placeholder="Select state" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-background border border-border shadow-lg z-50 max-h-60 overflow-y-auto">
                     {locationData?.states && locationData.states.length > 0 ? 
                       locationData.states.map((state) => (
                         <SelectItem key={state.id} value={state.id}>{state.name}</SelectItem>
@@ -209,7 +215,7 @@ const Step5HomeAddresses = ({ locationData }: Step5Props) => {
                   <SelectTrigger>
                     <SelectValue placeholder={!address.state ? "Select state first" : "Select district"} />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-background border border-border shadow-lg z-50 max-h-60 overflow-y-auto">
                     {address.state ? (
                       getDistrictsForState(address.state).length > 0 ? 
                         getDistrictsForState(address.state).map((district) => (
@@ -237,7 +243,7 @@ const Step5HomeAddresses = ({ locationData }: Step5Props) => {
                   <SelectTrigger>
                     <SelectValue placeholder={!address.district ? "Select district first" : "Select city"} />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-background border border-border shadow-lg z-50 max-h-60 overflow-y-auto">
                     {address.district ? (
                       getCitiesForDistrict(address.state, address.district).length > 0 ? 
                         getCitiesForDistrict(address.state, address.district).map((city) => (

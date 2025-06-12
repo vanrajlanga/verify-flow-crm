@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -142,14 +141,21 @@ const MultiStepLeadForm = ({ banks, agents, onSubmit, onCancel, locationData }: 
   };
 
   const loadBranches = () => {
-    const defaultBranches = [
-      { id: 'branch-1', name: 'Main Branch', bankId: '1' },
-      { id: 'branch-2', name: 'City Center Branch', bankId: '1' },
-      { id: 'branch-3', name: 'Airport Branch', bankId: '2' },
-      { id: 'branch-4', name: 'Mall Branch', bankId: '2' },
-      { id: 'branch-5', name: 'Downtown Branch', bankId: '3' },
-    ];
-    setBranches(defaultBranches);
+    const storedBranches = localStorage.getItem('branches');
+    if (storedBranches) {
+      setBranches(JSON.parse(storedBranches));
+    } else {
+      // Create default branches with correct bank IDs matching mockBanks
+      const defaultBranches = [
+        { id: 'branch-1', name: 'Main Branch', bankId: banks[0]?.id || 'hdfc' },
+        { id: 'branch-2', name: 'City Center Branch', bankId: banks[0]?.id || 'hdfc' },
+        { id: 'branch-3', name: 'Airport Branch', bankId: banks[1]?.id || 'sbi' },
+        { id: 'branch-4', name: 'Mall Branch', bankId: banks[1]?.id || 'sbi' },
+        { id: 'branch-5', name: 'Downtown Branch', bankId: banks[2]?.id || 'icici' },
+      ];
+      setBranches(defaultBranches);
+      localStorage.setItem('branches', JSON.stringify(defaultBranches));
+    }
   };
 
   const loadVehicleData = () => {

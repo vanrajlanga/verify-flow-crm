@@ -53,15 +53,42 @@ const AddNewLead = () => {
 
     setCurrentUser(parsedUser);
     loadAgents();
-    loadLocationData();
+    loadLocationDataFromSupabase();
     loadProducts();
     loadVehicleData();
   }, [navigate, leadId]);
 
   const loadProducts = () => {
+    // Load from localStorage but ensure bank IDs match mockBanks
     const storedProducts = localStorage.getItem('products');
     if (storedProducts) {
-      setProducts(JSON.parse(storedProducts));
+      const parsedProducts = JSON.parse(storedProducts);
+      // Map localStorage products to use correct bank IDs from mockBanks
+      const mappedProducts = parsedProducts.map((product: any) => ({
+        ...product,
+        banks: product.banks?.map((bankId: string) => {
+          // If bankId is like "bank-1", map it to actual bank ID from mockBanks
+          if (bankId.startsWith('bank-')) {
+            const bankIndex = parseInt(bankId.split('-')[1]) - 1;
+            return mockBanks[bankIndex]?.id || bankId;
+          }
+          return bankId;
+        }) || []
+      }));
+      console.log('Mapped products:', mappedProducts);
+      setProducts(mappedProducts);
+    } else {
+      // Set default products with correct bank IDs
+      const defaultProducts = [
+        { id: 'prod-1', name: 'Auto Loans', description: 'Vehicle financing', banks: [mockBanks[0]?.id, mockBanks[1]?.id] },
+        { id: 'prod-2', name: 'Commercial Vehicles', description: 'Commercial vehicle loans', banks: [mockBanks[0]?.id, mockBanks[2]?.id] },
+        { id: 'prod-3', name: 'CVCE', description: 'Commercial Vehicle Customer Enquiry', banks: [mockBanks[1]?.id, mockBanks[2]?.id] },
+        { id: 'prod-4', name: 'Home Loans', description: 'Housing finance', banks: [mockBanks[0]?.id, mockBanks[1]?.id, mockBanks[2]?.id] },
+        { id: 'prod-5', name: 'Personal Loans', description: 'Personal financing', banks: [mockBanks[0]?.id, mockBanks[1]?.id] }
+      ].filter(product => product.banks.some(bankId => bankId)); // Filter out products with invalid bank IDs
+      
+      setProducts(defaultProducts);
+      localStorage.setItem('products', JSON.stringify(defaultProducts));
     }
   };
 
@@ -71,9 +98,36 @@ const AddNewLead = () => {
     
     if (storedBrands) {
       setVehicleBrands(JSON.parse(storedBrands));
+    } else {
+      // Set default vehicle brands
+      const defaultBrands = [
+        { id: 'brand-1', name: 'Maruti Suzuki' },
+        { id: 'brand-2', name: 'Hyundai' },
+        { id: 'brand-3', name: 'Tata' },
+        { id: 'brand-4', name: 'Mahindra' }
+      ];
+      setVehicleBrands(defaultBrands);
+      localStorage.setItem('vehicleBrands', JSON.stringify(defaultBrands));
     }
+    
     if (storedModels) {
       setVehicleModels(JSON.parse(storedModels));
+    } else {
+      // Set default vehicle models
+      const defaultModels = [
+        { id: 'model-1', name: 'Swift', brandId: 'brand-1' },
+        { id: 'model-2', name: 'Alto', brandId: 'brand-1' },
+        { id: 'model-3', name: 'Baleno', brandId: 'brand-1' },
+        { id: 'model-4', name: 'i20', brandId: 'brand-2' },
+        { id: 'model-5', name: 'Creta', brandId: 'brand-2' },
+        { id: 'model-6', name: 'Venue', brandId: 'brand-2' },
+        { id: 'model-7', name: 'Nexon', brandId: 'brand-3' },
+        { id: 'model-8', name: 'Tiago', brandId: 'brand-3' },
+        { id: 'model-9', name: 'XUV700', brandId: 'brand-4' },
+        { id: 'model-10', name: 'Scorpio', brandId: 'brand-4' }
+      ];
+      setVehicleModels(defaultModels);
+      localStorage.setItem('vehicleModels', JSON.stringify(defaultModels));
     }
   };
 
@@ -127,8 +181,22 @@ const AddNewLead = () => {
     }
   };
 
-  const loadLocationData = () => {
-    // Initialize default location data
+  const loadLocationDataFromSupabase = async () => {
+    try {
+      // Try to load from localStorage first (which might be synced with Supabase)
+      const storedLocationData = localStorage.getItem('locationData');
+      if (storedLocationData) {
+        console.log('Loading location data from localStorage');
+        const parsedLocationData = JSON.parse(storedLocationData);
+        setLocationData(parsedLocationData);
+        return;
+      }
+    } catch (error) {
+      console.error('Error loading location data from localStorage:', error);
+    }
+
+    // Fall back to default location data
+    console.log('Using default location data');
     const defaultLocationData = {
       states: [
         {
@@ -192,6 +260,8 @@ const AddNewLead = () => {
       ]
     };
     setLocationData(defaultLocationData);
+    // Save default data to localStorage for future use
+    localStorage.setItem('locationData', JSON.stringify(defaultLocationData));
   };
 
   const handleLogout = () => {
