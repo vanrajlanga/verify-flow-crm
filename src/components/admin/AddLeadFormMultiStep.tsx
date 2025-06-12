@@ -24,6 +24,7 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData,
     name: '',
     age: '',
     job: '',
+    phone: '',
     address: {
       street: '',
       city: '',
@@ -32,6 +33,7 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData,
       pincode: ''
     },
     bank: '',
+    assignedTo: '',
     additionalDetails: {
       leadType: '',
       leadTypeId: '',
@@ -47,17 +49,28 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData,
   useEffect(() => {
     console.log('Component mounting, initializing data...');
     loadAllData();
-  }, []);
+    
+    // Pre-populate form if editing
+    if (editLead) {
+      console.log('Pre-populating form with edit data:', editLead);
+      setFormData({
+        ...editLead,
+        additionalDetails: {
+          ...editLead.additionalDetails
+        }
+      });
+    }
+  }, [editLead]);
 
   const loadAllData = async () => {
     console.log('Loading all data...');
     
     // Load products
-    console.log('Initializing products...');
+    console.log('Loading products...');
     const storedProducts = localStorage.getItem('products');
     if (storedProducts) {
       const parsedProducts = JSON.parse(storedProducts);
-      console.log('Products initialized:', parsedProducts);
+      console.log('Products loaded from storage:', parsedProducts);
       setProducts(parsedProducts);
     } else {
       const defaultProducts = [
@@ -69,15 +82,15 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData,
       ];
       setProducts(defaultProducts);
       localStorage.setItem('products', JSON.stringify(defaultProducts));
-      console.log('Products initialized:', defaultProducts);
+      console.log('Products initialized with defaults:', defaultProducts);
     }
 
     // Load vehicle brands
-    console.log('Initializing vehicle brands...');
+    console.log('Loading vehicle brands...');
     const storedVehicleBrands = localStorage.getItem('vehicleBrands');
     if (storedVehicleBrands) {
       const parsedBrands = JSON.parse(storedVehicleBrands);
-      console.log('Vehicle brands initialized:', parsedBrands);
+      console.log('Vehicle brands loaded from storage:', parsedBrands);
       setVehicleBrands(parsedBrands);
     } else {
       const defaultBrands = [
@@ -92,15 +105,15 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData,
       ];
       setVehicleBrands(defaultBrands);
       localStorage.setItem('vehicleBrands', JSON.stringify(defaultBrands));
-      console.log('Vehicle brands initialized:', defaultBrands);
+      console.log('Vehicle brands initialized with defaults:', defaultBrands);
     }
 
     // Load vehicle models
-    console.log('Initializing vehicle models...');
+    console.log('Loading vehicle models...');
     const storedVehicleModels = localStorage.getItem('vehicleModels');
     if (storedVehicleModels) {
       const parsedModels = JSON.parse(storedVehicleModels);
-      console.log('Vehicle models initialized:', parsedModels);
+      console.log('Vehicle models loaded from storage:', parsedModels);
       setVehicleModels(parsedModels);
     } else {
       const defaultModels = [
@@ -117,39 +130,40 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData,
       ];
       setVehicleModels(defaultModels);
       localStorage.setItem('vehicleModels', JSON.stringify(defaultModels));
-      console.log('Vehicle models initialized:', defaultModels);
+      console.log('Vehicle models initialized with defaults:', defaultModels);
     }
 
     // Load bank branches
-    console.log('Initializing bank branches...');
+    console.log('Loading bank branches...');
     const storedBankBranches = localStorage.getItem('bankBranches');
     if (storedBankBranches) {
       const parsedBranches = JSON.parse(storedBankBranches);
-      console.log('Bank branches initialized:', parsedBranches);
+      console.log('Bank branches loaded from storage:', parsedBranches);
       setBankBranches(parsedBranches);
     } else {
       const defaultBranches = [
-        { id: 'branch-1', name: 'Bangalore Main Branch', code: 'BLR001', bankId: '1', state: 'Karnataka', district: 'Bangalore Urban', city: 'Bangalore' },
-        { id: 'branch-2', name: 'Koramangala Branch', code: 'BLR002', bankId: '1', state: 'Karnataka', district: 'Bangalore Urban', city: 'Bangalore' },
-        { id: 'branch-3', name: 'Electronic City Branch', code: 'BLR003', bankId: '1', state: 'Karnataka', district: 'Bangalore Urban', city: 'Bangalore' },
-        { id: 'branch-4', name: 'Mumbai Central', code: 'MUM001', bankId: '2', state: 'Maharashtra', district: 'Mumbai', city: 'Mumbai' },
-        { id: 'branch-5', name: 'Andheri Branch', code: 'MUM002', bankId: '2', state: 'Maharashtra', district: 'Mumbai', city: 'Mumbai' },
-        { id: 'branch-6', name: 'Bandra Branch', code: 'MUM003', bankId: '2', state: 'Maharashtra', district: 'Mumbai', city: 'Mumbai' },
-        { id: 'branch-7', name: 'Delhi Main', code: 'DEL001', bankId: '3', state: 'Delhi', district: 'Central Delhi', city: 'Delhi' },
-        { id: 'branch-8', name: 'Connaught Place', code: 'DEL002', bankId: '3', state: 'Delhi', district: 'Central Delhi', city: 'Delhi' }
+        { id: 'branch-1', name: 'Bangalore Main Branch', code: 'BLR001', bankId: '1', bankName: 'State Bank of India', city: 'Bangalore' },
+        { id: 'branch-2', name: 'Koramangala Branch', code: 'BLR002', bankId: '1', bankName: 'State Bank of India', city: 'Bangalore' },
+        { id: 'branch-3', name: 'Electronic City Branch', code: 'BLR003', bankId: '1', bankName: 'State Bank of India', city: 'Bangalore' },
+        { id: 'branch-4', name: 'Mumbai Central', code: 'MUM001', bankId: '2', bankName: 'HDFC Bank', city: 'Mumbai' },
+        { id: 'branch-5', name: 'Andheri Branch', code: 'MUM002', bankId: '2', bankName: 'HDFC Bank', city: 'Mumbai' },
+        { id: 'branch-6', name: 'Bandra Branch', code: 'MUM003', bankId: '2', bankName: 'HDFC Bank', city: 'Mumbai' },
+        { id: 'branch-7', name: 'Delhi Main', code: 'DEL001', bankId: '3', bankName: 'ICICI Bank', city: 'Delhi' },
+        { id: 'branch-8', name: 'Connaught Place', code: 'DEL002', bankId: '3', bankName: 'ICICI Bank', city: 'Delhi' }
       ];
       setBankBranches(defaultBranches);
       localStorage.setItem('bankBranches', JSON.stringify(defaultBranches));
-      console.log('Bank branches initialized:', defaultBranches);
+      console.log('Bank branches initialized with defaults:', defaultBranches);
     }
   };
 
-  // Validation functions (simplified for brevity)
+  // Validation functions
   const validateStep1 = () => {
     const newErrors: any = {};
     if (!formData.name.trim()) newErrors.name = 'Name is required';
     if (!formData.age || isNaN(Number(formData.age)) || Number(formData.age) <= 0) newErrors.age = 'Valid age is required';
     if (!formData.job.trim()) newErrors.job = 'Job is required';
+    if (formData.phone && formData.phone.length > 10) newErrors.phone = 'Phone number cannot exceed 10 digits';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -163,6 +177,13 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData,
       if (!formData.additionalDetails.vehicleBrandId) newErrors.vehicleBrand = 'Vehicle brand is required';
       if (!formData.additionalDetails.vehicleModelId) newErrors.vehicleModel = 'Vehicle model is required';
     }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const validateStep3 = () => {
+    const newErrors: any = {};
+    if (!formData.assignedTo) newErrors.assignedTo = 'Agent assignment is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -259,6 +280,28 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData,
 
   // Handlers for other form fields
   const handleChange = (field: string, value: string) => {
+    // Special handling for phone number
+    if (field === 'phone') {
+      // Only allow numbers and limit to 10 digits
+      const numericValue = value.replace(/\D/g, '').slice(0, 10);
+      setFormData(prev => ({
+        ...prev,
+        [field]: numericValue
+      }));
+      return;
+    }
+
+    // Special handling for age
+    if (field === 'age') {
+      // Only allow numbers
+      const numericValue = value.replace(/\D/g, '');
+      setFormData(prev => ({
+        ...prev,
+        [field]: numericValue
+      }));
+      return;
+    }
+
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -269,6 +312,7 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData,
   const nextStep = () => {
     if (step === 1 && !validateStep1()) return;
     if (step === 2 && !validateStep2()) return;
+    if (step === 3 && !validateStep3()) return;
     setStep(prev => prev + 1);
   };
 
@@ -278,8 +322,19 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData,
 
   // Submit handler
   const handleSubmit = () => {
-    if (!validateStep1() || !validateStep2()) return;
-    onAddLead(formData);
+    if (!validateStep1() || !validateStep2() || !validateStep3()) return;
+    
+    const leadData = {
+      ...formData,
+      id: editLead ? editLead.id : `lead-${Date.now()}`,
+      status: editLead ? editLead.status : 'Pending',
+      createdAt: editLead ? editLead.createdAt : new Date(),
+      documents: editLead ? editLead.documents : [],
+      visitType: 'Residence'
+    };
+    
+    console.log('Submitting lead data:', leadData);
+    onAddLead(leadData);
   };
 
   // Render functions for each step
@@ -297,10 +352,9 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData,
       <div>
         <label className="block text-sm font-medium text-gray-700">Age <span className="text-red-500">*</span></label>
         <Input
-          type="number"
           value={formData.age}
           onChange={(e) => handleChange('age', e.target.value)}
-          placeholder="Enter age"
+          placeholder="Enter age (numbers only)"
         />
         {errors.age && <p className="text-red-500 text-sm">{errors.age}</p>}
       </div>
@@ -312,6 +366,16 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData,
           placeholder="Enter job"
         />
         {errors.job && <p className="text-red-500 text-sm">{errors.job}</p>}
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700">Phone Number (Max 10 digits)</label>
+        <Input
+          value={formData.phone}
+          onChange={(e) => handleChange('phone', e.target.value)}
+          placeholder="Enter phone number"
+          maxLength={10}
+        />
+        {errors.phone && <p className="text-red-500 text-sm">{errors.phone}</p>}
       </div>
       <div>
         <h4 className="text-md font-semibold text-gray-800 mb-2">Address</h4>
@@ -516,6 +580,58 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData,
     </div>
   );
 
+  const renderAgentAssignmentStep = () => (
+    <div className="space-y-4">
+      <div>
+        <h3 className="text-lg font-semibold mb-4">Agent Assignment</h3>
+      </div>
+      
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-gray-700">
+          Assign to Agent <span className="text-red-500">*</span>
+        </label>
+        <Select 
+          value={formData.assignedTo} 
+          onValueChange={(value) => setFormData(prev => ({ ...prev, assignedTo: value }))}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select Agent" />
+          </SelectTrigger>
+          <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg z-50">
+            {agents.map((agent) => (
+              <SelectItem key={agent.id} value={agent.id}>
+                {agent.name} - {agent.district}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {errors.assignedTo && <p className="text-red-500 text-sm">{errors.assignedTo}</p>}
+      </div>
+    </div>
+  );
+
+  const renderReviewStep = () => (
+    <div className="space-y-4">
+      <h3 className="text-lg font-semibold mb-4">Review & Submit</h3>
+      <div className="bg-gray-50 p-4 rounded-lg">
+        <h4 className="font-medium mb-2">Lead Summary:</h4>
+        <p><strong>Name:</strong> {formData.name}</p>
+        <p><strong>Age:</strong> {formData.age}</p>
+        <p><strong>Job:</strong> {formData.job}</p>
+        {formData.phone && <p><strong>Phone:</strong> {formData.phone}</p>}
+        <p><strong>Bank:</strong> {banks.find(b => b.id === formData.bank)?.name}</p>
+        <p><strong>Product:</strong> {formData.additionalDetails.leadType}</p>
+        <p><strong>Assigned Agent:</strong> {agents.find(a => a.id === formData.assignedTo)?.name}</p>
+        {shouldShowVehicleFields() && (
+          <div>
+            <p><strong>Vehicle Brand:</strong> {formData.additionalDetails.vehicleBrandName}</p>
+            <p><strong>Vehicle Model:</strong> {formData.additionalDetails.vehicleModelName}</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
   const renderStepContent = () => {
     switch (step) {
       case 1:
@@ -523,12 +639,9 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData,
       case 2:
         return renderBankProductStep();
       case 3:
-        return (
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Review & Submit</h3>
-            <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto">{JSON.stringify(formData, null, 2)}</pre>
-          </div>
-        );
+        return renderAgentAssignmentStep();
+      case 4:
+        return renderReviewStep();
       default:
         return null;
     }
@@ -537,7 +650,27 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData,
   return (
     <div className="max-w-3xl mx-auto p-6 bg-white rounded shadow">
       <h2 className="text-2xl font-bold mb-6">{editLead ? 'Edit Lead' : 'Add New Lead'}</h2>
-      <form onSubmit={(e) => { e.preventDefault(); if (step === 3) handleSubmit(); else nextStep(); }}>
+      
+      {/* Step indicator */}
+      <div className="flex mb-8">
+        {[1, 2, 3, 4].map((stepNum) => (
+          <div key={stepNum} className={`flex-1 ${stepNum < 4 ? 'border-r' : ''}`}>
+            <div className={`w-8 h-8 mx-auto rounded-full flex items-center justify-center ${
+              step >= stepNum ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-600'
+            }`}>
+              {stepNum}
+            </div>
+            <div className="text-center text-xs mt-1">
+              {stepNum === 1 && 'Basic Info'}
+              {stepNum === 2 && 'Bank & Product'}
+              {stepNum === 3 && 'Agent Assignment'}
+              {stepNum === 4 && 'Review'}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <form onSubmit={(e) => { e.preventDefault(); if (step === 4) handleSubmit(); else nextStep(); }}>
         {renderStepContent()}
         <div className="flex justify-between mt-6">
           {step > 1 ? (
@@ -547,7 +680,7 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData,
           ) : (
             <div />
           )}
-          {step < 3 ? (
+          {step < 4 ? (
             <Button type="button" onClick={nextStep}>
               Next
             </Button>

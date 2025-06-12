@@ -155,8 +155,28 @@ export interface Bank {
 export interface BankBranch {
   id: string;
   name: string;
-  bank: string;
-  location: string;
+  code: string;
+  city: string;
+  bankId: string;
+  bankName: string;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  description: string;
+  banks: string[];
+}
+
+export interface VehicleBrand {
+  id: string;
+  name: string;
+}
+
+export interface VehicleModel {
+  id: string;
+  name: string;
+  brandId: string;
 }
 
 export interface LeadType {
@@ -251,15 +271,15 @@ export const mockBanks: Bank[] = [
 // Export banks with the name that AddLeadForm expects
 export const banks = mockBanks;
 
-// Export bank branches
+// Export bank branches - Updated to match the new interface
 export const bankBranches: BankBranch[] = [
-  { id: 'branch-1', name: 'SBI Mumbai Central', bank: 'State Bank of India', location: 'Mumbai Central' },
-  { id: 'branch-2', name: 'SBI Andheri', bank: 'State Bank of India', location: 'Andheri' },
-  { id: 'branch-3', name: 'HDFC Bandra', bank: 'HDFC Bank', location: 'Bandra' },
-  { id: 'branch-4', name: 'HDFC Powai', bank: 'HDFC Bank', location: 'Powai' },
-  { id: 'branch-5', name: 'ICICI Kurla', bank: 'ICICI Bank', location: 'Kurla' },
-  { id: 'branch-6', name: 'Axis Bank Worli', bank: 'Axis Bank', location: 'Worli' },
-  { id: 'branch-7', name: 'PNB Dadar', bank: 'Punjab National Bank', location: 'Dadar' }
+  { id: 'branch-1', name: 'SBI Mumbai Central', code: 'MB001', city: 'Mumbai', bankId: '1', bankName: 'State Bank of India' },
+  { id: 'branch-2', name: 'SBI Andheri', code: 'AN001', city: 'Mumbai', bankId: '1', bankName: 'State Bank of India' },
+  { id: 'branch-3', name: 'HDFC Bandra', code: 'BD001', city: 'Mumbai', bankId: '2', bankName: 'HDFC Bank' },
+  { id: 'branch-4', name: 'HDFC Powai', code: 'PW001', city: 'Mumbai', bankId: '2', bankName: 'HDFC Bank' },
+  { id: 'branch-5', name: 'ICICI Kurla', code: 'KR001', city: 'Mumbai', bankId: '3', bankName: 'ICICI Bank' },
+  { id: 'branch-6', name: 'Axis Bank Worli', code: 'WR001', city: 'Mumbai', bankId: '4', bankName: 'Axis Bank' },
+  { id: 'branch-7', name: 'PNB Dadar', code: 'DD001', city: 'Mumbai', bankId: '5', bankName: 'Punjab National Bank' }
 ];
 
 // Export lead types
