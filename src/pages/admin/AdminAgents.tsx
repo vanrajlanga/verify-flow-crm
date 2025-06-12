@@ -182,7 +182,8 @@ const AdminAgents = () => {
       district: newAgent.district,
       city: newAgent.city,
       totalVerifications: 0,
-      completionRate: 0
+      completionRate: 0,
+      password: newAgent.password || 'defaultpassword123'
     };
     
     const updatedAgents = [...agents, agentToAdd];

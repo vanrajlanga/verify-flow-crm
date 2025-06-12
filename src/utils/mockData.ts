@@ -15,6 +15,7 @@ export interface User {
   totalVerifications?: number;
   completionRate?: number;
   password: string;
+  documents?: UserDocument[];
 }
 
 export interface UserDocument {
