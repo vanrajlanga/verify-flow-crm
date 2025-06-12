@@ -97,7 +97,7 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
     additionalComments: '',
     assignedTo: '',
     verificationDate: undefined as Date | undefined,
-    visitType: 'Residence' as 'Residence' | 'Office' | 'Business',
+    visitType: 'Residence' as 'Residence' | 'Office' | 'Both',
     instructions: '',
     additionalAddresses: [] as Address[]
   });
@@ -945,14 +945,14 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
               </div>
               <div>
                 <label className="block text-sm font-medium mb-2">Visit Type</label>
-                <Select value={formData.visitType} onValueChange={(value: 'Residence' | 'Office' | 'Business') => handleInputChange('visitType', value)}>
+                <Select value={formData.visitType} onValueChange={(value: 'Residence' | 'Office' | 'Both') => handleInputChange('visitType', value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select visit type" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Residence">Residence</SelectItem>
                     <SelectItem value="Office">Office</SelectItem>
-                    <SelectItem value="Business">Business</SelectItem>
+                    <SelectItem value="Both">Both</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
