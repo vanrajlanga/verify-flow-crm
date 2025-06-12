@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   name: string;
@@ -15,6 +16,7 @@ export interface User {
   totalVerifications?: number;
   completionRate?: number;
   password: string;
+  documents?: Document[];
 }
 
 export interface PhoneNumber {
@@ -52,6 +54,43 @@ export interface VehicleDetails {
   year?: number;
   price: string;
   downPayment: string;
+}
+
+export interface VerificationPhoto {
+  id: string;
+  name: string;
+  url: string;
+  uploadDate: Date;
+}
+
+export interface VerificationDocument {
+  id: string;
+  name: string;
+  url: string;
+  type: string;
+  uploadDate: Date;
+}
+
+export interface VerificationData {
+  id: string;
+  leadId: string;
+  status: 'Not Started' | 'In Progress' | 'Completed' | 'Rejected';
+  agentId: string;
+  startTime?: Date;
+  arrivalTime?: Date;
+  completionTime?: Date;
+  endTime?: Date;
+  location?: {
+    latitude: number;
+    longitude: number;
+    address?: string;
+  };
+  photos?: VerificationPhoto[];
+  documents?: VerificationDocument[];
+  notes?: string;
+  reviewedBy?: string;
+  reviewedAt?: Date;
+  adminRemarks?: string;
 }
 
 export interface AdditionalDetails {
@@ -95,6 +134,7 @@ export interface AdditionalDetails {
 export interface Document {
   id: string;
   title: string;
+  name: string;
   type: string;
   url: string;
   uploadedAt: Date;
@@ -109,12 +149,13 @@ export interface Lead {
   additionalDetails: AdditionalDetails;
   status: 'Pending' | 'In Progress' | 'Completed' | 'Rejected';
   bank: string;
-  visitType: 'Residence' | 'Office';
+  visitType: 'Residence' | 'Office' | 'Both';
   assignedTo: string;
   createdAt: Date;
   verificationDate?: Date;
   documents: Document[];
   instructions: string;
+  verification?: VerificationData;
 }
 
 export interface Bank {
@@ -123,6 +164,24 @@ export interface Bank {
   totalApplications: number;
 }
 
+export interface BankBranch {
+  id: string;
+  name: string;
+  code: string;
+  bankId: string;
+  address: string;
+  city: string;
+  state: string;
+}
+
+export interface LeadType {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+}
+
+// Mock data arrays
 export const mockUsers: User[] = [
   {
     id: 'admin-1',
@@ -196,6 +255,25 @@ export const mockBanks: Bank[] = [
   { id: 'axis', name: 'Axis Bank', totalApplications: 19 },
   { id: 'kotak', name: 'Kotak Mahindra Bank', totalApplications: 15 }
 ];
+
+export const banks = mockBanks;
+
+export const bankBranches: BankBranch[] = [
+  { id: 'hdfc-mg-road', name: 'MG Road Branch', code: 'HDFC001', bankId: 'hdfc', address: 'MG Road', city: 'Bangalore', state: 'Karnataka' },
+  { id: 'hdfc-koramangala', name: 'Koramangala Branch', code: 'HDFC002', bankId: 'hdfc', address: 'Koramangala', city: 'Bangalore', state: 'Karnataka' },
+  { id: 'icici-brigade', name: 'Brigade Road Branch', code: 'ICICI001', bankId: 'icici', address: 'Brigade Road', city: 'Bangalore', state: 'Karnataka' },
+  { id: 'sbi-commercial', name: 'Commercial Street Branch', code: 'SBI001', bankId: 'sbi', address: 'Commercial Street', city: 'Bangalore', state: 'Karnataka' }
+];
+
+export const leadTypes: LeadType[] = [
+  { id: 'home-loan', name: 'Home Loan', category: 'Secured', description: 'Home loan for residential property' },
+  { id: 'personal-loan', name: 'Personal Loan', category: 'Unsecured', description: 'Personal loan for various purposes' },
+  { id: 'vehicle-loan', name: 'Vehicle Loan', category: 'Secured', description: 'Loan for purchasing vehicles' },
+  { id: 'business-loan', name: 'Business Loan', category: 'Secured/Unsecured', description: 'Loan for business purposes' },
+  { id: 'education-loan', name: 'Education Loan', category: 'Secured', description: 'Loan for educational expenses' }
+];
+
+export const agents = mockUsers.filter(user => user.role === 'agent');
 
 export const mockLeads: Lead[] = [
   {

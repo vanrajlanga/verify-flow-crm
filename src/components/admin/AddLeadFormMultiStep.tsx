@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
 import { v4 as uuidv4 } from 'uuid';
-import { Lead, PhoneNumber, Address } from '@/utils/mockData';
+import { Lead, User, Bank, Address as MockAddress, PhoneNumber as MockPhoneNumber, banks, bankBranches, leadTypes, agents } from '@/utils/mockData';
 import { saveCompleteLeadToDatabase } from '@/lib/enhanced-lead-operations';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,26 +24,29 @@ import { useNavigate } from 'react-router-dom';
 // Form schema
 const leadFormSchema = z.object({
   // Basic Information
-  name: z.string().min(1, { message: "Name is required" }),
+  customerName: z.string().min(1, { message: "Customer name is required" }),
   age: z.string().refine((val) => !isNaN(Number(val)), { message: "Age must be a number" }),
   gender: z.string().optional(),
   maritalStatus: z.string().optional(),
-  jobTitle: z.string().optional(),
+  designation: z.string().optional(),
   
   // Contact Information
   email: z.string().email({ message: "Invalid email address" }).optional().or(z.literal('')),
   phoneNumber: z.string().min(10, { message: "Phone number must be at least 10 digits" }).optional(),
   
   // Address
-  street: z.string().optional(),
-  city: z.string().optional(),
-  district: z.string().optional(),
-  state: z.string().optional(),
-  pincode: z.string().optional(),
+  addresses: z.array(z.object({
+    id: z.string().optional(),
+    type: z.string().optional(),
+    street: z.string().optional(),
+    city: z.string().optional(),
+    district: z.string().optional(),
+    state: z.string().optional(),
+    pincode: z.string().optional(),
+  })),
   
   // Professional Details
   company: z.string().optional(),
-  designation: z.string().optional(),
   workExperience: z.string().optional(),
   monthlyIncome: z.string().optional(),
   annualIncome: z.string().optional(),
@@ -54,13 +57,14 @@ const leadFormSchema = z.object({
   spouseName: z.string().optional(),
   
   // Co-Applicant Details
-  hasCoApplicant: z.boolean().optional(),
-  coApplicantName: z.string().optional(),
-  coApplicantPhone: z.string().optional(),
-  coApplicantRelation: z.string().optional(),
-  coApplicantEmail: z.string().email({ message: "Invalid email address" }).optional().or(z.literal('')),
-  coApplicantOccupation: z.string().optional(),
-  coApplicantMonthlyIncome: z.string().optional(),
+  coApplicant: z.object({
+    name: z.string().optional(),
+    phone: z.string().optional(),
+    relation: z.string().optional(),
+    email: z.string().email({ message: "Invalid email address" }).optional().or(z.literal('')),
+    occupation: z.string().optional(),
+    monthlyIncome: z.string().optional(),
+  }).optional(),
   
   // Property Details
   propertyType: z.string().optional(),
@@ -84,12 +88,8 @@ const leadFormSchema = z.object({
   downPayment: z.string().optional(),
   
   // Bank Details
-  bank: z.string().min(1, { message: "Bank is required" }),
-  bankBranch: z.string().optional(),
-  agencyFileNo: z.string().optional(),
-  applicationBarcode: z.string().optional(),
-  caseId: z.string().optional(),
-  schemeDesc: z.string().optional(),
+  bankName: z.string().min(1, { message: "Bank is required" }),
+  buildUnderBranch: z.string().optional(),
   
   // Verification Details
   visitType: z.string().min(1, { message: "Visit type is required" }),
@@ -98,34 +98,27 @@ const leadFormSchema = z.object({
   instructions: z.string().optional(),
   
   // Additional Comments
+  otherIncome: z.string().optional(),
+  documents: z.array(z.string()).optional(),
   additionalComments: z.string().optional(),
 });
 
 type LeadFormValues = z.infer<typeof leadFormSchema>;
 
 interface AddLeadFormMultiStepProps {
-  banks: any[];
-  agents: any[];
-  vehicleBrands?: any[];
-  vehicleModels?: any[];
-  leadTypes?: any[];
-  onAddLead?: (leadData: Lead) => Promise<void>;
-  onClose?: () => void;
-  locationData?: any;
-  editLead?: any;
+  agents: User[];
+  banks: Bank[];
+  onSubmit: (newLead: Lead) => Promise<void>;
+  onClose: () => void;
+  locationData: any;
+  editLead?: Lead;
 }
 
-const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
-  banks,
-  agents,
-  vehicleBrands = [],
-  vehicleModels = [],
-  leadTypes = []
-}) => {
+const AddLeadFormMultiStep = ({ agents, banks, onSubmit, onClose, locationData, editLead }: AddLeadFormMultiStepProps) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([]);
-  const [homeAddresses, setHomeAddresses] = useState<Address[]>([
+  const [phoneNumbers, setPhoneNumbers] = useState<MockPhoneNumber[]>([]);
+  const [homeAddresses, setHomeAddresses] = useState<MockAddress[]>([
     { 
       id: uuidv4(),
       type: 'Residence', 
@@ -136,7 +129,7 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
       pincode: '' 
     }
   ]);
-  const [officeAddresses, setOfficeAddresses] = useState<Address[]>([]);
+  const [officeAddresses, setOfficeAddresses] = useState<MockAddress[]>([]);
   const [selectedVehicleBrand, setSelectedVehicleBrand] = useState<string>('');
   const [filteredModels, setFilteredModels] = useState<any[]>([]);
   const navigate = useNavigate();
@@ -144,33 +137,29 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
   const form = useForm<LeadFormValues>({
     resolver: zodResolver(leadFormSchema),
     defaultValues: {
-      name: '',
+      customerName: '',
       age: '',
       gender: '',
       maritalStatus: '',
-      jobTitle: '',
+      designation: '',
       email: '',
       phoneNumber: '',
-      street: '',
-      city: '',
-      district: '',
-      state: '',
-      pincode: '',
+      addresses: [],
       company: '',
-      designation: '',
       workExperience: '',
       monthlyIncome: '',
       annualIncome: '',
       fatherName: '',
       motherName: '',
       spouseName: '',
-      hasCoApplicant: false,
-      coApplicantName: '',
-      coApplicantPhone: '',
-      coApplicantRelation: '',
-      coApplicantEmail: '',
-      coApplicantOccupation: '',
-      coApplicantMonthlyIncome: '',
+      coApplicant: {
+        name: '',
+        phone: '',
+        relation: '',
+        email: '',
+        occupation: '',
+        monthlyIncome: '',
+      },
       propertyType: '',
       ownershipStatus: '',
       propertyAge: '',
@@ -186,15 +175,13 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
       vehicleYear: '',
       vehiclePrice: '',
       downPayment: '',
-      bank: '',
-      bankBranch: '',
-      agencyFileNo: '',
-      applicationBarcode: '',
-      caseId: '',
-      schemeDesc: '',
+      bankName: '',
+      buildUnderBranch: '',
       visitType: 'Residence',
       assignedAgent: '',
       instructions: '',
+      otherIncome: '',
+      documents: [],
       additionalComments: '',
     }
   });
@@ -324,116 +311,115 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
   };
   
   // Form submission handler
-  const onSubmitForm = async (formData: LeadFormValues) => {
+  const handleSubmit = async () => {
     try {
-      setIsSubmitting(true);
-      
-      const leadData: Lead = {
-        id: `lead-${Date.now()}`,
-        name: formData.name,
-        age: parseInt(formData.age) || 0,
-        job: formData.jobTitle || '',
-        address: {
-          street: homeAddresses[0]?.street || '',
-          city: homeAddresses[0]?.city || '',
-          district: homeAddresses[0]?.district || '',
-          state: homeAddresses[0]?.state || '',
-          pincode: homeAddresses[0]?.pincode || ''
-        },
-        additionalDetails: {
-          company: formData.company || '',
-          designation: formData.designation || '',
-          workExperience: formData.workExperience || '',
-          propertyType: formData.propertyType || '',
-          ownershipStatus: formData.ownershipStatus || '',
-          propertyAge: formData.propertyAge || '',
-          monthlyIncome: formData.monthlyIncome || '',
-          annualIncome: formData.annualIncome || '',
-          otherIncome: '',
-          phoneNumber: formData.phoneNumber || '',
-          email: formData.email || '',
-          dateOfBirth: '',
-          gender: formData.gender || '',
-          maritalStatus: formData.maritalStatus || '',
-          fatherName: formData.fatherName || '',
-          motherName: formData.motherName || '',
-          spouseName: formData.spouseName || '',
-          agencyFileNo: formData.agencyFileNo || '',
-          applicationBarcode: formData.applicationBarcode || '',
-          caseId: formData.caseId || '',
-          schemeDesc: formData.schemeDesc || '',
-          bankBranch: formData.bankBranch || '',
-          additionalComments: formData.additionalComments || '',
-          leadType: formData.leadType || '',
-          leadTypeId: formData.leadTypeId || '',
-          loanAmount: formData.loanAmount || '',
-          loanType: formData.loanType || '',
-          vehicleBrandName: formData.vehicleBrandName || '',
-          vehicleBrandId: formData.vehicleBrandId || '',
-          vehicleModelName: formData.vehicleModelName || '',
-          vehicleModelId: formData.vehicleModelId || '',
-          addresses: [
-            ...homeAddresses,
-            ...officeAddresses
-          ] as any[],
-          phoneNumbers: phoneNumbers,
-          coApplicant: formData.hasCoApplicant ? {
-            name: formData.coApplicantName || '',
-            phone: formData.coApplicantPhone || '',
-            relation: formData.coApplicantRelation || '',
-            email: formData.coApplicantEmail || '',
-            occupation: formData.coApplicantOccupation || '',
-            monthlyIncome: formData.coApplicantMonthlyIncome || ''
-          } : undefined,
-          vehicleDetails: formData.leadType === 'Auto Loan' ? {
-            brandId: formData.vehicleBrandId || '',
-            brandName: formData.vehicleBrandName || '',
-            modelId: formData.vehicleModelId || '',
-            modelName: formData.vehicleModelName || '',
-            type: formData.vehicleType || '',
-            year: formData.vehicleYear ? parseInt(formData.vehicleYear) : undefined,
-            price: formData.vehiclePrice || '',
-            downPayment: formData.downPayment || ''
-          } : undefined
-        },
-        status: 'Pending',
-        bank: formData.bank,
-        visitType: formData.visitType as 'Residence' | 'Office',
-        assignedTo: formData.assignedAgent || '',
-        createdAt: new Date(),
-        verificationDate: formData.verificationDate ? new Date(formData.verificationDate) : undefined,
-        documents: [],
-        instructions: formData.instructions || ''
+      // Validate required fields
+      if (!formData.customerName.trim()) {
+        toast({
+          title: "Validation Error",
+          description: "Customer name is required",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Create addresses with proper IDs and types
+      const addresses: MockAddress[] = formData.addresses.map((addr, index) => ({
+        id: addr.id || `addr-${Date.now()}-${index}`,
+        type: addr.type,
+        street: addr.street,
+        city: addr.city,
+        district: addr.district,
+        state: addr.state,
+        pincode: addr.pincode
+      }));
+
+      // Create phone numbers array
+      const phoneNumbers: MockPhoneNumber[] = formData.phoneNumbers.map((phone, index) => ({
+        id: `phone-${Date.now()}-${index}`,
+        number: phone.number,
+        type: phone.type,
+        isPrimary: phone.isPrimary
+      }));
+
+      // Get primary address
+      const primaryAddress = addresses.find(addr => addr.type === 'Residence') || addresses[0] || {
+        id: `addr-${Date.now()}`,
+        type: 'Residence' as const,
+        street: '',
+        city: '',
+        district: '',
+        state: '',
+        pincode: ''
       };
 
-      console.log('Submitting lead data:', leadData);
+      const newLead: Lead = {
+        id: editLead?.id || `lead-${Date.now()}`,
+        name: formData.customerName,
+        age: formData.age || 30,
+        job: formData.designation,
+        address: primaryAddress,
+        additionalDetails: {
+          company: formData.company,
+          designation: formData.designation,
+          workExperience: formData.workExperience,
+          propertyType: formData.propertyType,
+          ownershipStatus: formData.ownershipStatus,
+          propertyAge: formData.propertyAge,
+          monthlyIncome: formData.monthlyIncome,
+          annualIncome: formData.annualIncome,
+          otherIncome: formData.otherIncome,
+          phoneNumber: formData.phoneNumber,
+          email: formData.email,
+          dateOfBirth: formData.dateOfBirth,
+          gender: formData.gender,
+          maritalStatus: formData.maritalStatus,
+          fatherName: formData.fatherName,
+          motherName: formData.motherName,
+          spouseName: formData.spouseName,
+          agencyFileNo: formData.agencyFileNo,
+          applicationBarcode: formData.applicationBarcode,
+          caseId: formData.caseId,
+          schemeDesc: formData.schemeDescription,
+          bankBranch: formData.buildUnderBranch,
+          additionalComments: formData.instructions,
+          leadType: formData.leadType,
+          leadTypeId: formData.leadType,
+          loanAmount: formData.loanAmount,
+          loanType: 'New',
+          vehicleBrandName: '',
+          vehicleBrandId: '',
+          vehicleModelName: '',
+          vehicleModelId: '',
+          addresses: addresses,
+          phoneNumbers: phoneNumbers,
+          coApplicant: formData.coApplicant
+        },
+        status: 'Pending',
+        bank: formData.bankName,
+        visitType: formData.visitType,
+        assignedTo: formData.assignedAgent,
+        createdAt: new Date(),
+        verificationDate: formData.verificationDate,
+        documents: formData.documents,
+        instructions: formData.instructions
+      };
 
-      // Save to database using enhanced function
-      await saveCompleteLeadToDatabase(leadData);
-
-      // Also update localStorage for immediate access
-      const existingLeads = JSON.parse(localStorage.getItem('mockLeads') || '[]');
-      const updatedLeads = [...existingLeads, leadData];
-      localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
-
-      toast({
-        title: "Success!",
-        description: "Lead has been created and saved to database successfully.",
-      });
-
-      // Reset form
-      resetForm();
-      setCurrentStep(1);
+      await onSubmit(newLead);
       
+      toast({
+        title: "Success",
+        description: editLead ? "Lead updated successfully" : "Lead created successfully",
+      });
+      
+      onClose();
     } catch (error) {
-      console.error('Error creating lead:', error);
+      console.error('Error submitting lead:', error);
       toast({
         title: "Error",
-        description: "Failed to create lead. Please try again.",
+        description: "Failed to save lead. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
   
@@ -443,9 +429,9 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-4">
           <div>
-            <Label htmlFor="name">Full Name <span className="text-red-500">*</span></Label>
-            <Input id="name" {...register('name')} />
-            {errors.name && <p className="text-sm text-red-500">{errors.name.message}</p>}
+            <Label htmlFor="customerName">Full Name <span className="text-red-500">*</span></Label>
+            <Input id="customerName" {...register('customerName')} />
+            {errors.customerName && <p className="text-sm text-red-500">{errors.customerName.message}</p>}
           </div>
           
           <div>
@@ -547,8 +533,8 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
           </div>
           
           <div>
-            <Label htmlFor="jobTitle">Job Title</Label>
-            <Input id="jobTitle" {...register('jobTitle')} />
+            <Label htmlFor="designation">Job Title</Label>
+            <Input id="designation" {...register('designation')} />
           </div>
         </div>
       </div>
@@ -689,11 +675,6 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
           </div>
           
           <div>
-            <Label htmlFor="designation">Designation</Label>
-            <Input id="designation" {...register('designation')} />
-          </div>
-          
-          <div>
             <Label htmlFor="workExperience">Work Experience (years)</Label>
             <Input id="workExperience" {...register('workExperience')} />
           </div>
@@ -748,17 +729,17 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="coApplicantName">Name</Label>
-                <Input id="coApplicantName" {...register('coApplicantName')} />
+                <Input id="coApplicantName" {...register('coApplicant.name')} />
               </div>
               
               <div>
                 <Label htmlFor="coApplicantPhone">Phone</Label>
-                <Input id="coApplicantPhone" {...register('coApplicantPhone')} />
+                <Input id="coApplicantPhone" {...register('coApplicant.phone')} />
               </div>
               
               <div>
                 <Label htmlFor="coApplicantRelation">Relationship</Label>
-                <Select onValueChange={(value) => setValue('coApplicantRelation', value)}>
+                <Select onValueChange={(value) => setValue('coApplicant.relation', value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select relationship" />
                   </SelectTrigger>
@@ -775,17 +756,17 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
               
               <div>
                 <Label htmlFor="coApplicantEmail">Email</Label>
-                <Input id="coApplicantEmail" type="email" {...register('coApplicantEmail')} />
+                <Input id="coApplicantEmail" type="email" {...register('coApplicant.email')} />
               </div>
               
               <div>
                 <Label htmlFor="coApplicantOccupation">Occupation</Label>
-                <Input id="coApplicantOccupation" {...register('coApplicantOccupation')} />
+                <Input id="coApplicantOccupation" {...register('coApplicant.occupation')} />
               </div>
               
               <div>
                 <Label htmlFor="coApplicantMonthlyIncome">Monthly Income (₹)</Label>
-                <Input id="coApplicantMonthlyIncome" {...register('coApplicantMonthlyIncome')} />
+                <Input id="coApplicantMonthlyIncome" {...register('coApplicant.monthlyIncome')} />
               </div>
             </div>
           </div>
@@ -836,7 +817,7 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
         <div className="space-y-4">
           <div>
             <Label htmlFor="bank">Bank <span className="text-red-500">*</span></Label>
-            <Select onValueChange={(value) => setValue('bank', value)}>
+            <Select onValueChange={(value) => setValue('bankName', value)}>
               <SelectTrigger>
                 <SelectValue placeholder="Select bank" />
               </SelectTrigger>
@@ -851,7 +832,7 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
           
           <div>
             <Label htmlFor="bankBranch">Bank Branch</Label>
-            <Input id="bankBranch" {...register('bankBranch')} />
+            <Input id="bankBranch" {...register('buildUnderBranch')} />
           </div>
           
           <div>
@@ -1098,85 +1079,87 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
   };
   
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Add New Lead</CardTitle>
-        <CardDescription>
-          Create a new lead for verification. Fill in all required fields.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="mb-8">
-          <div className="flex justify-between items-center">
-            {[1, 2, 3, 4, 5].map((step) => (
-              <div
-                key={step}
-                className={cn(
-                  "flex flex-col items-center",
-                  currentStep === step ? "text-primary" : "text-muted-foreground"
-                )}
-              >
+    <div className="max-w-4xl mx-auto space-y-6">
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle>Add New Lead</CardTitle>
+          <CardDescription>
+            Create a new lead for verification. Fill in all required fields.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="mb-8">
+            <div className="flex justify-between items-center">
+              {[1, 2, 3, 4, 5].map((step) => (
                 <div
+                  key={step}
                   className={cn(
-                    "w-8 h-8 rounded-full flex items-center justify-center mb-1",
-                    currentStep === step
-                      ? "bg-primary text-primary-foreground"
-                      : currentStep > step
-                      ? "bg-primary/20 text-primary"
-                      : "bg-muted text-muted-foreground"
+                    "flex flex-col items-center",
+                    currentStep === step ? "text-primary" : "text-muted-foreground"
                   )}
                 >
-                  {currentStep > step ? "✓" : step}
+                  <div
+                    className={cn(
+                      "w-8 h-8 rounded-full flex items-center justify-center mb-1",
+                      currentStep === step
+                        ? "bg-primary text-primary-foreground"
+                        : currentStep > step
+                        ? "bg-primary/20 text-primary"
+                        : "bg-muted text-muted-foreground"
+                    )}
+                  >
+                    {currentStep > step ? "✓" : step}
+                  </div>
+                  <span className="text-xs hidden md:block">
+                    {step === 1 && "Basic Info"}
+                    {step === 2 && "Address"}
+                    {step === 3 && "Professional"}
+                    {step === 4 && "Loan Details"}
+                    {step === 5 && "Verification"}
+                  </span>
                 </div>
-                <span className="text-xs hidden md:block">
-                  {step === 1 && "Basic Info"}
-                  {step === 2 && "Address"}
-                  {step === 3 && "Professional"}
-                  {step === 4 && "Loan Details"}
-                  {step === 5 && "Verification"}
-                </span>
-              </div>
-            ))}
+              ))}
+            </div>
+            <div className="mt-2 h-1 w-full bg-muted">
+              <div
+                className="h-1 bg-primary transition-all"
+                style={{ width: `${((currentStep - 1) / 4) * 100}%` }}
+              />
+            </div>
           </div>
-          <div className="mt-2 h-1 w-full bg-muted">
-            <div
-              className="h-1 bg-primary transition-all"
-              style={{ width: `${((currentStep - 1) / 4) * 100}%` }}
-            />
-          </div>
-        </div>
-        
-        <form onSubmit={formHandleSubmit(onSubmitForm)}>
-          {renderCurrentStep()}
-        </form>
-      </CardContent>
-      <CardFooter className="flex justify-between">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={prevStep}
-          disabled={currentStep === 1}
-        >
-          <ChevronLeft className="mr-2 h-4 w-4" /> Previous
-        </Button>
-        
-        {currentStep < 5 ? (
-          <Button type="button" onClick={nextStep}>
-            Next <ChevronRight className="ml-2 h-4 w-4" />
+          
+          <form onSubmit={formHandleSubmit(handleSubmit)}>
+            {renderCurrentStep()}
+          </form>
+        </CardContent>
+        <CardFooter className="flex justify-between">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={prevStep}
+            disabled={currentStep === 1}
+          >
+            <ChevronLeft className="mr-2 h-4 w-4" /> Previous
           </Button>
-        ) : (
-          <Button type="submit" disabled={isSubmitting} onClick={formHandleSubmit(onSubmitForm)}>
-            {isSubmitting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting
-              </>
-            ) : (
-              'Submit'
-            )}
-          </Button>
-        )}
-      </CardFooter>
-    </Card>
+          
+          {currentStep < 5 ? (
+            <Button type="button" onClick={nextStep}>
+              Next <ChevronRight className="ml-2 h-4 w-4" />
+            </Button>
+          ) : (
+            <Button type="submit" disabled={isSubmitting} onClick={formHandleSubmit(handleSubmit)}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting
+                </>
+              ) : (
+                'Submit'
+              )}
+            </Button>
+          )}
+        </CardFooter>
+      </Card>
+    </div>
   );
 };
 
