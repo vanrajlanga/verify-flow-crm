@@ -17,6 +17,7 @@ export interface User {
   completionRate?: number;
   password: string;
   documents?: Document[];
+  branch?: string;
 }
 
 export interface PhoneNumber {
@@ -54,6 +55,18 @@ export interface VehicleDetails {
   year?: number;
   price: string;
   downPayment: string;
+}
+
+export interface VehicleBrand {
+  id: string;
+  name: string;
+}
+
+export interface VehicleModel {
+  id: string;
+  name: string;
+  brandId: string;
+  type: string;
 }
 
 export interface VerificationPhoto {
@@ -169,6 +182,7 @@ export interface BankBranch {
   name: string;
   code: string;
   bankId: string;
+  bank?: string;
   address: string;
   city: string;
   state: string;
@@ -180,6 +194,43 @@ export interface LeadType {
   category: string;
   description: string;
 }
+
+// Vehicle data
+export const vehicleBrands: VehicleBrand[] = [
+  { id: 'maruti', name: 'Maruti Suzuki' },
+  { id: 'hyundai', name: 'Hyundai' },
+  { id: 'tata', name: 'Tata Motors' },
+  { id: 'mahindra', name: 'Mahindra' },
+  { id: 'honda', name: 'Honda' },
+  { id: 'toyota', name: 'Toyota' },
+  { id: 'ford', name: 'Ford' },
+  { id: 'kia', name: 'Kia' }
+];
+
+export const vehicleModels: VehicleModel[] = [
+  // Maruti Suzuki models
+  { id: 'swift', name: 'Swift', brandId: 'maruti', type: 'Hatchback' },
+  { id: 'baleno', name: 'Baleno', brandId: 'maruti', type: 'Hatchback' },
+  { id: 'dzire', name: 'Dzire', brandId: 'maruti', type: 'Sedan' },
+  { id: 'vitara-brezza', name: 'Vitara Brezza', brandId: 'maruti', type: 'SUV' },
+  
+  // Hyundai models
+  { id: 'i20', name: 'i20', brandId: 'hyundai', type: 'Hatchback' },
+  { id: 'verna', name: 'Verna', brandId: 'hyundai', type: 'Sedan' },
+  { id: 'creta', name: 'Creta', brandId: 'hyundai', type: 'SUV' },
+  { id: 'venue', name: 'Venue', brandId: 'hyundai', type: 'SUV' },
+  
+  // Tata models
+  { id: 'tiago', name: 'Tiago', brandId: 'tata', type: 'Hatchback' },
+  { id: 'tigor', name: 'Tigor', brandId: 'tata', type: 'Sedan' },
+  { id: 'nexon', name: 'Nexon', brandId: 'tata', type: 'SUV' },
+  { id: 'harrier', name: 'Harrier', brandId: 'tata', type: 'SUV' },
+  
+  // Honda models
+  { id: 'city', name: 'City', brandId: 'honda', type: 'Sedan' },
+  { id: 'amaze', name: 'Amaze', brandId: 'honda', type: 'Sedan' },
+  { id: 'wr-v', name: 'WR-V', brandId: 'honda', type: 'SUV' }
+];
 
 // Mock data arrays
 export const mockUsers: User[] = [
@@ -193,7 +244,8 @@ export const mockUsers: User[] = [
     status: 'Active',
     state: 'Karnataka',
     city: 'Bangalore',
-    password: 'admin123'
+    password: 'admin123',
+    branch: 'Main Branch'
   },
   {
     id: 'agent-1',
@@ -210,7 +262,8 @@ export const mockUsers: User[] = [
     extraChargePerKm: 10,
     totalVerifications: 145,
     completionRate: 95,
-    password: 'agent123'
+    password: 'agent123',
+    branch: 'MG Road Branch'
   },
   {
     id: 'agent-2',
@@ -227,7 +280,8 @@ export const mockUsers: User[] = [
     extraChargePerKm: 12,
     totalVerifications: 98,
     completionRate: 87,
-    password: 'agent123'
+    password: 'agent123',
+    branch: 'Andheri Branch'
   },
   {
     id: 'agent-3',
@@ -244,7 +298,8 @@ export const mockUsers: User[] = [
     extraChargePerKm: 8,
     totalVerifications: 67,
     completionRate: 78,
-    password: 'agent123'
+    password: 'agent123',
+    branch: 'Whitefield Branch'
   }
 ];
 
@@ -259,10 +314,10 @@ export const mockBanks: Bank[] = [
 export const banks = mockBanks;
 
 export const bankBranches: BankBranch[] = [
-  { id: 'hdfc-mg-road', name: 'MG Road Branch', code: 'HDFC001', bankId: 'hdfc', address: 'MG Road', city: 'Bangalore', state: 'Karnataka' },
-  { id: 'hdfc-koramangala', name: 'Koramangala Branch', code: 'HDFC002', bankId: 'hdfc', address: 'Koramangala', city: 'Bangalore', state: 'Karnataka' },
-  { id: 'icici-brigade', name: 'Brigade Road Branch', code: 'ICICI001', bankId: 'icici', address: 'Brigade Road', city: 'Bangalore', state: 'Karnataka' },
-  { id: 'sbi-commercial', name: 'Commercial Street Branch', code: 'SBI001', bankId: 'sbi', address: 'Commercial Street', city: 'Bangalore', state: 'Karnataka' }
+  { id: 'hdfc-mg-road', name: 'MG Road Branch', code: 'HDFC001', bankId: 'hdfc', bank: 'HDFC Bank', address: 'MG Road', city: 'Bangalore', state: 'Karnataka' },
+  { id: 'hdfc-koramangala', name: 'Koramangala Branch', code: 'HDFC002', bankId: 'hdfc', bank: 'HDFC Bank', address: 'Koramangala', city: 'Bangalore', state: 'Karnataka' },
+  { id: 'icici-brigade', name: 'Brigade Road Branch', code: 'ICICI001', bankId: 'icici', bank: 'ICICI Bank', address: 'Brigade Road', city: 'Bangalore', state: 'Karnataka' },
+  { id: 'sbi-commercial', name: 'Commercial Street Branch', code: 'SBI001', bankId: 'sbi', bank: 'State Bank of India', address: 'Commercial Street', city: 'Bangalore', state: 'Karnataka' }
 ];
 
 export const leadTypes: LeadType[] = [
