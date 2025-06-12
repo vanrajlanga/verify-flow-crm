@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -33,6 +33,8 @@ const formSchema = z.object({
   caseId: z.string().optional(),
   schemeDescription: z.string().optional(),
   loanAmount: z.string().optional(),
+  vehicleBrand: z.string().optional(),
+  vehicleModel: z.string().optional(),
   
   // Step 2
   customerName: z.string().min(1, "Customer name is required"),
@@ -64,6 +66,16 @@ const formSchema = z.object({
   annualIncome: z.string().optional(),
   otherIncome: z.string().optional(),
   
+  // Step 5
+  addresses: z.array(z.object({
+    state: z.string(),
+    district: z.string(),
+    city: z.string(),
+    streetAddress: z.string(),
+    pincode: z.string(),
+    requireVerification: z.boolean()
+  })).optional(),
+  
   // Step 6
   officeState: z.string().optional(),
   officeDistrict: z.string().optional(),
@@ -93,6 +105,10 @@ interface MultiStepLeadFormProps {
 const MultiStepLeadForm = ({ banks, agents, onSubmit, onCancel, locationData }: MultiStepLeadFormProps) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [products, setProducts] = useState<any[]>([]);
+  const [branches, setBranches] = useState<any[]>([]);
+  const [vehicleBrands, setVehicleBrands] = useState<any[]>([]);
+  const [vehicleModels, setVehicleModels] = useState<any[]>([]);
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -105,26 +121,64 @@ const MultiStepLeadForm = ({ banks, agents, onSubmit, onCancel, locationData }: 
       email: '',
       visitType: 'residence',
       hasCoApplicant: false,
+      addresses: []
     }
   });
 
   const totalSteps = 9;
   const progress = (currentStep / totalSteps) * 100;
 
-  // Mock data for dropdowns
-  const leadTypes = [
-    { id: 'home-loan', name: 'Home Loan' },
-    { id: 'personal-loan', name: 'Personal Loan' },
-    { id: 'vehicle-loan', name: 'Vehicle Loan' },
-    { id: 'business-loan', name: 'Business Loan' },
+  useEffect(() => {
+    loadProducts();
+    loadBranches();
+    loadVehicleData();
+  }, []);
+
+  const loadProducts = () => {
+    const storedProducts = localStorage.getItem('products');
+    if (storedProducts) {
+      setProducts(JSON.parse(storedProducts));
+    }
+  };
+
+  const loadBranches = () => {
+    const defaultBranches = [
+      { id: 'branch-1', name: 'Main Branch', bankId: '1' },
+      { id: 'branch-2', name: 'City Center Branch', bankId: '1' },
+      { id: 'branch-3', name: 'Airport Branch', bankId: '2' },
+      { id: 'branch-4', name: 'Mall Branch', bankId: '2' },
+      { id: 'branch-5', name: 'Downtown Branch', bankId: '3' },
+    ];
+    setBranches(defaultBranches);
+  };
+
+  const loadVehicleData = () => {
+    const storedBrands = localStorage.getItem('vehicleBrands');
+    const storedModels = localStorage.getItem('vehicleModels');
+    
+    if (storedBrands) {
+      setVehicleBrands(JSON.parse(storedBrands));
+    }
+    if (storedModels) {
+      setVehicleModels(JSON.parse(storedModels));
+    }
+  };
+
+  const stepTitles = [
+    "Lead Type & Basic Info",
+    "Personal Information", 
+    "Job Details",
+    "Property & Income",
+    "Home Addresses",
+    "Work & Office Address",
+    "Document Upload",
+    "Verification Options",
+    "Agent Assignment"
   ];
 
-  const branches = [
-    { id: 'branch-1', name: 'Main Branch', bankId: 'bank-1' },
-    { id: 'branch-2', name: 'City Center Branch', bankId: 'bank-1' },
-    { id: 'branch-3', name: 'Airport Branch', bankId: 'bank-2' },
-    { id: 'branch-4', name: 'Mall Branch', bankId: 'bank-2' },
-  ];
+  const goToStep = (step: number) => {
+    setCurrentStep(step);
+  };
 
   const nextStep = () => {
     if (currentStep < totalSteps) {
@@ -141,12 +195,14 @@ const MultiStepLeadForm = ({ banks, agents, onSubmit, onCancel, locationData }: 
   const handleSubmit = async (data: FormValues) => {
     setIsSubmitting(true);
     try {
+      console.log('Form data being submitted:', data);
       await onSubmit(data);
       toast({
         title: "Success",
         description: "Lead created successfully!",
       });
     } catch (error) {
+      console.error('Error submitting form:', error);
       toast({
         title: "Error",
         description: "Failed to create lead. Please try again.",
@@ -160,7 +216,13 @@ const MultiStepLeadForm = ({ banks, agents, onSubmit, onCancel, locationData }: 
   const renderCurrentStep = () => {
     switch (currentStep) {
       case 1:
-        return <Step1LeadTypeBasicInfo banks={banks} leadTypes={leadTypes} branches={branches} />;
+        return <Step1LeadTypeBasicInfo 
+          banks={banks} 
+          products={products} 
+          branches={branches}
+          vehicleBrands={vehicleBrands}
+          vehicleModels={vehicleModels}
+        />;
       case 2:
         return <Step2PersonalInfo />;
       case 3:
@@ -178,37 +240,48 @@ const MultiStepLeadForm = ({ banks, agents, onSubmit, onCancel, locationData }: 
       case 9:
         return <Step9AgentAssignment agents={agents} />;
       default:
-        return <Step1LeadTypeBasicInfo banks={banks} leadTypes={leadTypes} branches={branches} />;
+        return <Step1LeadTypeBasicInfo 
+          banks={banks} 
+          products={products} 
+          branches={branches}
+          vehicleBrands={vehicleBrands}
+          vehicleModels={vehicleModels}
+        />;
     }
-  };
-
-  const getStepTitle = () => {
-    const titles = [
-      "Lead Type & Basic Info",
-      "Personal Information", 
-      "Job Details",
-      "Property & Income",
-      "Home Addresses",
-      "Work & Office Address",
-      "Document Upload",
-      "Verification Options",
-      "Agent Assignment"
-    ];
-    return titles[currentStep - 1];
   };
 
   return (
     <FormProvider {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)}>
-        <Card className="w-full max-w-4xl mx-auto">
+        <Card className="w-full max-w-6xl mx-auto">
           <CardHeader>
             <div className="flex justify-between items-center">
               <CardTitle>Add New Lead - Step {currentStep} of {totalSteps}</CardTitle>
               <Button variant="outline" onClick={onCancel}>Cancel</Button>
             </div>
-            <div className="space-y-2">
+            
+            {/* Step Navigation */}
+            <div className="grid grid-cols-3 md:grid-cols-9 gap-2 mt-4">
+              {stepTitles.map((title, index) => (
+                <Button
+                  key={index + 1}
+                  type="button"
+                  variant={currentStep === index + 1 ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => goToStep(index + 1)}
+                  className="text-xs p-2 h-auto"
+                >
+                  <div className="flex flex-col items-center">
+                    <span className="font-bold">{index + 1}</span>
+                    <span className="hidden md:block text-center leading-tight">{title}</span>
+                  </div>
+                </Button>
+              ))}
+            </div>
+
+            <div className="space-y-2 mt-4">
               <div className="flex justify-between text-sm text-muted-foreground">
-                <span>{getStepTitle()}</span>
+                <span>{stepTitles[currentStep - 1]}</span>
                 <span>{Math.round(progress)}% Complete</span>
               </div>
               <Progress value={progress} className="w-full" />

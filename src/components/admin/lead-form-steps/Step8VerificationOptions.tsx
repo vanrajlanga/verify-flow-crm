@@ -13,9 +13,20 @@ import { Button } from '@/components/ui/button';
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 const Step8VerificationOptions = () => {
   const { control, watch } = useFormContext();
+  const addresses = watch('addresses') || [];
+  const officeAddress = {
+    state: watch('officeState'),
+    district: watch('officeDistrict'),
+    city: watch('officeCity'),
+    address: watch('officeAddress'),
+    pincode: watch('officePincode')
+  };
+
+  const verificationAddresses = addresses.filter((addr: any) => addr.requireVerification);
 
   return (
     <Card>
@@ -54,6 +65,48 @@ const Step8VerificationOptions = () => {
             </FormItem>
           )}
         />
+
+        {/* Show selected addresses for verification */}
+        {verificationAddresses.length > 0 && (
+          <div className="space-y-3">
+            <Label className="text-base font-medium">Addresses Selected for Verification:</Label>
+            <div className="space-y-2">
+              {verificationAddresses.map((addr: any, index: number) => (
+                <div key={addr.id || index} className="border rounded-lg p-3 bg-muted/20">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <Badge variant="outline" className="mb-2">Residence {index + 1}</Badge>
+                      <p className="text-sm">
+                        <strong>Address:</strong> {addr.streetAddress}
+                        {addr.streetAddress && ', '}
+                        {addr.city && `${addr.city}, `}
+                        {addr.district && `${addr.district}, `}
+                        {addr.state} - {addr.pincode}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Show office address if provided */}
+        {(officeAddress.state || officeAddress.address) && (
+          <div className="space-y-3">
+            <Label className="text-base font-medium">Office Address:</Label>
+            <div className="border rounded-lg p-3 bg-muted/20">
+              <Badge variant="outline" className="mb-2">Office</Badge>
+              <p className="text-sm">
+                <strong>Address:</strong> {officeAddress.address}
+                {officeAddress.address && ', '}
+                {officeAddress.city && `${officeAddress.city}, `}
+                {officeAddress.district && `${officeAddress.district}, `}
+                {officeAddress.state} - {officeAddress.pincode}
+              </p>
+            </div>
+          </div>
+        )}
 
         <FormField
           control={control}

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -35,7 +35,7 @@ interface Step5Props {
 }
 
 const Step5HomeAddresses = ({ locationData }: Step5Props) => {
-  const { control, watch, setValue } = useFormContext();
+  const { setValue, watch } = useFormContext();
   const [addresses, setAddresses] = useState<Address[]>([
     {
       id: '1',
@@ -47,6 +47,11 @@ const Step5HomeAddresses = ({ locationData }: Step5Props) => {
       requireVerification: true
     }
   ]);
+
+  // Update form value whenever addresses change
+  useEffect(() => {
+    setValue('addresses', addresses);
+  }, [addresses, setValue]);
 
   const addAddress = () => {
     const newAddress: Address = {
@@ -82,6 +87,21 @@ const Step5HomeAddresses = ({ locationData }: Step5Props) => {
     const state = locationData.states.find(s => s.id === stateId);
     const district = state?.districts.find(d => d.id === districtId);
     return district ? district.cities : [];
+  };
+
+  const getStateName = (stateId: string) => {
+    return locationData.states.find(s => s.id === stateId)?.name || '';
+  };
+
+  const getDistrictName = (stateId: string, districtId: string) => {
+    const state = locationData.states.find(s => s.id === stateId);
+    return state?.districts.find(d => d.id === districtId)?.name || '';
+  };
+
+  const getCityName = (stateId: string, districtId: string, cityId: string) => {
+    const state = locationData.states.find(s => s.id === stateId);
+    const district = state?.districts.find(d => d.id === districtId);
+    return district?.cities.find(c => c.id === cityId)?.name || '';
   };
 
   return (
@@ -199,6 +219,15 @@ const Step5HomeAddresses = ({ locationData }: Step5Props) => {
                 Require verification for this address
               </Label>
             </div>
+
+            {address.state && address.district && address.city && (
+              <div className="text-sm text-muted-foreground bg-muted/20 p-2 rounded">
+                <strong>Complete Address:</strong> {address.streetAddress && `${address.streetAddress}, `}
+                {getCityName(address.state, address.district, address.city)}, 
+                {getDistrictName(address.state, address.district)}, 
+                {getStateName(address.state)} - {address.pincode}
+              </div>
+            )}
           </div>
         ))}
 

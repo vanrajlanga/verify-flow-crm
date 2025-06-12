@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -9,16 +9,51 @@ import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/comp
 
 interface Step1Props {
   banks: Array<{ id: string; name: string; }>;
-  leadTypes: Array<{ id: string; name: string; }>;
+  products: Array<{ id: string; name: string; banks: string[]; }>;
   branches: Array<{ id: string; name: string; bankId: string; }>;
+  vehicleBrands: Array<{ id: string; name: string; }>;
+  vehicleModels: Array<{ id: string; name: string; brandId: string; }>;
 }
 
-const Step1LeadTypeBasicInfo = ({ banks, leadTypes, branches }: Step1Props) => {
+const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehicleModels }: Step1Props) => {
   const { control, watch, setValue } = useFormContext();
   const selectedBank = watch('bankName');
+  const selectedLeadType = watch('leadType');
+  const selectedVehicleBrand = watch('vehicleBrand');
 
-  // Filter branches based on selected bank
-  const filteredBranches = branches.filter(branch => branch.bankId === selectedBank);
+  const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
+  const [filteredBranches, setFilteredBranches] = useState<any[]>([]);
+  const [filteredVehicleModels, setFilteredVehicleModels] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (selectedBank) {
+      // Filter products based on selected bank
+      const bankProducts = products.filter(product => 
+        product.banks && product.banks.includes(selectedBank)
+      );
+      setFilteredProducts(bankProducts);
+
+      // Filter branches based on selected bank
+      const bankBranches = branches.filter(branch => branch.bankId === selectedBank);
+      setFilteredBranches(bankBranches);
+    } else {
+      setFilteredProducts([]);
+      setFilteredBranches([]);
+    }
+  }, [selectedBank, products, branches]);
+
+  useEffect(() => {
+    if (selectedVehicleBrand) {
+      const brandModels = vehicleModels.filter(model => model.brandId === selectedVehicleBrand);
+      setFilteredVehicleModels(brandModels);
+    } else {
+      setFilteredVehicleModels([]);
+    }
+  }, [selectedVehicleBrand, vehicleModels]);
+
+  const isAutoLoan = selectedLeadType === 'auto-loan' || 
+    filteredProducts.find(p => p.id === selectedLeadType)?.name?.toLowerCase().includes('auto') ||
+    filteredProducts.find(p => p.id === selectedLeadType)?.name?.toLowerCase().includes('vehicle');
 
   return (
     <Card>
@@ -34,7 +69,15 @@ const Step1LeadTypeBasicInfo = ({ banks, leadTypes, branches }: Step1Props) => {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Bank Name <span className="text-red-500">*</span></FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select 
+                  onValueChange={(value) => {
+                    field.onChange(value);
+                    setValue('leadType', ''); // Reset lead type when bank changes
+                    setValue('initiatedBranch', '');
+                    setValue('buildBranch', '');
+                  }} 
+                  defaultValue={field.value}
+                >
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select bank" />
@@ -57,15 +100,23 @@ const Step1LeadTypeBasicInfo = ({ banks, leadTypes, branches }: Step1Props) => {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Lead Type/Product <span className="text-red-500">*</span></FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select 
+                  onValueChange={(value) => {
+                    field.onChange(value);
+                    setValue('vehicleBrand', '');
+                    setValue('vehicleModel', '');
+                  }} 
+                  defaultValue={field.value}
+                  disabled={!selectedBank}
+                >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select lead type" />
+                      <SelectValue placeholder={selectedBank ? "Select lead type" : "Select bank first"} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {leadTypes.map((type) => (
-                      <SelectItem key={type.id} value={type.id}>{type.name}</SelectItem>
+                    {filteredProducts.map((product) => (
+                      <SelectItem key={product.id} value={product.id}>{product.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -73,6 +124,66 @@ const Step1LeadTypeBasicInfo = ({ banks, leadTypes, branches }: Step1Props) => {
               </FormItem>
             )}
           />
+
+          {isAutoLoan && (
+            <>
+              <FormField
+                control={control}
+                name="vehicleBrand"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Vehicle Brand</FormLabel>
+                    <Select 
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        setValue('vehicleModel', '');
+                      }} 
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select vehicle brand" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {vehicleBrands.map((brand) => (
+                          <SelectItem key={brand.id} value={brand.id}>{brand.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={control}
+                name="vehicleModel"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Vehicle Model</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      defaultValue={field.value}
+                      disabled={!selectedVehicleBrand}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={selectedVehicleBrand ? "Select vehicle model" : "Select brand first"} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {filteredVehicleModels.map((model) => (
+                          <SelectItem key={model.id} value={model.id}>{model.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </>
+          )}
 
           <FormField
             control={control}

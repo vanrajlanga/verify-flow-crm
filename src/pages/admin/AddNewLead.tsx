@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { User, mockBanks } from '@/utils/mockData';
@@ -178,9 +177,14 @@ const AddNewLead = () => {
 
   const handleSubmitLead = async (formData: any) => {
     try {
-      console.log('Submitting lead:', formData);
+      console.log('Submitting lead with complete data:', formData);
       
-      // Transform form data to lead format
+      // Get selected product and vehicle details
+      const selectedProduct = products.find(p => p.id === formData.leadType);
+      const selectedVehicleBrand = vehicleBrands.find(b => b.id === formData.vehicleBrand);
+      const selectedVehicleModel = vehicleModels.find(m => m.id === formData.vehicleModel);
+      
+      // Transform form data to lead format with all data
       const newLead = {
         id: `lead-${Date.now()}`,
         name: formData.customerName,
@@ -189,11 +193,11 @@ const AddNewLead = () => {
         address: {
           id: `addr-${Date.now()}`,
           type: 'Residence' as const,
-          street: formData.streetAddress || '',
-          city: formData.city || '',
-          district: formData.district || '',
-          state: formData.state || '',
-          pincode: formData.pincode || ''
+          street: formData.addresses?.[0]?.streetAddress || '',
+          city: formData.addresses?.[0]?.city || '',
+          district: formData.addresses?.[0]?.district || '',
+          state: formData.addresses?.[0]?.state || '',
+          pincode: formData.addresses?.[0]?.pincode || ''
         },
         additionalDetails: {
           company: formData.companyName || '',
@@ -219,16 +223,23 @@ const AddNewLead = () => {
           schemeDesc: formData.schemeDescription || '',
           bankBranch: formData.buildBranch || '',
           additionalComments: formData.specialInstructions || '',
-          leadType: formData.leadType || '',
+          leadType: selectedProduct?.name || '',
           leadTypeId: formData.leadType || '',
           loanAmount: formData.loanAmount || '',
           loanType: 'New',
-          vehicleBrandName: '',
-          vehicleBrandId: '',
-          vehicleModelName: '',
-          vehicleModelId: '',
-          addresses: [],
-          phoneNumbers: []
+          vehicleBrandName: selectedVehicleBrand?.name || '',
+          vehicleBrandId: formData.vehicleBrand || '',
+          vehicleModelName: selectedVehicleModel?.name || '',
+          vehicleModelId: formData.vehicleModel || '',
+          addresses: formData.addresses || [],
+          phoneNumbers: [
+            {
+              id: `phone-${Date.now()}`,
+              number: formData.phoneNumber,
+              type: 'mobile',
+              isPrimary: true
+            }
+          ]
         },
         status: 'Pending' as const,
         bank: formData.bankName,
@@ -239,6 +250,8 @@ const AddNewLead = () => {
         documents: [],
         instructions: formData.specialInstructions || ''
       };
+
+      console.log('Transformed lead data:', newLead);
 
       // Save to database
       await saveLeadToDatabase(newLead);
@@ -266,8 +279,8 @@ const AddNewLead = () => {
       }
 
       toast({
-        title: "Error",
-        description: "Failed to save to database, but saved locally.",
+        title: "Warning",
+        description: "Lead saved locally. Database connection failed.",
         variant: "destructive"
       });
 
