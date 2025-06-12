@@ -11,9 +11,27 @@ import ProductManager from '@/components/admin/ProductManager';
 import BankBranchManager from '@/components/admin/BankBranchManager';
 import VehicleManager from '@/components/admin/VehicleManager';
 
+interface LocationData {
+  states: {
+    id: string;
+    name: string;
+    districts: {
+      id: string;
+      name: string;
+      cities: {
+        id: string;
+        name: string;
+      }[];
+    }[];
+  }[];
+}
+
 const AdminSettings = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [locationData, setLocationData] = useState<LocationData>({
+    states: []
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -30,6 +48,16 @@ const AdminSettings = () => {
     }
 
     setCurrentUser(parsedUser);
+
+    // Load location data from localStorage
+    const storedLocationData = localStorage.getItem('locationData');
+    if (storedLocationData) {
+      try {
+        setLocationData(JSON.parse(storedLocationData));
+      } catch (error) {
+        console.error('Error parsing location data:', error);
+      }
+    }
   }, [navigate]);
 
   const handleLogout = () => {
@@ -78,7 +106,7 @@ const AdminSettings = () => {
                   </TabsList>
                   
                   <TabsContent value="locations">
-                    <LocationManager />
+                    <LocationManager locationData={locationData} setLocationData={setLocationData} />
                   </TabsContent>
                   
                   <TabsContent value="products">
