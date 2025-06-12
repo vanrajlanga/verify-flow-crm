@@ -35,28 +35,19 @@ const ProductManager = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   useEffect(() => {
-    // Load existing products from localStorage
-    const storedProducts = localStorage.getItem('products');
-    if (storedProducts) {
-      setProducts(JSON.parse(storedProducts));
-    } else {
-      // Initialize with default products
-      const defaultProducts: Product[] = [
-        { id: 'product-1', name: 'Home Loan', description: 'Residential property loan verification', banks: ['1', '2'] },
-        { id: 'product-2', name: 'Personal Loan', description: 'Personal loan verification', banks: ['1', '3'] },
-        { id: 'product-3', name: 'Auto Loan', description: 'Vehicle loan verification', banks: ['2', '4'] },
-        { id: 'product-4', name: 'Business Loan', description: 'Business loan verification', banks: ['3', '5'] },
-        { id: 'product-5', name: 'Credit Card', description: 'Credit card application verification', banks: ['1', '2', '3'] }
-      ];
-      setProducts(defaultProducts);
-      localStorage.setItem('products', JSON.stringify(defaultProducts));
-    }
+    loadBanks();
+    loadProducts();
+  }, []);
 
-    // Load banks
+  const loadBanks = () => {
+    // Load banks from mockBanks (consistent IDs)
     const storedBanks = localStorage.getItem('mockBanks');
     if (storedBanks) {
-      setBanks(JSON.parse(storedBanks));
+      const parsedBanks = JSON.parse(storedBanks);
+      console.log('Loaded banks for ProductManager:', parsedBanks);
+      setBanks(parsedBanks);
     } else {
+      // Initialize with default banks with consistent IDs
       const defaultBanks: Bank[] = [
         { id: '1', name: 'State Bank of India' },
         { id: '2', name: 'HDFC Bank' },
@@ -66,8 +57,30 @@ const ProductManager = () => {
       ];
       setBanks(defaultBanks);
       localStorage.setItem('mockBanks', JSON.stringify(defaultBanks));
+      console.log('Initialized default banks:', defaultBanks);
     }
-  }, []);
+  };
+
+  const loadProducts = () => {
+    const storedProducts = localStorage.getItem('products');
+    if (storedProducts) {
+      const parsedProducts = JSON.parse(storedProducts);
+      console.log('Loaded existing products:', parsedProducts);
+      setProducts(parsedProducts);
+    } else {
+      // Initialize with default products using correct bank IDs
+      const defaultProducts: Product[] = [
+        { id: 'product-1', name: 'Home Loan', description: 'Residential property loan verification', banks: ['1', '2'] },
+        { id: 'product-2', name: 'Personal Loan', description: 'Personal loan verification', banks: ['1', '3'] },
+        { id: 'product-3', name: 'Auto Loan', description: 'Vehicle loan verification', banks: ['2', '4'] },
+        { id: 'product-4', name: 'Business Loan', description: 'Business loan verification', banks: ['3', '5'] },
+        { id: 'product-5', name: 'Credit Card', description: 'Credit card application verification', banks: ['1', '2', '3'] }
+      ];
+      setProducts(defaultProducts);
+      localStorage.setItem('products', JSON.stringify(defaultProducts));
+      console.log('Initialized default products:', defaultProducts);
+    }
+  };
 
   const addProduct = () => {
     if (!newProduct.name.trim() || !newProduct.description.trim()) {
@@ -79,13 +92,23 @@ const ProductManager = () => {
       return;
     }
 
+    if (newProduct.banks.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please select at least one bank",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const product: Product = {
       id: `product-${Date.now()}`,
       name: newProduct.name.trim(),
       description: newProduct.description.trim(),
-      banks: newProduct.banks
+      banks: [...newProduct.banks]
     };
 
+    console.log('Adding new product:', product);
     const updatedProducts = [...products, product];
     setProducts(updatedProducts);
     localStorage.setItem('products', JSON.stringify(updatedProducts));
@@ -101,11 +124,31 @@ const ProductManager = () => {
   const updateProduct = () => {
     if (!editingProduct) return;
 
+    if (!newProduct.name.trim() || !newProduct.description.trim()) {
+      toast({
+        title: "Error",
+        description: "Please fill all fields",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (newProduct.banks.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please select at least one bank",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const updatedProducts = products.map(product =>
       product.id === editingProduct.id
-        ? { ...editingProduct, name: newProduct.name, description: newProduct.description, banks: newProduct.banks }
+        ? { ...editingProduct, name: newProduct.name, description: newProduct.description, banks: [...newProduct.banks] }
         : product
     );
+    
+    console.log('Updating product:', editingProduct.id, 'with banks:', newProduct.banks);
     setProducts(updatedProducts);
     localStorage.setItem('products', JSON.stringify(updatedProducts));
     setEditingProduct(null);
@@ -155,8 +198,11 @@ const ProductManager = () => {
   };
 
   const getBankNames = (bankIds: string[] | undefined) => {
-    if (!bankIds || !Array.isArray(bankIds)) return 'No banks selected';
-    return bankIds.map(bankId => banks.find(b => b.id === bankId)?.name || 'Unknown Bank').join(', ');
+    if (!bankIds || !Array.isArray(bankIds) || bankIds.length === 0) return 'No banks selected';
+    return bankIds.map(bankId => {
+      const bank = banks.find(b => b.id === bankId);
+      return bank ? bank.name : `Unknown Bank (${bankId})`;
+    }).join(', ');
   };
 
   return (
@@ -209,6 +255,11 @@ const ProductManager = () => {
                       </div>
                     ))}
                   </div>
+                  {newProduct.banks.length > 0 && (
+                    <div className="text-xs text-muted-foreground mt-2">
+                      Selected: {getBankNames(newProduct.banks)}
+                    </div>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={resetForm}>Cancel</Button>
@@ -251,6 +302,11 @@ const ProductManager = () => {
             </div>
           ))}
         </div>
+        {products.length === 0 && (
+          <div className="text-center text-muted-foreground py-4">
+            No products found. Add a product to get started.
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -1,1515 +1,568 @@
 import { useState, useEffect } from 'react';
+import { User, Bank, Product, BankBranch, VehicleBrand, VehicleModel } from '@/utils/mockData';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { toast } from '@/components/ui/use-toast';
-import { Lead, User, Bank } from '@/utils/mockData';
-import { Plus, Trash2, ArrowLeft, ArrowRight } from 'lucide-react';
-
-interface FormAddress {
-  id: string;
-  type: "Residence" | "Office" | "Permanent";
-  state: string;
-  district: string;
-  city: string;
-  street: string;
-  pincode: string;
-  requireVerification: boolean;
-}
-
-interface LocationData {
-  states: {
-    id: string;
-    name: string;
-    districts: {
-      id: string;
-      name: string;
-      cities: {
-        id: string;
-        name: string;
-      }[];
-    }[];
-  }[];
-}
-
-interface Product {
-  id: string;
-  name: string;
-  description: string;
-  banks: string[];
-}
-
-interface VehicleBrand {
-  id: string;
-  name: string;
-}
-
-interface VehicleModel {
-  id: string;
-  name: string;
-  brandId: string;
-}
-
-interface BankBranch {
-  id: string;
-  name: string;
-  code: string;
-  bankId: string;
-  state: string;
-  district: string;
-  city: string;
-}
 
 interface AddLeadFormMultiStepProps {
   agents: User[];
   banks: Bank[];
   onAddLead: (lead: any) => void;
   onClose: () => void;
-  locationData: LocationData;
-  editLead?: any;
+  locationData: any;
+  editLead: any;
 }
 
-const STEPS = [
-  { id: 1, title: 'Bank & Product Info' },
-  { id: 2, title: 'Lead Details' },
-  { id: 3, title: 'Personal Information' },
-  { id: 4, title: 'Residence Address' },
-  { id: 5, title: 'Office Address' },
-  { id: 6, title: 'Additional Addresses' },
-  { id: 7, title: 'Financial Information' },
-  { id: 8, title: 'Verification Options' },
-  { id: 9, title: 'Agent Assignment' }
-];
-
-const AddLeadFormMultiStep = ({ 
-  agents, 
-  banks, 
-  onAddLead, 
-  onClose, 
-  locationData,
-  editLead 
-}: AddLeadFormMultiStepProps) => {
-  const [currentStep, setCurrentStep] = useState(1);
+const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData, editLead }: AddLeadFormMultiStepProps) => {
+  const [step, setStep] = useState(1);
   const [products, setProducts] = useState<Product[]>([]);
+  const [bankBranches, setBankBranches] = useState<BankBranch[]>([]);
   const [vehicleBrands, setVehicleBrands] = useState<VehicleBrand[]>([]);
   const [vehicleModels, setVehicleModels] = useState<VehicleModel[]>([]);
-  const [bankBranches, setBankBranches] = useState<BankBranch[]>([]);
-
-  const [formData, setFormData] = useState({
-    // Bank & Product Info
-    bankName: '',
-    leadType: '',
-    initiatedBranch: '',
-    buildBranch: '',
-    
-    // Lead Details
-    agencyFileNo: '',
-    applicationBarcode: '',
-    caseId: '',
-    schemeDescription: '',
-    loanAmount: '',
-    loanType: '',
-    vehicleBrandId: '',
-    vehicleBrandName: '',
-    vehicleModelId: '',
-    vehicleModelName: '',
-    
-    // Personal Information
-    customerName: '',
+  const [formData, setFormData] = useState<any>({
+    name: '',
     age: '',
-    dateOfBirth: '',
-    phoneNumbers: [''],
-    email: '',
-    designation: '',
-    company: '',
-    workExperience: '',
-    monthlyIncome: '',
-    annualIncome: '',
-    otherIncome: '',
-    
-    // Address Information
-    homeAddresses: [] as FormAddress[],
-    officeAddresses: [] as FormAddress[],
-    additionalAddresses: [] as FormAddress[],
-    
-    // Financial Information
-    propertyType: '',
-    ownershipStatus: '',
-    propertyAge: '',
-    
-    // Verification & Assignment
-    visitType: 'Residence' as 'Residence' | 'Office' | 'Both',
-    instructions: '',
-    assignedAgent: ''
+    job: '',
+    address: {
+      street: '',
+      city: '',
+      district: '',
+      state: '',
+      pincode: ''
+    },
+    bank: '',
+    additionalDetails: {
+      leadType: '',
+      leadTypeId: '',
+      bankBranch: '',
+      vehicleBrandId: '',
+      vehicleBrandName: '',
+      vehicleModelId: '',
+      vehicleModelName: ''
+    }
   });
+  const [errors, setErrors] = useState<any>({});
 
   useEffect(() => {
     console.log('Component mounting, initializing data...');
-    loadData();
-    if (editLead) {
-      populateFormData(editLead);
-    } else {
-      generateAgencyFileNo();
-    }
-  }, [editLead]);
+    loadAllData();
+  }, []);
 
-  const loadData = () => {
+  const loadAllData = async () => {
     console.log('Loading all data...');
-    initializeDefaultProducts();
-    initializeDefaultVehicleBrands();
-    initializeDefaultVehicleModels();
-    initializeDefaultBankBranches();
-  };
-
-  const initializeDefaultProducts = () => {
+    
+    // Load products
     console.log('Initializing products...');
-    const defaultProducts: Product[] = [
-      { id: 'prod-1', name: 'Auto Loans', description: 'Vehicle financing', banks: ['bank-1', 'bank-2'] },
-      { id: 'prod-2', name: 'Commercial Vehicles', description: 'Commercial vehicle loans', banks: ['bank-1', 'bank-3'] },
-      { id: 'prod-3', name: 'CVCE', description: 'Commercial Vehicle Customer Enquiry', banks: ['bank-2', 'bank-3'] },
-      { id: 'prod-4', name: 'Home Loans', description: 'Housing finance', banks: ['bank-1', 'bank-2', 'bank-3'] },
-      { id: 'prod-5', name: 'Personal Loans', description: 'Personal financing', banks: ['bank-1', 'bank-2'] }
-    ];
-    setProducts(defaultProducts);
-    localStorage.setItem('products', JSON.stringify(defaultProducts));
-    console.log('Products initialized:', defaultProducts);
-  };
+    const storedProducts = localStorage.getItem('products');
+    if (storedProducts) {
+      const parsedProducts = JSON.parse(storedProducts);
+      console.log('Products initialized:', parsedProducts);
+      setProducts(parsedProducts);
+    } else {
+      const defaultProducts = [
+        { id: 'prod-1', name: 'Auto Loans', description: 'Vehicle financing', banks: ['1', '2'] },
+        { id: 'prod-2', name: 'Commercial Vehicles', description: 'Commercial vehicle loans', banks: ['1', '3'] },
+        { id: 'prod-3', name: 'CVCE', description: 'Commercial Vehicle Customer Enquiry', banks: ['2', '3'] },
+        { id: 'prod-4', name: 'Home Loans', description: 'Housing finance', banks: ['1', '2', '3'] },
+        { id: 'prod-5', name: 'Personal Loans', description: 'Personal financing', banks: ['1', '2'] }
+      ];
+      setProducts(defaultProducts);
+      localStorage.setItem('products', JSON.stringify(defaultProducts));
+      console.log('Products initialized:', defaultProducts);
+    }
 
-  const initializeDefaultVehicleBrands = () => {
+    // Load vehicle brands
     console.log('Initializing vehicle brands...');
-    const defaultBrands: VehicleBrand[] = [
-      { id: 'brand-1', name: 'Maruti Suzuki' },
-      { id: 'brand-2', name: 'Hyundai' },
-      { id: 'brand-3', name: 'Tata Motors' },
-      { id: 'brand-4', name: 'Mahindra' },
-      { id: 'brand-5', name: 'Honda' },
-      { id: 'brand-6', name: 'Toyota' },
-      { id: 'brand-7', name: 'Ford' },
-      { id: 'brand-8', name: 'Volkswagen' }
-    ];
-    setVehicleBrands(defaultBrands);
-    localStorage.setItem('vehicleBrands', JSON.stringify(defaultBrands));
-    console.log('Vehicle brands initialized:', defaultBrands);
-  };
+    const storedVehicleBrands = localStorage.getItem('vehicleBrands');
+    if (storedVehicleBrands) {
+      const parsedBrands = JSON.parse(storedVehicleBrands);
+      console.log('Vehicle brands initialized:', parsedBrands);
+      setVehicleBrands(parsedBrands);
+    } else {
+      const defaultBrands = [
+        { id: 'brand-1', name: 'Maruti Suzuki' },
+        { id: 'brand-2', name: 'Hyundai' },
+        { id: 'brand-3', name: 'Tata Motors' },
+        { id: 'brand-4', name: 'Mahindra' },
+        { id: 'brand-5', name: 'Honda' },
+        { id: 'brand-6', name: 'Toyota' },
+        { id: 'brand-7', name: 'Ford' },
+        { id: 'brand-8', name: 'Volkswagen' }
+      ];
+      setVehicleBrands(defaultBrands);
+      localStorage.setItem('vehicleBrands', JSON.stringify(defaultBrands));
+      console.log('Vehicle brands initialized:', defaultBrands);
+    }
 
-  const initializeDefaultVehicleModels = () => {
+    // Load vehicle models
     console.log('Initializing vehicle models...');
-    const defaultModels: VehicleModel[] = [
-      { id: 'model-1', name: 'Swift', brandId: 'brand-1' },
-      { id: 'model-2', name: 'Alto', brandId: 'brand-1' },
-      { id: 'model-3', name: 'Baleno', brandId: 'brand-1' },
-      { id: 'model-4', name: 'i20', brandId: 'brand-2' },
-      { id: 'model-5', name: 'Creta', brandId: 'brand-2' },
-      { id: 'model-6', name: 'Venue', brandId: 'brand-2' },
-      { id: 'model-7', name: 'Nexon', brandId: 'brand-3' },
-      { id: 'model-8', name: 'Tiago', brandId: 'brand-3' },
-      { id: 'model-9', name: 'XUV700', brandId: 'brand-4' },
-      { id: 'model-10', name: 'Scorpio', brandId: 'brand-4' }
-    ];
-    setVehicleModels(defaultModels);
-    localStorage.setItem('vehicleModels', JSON.stringify(defaultModels));
-    console.log('Vehicle models initialized:', defaultModels);
-  };
+    const storedVehicleModels = localStorage.getItem('vehicleModels');
+    if (storedVehicleModels) {
+      const parsedModels = JSON.parse(storedVehicleModels);
+      console.log('Vehicle models initialized:', parsedModels);
+      setVehicleModels(parsedModels);
+    } else {
+      const defaultModels = [
+        { id: 'model-1', name: 'Swift', brandId: 'brand-1' },
+        { id: 'model-2', name: 'Alto', brandId: 'brand-1' },
+        { id: 'model-3', name: 'Baleno', brandId: 'brand-1' },
+        { id: 'model-4', name: 'i20', brandId: 'brand-2' },
+        { id: 'model-5', name: 'Creta', brandId: 'brand-2' },
+        { id: 'model-6', name: 'Venue', brandId: 'brand-2' },
+        { id: 'model-7', name: 'Nexon', brandId: 'brand-3' },
+        { id: 'model-8', name: 'Tiago', brandId: 'brand-3' },
+        { id: 'model-9', name: 'XUV700', brandId: 'brand-4' },
+        { id: 'model-10', name: 'Scorpio', brandId: 'brand-4' }
+      ];
+      setVehicleModels(defaultModels);
+      localStorage.setItem('vehicleModels', JSON.stringify(defaultModels));
+      console.log('Vehicle models initialized:', defaultModels);
+    }
 
-  const initializeDefaultBankBranches = () => {
+    // Load bank branches
     console.log('Initializing bank branches...');
-    const defaultBranches: BankBranch[] = [
-      { id: 'branch-1', name: 'Bangalore Main Branch', code: 'BLR001', bankId: 'bank-1', state: 'Karnataka', district: 'Bangalore Urban', city: 'Bangalore' },
-      { id: 'branch-2', name: 'Koramangala Branch', code: 'BLR002', bankId: 'bank-1', state: 'Karnataka', district: 'Bangalore Urban', city: 'Bangalore' },
-      { id: 'branch-3', name: 'Electronic City Branch', code: 'BLR003', bankId: 'bank-1', state: 'Karnataka', district: 'Bangalore Urban', city: 'Bangalore' },
-      { id: 'branch-4', name: 'Mumbai Central', code: 'MUM001', bankId: 'bank-2', state: 'Maharashtra', district: 'Mumbai', city: 'Mumbai' },
-      { id: 'branch-5', name: 'Andheri Branch', code: 'MUM002', bankId: 'bank-2', state: 'Maharashtra', district: 'Mumbai', city: 'Mumbai' },
-      { id: 'branch-6', name: 'Bandra Branch', code: 'MUM003', bankId: 'bank-2', state: 'Maharashtra', district: 'Mumbai', city: 'Mumbai' },
-      { id: 'branch-7', name: 'Delhi Main', code: 'DEL001', bankId: 'bank-3', state: 'Delhi', district: 'Central Delhi', city: 'Delhi' },
-      { id: 'branch-8', name: 'Connaught Place', code: 'DEL002', bankId: 'bank-3', state: 'Delhi', district: 'Central Delhi', city: 'Delhi' }
-    ];
-    setBankBranches(defaultBranches);
-    localStorage.setItem('bankBranches', JSON.stringify(defaultBranches));
-    console.log('Bank branches initialized:', defaultBranches);
-  };
-
-  const generateAgencyFileNo = () => {
-    const timestamp = Date.now().toString().slice(-6);
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    const agencyFileNo = `AGF${timestamp}${random}`;
-    
-    setFormData(prev => ({
-      ...prev,
-      agencyFileNo
-    }));
-  };
-
-  const populateFormData = (lead: any) => {
-    const homeAddr: FormAddress = {
-      id: lead.address?.id || `home-${Date.now()}`,
-      type: "Residence",
-      state: lead.address?.state || '',
-      district: lead.address?.district || '',
-      city: lead.address?.city || '',
-      street: lead.address?.street || '',
-      pincode: lead.address?.pincode || '',
-      requireVerification: true
-    };
-
-    // Parse phone numbers
-    const phoneNumbers = lead.additionalDetails?.phoneNumber 
-      ? lead.additionalDetails.phoneNumber.split(',').map((p: string) => p.trim())
-      : [''];
-
-    setFormData({
-      bankName: lead.bank || '',
-      leadType: lead.additionalDetails?.leadType || '',
-      initiatedBranch: lead.additionalDetails?.bankBranch || '',
-      buildBranch: lead.additionalDetails?.bankBranch || '',
-      agencyFileNo: lead.additionalDetails?.agencyFileNo || '',
-      applicationBarcode: lead.additionalDetails?.applicationBarcode || '',
-      caseId: lead.additionalDetails?.caseId || '',
-      schemeDescription: lead.additionalDetails?.schemeDesc || '',
-      loanAmount: lead.additionalDetails?.loanAmount || '',
-      loanType: lead.additionalDetails?.loanType || '',
-      vehicleBrandId: lead.additionalDetails?.vehicleBrandId || '',
-      vehicleBrandName: lead.additionalDetails?.vehicleBrandName || '',
-      vehicleModelId: lead.additionalDetails?.vehicleModelId || '',
-      vehicleModelName: lead.additionalDetails?.vehicleModelName || '',
-      customerName: lead.name || '',
-      age: lead.age?.toString() || '',
-      dateOfBirth: lead.additionalDetails?.dateOfBirth || '',
-      phoneNumbers: phoneNumbers.length > 0 ? phoneNumbers : [''],
-      email: lead.additionalDetails?.email || '',
-      designation: lead.additionalDetails?.designation || lead.job || '',
-      company: lead.additionalDetails?.company || '',
-      workExperience: lead.additionalDetails?.workExperience || '',
-      monthlyIncome: lead.additionalDetails?.monthlyIncome || '',
-      annualIncome: lead.additionalDetails?.annualIncome || '',
-      otherIncome: lead.additionalDetails?.otherIncome || '',
-      homeAddresses: [homeAddr],
-      officeAddresses: [],
-      additionalAddresses: [],
-      propertyType: lead.additionalDetails?.propertyType || '',
-      ownershipStatus: lead.additionalDetails?.ownershipStatus || '',
-      propertyAge: lead.additionalDetails?.propertyAge || '',
-      visitType: lead.visitType || 'Residence',
-      instructions: lead.instructions || '',
-      assignedAgent: lead.assignedTo || ''
-    });
-  };
-
-  const addAddress = (type: keyof Pick<typeof formData, 'homeAddresses' | 'officeAddresses' | 'additionalAddresses'>) => {
-    const addressType = type === 'homeAddresses' ? 'Residence' : 
-                       type === 'officeAddresses' ? 'Office' : 'Permanent';
-    
-    const newAddress: FormAddress = {
-      id: `${type}-${Date.now()}`,
-      type: addressType,
-      state: '',
-      district: '',
-      city: '',
-      street: '',
-      pincode: '',
-      requireVerification: false
-    };
-
-    setFormData(prev => ({
-      ...prev,
-      [type]: [...prev[type], newAddress]
-    }));
-  };
-
-  const updateAddress = (
-    type: keyof Pick<typeof formData, 'homeAddresses' | 'officeAddresses' | 'additionalAddresses'>,
-    index: number,
-    field: keyof FormAddress,
-    value: any
-  ) => {
-    setFormData(prev => ({
-      ...prev,
-      [type]: prev[type].map((addr, i) => 
-        i === index ? { ...addr, [field]: value } : addr
-      )
-    }));
-  };
-
-  const removeAddress = (
-    type: keyof Pick<typeof formData, 'homeAddresses' | 'officeAddresses' | 'additionalAddresses'>,
-    index: number
-  ) => {
-    setFormData(prev => ({
-      ...prev,
-      [type]: prev[type].filter((_, i) => i !== index)
-    }));
-  };
-
-  const getAvailableProducts = () => {
-    if (!formData.bankName) {
-      console.log('No bank selected, returning empty products');
-      return [];
+    const storedBankBranches = localStorage.getItem('bankBranches');
+    if (storedBankBranches) {
+      const parsedBranches = JSON.parse(storedBankBranches);
+      console.log('Bank branches initialized:', parsedBranches);
+      setBankBranches(parsedBranches);
+    } else {
+      const defaultBranches = [
+        { id: 'branch-1', name: 'Bangalore Main Branch', code: 'BLR001', bankId: '1', state: 'Karnataka', district: 'Bangalore Urban', city: 'Bangalore' },
+        { id: 'branch-2', name: 'Koramangala Branch', code: 'BLR002', bankId: '1', state: 'Karnataka', district: 'Bangalore Urban', city: 'Bangalore' },
+        { id: 'branch-3', name: 'Electronic City Branch', code: 'BLR003', bankId: '1', state: 'Karnataka', district: 'Bangalore Urban', city: 'Bangalore' },
+        { id: 'branch-4', name: 'Mumbai Central', code: 'MUM001', bankId: '2', state: 'Maharashtra', district: 'Mumbai', city: 'Mumbai' },
+        { id: 'branch-5', name: 'Andheri Branch', code: 'MUM002', bankId: '2', state: 'Maharashtra', district: 'Mumbai', city: 'Mumbai' },
+        { id: 'branch-6', name: 'Bandra Branch', code: 'MUM003', bankId: '2', state: 'Maharashtra', district: 'Mumbai', city: 'Mumbai' },
+        { id: 'branch-7', name: 'Delhi Main', code: 'DEL001', bankId: '3', state: 'Delhi', district: 'Central Delhi', city: 'Delhi' },
+        { id: 'branch-8', name: 'Connaught Place', code: 'DEL002', bankId: '3', state: 'Delhi', district: 'Central Delhi', city: 'Delhi' }
+      ];
+      setBankBranches(defaultBranches);
+      localStorage.setItem('bankBranches', JSON.stringify(defaultBranches));
+      console.log('Bank branches initialized:', defaultBranches);
     }
-    const filtered = products.filter(product => 
-      product.banks && product.banks.includes(formData.bankName)
-    );
-    console.log('Available products for bank:', formData.bankName, filtered);
-    return filtered;
   };
 
-  const getBankBranchesByBank = () => {
-    if (!formData.bankName) {
-      console.log('No bank selected, returning empty branches');
-      return [];
+  // Validation functions (simplified for brevity)
+  const validateStep1 = () => {
+    const newErrors: any = {};
+    if (!formData.name.trim()) newErrors.name = 'Name is required';
+    if (!formData.age || isNaN(Number(formData.age)) || Number(formData.age) <= 0) newErrors.age = 'Valid age is required';
+    if (!formData.job.trim()) newErrors.job = 'Job is required';
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const validateStep2 = () => {
+    const newErrors: any = {};
+    if (!formData.bank) newErrors.bank = 'Bank selection is required';
+    if (!formData.additionalDetails.leadTypeId) newErrors.leadType = 'Lead type/product is required';
+    if (!formData.additionalDetails.bankBranch) newErrors.bankBranch = 'Branch selection is required';
+    if (shouldShowVehicleFields()) {
+      if (!formData.additionalDetails.vehicleBrandId) newErrors.vehicleBrand = 'Vehicle brand is required';
+      if (!formData.additionalDetails.vehicleModelId) newErrors.vehicleModel = 'Vehicle model is required';
     }
-    const filtered = bankBranches.filter(branch => branch.bankId === formData.bankName);
-    console.log('Available branches for bank:', formData.bankName, filtered);
-    return filtered;
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
-  const getAvailableVehicleModels = () => {
-    if (!formData.vehicleBrandId) {
-      console.log('No vehicle brand selected, returning empty models');
-      return [];
-    }
-    const filtered = vehicleModels.filter(model => model.brandId === formData.vehicleBrandId);
-    console.log('Available models for brand:', formData.vehicleBrandId, filtered);
-    return filtered;
-  };
-
+  // Enhanced vehicle fields visibility function
   const shouldShowVehicleFields = () => {
-    const vehicleRelatedTypes = ['Auto Loans', 'Commercial Vehicles', 'CVCE'];
-    const shouldShow = vehicleRelatedTypes.includes(formData.leadType);
-    console.log('Should show vehicle fields:', shouldShow, 'for lead type:', formData.leadType);
+    const vehicleRelatedProducts = ['Auto Loans', 'Commercial Vehicles', 'CVCE'];
+    const shouldShow = vehicleRelatedProducts.includes(formData.additionalDetails.leadType);
+    console.log('Should show vehicle fields:', shouldShow, 'for lead type:', formData.additionalDetails.leadType);
     return shouldShow;
   };
 
-  const validatePhoneNumber = (phone: string) => {
-    const cleanPhone = phone.replace(/\D/g, '');
-    return cleanPhone.length <= 10 && cleanPhone.length > 0;
-  };
-
-  const validateAge = (age: string) => {
-    const numAge = parseInt(age);
-    return !isNaN(numAge) && numAge > 0 && numAge < 150;
-  };
-
-  const addPhoneNumber = () => {
+  // Bank selection handler
+  const handleBankSelect = (bankId: string) => {
+    console.log('Bank selected:', bankId);
     setFormData(prev => ({
       ...prev,
-      phoneNumbers: [...prev.phoneNumbers, '']
+      bank: bankId,
+      additionalDetails: {
+        ...prev.additionalDetails,
+        leadTypeId: '', // Reset lead type when bank changes
+        leadType: '',
+        bankBranch: '',   // Reset branch when bank changes
+        vehicleBrandId: '',
+        vehicleBrandName: '',
+        vehicleModelId: '',
+        vehicleModelName: ''
+      }
     }));
   };
 
-  const updatePhoneNumber = (index: number, value: string) => {
+  // Product selection handler
+  const handleProductSelect = (productId: string) => {
+    const selectedProduct = products.find(p => p.id === productId);
+    console.log('Product selected:', productId, selectedProduct);
+    
     setFormData(prev => ({
       ...prev,
-      phoneNumbers: prev.phoneNumbers.map((phone, i) => 
-        i === index ? value : phone
-      )
+      additionalDetails: {
+        ...prev.additionalDetails,
+        leadType: selectedProduct?.name || '',
+        leadTypeId: productId,
+        // Reset vehicle fields when product changes
+        vehicleBrandId: '',
+        vehicleBrandName: '',
+        vehicleModelId: '',
+        vehicleModelName: ''
+      }
     }));
   };
 
-  const removePhoneNumber = (index: number) => {
-    if (formData.phoneNumbers.length > 1) {
-      setFormData(prev => ({
-        ...prev,
-        phoneNumbers: prev.phoneNumbers.filter((_, i) => i !== index)
-      }));
-    }
+  // Vehicle brand selection handler
+  const handleVehicleBrandSelect = (brandId: string) => {
+    const selectedBrand = vehicleBrands.find(b => b.id === brandId);
+    console.log('Vehicle brand selected:', brandId, selectedBrand);
+    
+    setFormData(prev => ({
+      ...prev,
+      additionalDetails: {
+        ...prev.additionalDetails,
+        vehicleBrandId: brandId,
+        vehicleBrandName: selectedBrand?.name || '',
+        vehicleModelId: '', // Reset model when brand changes
+        vehicleModelName: ''
+      }
+    }));
   };
 
-  const handlePhoneNumberChange = (index: number, value: string) => {
-    // Only allow digits and limit to 10 characters
-    const cleanValue = value.replace(/\D/g, '');
-    if (cleanValue.length <= 10) {
-      updatePhoneNumber(index, cleanValue);
-    } else {
-      toast({
-        title: "Invalid Phone Number",
-        description: "Phone number cannot be more than 10 digits",
-        variant: "destructive"
-      });
-    }
+  // Vehicle model selection handler
+  const handleVehicleModelSelect = (modelId: string) => {
+    const selectedModel = vehicleModels.find(m => m.id === modelId);
+    console.log('Vehicle model selected:', modelId, selectedModel);
+    
+    setFormData(prev => ({
+      ...prev,
+      additionalDetails: {
+        ...prev.additionalDetails,
+        vehicleModelId: modelId,
+        vehicleModelName: selectedModel?.name || ''
+      }
+    }));
   };
 
-  const handleAgeChange = (value: string) => {
-    // Only allow digits
-    const cleanValue = value.replace(/\D/g, '');
-    if (cleanValue === '' || validateAge(cleanValue)) {
-      setFormData(prev => ({ ...prev, age: cleanValue }));
-    } else {
-      toast({
-        title: "Invalid Age",
-        description: "Please enter a valid age (1-149)",
-        variant: "destructive"
-      });
-    }
+  // Handlers for address fields
+  const handleAddressChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      address: {
+        ...prev.address,
+        [field]: value
+      }
+    }));
   };
 
-  const getVerificationAddresses = () => {
-    const allAddresses = [
-      ...formData.homeAddresses,
-      ...formData.officeAddresses,
-      ...formData.additionalAddresses
-    ];
-    return allAddresses.filter(addr => addr.requireVerification);
+  // Handlers for other form fields
+  const handleChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
-  const handleStepClick = (stepId: number) => {
-    setCurrentStep(stepId);
-  };
-
+  // Navigation handlers
   const nextStep = () => {
-    if (currentStep < STEPS.length) {
-      setCurrentStep(currentStep + 1);
-    }
+    if (step === 1 && !validateStep1()) return;
+    if (step === 2 && !validateStep2()) return;
+    setStep(prev => prev + 1);
   };
 
   const prevStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
+    setStep(prev => (prev > 1 ? prev - 1 : prev));
   };
 
+  // Submit handler
   const handleSubmit = () => {
-    // Enhanced validation
-    if (!formData.customerName || !formData.bankName || !formData.leadType) {
-      toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields (Customer Name, Bank, Lead Type)",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Validate phone numbers
-    const invalidPhones = formData.phoneNumbers.filter(phone => 
-      phone.trim() && !validatePhoneNumber(phone)
-    );
-    if (invalidPhones.length > 0) {
-      toast({
-        title: "Invalid Phone Numbers",
-        description: "All phone numbers must be 10 digits or less",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Validate age
-    if (formData.age && !validateAge(formData.age)) {
-      toast({
-        title: "Invalid Age",
-        description: "Please enter a valid age",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Validate vehicle fields if required
-    if (shouldShowVehicleFields() && (!formData.vehicleBrandId || !formData.vehicleModelId)) {
-      toast({
-        title: "Vehicle Information Required",
-        description: "Please select vehicle brand and model for this loan type",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const leadData = {
-      id: editLead?.id || `lead-${Date.now()}`,
-      name: formData.customerName,
-      age: parseInt(formData.age) || 0,
-      job: formData.designation,
-      address: formData.homeAddresses[0] ? {
-        street: formData.homeAddresses[0].street,
-        city: formData.homeAddresses[0].city,
-        district: formData.homeAddresses[0].district,
-        state: formData.homeAddresses[0].state,
-        pincode: formData.homeAddresses[0].pincode
-      } : {},
-      additionalDetails: {
-        agencyFileNo: formData.agencyFileNo,
-        applicationBarcode: formData.applicationBarcode,
-        caseId: formData.caseId,
-        schemeDesc: formData.schemeDescription,
-        phoneNumber: formData.phoneNumbers.filter(p => p.trim()).join(', '),
-        email: formData.email,
-        dateOfBirth: formData.dateOfBirth,
-        company: formData.company,
-        designation: formData.designation,
-        workExperience: formData.workExperience,
-        propertyType: formData.propertyType,
-        ownershipStatus: formData.ownershipStatus,
-        propertyAge: formData.propertyAge,
-        monthlyIncome: formData.monthlyIncome,
-        annualIncome: formData.annualIncome,
-        otherIncome: formData.otherIncome,
-        leadType: formData.leadType,
-        loanAmount: formData.loanAmount,
-        loanType: formData.loanType,
-        vehicleBrandId: formData.vehicleBrandId,
-        vehicleBrandName: formData.vehicleBrandName,
-        vehicleModelId: formData.vehicleModelId,
-        vehicleModelName: formData.vehicleModelName,
-        bankBranch: formData.buildBranch,
-        addresses: [
-          ...formData.homeAddresses,
-          ...formData.officeAddresses,
-          ...formData.additionalAddresses
-        ]
-      },
-      status: 'Pending' as const,
-      bank: formData.bankName,
-      visitType: formData.visitType,
-      assignedTo: formData.assignedAgent === 'no-assignment' ? '' : formData.assignedAgent,
-      createdAt: editLead?.createdAt || new Date(),
-      documents: editLead?.documents || [],
-      instructions: formData.instructions
-    };
-
-    onAddLead(leadData);
+    if (!validateStep1() || !validateStep2()) return;
+    onAddLead(formData);
   };
 
-  const renderStepNavigation = () => (
-    <div className="mb-6 bg-white rounded-lg shadow-sm border p-4">
-      <div className="flex flex-wrap gap-2">
-        {STEPS.map((step) => (
-          <button
-            key={step.id}
-            onClick={() => handleStepClick(step.id)}
-            className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-              currentStep === step.id
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            {step.id}. {step.title}
-          </button>
-        ))}
+  // Render functions for each step
+  const renderBasicInfoStep = () => (
+    <div className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700">Name <span className="text-red-500">*</span></label>
+        <Input
+          value={formData.name}
+          onChange={(e) => handleChange('name', e.target.value)}
+          placeholder="Enter name"
+        />
+        {errors.name && <p className="text-red-500 text-sm">{errors.name}</p>}
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700">Age <span className="text-red-500">*</span></label>
+        <Input
+          type="number"
+          value={formData.age}
+          onChange={(e) => handleChange('age', e.target.value)}
+          placeholder="Enter age"
+        />
+        {errors.age && <p className="text-red-500 text-sm">{errors.age}</p>}
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700">Job <span className="text-red-500">*</span></label>
+        <Input
+          value={formData.job}
+          onChange={(e) => handleChange('job', e.target.value)}
+          placeholder="Enter job"
+        />
+        {errors.job && <p className="text-red-500 text-sm">{errors.job}</p>}
+      </div>
+      <div>
+        <h4 className="text-md font-semibold text-gray-800 mb-2">Address</h4>
+        <Input
+          value={formData.address.street}
+          onChange={(e) => handleAddressChange('street', e.target.value)}
+          placeholder="Street"
+          className="mb-2"
+        />
+        <Input
+          value={formData.address.city}
+          onChange={(e) => handleAddressChange('city', e.target.value)}
+          placeholder="City"
+          className="mb-2"
+        />
+        <Input
+          value={formData.address.district}
+          onChange={(e) => handleAddressChange('district', e.target.value)}
+          placeholder="District"
+          className="mb-2"
+        />
+        <Input
+          value={formData.address.state}
+          onChange={(e) => handleAddressChange('state', e.target.value)}
+          placeholder="State"
+          className="mb-2"
+        />
+        <Input
+          value={formData.address.pincode}
+          onChange={(e) => handleAddressChange('pincode', e.target.value)}
+          placeholder="Pincode"
+          className="mb-2"
+        />
       </div>
     </div>
   );
 
-  const renderAddressForm = (
-    address: FormAddress,
-    index: number,
-    type: keyof Pick<typeof formData, 'homeAddresses' | 'officeAddresses' | 'additionalAddresses'>
-  ) => (
-    <Card key={address.id} className="mb-4">
-      <CardHeader className="pb-3">
-        <div className="flex justify-between items-center">
-          <CardTitle className="text-lg">{address.type} Address {index + 1}</CardTitle>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => removeAddress(type, index)}
-            className="text-red-600"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <Label>State *</Label>
-            <Select
-              value={address.state}
-              onValueChange={(value) => updateAddress(type, index, 'state', value)}
+  const renderBankProductStep = () => (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold mb-4">Bank & Product Information</h3>
+      </div>
+
+      {/* Bank Selection */}
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-gray-700">
+          Bank <span className="text-red-500">*</span>
+        </label>
+        <Select value={formData.bank} onValueChange={handleBankSelect}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select Bank" />
+          </SelectTrigger>
+          <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg z-50">
+            {banks.map((bank) => (
+              <SelectItem key={bank.id} value={bank.id}>
+                {bank.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {errors.bank && <p className="text-red-500 text-sm">{errors.bank}</p>}
+      </div>
+
+      {/* Product Selection */}
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-gray-700">
+          Lead Type/Product <span className="text-red-500">*</span>
+        </label>
+        <Select 
+          value={formData.additionalDetails.leadTypeId} 
+          onValueChange={handleProductSelect}
+          disabled={!formData.bank}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder={formData.bank ? "Select Product" : "Select Bank first"} />
+          </SelectTrigger>
+          <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg z-50">
+            {products
+              .filter(product => product.banks && product.banks.includes(formData.bank))
+              .map((product) => (
+                <SelectItem key={product.id} value={product.id}>
+                  {product.name}
+                </SelectItem>
+              ))}
+          </SelectContent>
+        </Select>
+        {errors.leadType && <p className="text-red-500 text-sm">{errors.leadType}</p>}
+      </div>
+
+      {/* Initiated Under Branch */}
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-gray-700">
+          Initiated Under Branch <span className="text-red-500">*</span>
+        </label>
+        <Select 
+          value={formData.additionalDetails.bankBranch} 
+          onValueChange={(value) => setFormData(prev => ({
+            ...prev,
+            additionalDetails: { ...prev.additionalDetails, bankBranch: value }
+          }))}
+          disabled={!formData.bank}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder={formData.bank ? "Select Branch" : "Select Bank first"} />
+          </SelectTrigger>
+          <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg z-50">
+            {bankBranches
+              .filter(branch => branch.bankId === formData.bank)
+              .map((branch) => (
+                <SelectItem key={branch.id} value={branch.id}>
+                  {branch.name} ({branch.code})
+                </SelectItem>
+              ))}
+          </SelectContent>
+        </Select>
+        {errors.bankBranch && <p className="text-red-500 text-sm">{errors.bankBranch}</p>}
+      </div>
+
+      {/* Build Under Branch */}
+      <div className="space-y-2">
+        <label className="text-sm font-medium text-gray-700">
+          Build Under Branch <span className="text-red-500">*</span>
+        </label>
+        <Select 
+          value={formData.additionalDetails.bankBranch} 
+          onValueChange={(value) => setFormData(prev => ({
+            ...prev,
+            additionalDetails: { ...prev.additionalDetails, bankBranch: value }
+          }))}
+          disabled={!formData.bank}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder={formData.bank ? "Select Branch" : "Select Bank first"} />
+          </SelectTrigger>
+          <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg z-50">
+            {bankBranches
+              .filter(branch => branch.bankId === formData.bank)
+              .map((branch) => (
+                <SelectItem key={branch.id} value={branch.id}>
+                  {branch.name} ({branch.code})
+                </SelectItem>
+              ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Vehicle Information - Show only for vehicle-related products */}
+      {shouldShowVehicleFields() && (
+        <div className="space-y-4 border-t pt-4">
+          <h4 className="text-md font-semibold text-gray-800">Vehicle Information</h4>
+          
+          {/* Vehicle Brand */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">
+              Vehicle Brand <span className="text-red-500">*</span>
+            </label>
+            <Select 
+              value={formData.additionalDetails.vehicleBrandId} 
+              onValueChange={handleVehicleBrandSelect}
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Select state" />
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select Vehicle Brand" />
               </SelectTrigger>
-              <SelectContent>
-                {locationData.states.map((state) => (
-                  <SelectItem key={state.id} value={state.name}>
-                    {state.name}
+              <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg z-50">
+                {vehicleBrands.map((brand) => (
+                  <SelectItem key={brand.id} value={brand.id}>
+                    {brand.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {errors.vehicleBrand && <p className="text-red-500 text-sm">{errors.vehicleBrand}</p>}
           </div>
-          
-          <div>
-            <Label>District *</Label>
-            <Select
-              value={address.district}
-              onValueChange={(value) => updateAddress(type, index, 'district', value)}
+
+          {/* Vehicle Model */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">
+              Vehicle Model <span className="text-red-500">*</span>
+            </label>
+            <Select 
+              value={formData.additionalDetails.vehicleModelId} 
+              onValueChange={handleVehicleModelSelect}
+              disabled={!formData.additionalDetails.vehicleBrandId}
             >
-              <SelectTrigger>
-                <SelectValue placeholder="Select district" />
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder={formData.additionalDetails.vehicleBrandId ? "Select Vehicle Model" : "Select Brand first"} />
               </SelectTrigger>
-              <SelectContent>
-                {locationData.states
-                  .find(s => s.name === address.state)?.districts
-                  .map((district) => (
-                    <SelectItem key={district.id} value={district.name}>
-                      {district.name}
+              <SelectContent className="bg-white border border-gray-200 rounded-md shadow-lg z-50">
+                {vehicleModels
+                  .filter(model => model.brandId === formData.additionalDetails.vehicleBrandId)
+                  .map((model) => (
+                    <SelectItem key={model.id} value={model.id}>
+                      {model.name}
                     </SelectItem>
-                  )) || []}
+                  ))}
               </SelectContent>
             </Select>
+            {errors.vehicleModel && <p className="text-red-500 text-sm">{errors.vehicleModel}</p>}
           </div>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <Label>City *</Label>
-            <Select
-              value={address.city}
-              onValueChange={(value) => updateAddress(type, index, 'city', value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select city" />
-              </SelectTrigger>
-              <SelectContent>
-                {locationData.states
-                  .find(s => s.name === address.state)?.districts
-                  .find(d => d.name === address.district)?.cities
-                  .map((city) => (
-                    <SelectItem key={city.id} value={city.name}>
-                      {city.name}
-                    </SelectItem>
-                  )) || []}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label>Pincode *</Label>
-            <Input
-              value={address.pincode}
-              onChange={(e) => updateAddress(type, index, 'pincode', e.target.value)}
-              placeholder="Enter pincode"
-            />
-          </div>
-        </div>
-
-        <div>
-          <Label>Street Address *</Label>
-          <Textarea
-            value={address.street}
-            onChange={(e) => updateAddress(type, index, 'street', e.target.value)}
-            placeholder="Enter complete street address"
-            rows={3}
-          />
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id={`verify-${address.id}`}
-            checked={address.requireVerification}
-            onCheckedChange={(checked) => 
-              updateAddress(type, index, 'requireVerification', !!checked)
-            }
-          />
-          <Label htmlFor={`verify-${address.id}`}>
-            Require verification for this address
-          </Label>
-        </div>
-      </CardContent>
-    </Card>
+      )}
+    </div>
   );
 
-  const renderCurrentStep = () => {
-    switch (currentStep) {
+  const renderStepContent = () => {
+    switch (step) {
       case 1:
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Bank & Product Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label>Select Bank *</Label>
-                <Select
-                  value={formData.bankName}
-                  onValueChange={(value) => {
-                    console.log('Bank selected:', value);
-                    setFormData(prev => ({ 
-                      ...prev, 
-                      bankName: value,
-                      leadType: '',
-                      initiatedBranch: '',
-                      buildBranch: '',
-                      vehicleBrandId: '',
-                      vehicleBrandName: '',
-                      vehicleModelId: '',
-                      vehicleModelName: ''
-                    }));
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select bank" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {banks && banks.length > 0 ? (
-                      banks.map((bank) => (
-                        <SelectItem key={bank.id} value={bank.id}>
-                          {bank.name}
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem value="no-banks" disabled>No banks available</SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label>Lead Type/Product *</Label>
-                <Select
-                  value={formData.leadType}
-                  onValueChange={(value) => {
-                    console.log('Lead type selected:', value);
-                    setFormData(prev => ({ 
-                      ...prev, 
-                      leadType: value,
-                      vehicleBrandId: '',
-                      vehicleBrandName: '',
-                      vehicleModelId: '',
-                      vehicleModelName: ''
-                    }));
-                  }}
-                  disabled={!formData.bankName}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={formData.bankName ? "Select lead type/product" : "First select a bank"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {formData.bankName ? (
-                      getAvailableProducts().length > 0 ? (
-                        getAvailableProducts().map((product) => (
-                          <SelectItem key={product.id} value={product.name}>
-                            {product.name}
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="no-products" disabled>
-                          No products available for this bank
-                        </SelectItem>
-                      )
-                    ) : (
-                      <SelectItem value="select-bank" disabled>
-                        Select a bank first
-                      </SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>Initiated Under Branch *</Label>
-                  <Select
-                    value={formData.initiatedBranch}
-                    onValueChange={(value) => {
-                      console.log('Initiated branch selected:', value);
-                      setFormData(prev => ({ ...prev, initiatedBranch: value }));
-                    }}
-                    disabled={!formData.bankName}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={formData.bankName ? "Select branch" : "First select a bank"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {formData.bankName ? (
-                        getBankBranchesByBank().length > 0 ? (
-                          getBankBranchesByBank().map((branch) => (
-                            <SelectItem key={branch.id} value={branch.id}>
-                              {branch.name} ({branch.code})
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <SelectItem value="no-branches" disabled>
-                            No branches available for this bank
-                          </SelectItem>
-                        )
-                      ) : (
-                        <SelectItem value="select-bank" disabled>
-                          Select a bank first
-                        </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label>Build Under Branch *</Label>
-                  <Select
-                    value={formData.buildBranch}
-                    onValueChange={(value) => {
-                      console.log('Build branch selected:', value);
-                      setFormData(prev => ({ ...prev, buildBranch: value }));
-                    }}
-                    disabled={!formData.bankName}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={formData.bankName ? "Select branch" : "First select a bank"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {formData.bankName ? (
-                        getBankBranchesByBank().length > 0 ? (
-                          getBankBranchesByBank().map((branch) => (
-                            <SelectItem key={branch.id} value={branch.id}>
-                              {branch.name} ({branch.code})
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <SelectItem value="no-branches" disabled>
-                            No branches available for this bank
-                          </SelectItem>
-                        )
-                      ) : (
-                        <SelectItem value="select-bank" disabled>
-                          Select a bank first
-                        </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {shouldShowVehicleFields() && (
-                <div className="border-t pt-4 mt-4">
-                  <div className="bg-blue-50 p-3 rounded-lg mb-4">
-                    <h3 className="text-lg font-medium text-blue-700 mb-2">🚗 Vehicle Details Required</h3>
-                    <p className="text-sm text-blue-600">
-                      Since you selected "{formData.leadType}", please provide vehicle information below.
-                    </p>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label>Vehicle Brand *</Label>
-                      <Select
-                        value={formData.vehicleBrandId}
-                        onValueChange={(value) => {
-                          const brand = vehicleBrands.find(b => b.id === value);
-                          console.log('Vehicle brand selected:', value, brand);
-                          setFormData(prev => ({ 
-                            ...prev, 
-                            vehicleBrandId: value,
-                            vehicleBrandName: brand?.name || '',
-                            vehicleModelId: '',
-                            vehicleModelName: ''
-                          }));
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select vehicle brand" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {vehicleBrands.map((brand) => (
-                            <SelectItem key={brand.id} value={brand.id}>
-                              {brand.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label>Vehicle Model *</Label>
-                      <Select
-                        value={formData.vehicleModelId}
-                        onValueChange={(value) => {
-                          const model = vehicleModels.find(m => m.id === value);
-                          console.log('Vehicle model selected:', value, model);
-                          setFormData(prev => ({ 
-                            ...prev, 
-                            vehicleModelId: value,
-                            vehicleModelName: model?.name || ''
-                          }));
-                        }}
-                        disabled={!formData.vehicleBrandId}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder={formData.vehicleBrandId ? "Select vehicle model" : "First select brand"} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {formData.vehicleBrandId ? (
-                            getAvailableVehicleModels().length > 0 ? (
-                              getAvailableVehicleModels().map((model) => (
-                                <SelectItem key={model.id} value={model.id}>
-                                  {model.name}
-                                </SelectItem>
-                              ))
-                            ) : (
-                              <SelectItem value="no-models" disabled>
-                                No models available for this brand
-                              </SelectItem>
-                            )
-                          ) : (
-                            <SelectItem value="select-brand" disabled>
-                              Select a brand first
-                            </SelectItem>
-                          )}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        );
-
+        return renderBasicInfoStep();
       case 2:
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Lead Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>Agency File No. *</Label>
-                  <Input
-                    value={formData.agencyFileNo}
-                    readOnly
-                    className="bg-gray-50"
-                  />
-                </div>
-
-                <div>
-                  <Label>Application Barcode</Label>
-                  <Input
-                    value={formData.applicationBarcode}
-                    onChange={(e) => setFormData(prev => ({ ...prev, applicationBarcode: e.target.value }))}
-                    placeholder="Enter application barcode"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>Case ID</Label>
-                  <Input
-                    value={formData.caseId}
-                    onChange={(e) => setFormData(prev => ({ ...prev, caseId: e.target.value }))}
-                    placeholder="Enter case ID"
-                  />
-                </div>
-
-                <div>
-                  <Label>Loan Amount</Label>
-                  <Input
-                    value={formData.loanAmount}
-                    onChange={(e) => setFormData(prev => ({ ...prev, loanAmount: e.target.value }))}
-                    placeholder="Enter loan amount"
-                    type="number"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label>Scheme Description</Label>
-                <Textarea
-                  value={formData.schemeDescription}
-                  onChange={(e) => setFormData(prev => ({ ...prev, schemeDescription: e.target.value }))}
-                  placeholder="Enter scheme description"
-                  rows={3}
-                />
-              </div>
-
-              {shouldShowVehicleFields() && (
-                <div className="border-t pt-4">
-                  <h3 className="text-lg font-medium mb-4">Vehicle Details</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label>Vehicle Brand *</Label>
-                      <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                        {formData.vehicleBrandName || 'Not selected'}
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label>Vehicle Model *</Label>
-                      <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                        {formData.vehicleModelName || 'Not selected'}
-                      </div>
-                    </div>
-                  </div>
-                  {(!formData.vehicleBrandName || !formData.vehicleModelName) && (
-                    <p className="text-sm text-red-600 mt-2">
-                      Please go back to Step 1 to select vehicle details.
-                    </p>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        );
-
+        return renderBankProductStep();
       case 3:
         return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Personal Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>Customer Name *</Label>
-                  <Input
-                    value={formData.customerName}
-                    onChange={(e) => setFormData(prev => ({ ...prev, customerName: e.target.value }))}
-                    placeholder="Enter customer name"
-                  />
-                </div>
-
-                <div>
-                  <Label>Age (Numbers only, 1-149)</Label>
-                  <Input
-                    value={formData.age}
-                    onChange={(e) => handleAgeChange(e.target.value)}
-                    placeholder="Enter age"
-                    type="text"
-                    maxLength={3}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>Date of Birth</Label>
-                  <Input
-                    value={formData.dateOfBirth}
-                    onChange={(e) => setFormData(prev => ({ ...prev, dateOfBirth: e.target.value }))}
-                    placeholder="YYYY-MM-DD"
-                    type="date"
-                  />
-                </div>
-
-                <div>
-                  <Label>Email</Label>
-                  <Input
-                    value={formData.email}
-                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                    placeholder="Enter email"
-                    type="email"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label>Phone Numbers * (10 digits max each)</Label>
-                <div className="space-y-2">
-                  {formData.phoneNumbers.map((phone, index) => (
-                    <div key={index} className="flex gap-2">
-                      <Input
-                        value={phone}
-                        onChange={(e) => handlePhoneNumberChange(index, e.target.value)}
-                        placeholder="Enter 10-digit phone number"
-                        maxLength={10}
-                        type="tel"
-                      />
-                      {formData.phoneNumbers.length > 1 && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removePhoneNumber(index)}
-                          className="text-red-600"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={addPhoneNumber}
-                    className="w-full"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Another Phone Number
-                  </Button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>Designation</Label>
-                  <Input
-                    value={formData.designation}
-                    onChange={(e) => setFormData(prev => ({ ...prev, designation: e.target.value }))}
-                    placeholder="Enter designation"
-                  />
-                </div>
-
-                <div>
-                  <Label>Company</Label>
-                  <Input
-                    value={formData.company}
-                    onChange={(e) => setFormData(prev => ({ ...prev, company: e.target.value }))}
-                    placeholder="Enter company name"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label>Work Experience</Label>
-                <Input
-                  value={formData.workExperience}
-                  onChange={(e) => setFormData(prev => ({ ...prev, workExperience: e.target.value }))}
-                  placeholder="Enter work experience"
-                />
-              </div>
-            </CardContent>
-          </Card>
-        );
-
-      case 4:
-        return (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Residence Addresses</h2>
-              <Button
-                variant="outline"
-                onClick={() => addAddress('homeAddresses')}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Residence Address
-              </Button>
-            </div>
-            
-            {formData.homeAddresses.length === 0 && (
-              <Card>
-                <CardContent className="text-center py-8">
-                  <p className="text-muted-foreground mb-4">No residence addresses added yet.</p>
-                  <Button onClick={() => addAddress('homeAddresses')}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add First Residence Address
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-
-            {formData.homeAddresses.map((address, index) =>
-              renderAddressForm(address, index, 'homeAddresses')
-            )}
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Review & Submit</h3>
+            <pre className="bg-gray-100 p-4 rounded text-sm overflow-auto">{JSON.stringify(formData, null, 2)}</pre>
           </div>
         );
-
-      case 5:
-        return (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Office Addresses</h2>
-              <Button
-                variant="outline"
-                onClick={() => addAddress('officeAddresses')}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Office Address
-              </Button>
-            </div>
-            
-            {formData.officeAddresses.length === 0 && (
-              <Card>
-                <CardContent className="text-center py-8">
-                  <p className="text-muted-foreground mb-4">No office addresses added yet.</p>
-                  <Button onClick={() => addAddress('officeAddresses')}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Office Address
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-
-            {formData.officeAddresses.map((address, index) =>
-              renderAddressForm(address, index, 'officeAddresses')
-            )}
-          </div>
-        );
-
-      case 6:
-        return (
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Additional Addresses</h2>
-              <Button
-                variant="outline"
-                onClick={() => addAddress('additionalAddresses')}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Additional Address
-              </Button>
-            </div>
-            
-            {formData.additionalAddresses.length === 0 && (
-              <Card>
-                <CardContent className="text-center py-8">
-                  <p className="text-muted-foreground mb-4">No additional addresses added yet.</p>
-                  <Button onClick={() => addAddress('additionalAddresses')}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Additional Address
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-
-            {formData.additionalAddresses.map((address, index) =>
-              renderAddressForm(address, index, 'additionalAddresses')
-            )}
-          </div>
-        );
-
-      case 7:
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Financial Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <Label>Monthly Income</Label>
-                  <Input
-                    value={formData.monthlyIncome}
-                    onChange={(e) => setFormData(prev => ({ ...prev, monthlyIncome: e.target.value }))}
-                    placeholder="Enter monthly income"
-                    type="number"
-                  />
-                </div>
-
-                <div>
-                  <Label>Annual Income</Label>
-                  <Input
-                    value={formData.annualIncome}
-                    onChange={(e) => setFormData(prev => ({ ...prev, annualIncome: e.target.value }))}
-                    placeholder="Enter annual income"
-                    type="number"
-                  />
-                </div>
-
-                <div>
-                  <Label>Other Income</Label>
-                  <Input
-                    value={formData.otherIncome}
-                    onChange={(e) => setFormData(prev => ({ ...prev, otherIncome: e.target.value }))}
-                    placeholder="Enter other income"
-                    type="number"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <Label>Property Type</Label>
-                  <Select
-                    value={formData.propertyType}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, propertyType: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select property type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Apartment">Apartment</SelectItem>
-                      <SelectItem value="House">House</SelectItem>
-                      <SelectItem value="Villa">Villa</SelectItem>
-                      <SelectItem value="Commercial">Commercial</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label>Ownership Status</Label>
-                  <Select
-                    value={formData.ownershipStatus}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, ownershipStatus: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select ownership status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Owned">Owned</SelectItem>
-                      <SelectItem value="Rented">Rented</SelectItem>
-                      <SelectItem value="Family">Family</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label>Property Age</Label>
-                  <Input
-                    value={formData.propertyAge}
-                    onChange={(e) => setFormData(prev => ({ ...prev, propertyAge: e.target.value }))}
-                    placeholder="Enter property age"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        );
-
-      case 8:
-        const verificationAddresses = getVerificationAddresses();
-        
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Verification Options</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {verificationAddresses.length > 0 ? (
-                <div>
-                  <Label className="text-base font-medium">Addresses selected for verification:</Label>
-                  <div className="mt-3 space-y-3">
-                    {verificationAddresses.map((address, index) => (
-                      <div key={address.id} className="p-3 border rounded-lg bg-gray-50">
-                        <Badge variant="outline" className="mb-2">
-                          {address.type} Address {index + 1}
-                        </Badge>
-                        <p className="text-sm">
-                          {address.street}, {address.city}, {address.district}, {address.state} - {address.pincode}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-4">
-                    <Label>Visit Type</Label>
-                    <Select
-                      value={formData.visitType}
-                      onValueChange={(value: any) => setFormData(prev => ({ ...prev, visitType: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select visit type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Residence">Residence Verification</SelectItem>
-                        <SelectItem value="Office">Office Verification</SelectItem>
-                        <SelectItem value="Both">Both Residence & Office</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground mb-4">
-                    No addresses selected for verification yet.
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Go back to address steps and check "Require verification" for addresses you want to verify.
-                  </p>
-                </div>
-              )}
-
-              <div>
-                <Label>Special Instructions</Label>
-                <Textarea
-                  value={formData.instructions}
-                  onChange={(e) => setFormData(prev => ({ ...prev, instructions: e.target.value }))}
-                  placeholder="Enter any special instructions for verification"
-                  rows={4}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        );
-
-      case 9:
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Agent Assignment</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label>Assign to Agent</Label>
-                <Select
-                  value={formData.assignedAgent}
-                  onValueChange={(value) => setFormData(prev => ({ 
-                    ...prev, 
-                    assignedAgent: value 
-                  }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select an agent (optional)" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="no-assignment">No assignment (assign later)</SelectItem>
-                    {agents.length > 0 ? (
-                      agents.map((agent) => (
-                        <SelectItem key={agent.id} value={agent.id}>
-                          {agent.name} - {agent.district || 'No district'}
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem value="no-agents" disabled>No agents available</SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h3 className="font-medium mb-2">Review Summary</h3>
-                <div className="text-sm space-y-1">
-                  <p><strong>Customer:</strong> {formData.customerName || 'Not entered'}</p>
-                  <p><strong>Bank:</strong> {banks.find(b => b.id === formData.bankName)?.name || 'Not selected'}</p>
-                  <p><strong>Product:</strong> {formData.leadType || 'Not selected'}</p>
-                  <p><strong>Phone:</strong> {formData.phoneNumbers.filter(p => p.trim()).join(', ') || 'Not entered'}</p>
-                  {shouldShowVehicleFields() && formData.vehicleBrandName && (
-                    <p><strong>Vehicle:</strong> {formData.vehicleBrandName} {formData.vehicleModelName}</p>
-                  )}
-                  <p><strong>Verification Addresses:</strong> {getVerificationAddresses().length}</p>
-                  <p><strong>Assigned Agent:</strong> {
-                    formData.assignedAgent && formData.assignedAgent !== 'no-assignment'
-                      ? agents.find(a => a.id === formData.assignedAgent)?.name || 'Unknown'
-                      : 'Not assigned'
-                  }</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        );
-
       default:
         return null;
     }
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">
-          {editLead ? 'Edit Lead' : 'Add New Lead'}
-        </h1>
-        <Button variant="outline" onClick={onClose}>
-          Cancel
-        </Button>
-      </div>
-
-      {renderStepNavigation()}
-
-      <div className="mb-6">
-        {renderCurrentStep()}
-      </div>
-
-      <div className="flex justify-between">
-        <Button
-          variant="outline"
-          onClick={prevStep}
-          disabled={currentStep === 1}
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Previous
-        </Button>
-
-        <div className="flex gap-2">
-          {currentStep < STEPS.length ? (
-            <Button onClick={nextStep}>
-              Next
-              <ArrowRight className="h-4 w-4 ml-2" />
+    <div className="max-w-3xl mx-auto p-6 bg-white rounded shadow">
+      <h2 className="text-2xl font-bold mb-6">{editLead ? 'Edit Lead' : 'Add New Lead'}</h2>
+      <form onSubmit={(e) => { e.preventDefault(); if (step === 3) handleSubmit(); else nextStep(); }}>
+        {renderStepContent()}
+        <div className="flex justify-between mt-6">
+          {step > 1 ? (
+            <Button type="button" variant="outline" onClick={prevStep}>
+              Previous
             </Button>
           ) : (
-            <Button onClick={handleSubmit} className="bg-green-600 hover:bg-green-700">
-              {editLead ? 'Update Lead' : 'Create Lead'}
+            <div />
+          )}
+          {step < 3 ? (
+            <Button type="button" onClick={nextStep}>
+              Next
+            </Button>
+          ) : (
+            <Button type="submit">
+              {editLead ? 'Update Lead' : 'Add Lead'}
             </Button>
           )}
         </div>
-      </div>
+        <div className="mt-4">
+          <Button type="button" variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+        </div>
+      </form>
     </div>
   );
 };
