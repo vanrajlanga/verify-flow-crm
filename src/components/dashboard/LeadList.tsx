@@ -435,12 +435,7 @@ const LeadList = ({
                 leadId: values[0] || `imported-lead-${Date.now()}-${i}`,
                 status: 'Not Started',
                 agentId: '',
-                photos: values[41] ? values[41].replace(/"/g, '').split(';').filter(p => p).map((url, index) => ({
-                  id: `photo-${Date.now()}-${i}-${index}`,
-                  name: `imported-photo-${index + 1}.jpg`,
-                  url: url.trim(),
-                  uploadDate: new Date()
-                })) : [],
+                photos: [],
                 documents: [],
                 notes: values[40] || ''
               } : undefined
@@ -490,16 +485,6 @@ const LeadList = ({
   };
 
   const handleStartVerification = (lead: Lead) => {
-    const verification: Verification = {
-      id: `verification-${lead.id}`,
-      leadId: lead.id,
-      status: 'Not Started',
-      agentId: currentUser.id,
-      photos: [], // Empty Document array
-      documents: [], // Empty Document array 
-      notes: ''
-    };
-
     if (onEdit) {
       onEdit(lead);
     }

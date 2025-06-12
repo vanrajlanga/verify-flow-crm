@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import LoginForm from '@/components/auth/LoginForm';
@@ -12,14 +13,21 @@ const Index = () => {
     // Check if user is already logged in
     const storedUser = localStorage.getItem('kycUser');
     if (storedUser) {
-      const parsedUser = JSON.parse(storedUser);
-      setCurrentUser(parsedUser);
-      
-      // Redirect to appropriate dashboard
-      if (parsedUser.role === 'admin') {
-        navigate('/admin/dashboard');
-      } else {
-        navigate('/agent/dashboard');
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setCurrentUser(parsedUser);
+        
+        // Redirect to appropriate dashboard based on role
+        if (parsedUser.role === 'admin') {
+          navigate('/admin');
+        } else if (parsedUser.role === 'agent') {
+          navigate('/agent');
+        } else if (parsedUser.role === 'tvt') {
+          navigate('/tvt');
+        }
+      } catch (error) {
+        console.error('Error parsing stored user:', error);
+        localStorage.removeItem('kycUser');
       }
     }
 
@@ -28,8 +36,18 @@ const Index = () => {
   }, [navigate]);
 
   const handleLogin = (user: User) => {
+    console.log('Login successful for user:', user.name, 'Role:', user.role);
     setCurrentUser(user);
     localStorage.setItem('kycUser', JSON.stringify(user));
+    
+    // Redirect to appropriate dashboard based on role
+    if (user.role === 'admin') {
+      navigate('/admin');
+    } else if (user.role === 'agent') {
+      navigate('/agent');
+    } else if (user.role === 'tvt') {
+      navigate('/tvt');
+    }
   };
 
   return (
