@@ -13,9 +13,7 @@ import { Separator } from "@/components/ui/separator";
 import LeadReview from '@/components/dashboard/LeadReview';
 import VerificationProcess from '@/components/dashboard/VerificationProcess';
 import DocumentViewer from '@/components/shared/DocumentViewer';
-import FieldVerificationButton from '@/components/tvt/FieldVerificationButton';
 import { toast } from '@/components/ui/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { 
   Dialog,
   DialogContent,
@@ -61,7 +59,6 @@ const LeadDetail = () => {
   const [bank, setBank] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedDocument, setSelectedDocument] = useState<any>(null);
-  const [fieldVerifications, setFieldVerifications] = useState<{[key: string]: any}>({});
   
   useEffect(() => {
     // Check if user is logged in
@@ -123,11 +120,6 @@ const LeadDetail = () => {
             const bankData = await getBankById(foundLead.bank);
             setBank(bankData);
           }
-
-          // Load field verifications if user is TVT
-          if (parsedUser.role === 'tvt' && leadId) {
-            await loadFieldVerifications(leadId);
-          }
         }
         
         setLoading(false);
@@ -139,44 +131,6 @@ const LeadDetail = () => {
     
     fetchLeadData();
   }, [navigate, leadId]);
-
-  const loadFieldVerifications = async (leadId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('field_verifications')
-        .select('*')
-        .eq('lead_id', leadId);
-
-      if (error) {
-        console.error('Error loading field verifications:', error);
-        // Fallback to localStorage
-        const keys = Object.keys(localStorage).filter(key => key.startsWith(`verification_${leadId}_`));
-        const verifications: {[key: string]: any} = {};
-        keys.forEach(key => {
-          const fieldName = key.replace(`verification_${leadId}_`, '');
-          const data = JSON.parse(localStorage.getItem(key) || '{}');
-          verifications[fieldName] = data;
-        });
-        setFieldVerifications(verifications);
-        return;
-      }
-
-      if (data) {
-        const verifications: {[key: string]: any} = {};
-        data.forEach(item => {
-          verifications[item.field_name] = {
-            isVerified: item.is_verified,
-            verifiedBy: item.verified_by,
-            verifiedAt: item.verified_at,
-            notes: item.verification_notes
-          };
-        });
-        setFieldVerifications(verifications);
-      }
-    } catch (error) {
-      console.error('Error loading field verifications:', error);
-    }
-  };
 
   // Function to update lead data in localStorage
   const updateLeadInStorage = (updatedLead: any) => {
@@ -194,6 +148,34 @@ const LeadDetail = () => {
     }
     setLead({...updatedLead});
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!lead) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen p-6">
+        <div className="text-red-500 mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="15" y1="9" x2="9" y2="15"></line>
+            <line x1="9" y1="9" x2="15" y2="15"></line>
+          </svg>
+        </div>
+        <h1 className="text-2xl font-bold mb-2">Lead Not Found</h1>
+        <p className="text-muted-foreground mb-6">The lead you're looking for doesn't exist or has been removed.</p>
+        <Button onClick={() => navigate(-1)}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Go Back
+        </Button>
+      </div>
+    );
+  }
 
   // Handle verification actions for agents
   const handleStartVerification = () => {
@@ -356,7 +338,7 @@ const LeadDetail = () => {
   };
 
   // Convert documents to proper format for DocumentViewer
-  const formattedDocuments = lead?.documents?.map((doc: any) => {
+  const formattedDocuments = lead.documents?.map((doc: any) => {
     if (typeof doc === 'string') {
       return {
         id: `doc-${Math.random()}`,
@@ -371,71 +353,11 @@ const LeadDetail = () => {
   }) || [];
 
   const isAdmin = currentUser?.role === 'admin';
-  const isTVT = currentUser?.role === 'tvt';
 
   // Format addresses from additionalDetails if available
-  const additionalAddresses = lead?.additionalDetails?.addresses || [];
+  const additionalAddresses = lead.additionalDetails?.addresses || [];
   const homeAddress = additionalAddresses.find((a: any) => a?.type === 'Residence');
   const officeAddress = additionalAddresses.find((a: any) => a?.type === 'Office');
-
-  const renderFieldWithVerification = (label: string, value: string, fieldKey: string) => {
-    const verification = fieldVerifications[fieldKey];
-    
-    if (!isTVT) {
-      return (
-        <div>
-          <p className="text-sm text-muted-foreground">{label}</p>
-          <p className="font-medium">{value || 'Not provided'}</p>
-        </div>
-      );
-    }
-
-    return (
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-muted-foreground">{label}</p>
-          <p className="font-medium">{value || 'Not provided'}</p>
-        </div>
-        <FieldVerificationButton
-          leadId={lead.id}
-          fieldName={fieldKey}
-          fieldValue={value}
-          currentUserId={currentUser.id}
-          isVerified={verification?.isVerified || false}
-          verificationNotes={verification?.notes || ''}
-          onVerificationUpdate={() => loadFieldVerifications(lead.id)}
-        />
-      </div>
-    );
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  if (!lead) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen p-6">
-        <div className="text-red-500 mb-4">
-          <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="15" y1="9" x2="9" y2="15"></line>
-            <line x1="9" y1="9" x2="15" y2="15"></line>
-          </svg>
-        </div>
-        <h1 className="text-2xl font-bold mb-2">Lead Not Found</h1>
-        <p className="text-muted-foreground mb-6">The lead you're looking for doesn't exist or has been removed.</p>
-        <Button onClick={() => navigate(-1)}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Go Back
-        </Button>
-      </div>
-    );
-  }
 
   return (
     <div className="p-6 bg-muted/30 min-h-screen">
@@ -446,9 +368,7 @@ const LeadDetail = () => {
               <ArrowLeft className="h-4 w-4 mr-1" />
               Back
             </Button>
-            <h1 className="text-2xl font-bold">
-              {isTVT ? 'Televerification - ' : ''}Lead Details
-            </h1>
+            <h1 className="text-2xl font-bold">Lead Details</h1>
             {lead.status && (
               <div className="ml-4">
                 {getStatusBadge(lead.status)}
@@ -470,14 +390,20 @@ const LeadDetail = () => {
                   <div className="bg-primary/10 p-2 rounded-full">
                     <User className="h-5 w-5 text-primary" />
                   </div>
-                  {renderFieldWithVerification('Name', lead.name, 'customerName')}
+                  <div>
+                    <p className="text-sm text-muted-foreground">Name</p>
+                    <p className="font-medium">{lead.name}</p>
+                  </div>
                 </div>
                 
                 <div className="flex items-center space-x-3">
                   <div className="bg-primary/10 p-2 rounded-full">
                     <Phone className="h-5 w-5 text-primary" />
                   </div>
-                  {renderFieldWithVerification('Contact Number', lead.additionalDetails?.phoneNumber || "Not provided", 'phoneNumber')}
+                  <div>
+                    <p className="text-sm text-muted-foreground">Contact Number</p>
+                    <p className="font-medium">{lead.additionalDetails?.phoneNumber || "Not provided"}</p>
+                  </div>
                 </div>
 
                 {lead.additionalDetails?.email && (
@@ -485,7 +411,10 @@ const LeadDetail = () => {
                     <div className="bg-primary/10 p-2 rounded-full">
                       <User className="h-5 w-5 text-primary" />
                     </div>
-                    {renderFieldWithVerification('Email', lead.additionalDetails.email, 'email')}
+                    <div>
+                      <p className="text-sm text-muted-foreground">Email</p>
+                      <p className="font-medium">{lead.additionalDetails.email}</p>
+                    </div>
                   </div>
                 )}
 
@@ -497,19 +426,6 @@ const LeadDetail = () => {
                     <p className="text-sm text-muted-foreground">Primary Address</p>
                     <p className="font-medium">{lead.address?.street}</p>
                     <p className="text-sm">{lead.address?.city}, {lead.address?.state}</p>
-                    {isTVT && (
-                      <div className="mt-2">
-                        <FieldVerificationButton
-                          leadId={lead.id}
-                          fieldName="primaryAddress"
-                          fieldValue={`${lead.address?.street}, ${lead.address?.city}, ${lead.address?.state}`}
-                          currentUserId={currentUser.id}
-                          isVerified={fieldVerifications['primaryAddress']?.isVerified || false}
-                          verificationNotes={fieldVerifications['primaryAddress']?.notes || ''}
-                          onVerificationUpdate={() => loadFieldVerifications(lead.id)}
-                        />
-                      </div>
-                    )}
                   </div>
                 </div>
 
@@ -519,7 +435,10 @@ const LeadDetail = () => {
                   <div className="bg-primary/10 p-2 rounded-full">
                     <Building className="h-5 w-5 text-primary" />
                   </div>
-                  {renderFieldWithVerification('Bank', bank?.name || 'Not Assigned', 'bankName')}
+                  <div>
+                    <p className="text-sm text-muted-foreground">Bank</p>
+                    <p className="font-medium">{bank?.name || 'Not Assigned'}</p>
+                  </div>
                 </div>
 
                 <div className="flex items-center space-x-3">
@@ -644,7 +563,7 @@ const LeadDetail = () => {
             <Tabs defaultValue="details" className="w-full">
               <TabsList className="w-full justify-start">
                 <TabsTrigger value="details">Lead Details</TabsTrigger>
-                {!isTVT && <TabsTrigger value="verification">Verification</TabsTrigger>}
+                <TabsTrigger value="verification">Verification</TabsTrigger>
               </TabsList>
               
               <TabsContent value="details" className="pt-4 space-y-6">
@@ -657,26 +576,44 @@ const LeadDetail = () => {
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-4">
-                        {lead.additionalDetails?.leadType && 
-                          renderFieldWithVerification('Lead Type', lead.additionalDetails.leadType, 'leadType')
-                        }
-                        {lead.additionalDetails?.agencyFileNo && 
-                          renderFieldWithVerification('Agency File No.', lead.additionalDetails.agencyFileNo, 'agencyFileNo')
-                        }
-                        {lead.additionalDetails?.loanAmount && 
-                          renderFieldWithVerification('Loan Amount', `₹${Number(lead.additionalDetails.loanAmount).toLocaleString()}`, 'loanAmount')
-                        }
+                        {lead.additionalDetails?.leadType && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Lead Type</p>
+                            <p className="font-medium">{lead.additionalDetails.leadType}</p>
+                          </div>
+                        )}
+                        {lead.additionalDetails?.agencyFileNo && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Agency File No.</p>
+                            <p className="font-medium">{lead.additionalDetails.agencyFileNo}</p>
+                          </div>
+                        )}
+                        {lead.additionalDetails?.loanAmount && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Loan Amount</p>
+                            <p className="font-medium">₹{Number(lead.additionalDetails.loanAmount).toLocaleString()}</p>
+                          </div>
+                        )}
                       </div>
                       <div className="space-y-4">
-                        {lead.additionalDetails?.gender && 
-                          renderFieldWithVerification('Gender', lead.additionalDetails.gender, 'gender')
-                        }
-                        {lead.age && 
-                          renderFieldWithVerification('Age', `${lead.age} years`, 'age')
-                        }
-                        {lead.additionalDetails?.maritalStatus && 
-                          renderFieldWithVerification('Marital Status', lead.additionalDetails.maritalStatus, 'maritalStatus')
-                        }
+                        {lead.additionalDetails?.gender && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Gender</p>
+                            <p className="font-medium">{lead.additionalDetails.gender}</p>
+                          </div>
+                        )}
+                        {lead.age && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Age</p>
+                            <p className="font-medium">{lead.age} years</p>
+                          </div>
+                        )}
+                        {lead.additionalDetails?.maritalStatus && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Marital Status</p>
+                            <p className="font-medium">{lead.additionalDetails.maritalStatus}</p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </CardContent>
@@ -781,36 +718,41 @@ const LeadDetail = () => {
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-4">
-                        {renderFieldWithVerification('Job Title', lead.job || 'Not specified', 'jobTitle')}
-                        {renderFieldWithVerification('Company', lead.additionalDetails?.company || 'Not specified', 'companyName')}
-                        {renderFieldWithVerification('Designation', lead.additionalDetails?.designation || 'Not specified', 'designation')}
-                        {lead.additionalDetails?.employmentType && 
-                          renderFieldWithVerification('Employment Type', lead.additionalDetails.employmentType, 'employmentType')
-                        }
+                        <div>
+                          <p className="text-sm text-muted-foreground">Job Title</p>
+                          <p className="font-medium">{lead.job || 'Not specified'}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Company</p>
+                          <p className="font-medium">{lead.additionalDetails?.company || 'Not specified'}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Designation</p>
+                          <p className="font-medium">{lead.additionalDetails?.designation || 'Not specified'}</p>
+                        </div>
+                        {lead.additionalDetails?.employmentType && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Employment Type</p>
+                            <p className="font-medium">{lead.additionalDetails.employmentType}</p>
+                          </div>
+                        )}
                       </div>
                       <div className="space-y-4">
-                        {renderFieldWithVerification('Work Experience', lead.additionalDetails?.workExperience || 'Not specified', 'workExperience')}
-                        {lead.additionalDetails?.currentJobDuration && 
-                          renderFieldWithVerification('Current Job Duration', lead.additionalDetails.currentJobDuration, 'currentJobDuration')
-                        }
+                        <div>
+                          <p className="text-sm text-muted-foreground">Work Experience</p>
+                          <p className="font-medium">{lead.additionalDetails?.workExperience || 'Not specified'}</p>
+                        </div>
+                        {lead.additionalDetails?.currentJobDuration && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Current Job Duration</p>
+                            <p className="font-medium">{lead.additionalDetails.currentJobDuration}</p>
+                          </div>
+                        )}
                         {officeAddress && (
                           <div>
                             <p className="text-sm text-muted-foreground">Office Address</p>
                             <p className="font-medium">{officeAddress.street}</p>
                             <p className="text-sm">{officeAddress.city}, {officeAddress.state} - {officeAddress.pincode}</p>
-                            {isTVT && (
-                              <div className="mt-2">
-                                <FieldVerificationButton
-                                  leadId={lead.id}
-                                  fieldName="officeAddress"
-                                  fieldValue={`${officeAddress.street}, ${officeAddress.city}, ${officeAddress.state} - ${officeAddress.pincode}`}
-                                  currentUserId={currentUser.id}
-                                  isVerified={fieldVerifications['officeAddress']?.isVerified || false}
-                                  verificationNotes={fieldVerifications['officeAddress']?.notes || ''}
-                                  onVerificationUpdate={() => loadFieldVerifications(lead.id)}
-                                />
-                              </div>
-                            )}
                           </div>
                         )}
                       </div>
@@ -827,52 +769,45 @@ const LeadDetail = () => {
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-4">
-                        {renderFieldWithVerification(
-                          'Monthly Income', 
-                          lead.additionalDetails?.monthlyIncome ? `₹${Number(lead.additionalDetails.monthlyIncome).toLocaleString()}/month` : 'Not specified',
-                          'monthlyIncome'
-                        )}
-                        {renderFieldWithVerification(
-                          'Annual Income',
-                          lead.additionalDetails?.annualIncome ? `₹${Number(lead.additionalDetails.annualIncome).toLocaleString()}/year` : 'Not specified',
-                          'annualIncome'
+                        <div>
+                          <p className="text-sm text-muted-foreground">Monthly Income</p>
+                          <p className="font-medium">{lead.additionalDetails?.monthlyIncome ? `₹${Number(lead.additionalDetails.monthlyIncome).toLocaleString()}/month` : 'Not specified'}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Annual Income</p>
+                          <p className="font-medium">{lead.additionalDetails?.annualIncome ? `₹${Number(lead.additionalDetails.annualIncome).toLocaleString()}/year` : 'Not specified'}</p>
+                        </div>
+                        {lead.additionalDetails?.otherIncome && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Other Income</p>
+                            <p className="font-medium">{`₹${Number(lead.additionalDetails.otherIncome).toLocaleString()}`}</p>
+                          </div>
                         )}
                       </div>
                       <div className="space-y-4">
-                        {lead.additionalDetails?.otherIncome && 
-                          renderFieldWithVerification(
-                            'Other Income',
-                            `₹${Number(lead.additionalDetails.otherIncome).toLocaleString()}`,
-                            'otherIncome'
-                          )
-                        }
-                        {lead.additionalDetails?.propertyType && 
-                          renderFieldWithVerification('Property Type', lead.additionalDetails.propertyType, 'propertyType')
-                        }
-                        {lead.additionalDetails?.ownershipStatus && 
-                          renderFieldWithVerification('Ownership Status', lead.additionalDetails.ownershipStatus, 'ownershipStatus')
-                        }
-                        {lead.additionalDetails?.propertyAge && 
-                          renderFieldWithVerification('Property Age', `${lead.additionalDetails.propertyAge} years`, 'propertyAge')
-                        }
+                        {lead.additionalDetails?.propertyType && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Property Type</p>
+                            <p className="font-medium">{lead.additionalDetails.propertyType}</p>
+                          </div>
+                        )}
+                        {lead.additionalDetails?.ownershipStatus && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Ownership Status</p>
+                            <p className="font-medium">{lead.additionalDetails.ownershipStatus}</p>
+                          </div>
+                        )}
+                        {lead.additionalDetails?.propertyAge && (
+                          <div>
+                            <p className="text-sm text-muted-foreground">Property Age</p>
+                            <p className="font-medium">{lead.additionalDetails.propertyAge} years</p>
+                          </div>
+                        )}
                         {homeAddress && (
                           <div>
                             <p className="text-sm text-muted-foreground">Home Address</p>
                             <p className="font-medium">{homeAddress.street}</p>
                             <p className="text-sm">{homeAddress.city}, {homeAddress.state} - {homeAddress.pincode}</p>
-                            {isTVT && (
-                              <div className="mt-2">
-                                <FieldVerificationButton
-                                  leadId={lead.id}
-                                  fieldName="homeAddress"
-                                  fieldValue={`${homeAddress.street}, ${homeAddress.city}, ${homeAddress.state} - ${homeAddress.pincode}`}
-                                  currentUserId={currentUser.id}
-                                  isVerified={fieldVerifications['homeAddress']?.isVerified || false}
-                                  verificationNotes={fieldVerifications['homeAddress']?.notes || ''}
-                                  onVerificationUpdate={() => loadFieldVerifications(lead.id)}
-                                />
-                              </div>
-                            )}
                           </div>
                         )}
                       </div>
@@ -907,29 +842,27 @@ const LeadDetail = () => {
                 </Card>
               </TabsContent>
               
-              {!isTVT && (
-                <TabsContent value="verification" className="pt-4">
-                  {isAdmin ? (
-                    <LeadReview
-                      lead={lead}
-                      currentUser={currentUser}
-                      onApprove={handleApproveVerification}
-                      onReject={handleRejectVerification}
-                      onForwardToBank={handleForwardToBank}
-                    />
-                  ) : (
-                    <VerificationProcess
-                      lead={lead}
-                      onStartVerification={handleStartVerification}
-                      onMarkArrival={handleMarkArrival}
-                      onUploadPhoto={handleUploadPhoto}
-                      onUploadDocument={handleUploadDocument}
-                      onAddNotes={handleAddNotes}
-                      onCompleteVerification={handleCompleteVerification}
-                    />
-                  )}
-                </TabsContent>
-              )}
+              <TabsContent value="verification" className="pt-4">
+                {isAdmin ? (
+                  <LeadReview
+                    lead={lead}
+                    currentUser={currentUser}
+                    onApprove={handleApproveVerification}
+                    onReject={handleRejectVerification}
+                    onForwardToBank={handleForwardToBank}
+                  />
+                ) : (
+                  <VerificationProcess
+                    lead={lead}
+                    onStartVerification={handleStartVerification}
+                    onMarkArrival={handleMarkArrival}
+                    onUploadPhoto={handleUploadPhoto}
+                    onUploadDocument={handleUploadDocument}
+                    onAddNotes={handleAddNotes}
+                    onCompleteVerification={handleCompleteVerification}
+                  />
+                )}
+              </TabsContent>
             </Tabs>
           </div>
         </div>

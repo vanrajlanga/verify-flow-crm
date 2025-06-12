@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Lead, User, Verification } from '@/utils/mockData';
+import { Lead, User } from '@/utils/mockData';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -435,7 +435,12 @@ const LeadList = ({
                 leadId: values[0] || `imported-lead-${Date.now()}-${i}`,
                 status: 'Not Started',
                 agentId: '',
-                photos: [],
+                photos: values[41] ? values[41].replace(/"/g, '').split(';').filter(p => p).map((url, index) => ({
+                  id: `photo-${Date.now()}-${i}-${index}`,
+                  name: `imported-photo-${index + 1}.jpg`,
+                  url: url.trim(),
+                  uploadDate: new Date()
+                })) : [],
                 documents: [],
                 notes: values[40] || ''
               } : undefined
@@ -481,12 +486,6 @@ const LeadList = ({
       navigate(`/admin/leads/${leadId}`);
     } else {
       navigate(`/agent/leads/${leadId}`);
-    }
-  };
-
-  const handleStartVerification = (lead: Lead) => {
-    if (onEdit) {
-      onEdit(lead);
     }
   };
 

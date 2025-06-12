@@ -214,42 +214,6 @@ export type Database = {
           },
         ]
       }
-      field_verifications: {
-        Row: {
-          created_at: string | null
-          field_name: string
-          id: string
-          is_verified: boolean | null
-          lead_id: string
-          updated_at: string | null
-          verification_notes: string | null
-          verified_at: string | null
-          verified_by: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          field_name: string
-          id?: string
-          is_verified?: boolean | null
-          lead_id: string
-          updated_at?: string | null
-          verification_notes?: string | null
-          verified_at?: string | null
-          verified_by?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          field_name?: string
-          id?: string
-          is_verified?: boolean | null
-          lead_id?: string
-          updated_at?: string | null
-          verification_notes?: string | null
-          verified_at?: string | null
-          verified_by?: string | null
-        }
-        Relationships: []
-      }
       lead_addresses: {
         Row: {
           address_id: string | null
