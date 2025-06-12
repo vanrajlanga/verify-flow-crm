@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Lead } from '@/utils/mockData';
@@ -410,10 +409,13 @@ const AdminLeads = () => {
                 annualIncome: values[21] || '',
                 otherIncome: values[22] || '',
                 leadType: values[23] || '',
+                leadTypeId: values[23] ? `lt-${values[23].toLowerCase().replace(/\s+/g, '-')}` : '',
                 loanAmount: values[24] || '',
                 loanType: values[25] || '',
                 vehicleBrandName: values[26] || '',
+                vehicleBrandId: values[26] ? `vb-${values[26].toLowerCase().replace(/\s+/g, '-')}` : '',
                 vehicleModelName: values[27] || '',
+                vehicleModelId: values[27] ? `vm-${values[27].toLowerCase().replace(/\s+/g, '-')}` : '',
                 bankBranch: values[29] || '',
                 schemeDesc: values[36] || '',
                 additionalComments: values[38] || '',
