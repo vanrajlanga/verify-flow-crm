@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lead, User } from '@/utils/mockData';
@@ -486,6 +485,22 @@ const LeadList = ({
       navigate(`/admin/leads/${leadId}`);
     } else {
       navigate(`/agent/leads/${leadId}`);
+    }
+  };
+
+  const handleStartVerification = (lead: Lead) => {
+    const verification: Verification = {
+      id: `verification-${lead.id}`,
+      leadId: lead.id,
+      status: 'Not Started',
+      agentId: currentUser.id,
+      photos: [], // Empty Document array
+      documents: [], // Empty Document array 
+      notes: ''
+    };
+
+    if (onEdit) {
+      onEdit(lead);
     }
   };
 

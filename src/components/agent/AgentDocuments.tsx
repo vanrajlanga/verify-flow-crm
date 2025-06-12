@@ -6,19 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FileX, FileCheck, Image, User as UserIcon } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
-import { User } from '@/utils/mockData';
+import { User, Document } from '@/utils/mockData';
 
 interface AgentDocumentsProps {
   user: User;
   onUpdate: (updatedUser: User) => void;
-}
-
-interface Document {
-  id: string;
-  type: string;
-  filename: string;
-  url: string;
-  uploadDate: string;
 }
 
 const AgentDocuments = ({ user, onUpdate }: AgentDocumentsProps) => {
@@ -35,12 +27,13 @@ const AgentDocuments = ({ user, onUpdate }: AgentDocumentsProps) => {
     // For this mockup, we'll create a URL and simulate the upload
     const fakeUrl = URL.createObjectURL(file);
     
-    const newDocument = {
+    const newDocument: Document = {
       id: `doc-${Date.now()}`,
+      name: file.name,
       type: selectedDocType,
-      filename: file.name,
       url: fakeUrl,
-      uploadDate: new Date().toISOString()
+      uploadedBy: user.id,
+      uploadDate: new Date()
     };
     
     // Add document to user
@@ -226,7 +219,7 @@ const AgentDocuments = ({ user, onUpdate }: AgentDocumentsProps) => {
                       <FileCheck className="h-5 w-5 mr-2 text-green-600" />
                       <div>
                         <p className="font-medium">{doc.type}</p>
-                        <p className="text-sm text-muted-foreground">{doc.filename}</p>
+                        <p className="text-sm text-muted-foreground">{doc.name}</p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
