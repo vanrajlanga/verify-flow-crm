@@ -115,23 +115,6 @@ interface AddLeadFormMultiStepProps {
   editLead?: any;
 }
 
-interface PhoneNumber {
-  id: string;
-  number: string;
-  type: string;
-  isPrimary: boolean;
-}
-
-interface Address {
-  id: string;
-  type: 'Residence' | 'Office' | 'Permanent';
-  street: string;
-  city: string;
-  district: string;
-  state: string;
-  pincode: string;
-}
-
 const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
   banks,
   agents,
@@ -143,7 +126,15 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([]);
   const [homeAddresses, setHomeAddresses] = useState<Address[]>([
-    { type: 'Residence', street: '', city: '', district: '', state: '', pincode: '' }
+    { 
+      id: uuidv4(),
+      type: 'Residence', 
+      street: '', 
+      city: '', 
+      district: '', 
+      state: '', 
+      pincode: '' 
+    }
   ]);
   const [officeAddresses, setOfficeAddresses] = useState<Address[]>([]);
   const [selectedVehicleBrand, setSelectedVehicleBrand] = useState<string>('');
@@ -317,7 +308,15 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
     form.reset();
     setPhoneNumbers([]);
     setHomeAddresses([
-      { type: 'Residence', street: '', city: '', district: '', state: '', pincode: '' }
+      { 
+        id: uuidv4(),
+        type: 'Residence', 
+        street: '', 
+        city: '', 
+        district: '', 
+        state: '', 
+        pincode: '' 
+      }
     ]);
     setOfficeAddresses([]);
     setSelectedVehicleBrand('');
@@ -504,7 +503,7 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
                 />
                 <Select
                   value={phone.type}
-                  onValueChange={(value) => updatePhoneNumber(phone.id, 'type', value)}
+                  onValueChange={(value) => updatePhoneNumber(phone.id, 'type', value as 'mobile' | 'landline' | 'work')}
                 >
                   <SelectTrigger className="w-[120px]">
                     <SelectValue />
