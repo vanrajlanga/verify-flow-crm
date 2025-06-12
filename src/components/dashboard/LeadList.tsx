@@ -1,6 +1,7 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Lead, User } from '@/utils/mockData';
+import { Lead, User, Verification } from '@/utils/mockData';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
