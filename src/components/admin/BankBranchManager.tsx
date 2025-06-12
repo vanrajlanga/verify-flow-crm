@@ -27,19 +27,11 @@ const BankBranchManager = () => {
   const [newBranch, setNewBranch] = useState({ name: '', code: '', city: '', bankId: '', bankName: '' });
 
   useEffect(() => {
-    loadBanks();
-    loadBankBranches();
-  }, []);
-
-  const loadBanks = () => {
-    // Load banks from mockBanks (consistent IDs)
+    // Load banks first
     const storedBanks = localStorage.getItem('mockBanks');
     if (storedBanks) {
-      const parsedBanks = JSON.parse(storedBanks);
-      console.log('Loaded banks for BankBranchManager:', parsedBanks);
-      setBanks(parsedBanks);
+      setBanks(JSON.parse(storedBanks));
     } else {
-      // Initialize with default banks with consistent IDs
       const defaultBanks: Bank[] = [
         { id: '1', name: 'State Bank of India' },
         { id: '2', name: 'HDFC Bank' },
@@ -49,30 +41,23 @@ const BankBranchManager = () => {
       ];
       setBanks(defaultBanks);
       localStorage.setItem('mockBanks', JSON.stringify(defaultBanks));
-      console.log('Initialized default banks for branches:', defaultBanks);
     }
-  };
 
-  const loadBankBranches = () => {
+    // Load existing bank branches from localStorage
     const storedBranches = localStorage.getItem('bankBranches');
     if (storedBranches) {
-      const parsedBranches = JSON.parse(storedBranches);
-      console.log('Loaded existing bank branches:', parsedBranches);
-      setBankBranches(parsedBranches);
+      setBankBranches(JSON.parse(storedBranches));
     } else {
-      // Initialize with default branches using correct bank IDs
+      // Initialize with default branches
       const defaultBranches: BankBranch[] = [
         { id: 'branch-1', name: 'Main Branch', code: 'MB001', city: 'Mumbai', bankId: '1', bankName: 'State Bank of India' },
         { id: 'branch-2', name: 'Delhi Branch', code: 'DB001', city: 'Delhi', bankId: '1', bankName: 'State Bank of India' },
-        { id: 'branch-3', name: 'Bangalore Branch', code: 'BB001', city: 'Bangalore', bankId: '2', bankName: 'HDFC Bank' },
-        { id: 'branch-4', name: 'Chennai Branch', code: 'CB001', city: 'Chennai', bankId: '3', bankName: 'ICICI Bank' },
-        { id: 'branch-5', name: 'Pune Branch', code: 'PB001', city: 'Pune', bankId: '2', bankName: 'HDFC Bank' }
+        { id: 'branch-3', name: 'Bangalore Branch', code: 'BB001', city: 'Bangalore', bankId: '2', bankName: 'HDFC Bank' }
       ];
       setBankBranches(defaultBranches);
       localStorage.setItem('bankBranches', JSON.stringify(defaultBranches));
-      console.log('Initialized default bank branches:', defaultBranches);
     }
-  };
+  }, []);
 
   const addBankBranch = () => {
     if (!newBranch.name.trim() || !newBranch.code.trim() || !newBranch.city.trim() || !newBranch.bankId) {
@@ -103,7 +88,6 @@ const BankBranchManager = () => {
       bankName: selectedBank.name
     };
 
-    console.log('Adding new bank branch:', branch);
     const updatedBranches = [...bankBranches, branch];
     setBankBranches(updatedBranches);
     localStorage.setItem('bankBranches', JSON.stringify(updatedBranches));
@@ -128,7 +112,6 @@ const BankBranchManager = () => {
 
   const handleBankSelect = (bankId: string) => {
     const selectedBank = banks.find(bank => bank.id === bankId);
-    console.log('Selected bank for branch:', bankId, selectedBank);
     setNewBranch({
       ...newBranch,
       bankId,
@@ -194,11 +177,6 @@ const BankBranchManager = () => {
             </div>
           ))}
         </div>
-        {bankBranches.length === 0 && (
-          <div className="text-center text-muted-foreground py-4">
-            No bank branches found. Add a branch to get started.
-          </div>
-        )}
       </CardContent>
     </Card>
   );

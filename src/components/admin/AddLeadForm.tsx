@@ -154,7 +154,7 @@ const AddLeadForm: React.FC<AddLeadFormProps> = ({ agents: propAgents, banks: pr
 
   // Filter branches based on selected bank
   const availableBranches = bankBranches.filter(branch => 
-    formData.bank ? branch.bankName === formData.bank : true
+    formData.bank ? branch.bank === formData.bank : true
   );
 
   // Filter agents based on selected branches

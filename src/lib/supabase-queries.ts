@@ -13,7 +13,62 @@ export const loginUser = async (email: string, password: string) => {
   try {
     console.log('Attempting login for:', email);
     
-    // First check localStorage/mockData for immediate response
+    // First try to query the database
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', email)
+      .eq('password', password)
+      .single();
+
+    if (error) {
+      console.log('Database query error:', error);
+      
+      // If table doesn't exist or other error, fall back to mock data
+      console.log('Falling back to mock data');
+      const mockUser = mockUsers.find(u => u.email === email && u.password === password);
+      if (mockUser) {
+        console.log('Found user in mock data:', mockUser.name);
+        return mockUser;
+      }
+      
+      // Also check localStorage for additional users
+      const storedUsers = localStorage.getItem('mockUsers');
+      if (storedUsers) {
+        try {
+          const users = JSON.parse(storedUsers);
+          const localUser = users.find((u: any) => u.email === email && u.password === password);
+          if (localUser) {
+            console.log('Found user in localStorage:', localUser.name);
+            return localUser;
+          }
+        } catch (parseError) {
+          console.error('Error parsing stored users:', parseError);
+        }
+      }
+      
+      console.log('No user found with provided credentials');
+      return null;
+    }
+
+    if (user) {
+      console.log('Found user in database:', user.name);
+      return transformSupabaseUser(user);
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Login error:', error);
+    
+    // Fall back to mock data
+    console.log('Falling back to mock data due to error');
+    const mockUser = mockUsers.find(u => u.email === email && u.password === password);
+    if (mockUser) {
+      console.log('Found user in mock data:', mockUser.name);
+      return mockUser;
+    }
+    
+    // Also check localStorage
     const storedUsers = localStorage.getItem('mockUsers');
     if (storedUsers) {
       try {
@@ -28,40 +83,6 @@ export const loginUser = async (email: string, password: string) => {
       }
     }
     
-    // Check mock data
-    const mockUser = mockUsers.find(u => u.email === email && u.password === password);
-    if (mockUser) {
-      console.log('Found user in mock data:', mockUser.name);
-      return mockUser;
-    }
-    
-    // Then try database (with timeout to prevent freezing)
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Database timeout')), 5000)
-    );
-    
-    const dbPromise = supabase
-      .from('users')
-      .select('*')
-      .eq('email', email)
-      .eq('password', password)
-      .single();
-    
-    try {
-      const { data: user, error } = await Promise.race([dbPromise, timeoutPromise]) as any;
-      
-      if (!error && user) {
-        console.log('Found user in database:', user.name);
-        return transformSupabaseUser(user);
-      }
-    } catch (dbError) {
-      console.log('Database query failed or timed out:', dbError);
-    }
-    
-    console.log('No user found with provided credentials');
-    return null;
-  } catch (error) {
-    console.error('Login error:', error);
     return null;
   }
 };
@@ -79,57 +100,72 @@ export const saveUser = async (userData: any) => {
       created_at: userData.created_at || new Date().toISOString()
     };
     
-    // Always save to localStorage first for immediate availability
-    try {
-      const storedUsers = localStorage.getItem('mockUsers');
-      let users = [];
-      
-      if (storedUsers) {
-        users = JSON.parse(storedUsers);
-      }
-      
-      // Check if user already exists
-      const existingUserIndex = users.findIndex((u: any) => u.email === userData.email);
-      if (existingUserIndex !== -1) {
-        // Update existing user
-        users[existingUserIndex] = userToSave;
-      } else {
-        // Add new user
-        users.push(userToSave);
-      }
-      
-      localStorage.setItem('mockUsers', JSON.stringify(users));
-      console.log('User saved to localStorage successfully');
-    } catch (error) {
-      console.error('Error saving user to localStorage:', error);
+    // Try to save to database first
+    const { data, error } = await supabase
+      .from('users')
+      .insert(userToSave)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error saving user to database:', error);
+    } else {
+      console.log('User saved to database successfully');
+    }
+  } catch (error) {
+    console.error('Database save error:', error);
+  }
+
+  // Always save to localStorage as fallback
+  try {
+    const storedUsers = localStorage.getItem('mockUsers');
+    let users = [];
+    
+    if (storedUsers) {
+      users = JSON.parse(storedUsers);
     }
     
-    // Try to save to database in background (don't block)
-    setTimeout(async () => {
-      try {
-        const { data, error } = await supabase
-          .from('users')
-          .insert(userToSave)
-          .select()
-          .single();
-
-        if (error) {
-          console.error('Error saving user to database:', error);
-        } else {
-          console.log('User saved to database successfully');
-        }
-      } catch (error) {
-        console.error('Database save error:', error);
-      }
-    }, 0);
+    // Check if user already exists
+    const existingUserIndex = users.findIndex((u: any) => u.email === userData.email);
+    if (existingUserIndex !== -1) {
+      // Update existing user
+      users[existingUserIndex] = userData;
+    } else {
+      // Add new user
+      users.push(userData);
+    }
+    
+    localStorage.setItem('mockUsers', JSON.stringify(users));
+    console.log('User saved to localStorage successfully');
   } catch (error) {
-    console.error('Error in saveUser:', error);
+    console.error('Error saving user to localStorage:', error);
   }
 };
 
 export const getUserById = async (id: string) => {
   try {
-    // Check localStorage first for speed
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error && error.code !== '42P01') {
+      console.error('Get user error:', error);
+      return null;
+    }
+
+    if (user) {
+      return transformSupabaseUser(user);
+    }
+
+    // Fall back to mock data
+    const mockUser = mockUsers.find(u => u.id === id);
+    if (mockUser) {
+      return mockUser;
+    }
+
+    // Check localStorage
     const storedUsers = localStorage.getItem('mockUsers');
     if (storedUsers) {
       try {
@@ -143,36 +179,30 @@ export const getUserById = async (id: string) => {
       }
     }
 
-    // Check mock data
+    return null;
+  } catch (error) {
+    console.error('Get user error:', error);
+    
+    // Fall back to mock data
     const mockUser = mockUsers.find(u => u.id === id);
     if (mockUser) {
       return mockUser;
     }
 
-    // Try database with timeout
-    try {
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Database timeout')), 3000)
-      );
-      
-      const dbPromise = supabase
-        .from('users')
-        .select('*')
-        .eq('id', id)
-        .single();
-        
-      const { data: user, error } = await Promise.race([dbPromise, timeoutPromise]) as any;
-
-      if (!error && user) {
-        return transformSupabaseUser(user);
+    // Check localStorage
+    const storedUsers = localStorage.getItem('mockUsers');
+    if (storedUsers) {
+      try {
+        const users = JSON.parse(storedUsers);
+        const localUser = users.find((u: any) => u.id === id);
+        if (localUser) {
+          return localUser;
+        }
+      } catch (parseError) {
+        console.error('Error parsing stored users:', parseError);
       }
-    } catch (dbError) {
-      console.log('Database query failed or timed out:', dbError);
     }
 
-    return null;
-  } catch (error) {
-    console.error('Get user error:', error);
     return null;
   }
 };
