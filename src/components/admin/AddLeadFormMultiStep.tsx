@@ -350,6 +350,24 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData,
     }
   };
 
+  const handlePhoneChange = (id: string, value: string) => {
+    // Only allow numbers and limit to 10 digits
+    const numericValue = value.replace(/\D/g, '').slice(0, 10);
+    updatePhoneNumber(id, 'number', numericValue);
+  };
+
+  const handlePincodeChange = (id: string, value: string) => {
+    // Only allow numbers and limit to 6 digits
+    const numericValue = value.replace(/\D/g, '').slice(0, 6);
+    updateHomeAddress(id, 'pincode', numericValue);
+  };
+
+  const handleWorkPincodeChange = (value: string) => {
+    // Only allow numbers and limit to 6 digits
+    const numericValue = value.replace(/\D/g, '').slice(0, 6);
+    handleInputChange('workPincode', numericValue);
+  };
+
   const addPhoneNumber = () => {
     const newPhone: PhoneNumber = {
       id: uuidv4(),
