@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   name: string;
@@ -305,11 +304,11 @@ export const mockUsers: User[] = [
 ];
 
 export const mockBanks: Bank[] = [
-  { id: 'hdfc', name: 'HDFC Bank', totalApplications: 45 },
-  { id: 'icici', name: 'ICICI Bank', totalApplications: 32 },
-  { id: 'sbi', name: 'State Bank of India', totalApplications: 28 },
-  { id: 'axis', name: 'Axis Bank', totalApplications: 19 },
-  { id: 'kotak', name: 'Kotak Mahindra Bank', totalApplications: 15 }
+  { id: 'hdfc', name: 'HDFC Bank', totalApplications: 45, branches: [] },
+  { id: 'icici', name: 'ICICI Bank', totalApplications: 32, branches: [] },
+  { id: 'sbi', name: 'State Bank of India', totalApplications: 28, branches: [] },
+  { id: 'axis', name: 'Axis Bank', totalApplications: 19, branches: [] },
+  { id: 'kotak', name: 'Kotak Mahindra Bank', totalApplications: 15, branches: [] }
 ];
 
 export const banks = mockBanks;

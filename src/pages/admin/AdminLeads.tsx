@@ -39,6 +39,51 @@ interface LocationData {
   }[];
 }
 
+interface Address {
+  id: string;
+  type: 'Residence' | 'Office';
+  street: string;
+  city: string;
+  district: string;
+  state: string;
+  pincode: string;
+}
+
+interface AdditionalDetails {
+  agencyFileNo: string;
+  phoneNumber: string;
+  company: string;
+  designation: string;
+  workExperience: string;
+  propertyType: string;
+  ownershipStatus: string;
+  propertyAge: string;
+  monthlyIncome: string;
+  annualIncome: string;
+  otherIncome: string;
+  email: string;
+  dateOfBirth: string;
+  gender: string;
+  maritalStatus: string;
+  fatherName: string;
+  motherName: string;
+  spouseName: string;
+  applicationBarcode: string;
+  caseId: string;
+  schemeDesc: string;
+  bankBranch: string;
+  additionalComments: string;
+  leadType: string;
+  leadTypeId: string;
+  loanAmount: string;
+  loanType: string;
+  vehicleBrandName: string;
+  vehicleBrandId: string;
+  vehicleModelName: string;
+  vehicleModelId: string;
+  addresses: [];
+}
+
 const AdminLeads = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -655,44 +700,90 @@ const AdminLeads = () => {
         .map((line, index) => {
           const values = line.split(',').map(v => v.replace(/"/g, '').trim());
           
+          const searchCriteria: SearchCriteria = {
+            name: values[0] || '',
+            age: parseInt(values[1]) || 0,
+            job: values[2] || '',
+            phoneNumber: values[3] || '',
+            email: values[4] || '',
+            address: values[5] || '',
+            city: values[6] || '',
+            district: values[7] || '',
+            state: values[8] || '',
+            pincode: values[9] || '',
+            agencyFileNo: values[10] || '',
+            dateOfBirth: values[11] || '',
+            gender: values[12] || '',
+            maritalStatus: values[13] || '',
+            fatherName: values[14] || '',
+            motherName: values[15] || '',
+            spouseName: values[16] || '',
+            applicationBarcode: values[17] || '',
+            caseId: values[18] || '',
+            schemeDesc: values[19] || '',
+            bankBranch: values[20] || '',
+            leadType: values[21] || '',
+            loanAmount: values[22] || '',
+            loanType: values[23] || '',
+            vehicleBrandName: values[24] || '',
+            vehicleBrandId: values[25] || '',
+            vehicleModelName: values[26] || '',
+            vehicleModelId: values[27] || '',
+            additionalComments: values[28] || ''
+          };
+
+          const address: Address = {
+            id: `addr-${Date.now()}`, // Add missing id
+            type: 'Residence', // Add missing type
+            street: searchCriteria.address || '',
+            city: searchCriteria.city || '',
+            district: searchCriteria.district || '',
+            state: searchCriteria.state || '',
+            pincode: searchCriteria.pincode || ''
+          };
+
+          const additionalDetails: AdditionalDetails = {
+            agencyFileNo: searchCriteria.agencyFileNo || '',
+            phoneNumber: searchCriteria.phoneNumber || '',
+            company: '',
+            designation: '',
+            workExperience: '',
+            propertyType: '',
+            ownershipStatus: '',
+            propertyAge: '',
+            monthlyIncome: '',
+            annualIncome: '',
+            otherIncome: '',
+            email: '', // Add missing email
+            dateOfBirth: '', // Add missing dateOfBirth
+            gender: 'Male', // Add missing gender
+            maritalStatus: 'Single', // Add missing maritalStatus
+            fatherName: '', // Add missing fatherName
+            motherName: '', // Add missing motherName
+            spouseName: '', // Add missing spouseName
+            applicationBarcode: '', // Add missing applicationBarcode
+            caseId: '', // Add missing caseId
+            schemeDesc: '', // Add missing schemeDesc
+            bankBranch: '', // Add missing bankBranch
+            additionalComments: '', // Add missing additionalComments
+            leadType: '', // Add missing leadType
+            leadTypeId: '', // Add missing leadTypeId
+            loanAmount: '', // Add missing loanAmount
+            loanType: '', // Add missing loanType
+            vehicleBrandName: '', // Add missing vehicleBrandName
+            vehicleBrandId: '', // Add missing vehicleBrandId
+            vehicleModelName: '', // Add missing vehicleModelName
+            vehicleModelId: '', // Add missing vehicleModelId
+            addresses: []
+          };
+
           return {
             id: `imported-lead-${Date.now()}-${index}`,
             name: values[0] || '',
             age: parseInt(values[1]) || 0,
             job: values[2] || '',
-            address: {
-              type: 'Residence' as const,
-              street: values[5] || '',
-              city: values[6] || '',
-              district: values[7] || '',
-              state: values[8] || '',
-              pincode: values[9] || ''
-            },
-            additionalDetails: {
-              phoneNumber: values[3] || '',
-              email: values[4] || '',
-              company: values[14] || '',
-              designation: values[15] || '',
-              workExperience: values[16] || '',
-              propertyType: values[17] || '',
-              ownershipStatus: values[18] || '',
-              propertyAge: values[19] || '',
-              monthlyIncome: values[20] || '',
-              annualIncome: values[21] || '',
-              otherIncome: values[22] || '',
-              agencyFileNo: values[23] || '',
-              applicationBarcode: values[24] || '',
-              caseId: values[25] || '',
-              schemeDesc: values[26] || '',
-              bankBranch: values[27] || '',
-              leadType: values[28] || '',
-              loanAmount: values[29] || '',
-              loanType: values[30] || '',
-              vehicleBrandName: values[31] || '',
-              vehicleModelName: values[32] || '',
-              additionalComments: values[33] || '',
-              addresses: []
-            },
+            address: address,
+            additionalDetails: additionalDetails,
             status: (values[12] as 'Pending' | 'In Progress' | 'Completed' | 'Rejected') || 'Pending',
             bank: values[10] || '',
             visitType: (values[11] as 'Office' | 'Residence' | 'Both') || 'Residence',
