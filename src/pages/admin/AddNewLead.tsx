@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { User, mockBanks } from '@/utils/mockData';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
 import AddLeadFormMultiStep from '@/components/admin/AddLeadFormMultiStep';
 import { toast } from '@/components/ui/use-toast';
 import { saveLeadToDatabase } from '@/lib/lead-operations';
-import { getUserById } from '@/lib/supabase-queries';
+import { getLeadById } from '@/lib/supabase-queries';
 import { supabase } from '@/integrations/supabase/client';
 
 interface LocationData {
@@ -31,7 +31,10 @@ const AddNewLead = () => {
   const [locationData, setLocationData] = useState<LocationData>({
     states: []
   });
+  const [editLead, setEditLead] = useState(null);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { leadId } = useParams();
 
   useEffect(() => {
     // Check if user is logged in
@@ -50,7 +53,48 @@ const AddNewLead = () => {
     setCurrentUser(parsedUser);
     loadAgents();
     loadLocationData();
-  }, [navigate]);
+
+    // If leadId exists, load the lead for editing
+    if (leadId) {
+      loadLeadForEdit(leadId);
+    }
+  }, [navigate, leadId]);
+
+  const loadLeadForEdit = async (id: string) => {
+    setLoading(true);
+    try {
+      const lead = await getLeadById(id);
+      if (lead) {
+        setEditLead(lead);
+      } else {
+        // Try localStorage as fallback
+        const storedLeads = localStorage.getItem('mockLeads');
+        if (storedLeads) {
+          const leads = JSON.parse(storedLeads);
+          const foundLead = leads.find((l: any) => l.id === id);
+          if (foundLead) {
+            setEditLead(foundLead);
+          } else {
+            toast({
+              title: "Lead not found",
+              description: "The lead you're trying to edit was not found.",
+              variant: "destructive"
+            });
+            navigate('/admin/leads');
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error loading lead:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load lead for editing.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadAgents = async () => {
     try {
@@ -163,14 +207,14 @@ const AddNewLead = () => {
 
   const handleAddLead = async (newLead: any) => {
     try {
-      console.log('Adding new lead:', newLead);
+      console.log('Saving lead:', newLead);
       
       // Save to database
       await saveLeadToDatabase(newLead);
 
       toast({
-        title: "Lead added",
-        description: `New lead ${newLead.name} has been created successfully and saved to database.`,
+        title: editLead ? "Lead updated" : "Lead added",
+        description: `Lead ${newLead.name} has been ${editLead ? 'updated' : 'created'} successfully and saved to database.`,
       });
 
       // Navigate back to leads list
@@ -190,12 +234,21 @@ const AddNewLead = () => {
         }
       }
 
-      const updatedLeads = [...currentLeads, newLead];
-      localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+      if (editLead) {
+        // Update existing lead
+        const updatedLeads = currentLeads.map((lead: any) => 
+          lead.id === newLead.id ? newLead : lead
+        );
+        localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+      } else {
+        // Add new lead
+        const updatedLeads = [...currentLeads, newLead];
+        localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+      }
 
       toast({
-        title: "Lead added",
-        description: `New lead ${newLead.name} has been created successfully (saved locally).`,
+        title: editLead ? "Lead updated" : "Lead added",
+        description: `Lead ${newLead.name} has been ${editLead ? 'updated' : 'created'} successfully (saved locally).`,
         variant: "destructive"
       });
 
@@ -209,6 +262,10 @@ const AddNewLead = () => {
 
   if (!currentUser) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
+  }
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-screen">Loading lead data...</div>;
   }
 
   return (
@@ -230,6 +287,7 @@ const AddNewLead = () => {
               onAddLead={handleAddLead}
               onClose={handleClose}
               locationData={locationData}
+              editLead={editLead}
             />
           </div>
         </main>

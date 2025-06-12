@@ -92,10 +92,18 @@ export const saveUser = async (userData: any) => {
   try {
     console.log('Saving user:', userData);
     
+    // Ensure user has required fields and proper ID
+    const userToSave = {
+      ...userData,
+      id: userData.id || `user-${Date.now()}`,
+      status: userData.status || 'active',
+      created_at: userData.created_at || new Date().toISOString()
+    };
+    
     // Try to save to database first
     const { data, error } = await supabase
       .from('users')
-      .insert(userData)
+      .insert(userToSave)
       .select()
       .single();
 

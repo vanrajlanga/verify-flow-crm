@@ -45,6 +45,12 @@ interface LocationData {
   }[];
 }
 
+interface PhoneNumber {
+  id: string;
+  number: string;
+  type: string;
+}
+
 interface CoApplicant {
   id: string;
   name: string;
@@ -75,9 +81,22 @@ interface AddLeadFormMultiStepProps {
   onAddLead: (lead: Lead) => void;
   onClose: () => void;
   locationData: LocationData;
+  editLead?: Lead;
 }
 
-const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData }: AddLeadFormMultiStepProps) => {
+const stepTitles = [
+  "Lead Type & Basic Info",
+  "Personal Information", 
+  "Job Details",
+  "Property & Income",
+  "Home Addresses",
+  "Work & Office Address",
+  "Document Upload",
+  "Verification Options",
+  "Agent Assignment"
+];
+
+const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData, editLead }: AddLeadFormMultiStepProps) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [products, setProducts] = useState<Product[]>([]);
   const [bankBranches, setBankBranches] = useState<BankBranch[]>([]);
@@ -87,22 +106,24 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
   
   const [formData, setFormData] = useState({
     // Step 1: Lead Type & Basic Info
-    bankName: '',
-    leadType: '',
-    leadTypeId: '',
-    initiatedUnderBranch: '',
+    bankName: editLead?.bank || '',
+    leadType: editLead?.additionalDetails?.leadType || '',
+    leadTypeId: editLead?.additionalDetails?.leadTypeId || '',
+    initiatedUnderBranch: editLead?.additionalDetails?.bankBranch || '',
     buildUnderBranch: '',
-    agencyFileNo: '',
-    applicationBarcode: '',
-    caseId: '',
-    schemeDescription: '',
-    loanAmount: '',
+    agencyFileNo: editLead?.additionalDetails?.agencyFileNo || `AGN-${Date.now()}`,
+    applicationBarcode: editLead?.additionalDetails?.applicationBarcode || '',
+    caseId: editLead?.additionalDetails?.caseId || '',
+    schemeDescription: editLead?.additionalDetails?.schemeDesc || '',
+    loanAmount: editLead?.additionalDetails?.loanAmount || '',
     
     // Step 2: Personal Information
-    customerName: '',
-    phoneNumber: '',
-    email: '',
-    age: '',
+    customerName: editLead?.name || '',
+    phoneNumbers: editLead?.additionalDetails?.phoneNumber ? 
+      [{ id: uuidv4(), number: editLead.additionalDetails.phoneNumber, type: 'Primary' }] : 
+      [{ id: uuidv4(), number: '', type: 'Primary' }] as PhoneNumber[],
+    email: editLead?.additionalDetails?.email || '',
+    age: editLead?.age?.toString() || '',
     gender: '',
     fatherName: '',
     motherName: '',
@@ -110,22 +131,30 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
     coApplicants: [] as CoApplicant[],
     
     // Step 3: Job Details
-    companyName: '',
-    designation: '',
-    workExperience: '',
+    companyName: editLead?.additionalDetails?.company || '',
+    designation: editLead?.additionalDetails?.designation || '',
+    workExperience: editLead?.additionalDetails?.workExperience || '',
     employmentType: '',
     currentJobDuration: '',
     
     // Step 4: Property & Income
-    propertyType: '',
-    ownershipStatus: '',
-    propertyAge: '',
-    monthlyIncome: '',
-    annualIncome: '',
-    otherIncome: '',
+    propertyType: editLead?.additionalDetails?.propertyType || '',
+    ownershipStatus: editLead?.additionalDetails?.ownershipStatus || '',
+    propertyAge: editLead?.additionalDetails?.propertyAge || '',
+    monthlyIncome: editLead?.additionalDetails?.monthlyIncome || '',
+    annualIncome: editLead?.additionalDetails?.annualIncome || '',
+    otherIncome: editLead?.additionalDetails?.otherIncome || '',
     
     // Step 5: Home Addresses
-    homeAddresses: [] as HomeAddress[],
+    homeAddresses: editLead?.additionalDetails?.addresses?.map(addr => ({
+      id: uuidv4(),
+      state: addr.state,
+      district: addr.district,
+      city: addr.city,
+      street: addr.street,
+      pincode: addr.pincode,
+      requireVerification: true
+    })) || [] as HomeAddress[],
     
     // Step 6: Work & Office Address
     workState: '',
@@ -138,13 +167,24 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
     documents: [] as DocumentUpload[],
     
     // Step 8: Verification Options
-    visitType: 'Residence',
-    verificationDate: undefined as Date | undefined,
-    specialInstructions: '',
+    visitType: (editLead?.visitType as 'Residence' | 'Office' | 'Both') || 'Residence',
+    verificationDate: editLead?.verificationDate ? new Date(editLead.verificationDate) : undefined as Date | undefined,
+    specialInstructions: editLead?.instructions || '',
+    selectedAddressesForVerification: [] as string[],
     
     // Step 9: Agent Assignment
-    assignedTo: ''
+    assignedTo: editLead?.assignedTo || ''
   });
+
+  // Auto-generate Agency File No on component mount if not editing
+  useEffect(() => {
+    if (!editLead) {
+      setFormData(prev => ({
+        ...prev,
+        agencyFileNo: `AGN-${Date.now()}`
+      }));
+    }
+  }, [editLead]);
 
   useEffect(() => {
     const storedProducts = localStorage.getItem('products');
@@ -230,6 +270,34 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
         }));
       }
     }
+  };
+
+  const addPhoneNumber = () => {
+    const newPhone: PhoneNumber = {
+      id: uuidv4(),
+      number: '',
+      type: 'Secondary'
+    };
+    setFormData(prev => ({
+      ...prev,
+      phoneNumbers: [...prev.phoneNumbers, newPhone]
+    }));
+  };
+
+  const removePhoneNumber = (id: string) => {
+    setFormData(prev => ({
+      ...prev,
+      phoneNumbers: prev.phoneNumbers.filter(phone => phone.id !== id)
+    }));
+  };
+
+  const updatePhoneNumber = (id: string, field: keyof PhoneNumber, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      phoneNumbers: prev.phoneNumbers.map(phone => 
+        phone.id === id ? { ...phone, [field]: value } : phone
+      )
+    }));
   };
 
   const addCoApplicant = () => {
@@ -327,7 +395,7 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
       case 1:
         return formData.agencyFileNo.trim() !== '';
       case 2:
-        return formData.customerName.trim() !== '' && formData.phoneNumber.trim() !== '';
+        return formData.customerName.trim() !== '' && formData.phoneNumbers.some(p => p.number.trim() !== '');
       case 9:
         return formData.assignedTo.trim() !== '';
       default:
@@ -345,11 +413,17 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
     setCurrentStep(prev => Math.max(prev - 1, 1));
   };
 
+  const handleStepClick = (step: number) => {
+    setCurrentStep(step);
+  };
+
   const handleSubmit = () => {
     if (!validateStep(currentStep)) return;
 
+    const primaryPhone = formData.phoneNumbers.find(p => p.type === 'Primary')?.number || formData.phoneNumbers[0]?.number || '';
+
     const newLead: Lead = {
-      id: uuidv4(),
+      id: editLead ? editLead.id : uuidv4(),
       name: formData.customerName,
       age: parseInt(formData.age) || 0,
       job: formData.designation,
@@ -370,7 +444,7 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
         monthlyIncome: formData.monthlyIncome,
         annualIncome: formData.annualIncome,
         otherIncome: formData.otherIncome,
-        phoneNumber: formData.phoneNumber,
+        phoneNumber: primaryPhone,
         email: formData.email,
         agencyFileNo: formData.agencyFileNo,
         applicationBarcode: formData.applicationBarcode,
@@ -390,11 +464,11 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
           pincode: addr.pincode
         }))
       },
-      status: 'Pending',
+      status: editLead?.status || 'Pending',
       bank: formData.bankName,
       visitType: formData.visitType as 'Residence' | 'Office' | 'Both',
       assignedTo: formData.assignedTo,
-      createdAt: new Date(),
+      createdAt: editLead?.createdAt || new Date(),
       verificationDate: formData.verificationDate,
       documents: [],
       instructions: formData.specialInstructions
@@ -408,8 +482,6 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
       case 1:
         return (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Lead Type & Basic Info</h3>
-            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-2">Bank Name</label>
@@ -512,7 +584,8 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
                 <Input
                   value={formData.agencyFileNo}
                   onChange={(e) => handleInputChange('agencyFileNo', e.target.value)}
-                  placeholder="Enter agency file number"
+                  placeholder="Auto-generated"
+                  disabled
                 />
               </div>
               <div>
@@ -560,9 +633,6 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
       case 2:
         return (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Personal Information</h3>
-            <p className="text-sm text-muted-foreground">Enter customer personal details</p>
-            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-2">Customer Name *</label>
@@ -573,17 +643,6 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">Phone Number *</label>
-                <Input
-                  value={formData.phoneNumber}
-                  onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-                  placeholder="Enter phone number"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
                 <label className="block text-sm font-medium mb-2">Email</label>
                 <Input
                   type="email"
@@ -592,6 +651,65 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
                   placeholder="Enter email"
                 />
               </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h4 className="text-md font-medium">Phone Numbers *</h4>
+                <Button type="button" onClick={addPhoneNumber} size="sm">
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Phone Number
+                </Button>
+              </div>
+
+              {formData.phoneNumbers.map((phone, index) => (
+                <Card key={phone.id} className="p-4">
+                  <div className="flex justify-between items-start mb-4">
+                    <h5 className="font-medium">Phone {index + 1}</h5>
+                    {formData.phoneNumbers.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removePhoneNumber(phone.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Phone Number</label>
+                      <Input
+                        value={phone.number}
+                        onChange={(e) => updatePhoneNumber(phone.id, 'number', e.target.value)}
+                        placeholder="Enter phone number"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Type</label>
+                      <Select 
+                        value={phone.type} 
+                        onValueChange={(value) => updatePhoneNumber(phone.id, 'type', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Primary">Primary</SelectItem>
+                          <SelectItem value="Secondary">Secondary</SelectItem>
+                          <SelectItem value="Work">Work</SelectItem>
+                          <SelectItem value="Emergency">Emergency</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-2">Age</label>
                 <Input
@@ -601,9 +719,6 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
                   placeholder="Enter age"
                 />
               </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-2">Gender</label>
                 <Select value={formData.gender} onValueChange={(value) => handleInputChange('gender', value)}>
@@ -614,20 +729,6 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
                     <SelectItem value="Male">Male</SelectItem>
                     <SelectItem value="Female">Female</SelectItem>
                     <SelectItem value="Other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Marital Status</label>
-                <Select value={formData.maritalStatus} onValueChange={(value) => handleInputChange('maritalStatus', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select marital status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Single">Single</SelectItem>
-                    <SelectItem value="Married">Married</SelectItem>
-                    <SelectItem value="Divorced">Divorced</SelectItem>
-                    <SelectItem value="Widowed">Widowed</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -650,6 +751,21 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
                   placeholder="Enter mother's name"
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Marital Status</label>
+              <Select value={formData.maritalStatus} onValueChange={(value) => handleInputChange('maritalStatus', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select marital status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Single">Single</SelectItem>
+                  <SelectItem value="Married">Married</SelectItem>
+                  <SelectItem value="Divorced">Divorced</SelectItem>
+                  <SelectItem value="Widowed">Widowed</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-4">
@@ -732,9 +848,6 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
       case 3:
         return (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Job Details</h3>
-            <p className="text-sm text-muted-foreground">Enter employment and job details</p>
-            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-2">Company Name</label>
@@ -793,9 +906,6 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
       case 4:
         return (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Property & Income</h3>
-            <p className="text-sm text-muted-foreground">Enter property and income information</p>
-            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-2">Property Type</label>
@@ -870,9 +980,6 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
       case 5:
         return (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Home Addresses</h3>
-            <p className="text-sm text-muted-foreground">Enter home address details (you can add multiple addresses)</p>
-            
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <h4 className="text-md font-medium">Home Addresses</h4>
@@ -923,11 +1030,10 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
                           <SelectValue placeholder="Select district" />
                         </SelectTrigger>
                         <SelectContent>
-                          {locationData.states.map(state => 
-                            state.districts.map(district => (
+                          {locationData.states
+                            .find(state => state.name === address.state)?.districts.map(district => (
                               <SelectItem key={district.id} value={district.name}>{district.name}</SelectItem>
-                            ))
-                          )}
+                            )) || []}
                         </SelectContent>
                       </Select>
                     </div>
@@ -941,13 +1047,11 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
                           <SelectValue placeholder="Select city" />
                         </SelectTrigger>
                         <SelectContent>
-                          {locationData.states.map(state => 
-                            state.districts.map(district => 
-                              district.cities.map(city => (
-                                <SelectItem key={city.id} value={city.name}>{city.name}</SelectItem>
-                              ))
-                            )
-                          )}
+                          {locationData.states
+                            .find(state => state.name === address.state)?.districts
+                            .find(district => district.name === address.district)?.cities.map(city => (
+                              <SelectItem key={city.id} value={city.name}>{city.name}</SelectItem>
+                            )) || []}
                         </SelectContent>
                       </Select>
                     </div>
@@ -992,9 +1096,6 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
       case 6:
         return (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Work & Office Address</h3>
-            <p className="text-sm text-muted-foreground">Enter work and office address</p>
-            
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-2">State</label>
@@ -1016,11 +1117,10 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
                     <SelectValue placeholder="Select district" />
                   </SelectTrigger>
                   <SelectContent>
-                    {locationData.states.map(state => 
-                      state.districts.map(district => (
+                    {locationData.states
+                      .find(state => state.name === formData.workState)?.districts.map(district => (
                         <SelectItem key={district.id} value={district.name}>{district.name}</SelectItem>
-                      ))
-                    )}
+                      )) || []}
                   </SelectContent>
                 </Select>
               </div>
@@ -1031,13 +1131,11 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
                     <SelectValue placeholder="Select city" />
                   </SelectTrigger>
                   <SelectContent>
-                    {locationData.states.map(state => 
-                      state.districts.map(district => 
-                        district.cities.map(city => (
-                          <SelectItem key={city.id} value={city.name}>{city.name}</SelectItem>
-                        ))
-                      )
-                    )}
+                    {locationData.states
+                      .find(state => state.name === formData.workState)?.districts
+                      .find(district => district.name === formData.workDistrict)?.cities.map(city => (
+                        <SelectItem key={city.id} value={city.name}>{city.name}</SelectItem>
+                      )) || []}
                   </SelectContent>
                 </Select>
               </div>
@@ -1068,9 +1166,6 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
       case 7:
         return (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Document Upload</h3>
-            <p className="text-sm text-muted-foreground">Upload required documents</p>
-            
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -1140,11 +1235,10 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
         );
 
       case 8:
+        const addressesForVerification = formData.homeAddresses.filter(addr => addr.requireVerification);
+        
         return (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Verification Options</h3>
-            <p className="text-sm text-muted-foreground">Set verification preferences</p>
-            
             <div>
               <label className="block text-sm font-medium mb-2">Visit Type</label>
               <div className="space-y-2">
@@ -1183,6 +1277,38 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
                 </div>
               </div>
             </div>
+
+            {addressesForVerification.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium mb-2">Select Addresses for Verification</label>
+                <div className="space-y-2">
+                  {addressesForVerification.map((address, index) => (
+                    <div key={address.id} className="flex items-center space-x-2 p-2 border rounded">
+                      <Checkbox
+                        id={`verify-address-${address.id}`}
+                        checked={formData.selectedAddressesForVerification.includes(address.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setFormData(prev => ({
+                              ...prev,
+                              selectedAddressesForVerification: [...prev.selectedAddressesForVerification, address.id]
+                            }));
+                          } else {
+                            setFormData(prev => ({
+                              ...prev,
+                              selectedAddressesForVerification: prev.selectedAddressesForVerification.filter(id => id !== address.id)
+                            }));
+                          }
+                        }}
+                      />
+                      <label htmlFor={`verify-address-${address.id}`} className="text-sm">
+                        Address {index + 1}: {address.street}, {address.city}, {address.state} - {address.pincode}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div>
               <label className="block text-sm font-medium mb-2">Preferred Verification Date</label>
@@ -1225,9 +1351,6 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
       case 9:
         return (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Agent Assignment</h3>
-            <p className="text-sm text-muted-foreground">Assign agent and review</p>
-            
             <div>
               <label className="block text-sm font-medium mb-2">Assign to Agent</label>
               <Select value={formData.assignedTo} onValueChange={(value) => handleInputChange('assignedTo', value)}>
@@ -1253,10 +1376,25 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
         <div className="flex justify-between items-center">
-          <CardTitle>Add New Lead - Step {currentStep} of 9</CardTitle>
+          <CardTitle>{editLead ? 'Edit Lead' : 'Add New Lead'} - Step {currentStep} of 9</CardTitle>
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
+        </div>
+        
+        {/* Step Navigation */}
+        <div className="grid grid-cols-9 gap-1 mb-4">
+          {stepTitles.map((title, index) => (
+            <Button
+              key={index + 1}
+              variant={currentStep === index + 1 ? "default" : "outline"}
+              size="sm"
+              className="text-xs p-1"
+              onClick={() => handleStepClick(index + 1)}
+            >
+              {index + 1}
+            </Button>
+          ))}
         </div>
         
         <div className="w-full bg-gray-200 rounded-full h-2">
@@ -1265,6 +1403,16 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
             style={{ width: `${(currentStep / 9) * 100}%` }}
           ></div>
         </div>
+        
+        <h3 className="text-lg font-semibold">{stepTitles[currentStep - 1]}</h3>
+        {currentStep === 2 && <p className="text-sm text-muted-foreground">Enter customer personal details</p>}
+        {currentStep === 3 && <p className="text-sm text-muted-foreground">Enter employment and job details</p>}
+        {currentStep === 4 && <p className="text-sm text-muted-foreground">Enter property and income information</p>}
+        {currentStep === 5 && <p className="text-sm text-muted-foreground">Enter home address details (you can add multiple addresses)</p>}
+        {currentStep === 6 && <p className="text-sm text-muted-foreground">Enter work and office address</p>}
+        {currentStep === 7 && <p className="text-sm text-muted-foreground">Upload required documents</p>}
+        {currentStep === 8 && <p className="text-sm text-muted-foreground">Set verification preferences</p>}
+        {currentStep === 9 && <p className="text-sm text-muted-foreground">Assign agent and review</p>}
       </CardHeader>
 
       <CardContent>
@@ -1284,7 +1432,7 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData 
               onClick={handleSubmit}
               disabled={!validateStep(currentStep)}
             >
-              Create Lead
+              {editLead ? 'Update Lead' : 'Create Lead'}
             </Button>
           ) : (
             <Button 
