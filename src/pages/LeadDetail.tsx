@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { FileText, Download, ArrowLeft, MapPin, User, Building, Phone, Calendar, Clock, Home, Briefcase, DollarSign, Eye } from 'lucide-react';
+import { FileText, Download, ArrowLeft, MapPin, User, Building, Phone, Calendar, Clock, Home, Briefcase, DollarSign, Eye, Car, Users } from 'lucide-react';
 import { mockLeads } from '@/utils/mockData';
 import { getLeadById, getUserById, getBankById } from '@/lib/supabase-queries';
+import { getCompleteLeadsFromDatabase } from '@/lib/enhanced-lead-operations';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -73,35 +73,27 @@ const LeadDetail = () => {
     
     const fetchLeadData = async () => {
       try {
-        // Get leads from localStorage or use mockLeads if not available
-        const storedLeads = localStorage.getItem('mockLeads');
-        let allLeads = [];
+        // First try to get complete lead data from database
+        const databaseLeads = await getCompleteLeadsFromDatabase();
+        let foundLead = databaseLeads.find((l: any) => l.id === leadId);
         
-        if (storedLeads) {
-          try {
-            allLeads = JSON.parse(storedLeads);
-          } catch (error) {
-            console.error("Error parsing stored leads:", error);
+        // Fallback to localStorage if not found in database
+        if (!foundLead) {
+          const storedLeads = localStorage.getItem('mockLeads');
+          let allLeads = [];
+          
+          if (storedLeads) {
+            try {
+              allLeads = JSON.parse(storedLeads);
+            } catch (error) {
+              console.error("Error parsing stored leads:", error);
+              allLeads = mockLeads;
+            }
+          } else {
             allLeads = mockLeads;
           }
-        } else {
-          allLeads = mockLeads;
-        }
-        
-        // Try finding the lead directly using ID - await the Promise
-        let foundLead = await getLeadById(leadId || '');
-        
-        // If not found with getLeadById, search manually in all leads
-        if (!foundLead && allLeads && allLeads.length > 0) {
-          foundLead = allLeads.find((l: any) => l.id === leadId);
           
-          // If still not found, try partial match if the ID might be stored differently
-          if (!foundLead) {
-            foundLead = allLeads.find((l: any) => 
-              leadId?.includes(l.id) || 
-              l.id.includes(leadId || '')
-            );
-          }
+          foundLead = allLeads.find((l: any) => l.id === leadId);
         }
         
         console.log("Looking for lead with ID:", leadId);
@@ -359,6 +351,11 @@ const LeadDetail = () => {
   const homeAddress = additionalAddresses.find((a: any) => a?.type === 'Residence');
   const officeAddress = additionalAddresses.find((a: any) => a?.type === 'Office');
 
+  // Get co-applicant and vehicle details
+  const coApplicant = lead.additionalDetails?.coApplicant;
+  const vehicleDetails = lead.additionalDetails?.vehicleDetails;
+  const phoneNumbers = lead.additionalDetails?.phoneNumbers || [];
+
   return (
     <div className="p-6 bg-muted/30 min-h-screen">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -395,6 +392,22 @@ const LeadDetail = () => {
                     <p className="font-medium">{lead.name}</p>
                   </div>
                 </div>
+
+                {/* Phone Numbers */}
+                {phoneNumbers.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">Phone Numbers</p>
+                    {phoneNumbers.map((phone: any, index: number) => (
+                      <div key={index} className="flex items-center space-x-2">
+                        <Phone className="h-4 w-4 text-primary" />
+                        <span className="font-medium">{phone.number}</span>
+                        <Badge variant="outline" className="text-xs">
+                          {phone.type} {phone.isPrimary && '(Primary)'}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 
                 <div className="flex items-center space-x-3">
                   <div className="bg-primary/10 p-2 rounded-full">
@@ -492,6 +505,106 @@ const LeadDetail = () => {
                 )}
               </CardContent>
             </Card>
+
+            {/* Co-Applicant Card */}
+            {coApplicant && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Users className="h-5 w-5" />
+                    <span>Co-Applicant Details</span>
+                  </CardTitle>
+                  <CardDescription>Information about the co-applicant</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Name</p>
+                    <p className="font-medium">{coApplicant.name}</p>
+                  </div>
+                  {coApplicant.phone && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Phone</p>
+                      <p className="font-medium">{coApplicant.phone}</p>
+                    </div>
+                  )}
+                  {coApplicant.relation && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Relationship</p>
+                      <p className="font-medium">{coApplicant.relation}</p>
+                    </div>
+                  )}
+                  {coApplicant.email && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Email</p>
+                      <p className="font-medium">{coApplicant.email}</p>
+                    </div>
+                  )}
+                  {coApplicant.occupation && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Occupation</p>
+                      <p className="font-medium">{coApplicant.occupation}</p>
+                    </div>
+                  )}
+                  {coApplicant.monthlyIncome && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Monthly Income</p>
+                      <p className="font-medium">₹{Number(coApplicant.monthlyIncome).toLocaleString()}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Vehicle Details Card */}
+            {vehicleDetails && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Car className="h-5 w-5" />
+                    <span>Vehicle Details</span>
+                  </CardTitle>
+                  <CardDescription>Information about the vehicle for auto loan</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {vehicleDetails.brandName && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Brand</p>
+                      <p className="font-medium">{vehicleDetails.brandName}</p>
+                    </div>
+                  )}
+                  {vehicleDetails.modelName && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Model</p>
+                      <p className="font-medium">{vehicleDetails.modelName}</p>
+                    </div>
+                  )}
+                  {vehicleDetails.type && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Type</p>
+                      <p className="font-medium">{vehicleDetails.type}</p>
+                    </div>
+                  )}
+                  {vehicleDetails.year && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Year</p>
+                      <p className="font-medium">{vehicleDetails.year}</p>
+                    </div>
+                  )}
+                  {vehicleDetails.price && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Price</p>
+                      <p className="font-medium">₹{Number(vehicleDetails.price).toLocaleString()}</p>
+                    </div>
+                  )}
+                  {vehicleDetails.downPayment && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Down Payment</p>
+                      <p className="font-medium">₹{Number(vehicleDetails.downPayment).toLocaleString()}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             {/* Documents Card */}
             <Card>
@@ -840,6 +953,32 @@ const LeadDetail = () => {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Additional Addresses */}
+                {additionalAddresses.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Additional Addresses</CardTitle>
+                      <CardDescription>All registered addresses</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {additionalAddresses.map((address: any, index: number) => (
+                          <div key={index} className="border rounded-lg p-4">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <Home className="h-4 w-4 text-primary" />
+                              <Badge variant="outline">{address.type}</Badge>
+                            </div>
+                            <p className="font-medium">{address.street}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {address.city}, {address.district}, {address.state} - {address.pincode}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </TabsContent>
               
               <TabsContent value="verification" className="pt-4">

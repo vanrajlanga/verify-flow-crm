@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { 
   transformSupabaseUser, 
@@ -87,17 +88,29 @@ export const loginUser = async (email: string, password: string) => {
   }
 };
 
-// Save user to both database and localStorage for fallback
+// Enhanced save user function that ensures database persistence
 export const saveUser = async (userData: any) => {
   try {
-    console.log('Saving user:', userData);
+    console.log('Saving user to database:', userData);
     
     // Ensure user has required fields and proper ID
     const userToSave = {
-      ...userData,
       id: userData.id || `user-${Date.now()}`,
+      name: userData.name,
+      email: userData.email,
+      password: userData.password,
+      role: userData.role,
+      phone: userData.phone,
+      district: userData.district,
+      state: userData.state,
+      city: userData.city,
+      base_location: userData.baseLocation,
+      max_travel_distance: userData.maxTravelDistance,
+      extra_charge_per_km: userData.extraChargePerKm,
       status: userData.status || 'active',
-      created_at: userData.created_at || new Date().toISOString()
+      profile_picture: userData.profilePicture,
+      completion_rate: userData.completionRate || 0,
+      total_verifications: userData.totalVerifications || 0
     };
     
     // Try to save to database first
@@ -109,36 +122,71 @@ export const saveUser = async (userData: any) => {
 
     if (error) {
       console.error('Error saving user to database:', error);
+      throw error;
     } else {
-      console.log('User saved to database successfully');
+      console.log('User saved to database successfully:', data);
+      
+      // Also save to localStorage as fallback for immediate access
+      const storedUsers = localStorage.getItem('mockUsers');
+      let users = [];
+      
+      if (storedUsers) {
+        users = JSON.parse(storedUsers);
+      }
+      
+      // Check if user already exists
+      const existingUserIndex = users.findIndex((u: any) => u.email === userData.email);
+      if (existingUserIndex !== -1) {
+        // Update existing user
+        users[existingUserIndex] = userToSave;
+      } else {
+        // Add new user
+        users.push(userToSave);
+      }
+      
+      localStorage.setItem('mockUsers', JSON.stringify(users));
+      console.log('User also saved to localStorage for immediate access');
+      
+      return data;
     }
   } catch (error) {
     console.error('Database save error:', error);
+    throw error;
   }
+};
 
-  // Always save to localStorage as fallback
+// Get all users from database with fallback
+export const getAllUsers = async () => {
   try {
+    const { data: users, error } = await supabase
+      .from('users')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error && error.code !== '42P01') {
+      console.error('Get users error:', error);
+      return mockUsers;
+    }
+
+    if (users && users.length > 0) {
+      return users.map(transformSupabaseUser);
+    }
+
+    // Fallback to localStorage and mock data
     const storedUsers = localStorage.getItem('mockUsers');
-    let users = [];
-    
     if (storedUsers) {
-      users = JSON.parse(storedUsers);
+      try {
+        const localUsers = JSON.parse(storedUsers);
+        return [...mockUsers, ...localUsers];
+      } catch (parseError) {
+        console.error('Error parsing stored users:', parseError);
+      }
     }
-    
-    // Check if user already exists
-    const existingUserIndex = users.findIndex((u: any) => u.email === userData.email);
-    if (existingUserIndex !== -1) {
-      // Update existing user
-      users[existingUserIndex] = userData;
-    } else {
-      // Add new user
-      users.push(userData);
-    }
-    
-    localStorage.setItem('mockUsers', JSON.stringify(users));
-    console.log('User saved to localStorage successfully');
+
+    return mockUsers;
   } catch (error) {
-    console.error('Error saving user to localStorage:', error);
+    console.error('Get all users error:', error);
+    return mockUsers;
   }
 };
 
@@ -269,6 +317,9 @@ export const getLeads = async () => {
         users!leads_assigned_to_fkey(*),
         additional_details(*),
         verifications(*),
+        co_applicants(*),
+        vehicle_details(*),
+        phone_numbers(*),
         lead_addresses(
           addresses(*)
         )
@@ -301,6 +352,9 @@ export const getLeadById = async (id: string) => {
         users!leads_assigned_to_fkey(*),
         additional_details(*),
         verifications(*),
+        co_applicants(*),
+        vehicle_details(*),
+        phone_numbers(*),
         lead_addresses(
           addresses(*)
         )
@@ -335,6 +389,9 @@ export const getLeadsByAgentId = async (agentId: string) => {
         users!leads_assigned_to_fkey(*),
         additional_details(*),
         verifications(*),
+        co_applicants(*),
+        vehicle_details(*),
+        phone_numbers(*),
         lead_addresses(
           addresses(*)
         )
