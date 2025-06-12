@@ -1,5 +1,5 @@
 
-import { Lead, AdditionalDetails, Address, VerificationData } from '@/utils/mockData';
+import { Lead, AdditionalDetails, Address, User, Bank } from '@/utils/mockData';
 
 export const transformLeadFromDatabase = (dbLead: any): Lead => {
   // Transform address with required properties
@@ -156,5 +156,41 @@ export const transformLeadForLocalStorage = (lead: any): Lead => {
     documents: lead.documents || [],
     instructions: lead.instructions || '',
     verification: lead.verification
+  };
+};
+
+export const transformSupabaseUser = (dbUser: any): User => {
+  return {
+    id: dbUser.id,
+    name: dbUser.name,
+    email: dbUser.email,
+    password: dbUser.password,
+    role: dbUser.role,
+    phone: dbUser.phone || '',
+    district: dbUser.district || '',
+    status: dbUser.status || 'Active',
+    state: dbUser.state,
+    city: dbUser.city,
+    baseLocation: dbUser.base_location,
+    maxTravelDistance: dbUser.max_travel_distance,
+    extraChargePerKm: dbUser.extra_charge_per_km,
+    profilePicture: dbUser.profile_picture,
+    totalVerifications: dbUser.total_verifications || 0,
+    completionRate: dbUser.completion_rate || 0,
+    documents: [],
+    branch: ''
+  };
+};
+
+export const transformSupabaseLead = (dbLead: any): Lead => {
+  return transformLeadFromDatabase(dbLead);
+};
+
+export const transformSupabaseBank = (dbBank: any): Bank => {
+  return {
+    id: dbBank.id,
+    name: dbBank.name,
+    totalApplications: dbBank.total_applications || 0,
+    branches: []
   };
 };

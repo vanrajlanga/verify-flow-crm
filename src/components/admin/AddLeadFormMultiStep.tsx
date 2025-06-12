@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
 import { v4 as uuidv4 } from 'uuid';
-import { Lead, User, Bank, Address, PhoneNumber, banks, bankBranches, leadTypes, agents, vehicleBrands, vehicleModels } from '@/utils/mockData';
+import { Lead, User, Bank, Address, PhoneNumber, CoApplicant } from '@/utils/mockData';
 import { saveCompleteLeadToDatabase } from '@/lib/enhanced-lead-operations';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,31 @@ import { CalendarIcon, ChevronLeft, ChevronRight, Loader2, Plus, Trash2 } from '
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/use-toast';
 import { useNavigate } from 'react-router-dom';
+
+// Mock data arrays
+const vehicleBrands = [
+  { id: 'brand-1', name: 'Maruti Suzuki' },
+  { id: 'brand-2', name: 'Hyundai' },
+  { id: 'brand-3', name: 'Honda' },
+  { id: 'brand-4', name: 'Toyota' },
+  { id: 'brand-5', name: 'Mahindra' }
+];
+
+const vehicleModels = [
+  { id: 'model-1', name: 'Swift', brandId: 'brand-1' },
+  { id: 'model-2', name: 'Baleno', brandId: 'brand-1' },
+  { id: 'model-3', name: 'i20', brandId: 'brand-2' },
+  { id: 'model-4', name: 'Creta', brandId: 'brand-2' },
+  { id: 'model-5', name: 'City', brandId: 'brand-3' },
+  { id: 'model-6', name: 'Amaze', brandId: 'brand-3' }
+];
+
+const leadTypes = [
+  { id: 'type-1', name: 'Home Loan' },
+  { id: 'type-2', name: 'Personal Loan' },
+  { id: 'type-3', name: 'Vehicle Loan' },
+  { id: 'type-4', name: 'Business Loan' }
+];
 
 // Form schema
 const leadFormSchema = z.object({
@@ -91,6 +116,10 @@ const leadFormSchema = z.object({
   // Bank Details
   bankName: z.string().min(1, { message: "Bank is required" }),
   buildUnderBranch: z.string().optional(),
+  agencyFileNo: z.string().optional(),
+  applicationBarcode: z.string().optional(),
+  caseId: z.string().optional(),
+  schemeDesc: z.string().optional(),
   
   // Verification Details
   visitType: z.string().min(1, { message: "Visit type is required" }),
@@ -179,6 +208,10 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData,
       downPayment: '',
       bankName: '',
       buildUnderBranch: '',
+      agencyFileNo: '',
+      applicationBarcode: '',
+      caseId: '',
+      schemeDesc: '',
       visitType: 'Residence',
       assignedAgent: '',
       instructions: '',
@@ -292,26 +325,6 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData,
     setCurrentStep(currentStep - 1);
   };
   
-  // Reset form
-  const resetForm = () => {
-    form.reset();
-    setPhoneNumbers([]);
-    setHomeAddresses([
-      { 
-        id: uuidv4(),
-        type: 'Residence', 
-        street: '', 
-        city: '', 
-        district: '', 
-        state: '', 
-        pincode: '' 
-      }
-    ]);
-    setOfficeAddresses([]);
-    setSelectedVehicleBrand('');
-    setFilteredModels([]);
-  };
-  
   // Form submission handler
   const handleSubmit = async (data: LeadFormValues) => {
     try {
@@ -357,6 +370,19 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData,
         pincode: ''
       };
 
+      // Create co-applicant if exists
+      let coApplicant: CoApplicant | undefined;
+      if (data.hasCoApplicant && data.coApplicant?.name) {
+        coApplicant = {
+          name: data.coApplicant.name,
+          phone: data.coApplicant.phone || '',
+          relation: data.coApplicant.relation || '',
+          email: data.coApplicant.email || '',
+          occupation: data.coApplicant.occupation || '',
+          monthlyIncome: data.coApplicant.monthlyIncome || ''
+        };
+      }
+
       const newLead: Lead = {
         id: editLead?.id || `lead-${Date.now()}`,
         name: data.customerName,
@@ -381,10 +407,10 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData,
           fatherName: data.fatherName || '',
           motherName: data.motherName || '',
           spouseName: data.spouseName || '',
-          agencyFileNo: '',
-          applicationBarcode: '',
-          caseId: '',
-          schemeDesc: '',
+          agencyFileNo: data.agencyFileNo || '',
+          applicationBarcode: data.applicationBarcode || '',
+          caseId: data.caseId || '',
+          schemeDesc: data.schemeDesc || '',
           bankBranch: data.buildUnderBranch || '',
           additionalComments: data.additionalComments || '',
           leadType: data.leadType,
@@ -397,7 +423,7 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData,
           vehicleModelId: data.vehicleModelId || '',
           addresses: addresses,
           phoneNumbers: phoneNumbersData,
-          coApplicant: data.coApplicant
+          coApplicant: coApplicant
         },
         status: 'Pending',
         bank: data.bankName,
@@ -1079,7 +1105,7 @@ const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData,
       case 5:
         return renderStep5();
       default:
-        return null;
+        return renderStep1();
     }
   };
   
