@@ -120,7 +120,7 @@ interface PhoneNumber {
 
 interface Address {
   id: string;
-  type: string;
+  type: 'Residence' | 'Office' | 'Permanent';
   street: string;
   city: string;
   district: string;
@@ -204,7 +204,7 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
     }
   });
   
-  const { register, handleSubmit, watch, setValue, formState: { errors } } = form;
+  const { register, handleSubmit: formHandleSubmit, watch, setValue, formState: { errors } } = form;
   
   const watchLeadType = watch('leadType');
   const watchHasCoApplicant = watch('hasCoApplicant');
@@ -320,26 +320,16 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
     setFilteredModels([]);
   };
   
-  // Form submission
-  const onSubmit = async (formData: LeadFormValues) => {
-    try {
-      handleSubmit(async () => {
-        await handleSubmit(handleSubmit);
-      })();
-    } catch (error) {
-      console.error('Form validation error:', error);
-    }
-  };
-  
-  const handleSubmit = async () => {
+  // Form submission handler
+  const onSubmitForm = async (formData: LeadFormValues) => {
     try {
       setIsSubmitting(true);
       
       const leadData: Lead = {
         id: `lead-${Date.now()}`,
-        name: form.getValues('name'),
-        age: parseInt(form.getValues('age')) || 0,
-        job: form.getValues('jobTitle'),
+        name: formData.name,
+        age: parseInt(formData.age) || 0,
+        job: formData.jobTitle || '',
         address: {
           street: homeAddresses[0]?.street || '',
           city: homeAddresses[0]?.city || '',
@@ -348,74 +338,74 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
           pincode: homeAddresses[0]?.pincode || ''
         },
         additionalDetails: {
-          company: form.getValues('company'),
-          designation: form.getValues('designation'),
-          workExperience: form.getValues('workExperience'),
-          propertyType: form.getValues('propertyType'),
-          ownershipStatus: form.getValues('ownershipStatus'),
-          propertyAge: form.getValues('propertyAge'),
-          monthlyIncome: form.getValues('monthlyIncome'),
-          annualIncome: form.getValues('annualIncome'),
+          company: formData.company || '',
+          designation: formData.designation || '',
+          workExperience: formData.workExperience || '',
+          propertyType: formData.propertyType || '',
+          ownershipStatus: formData.ownershipStatus || '',
+          propertyAge: formData.propertyAge || '',
+          monthlyIncome: formData.monthlyIncome || '',
+          annualIncome: formData.annualIncome || '',
           otherIncome: '',
-          phoneNumber: form.getValues('phoneNumber'),
-          email: form.getValues('email'),
+          phoneNumber: formData.phoneNumber || '',
+          email: formData.email || '',
           dateOfBirth: '',
-          gender: form.getValues('gender'),
-          maritalStatus: form.getValues('maritalStatus'),
-          fatherName: form.getValues('fatherName'),
-          motherName: form.getValues('motherName'),
-          spouseName: form.getValues('spouseName'),
-          agencyFileNo: form.getValues('agencyFileNo'),
-          applicationBarcode: form.getValues('applicationBarcode'),
-          caseId: form.getValues('caseId'),
-          schemeDesc: form.getValues('schemeDesc'),
-          bankBranch: form.getValues('bankBranch'),
-          additionalComments: form.getValues('additionalComments'),
-          leadType: form.getValues('leadType'),
-          leadTypeId: form.getValues('leadTypeId'),
-          loanAmount: form.getValues('loanAmount'),
-          loanType: form.getValues('loanType'),
-          vehicleBrandName: form.getValues('vehicleBrandName'),
-          vehicleBrandId: form.getValues('vehicleBrandId'),
-          vehicleModelName: form.getValues('vehicleModelName'),
-          vehicleModelId: form.getValues('vehicleModelId'),
+          gender: formData.gender || '',
+          maritalStatus: formData.maritalStatus || '',
+          fatherName: formData.fatherName || '',
+          motherName: formData.motherName || '',
+          spouseName: formData.spouseName || '',
+          agencyFileNo: formData.agencyFileNo || '',
+          applicationBarcode: formData.applicationBarcode || '',
+          caseId: formData.caseId || '',
+          schemeDesc: formData.schemeDesc || '',
+          bankBranch: formData.bankBranch || '',
+          additionalComments: formData.additionalComments || '',
+          leadType: formData.leadType || '',
+          leadTypeId: formData.leadTypeId || '',
+          loanAmount: formData.loanAmount || '',
+          loanType: formData.loanType || '',
+          vehicleBrandName: formData.vehicleBrandName || '',
+          vehicleBrandId: formData.vehicleBrandId || '',
+          vehicleModelName: formData.vehicleModelName || '',
+          vehicleModelId: formData.vehicleModelId || '',
           addresses: [
             ...homeAddresses,
             ...officeAddresses
-          ],
+          ] as any[],
           phoneNumbers: phoneNumbers.map(phone => ({
             id: phone.id,
             number: phone.number,
             type: phone.type as 'mobile' | 'landline' | 'work',
             isPrimary: phone.isPrimary
           })),
-          coApplicant: form.getValues('hasCoApplicant') ? {
-            name: form.getValues('coApplicantName'),
-            phone: form.getValues('coApplicantPhone'),
-            relation: form.getValues('coApplicantRelation'),
-            email: form.getValues('coApplicantEmail'),
-            occupation: form.getValues('coApplicantOccupation'),
-            monthlyIncome: form.getValues('coApplicantMonthlyIncome')
+          coApplicant: formData.hasCoApplicant ? {
+            name: formData.coApplicantName || '',
+            phone: formData.coApplicantPhone || '',
+            relation: formData.coApplicantRelation || '',
+            email: formData.coApplicantEmail || '',
+            occupation: formData.coApplicantOccupation || '',
+            monthlyIncome: formData.coApplicantMonthlyIncome || ''
           } : undefined,
-          vehicleDetails: form.getValues('leadType') === 'Auto Loan' ? {
-            brandId: form.getValues('vehicleBrandId'),
-            brandName: form.getValues('vehicleBrandName'),
-            modelId: form.getValues('vehicleModelId'),
-            modelName: form.getValues('vehicleModelName'),
-            type: form.getValues('vehicleType'),
-            year: form.getValues('vehicleYear') ? parseInt(form.getValues('vehicleYear')) : undefined,
-            price: form.getValues('vehiclePrice'),
-            downPayment: form.getValues('downPayment')
+          vehicleDetails: formData.leadType === 'Auto Loan' ? {
+            brandId: formData.vehicleBrandId || '',
+            brandName: formData.vehicleBrandName || '',
+            modelId: formData.vehicleModelId || '',
+            modelName: formData.vehicleModelName || '',
+            type: formData.vehicleType || '',
+            year: formData.vehicleYear ? parseInt(formData.vehicleYear) : undefined,
+            price: formData.vehiclePrice || '',
+            downPayment: formData.downPayment || ''
           } : undefined
         },
         status: 'Pending',
-        bank: form.getValues('bank'),
-        visitType: form.getValues('visitType') as 'Residence' | 'Office',
-        assignedTo: form.getValues('assignedAgent'),
+        bank: formData.bank,
+        visitType: formData.visitType as 'Residence' | 'Office',
+        assignedTo: formData.assignedAgent || '',
         createdAt: new Date(),
-        verificationDate: form.getValues('verificationDate') ? new Date(form.getValues('verificationDate')) : undefined,
+        verificationDate: formData.verificationDate ? new Date(formData.verificationDate) : undefined,
         documents: [],
-        instructions: form.getValues('instructions') || ''
+        instructions: formData.instructions || ''
       };
 
       console.log('Submitting lead data:', leadData);
@@ -1158,7 +1148,7 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
           </div>
         </div>
         
-        <form onSubmit={onSubmit}>
+        <form onSubmit={formHandleSubmit(onSubmitForm)}>
           {renderCurrentStep()}
         </form>
       </CardContent>
@@ -1177,7 +1167,7 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({
             Next <ChevronRight className="ml-2 h-4 w-4" />
           </Button>
         ) : (
-          <Button type="button" onClick={handleSubmit} disabled={isSubmitting}>
+          <Button type="submit" disabled={isSubmitting} onClick={formHandleSubmit(onSubmitForm)}>
             {isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting

@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Lead, Address, AdditionalDetails } from '@/utils/mockData';
 
@@ -93,16 +92,17 @@ export const saveCompleteLeadToDatabase = async (leadData: Lead) => {
 
       // Save co-applicant details if present
       if (leadData.additionalDetails.coApplicant) {
+        const coApplicant = leadData.additionalDetails.coApplicant;
         const { error: coApplicantError } = await supabase
           .from('co_applicants')
           .insert({
             lead_id: leadData.id,
-            name: leadData.additionalDetails.coApplicant.name,
-            phone_number: leadData.additionalDetails.coApplicant.phone,
-            relationship: leadData.additionalDetails.coApplicant.relation,
-            email: leadData.additionalDetails.coApplicant.email,
-            occupation: leadData.additionalDetails.coApplicant.occupation,
-            monthly_income: leadData.additionalDetails.coApplicant.monthlyIncome
+            name: coApplicant.name,
+            phone_number: coApplicant.phone,
+            relationship: coApplicant.relation,
+            email: coApplicant.email || null,
+            occupation: coApplicant.occupation || null,
+            monthly_income: coApplicant.monthlyIncome || null
           });
 
         if (coApplicantError) {
@@ -111,19 +111,20 @@ export const saveCompleteLeadToDatabase = async (leadData: Lead) => {
       }
 
       // Save vehicle details for auto loans
-      if (leadData.additionalDetails.leadType === 'Auto Loan' && leadData.additionalDetails.vehicleBrandName) {
+      if (leadData.additionalDetails.vehicleDetails) {
+        const vehicle = leadData.additionalDetails.vehicleDetails;
         const { error: vehicleError } = await supabase
           .from('vehicle_details')
           .insert({
             lead_id: leadData.id,
-            vehicle_brand_id: leadData.additionalDetails.vehicleBrandId,
-            vehicle_brand_name: leadData.additionalDetails.vehicleBrandName,
-            vehicle_model_id: leadData.additionalDetails.vehicleModelId,
-            vehicle_model_name: leadData.additionalDetails.vehicleModelName,
-            vehicle_type: leadData.additionalDetails.vehicleType,
-            vehicle_year: leadData.additionalDetails.vehicleYear,
-            vehicle_price: leadData.additionalDetails.vehiclePrice,
-            down_payment: leadData.additionalDetails.downPayment
+            vehicle_brand_id: vehicle.brandId,
+            vehicle_brand_name: vehicle.brandName,
+            vehicle_model_id: vehicle.modelId,
+            vehicle_model_name: vehicle.modelName,
+            vehicle_type: vehicle.type,
+            vehicle_year: vehicle.year,
+            vehicle_price: vehicle.price,
+            down_payment: vehicle.downPayment
           });
 
         if (vehicleError) {
