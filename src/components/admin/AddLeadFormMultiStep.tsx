@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +27,18 @@ interface LocationData {
   }[];
 }
 
+// Define a custom address interface for the form
+interface FormAddress {
+  id: string;
+  type: 'Residence' | 'Office';
+  state: string;
+  district: string;
+  city: string;
+  street: string;
+  pincode: string;
+  requireVerification: boolean;
+}
+
 interface AddLeadFormMultiStepProps {
   agents: User[];
   banks: Bank[];
@@ -52,6 +63,9 @@ const AddLeadFormMultiStep = ({
     // Step 1: Lead Type & Basic Info
     bankName: editLead?.bank || '',
     leadType: editLead?.additionalDetails?.leadType || '',
+    loanType: editLead?.additionalDetails?.loanType || '',
+    vehicleBrandName: editLead?.additionalDetails?.vehicleBrandName || '',
+    vehicleModelName: editLead?.additionalDetails?.vehicleModelName || '',
     initiatedBranch: editLead?.additionalDetails?.bankBranch || '',
     buildBranch: editLead?.additionalDetails?.bankBranch || '',
     agencyFileNo: editLead?.additionalDetails?.agencyFileNo || `AGF${Date.now()}`,
@@ -59,15 +73,10 @@ const AddLeadFormMultiStep = ({
     caseId: editLead?.additionalDetails?.caseId || '',
     schemeDescription: editLead?.additionalDetails?.schemeDesc || '',
     loanAmount: editLead?.additionalDetails?.loanAmount || '',
-    loanType: editLead?.additionalDetails?.loanType || '',
-    
-    // Vehicle fields (conditional)
-    vehicleBrandName: editLead?.additionalDetails?.vehicleBrandName || '',
-    vehicleModelName: editLead?.additionalDetails?.vehicleModelName || '',
     
     // Step 2: Personal Information
     customerName: editLead?.name || '',
-    phoneNumbers: editLead?.additionalDetails?.phoneNumber ? [editLead.additionalDetails.phoneNumber] : [''],
+    phoneNumbers: editLead?.additionalDetails?.phoneNumbers || (editLead?.additionalDetails?.phoneNumber ? [editLead.additionalDetails.phoneNumber] : ['']),
     email: editLead?.additionalDetails?.email || '',
     age: editLead?.age?.toString() || '',
     gender: '',
@@ -91,28 +100,37 @@ const AddLeadFormMultiStep = ({
     otherIncome: editLead?.additionalDetails?.otherIncome || '',
     
     // Step 5: Home Addresses
-    homeAddresses: editLead?.additionalDetails?.addresses?.filter(addr => addr.type === 'Residence') || [
-      {
-        id: Date.now().toString(),
-        type: 'Residence',
-        state: editLead?.address?.state || '',
-        district: editLead?.address?.district || '',
-        city: editLead?.address?.city || '',
-        street: editLead?.address?.street || '',
-        pincode: editLead?.address?.pincode || '',
-        requireVerification: true
-      }
-    ],
+    homeAddresses: editLead?.additionalDetails?.addresses?.filter(addr => addr.type === 'Residence').map(addr => ({
+      id: addr.id || Date.now().toString(),
+      type: 'Residence' as const,
+      state: addr.state || '',
+      district: addr.district || '',
+      city: addr.city || '',
+      street: addr.street || '',
+      pincode: addr.pincode || '',
+      requireVerification: true
+    })) || [{
+      id: Date.now().toString(),
+      type: 'Residence' as const,
+      state: editLead?.address?.state || '',
+      district: editLead?.address?.district || '',
+      city: editLead?.address?.city || '',
+      street: editLead?.address?.street || '',
+      pincode: editLead?.address?.pincode || '',
+      requireVerification: true
+    }] as FormAddress[],
     
     // Step 6: Work & Office Address
     officeAddress: {
+      id: Date.now().toString(),
+      type: 'Office' as const,
       state: '',
       district: '',
       city: '',
       street: '',
       pincode: '',
       requireVerification: false
-    },
+    } as FormAddress,
     
     // Step 7: Document Upload
     documents: editLead?.documents || [],
@@ -121,7 +139,7 @@ const AddLeadFormMultiStep = ({
     visitType: editLead?.visitType || 'Residence',
     preferredDate: '',
     specialInstructions: editLead?.instructions || '',
-    selectedAddresses: [],
+    selectedAddresses: [] as string[],
     
     // Step 9: Agent Assignment
     assignedAgent: editLead?.assignedTo || ''
@@ -229,7 +247,7 @@ const AddLeadFormMultiStep = ({
   };
 
   const addHomeAddress = () => {
-    const newAddress = {
+    const newAddress: FormAddress = {
       id: Date.now().toString(),
       type: 'Residence',
       state: '',
@@ -245,7 +263,7 @@ const AddLeadFormMultiStep = ({
     }));
   };
 
-  const updateHomeAddress = (index: number, field: string, value: any) => {
+  const updateHomeAddress = (index: number, field: keyof FormAddress, value: any) => {
     const newAddresses = [...formData.homeAddresses];
     newAddresses[index] = { ...newAddresses[index], [field]: value };
     setFormData(prev => ({
@@ -346,7 +364,7 @@ const AddLeadFormMultiStep = ({
           // Addresses
           addresses: [
             ...formData.homeAddresses,
-            ...(formData.officeAddress.street ? [{ ...formData.officeAddress, type: 'Office' }] : [])
+            ...(formData.officeAddress.street ? [formData.officeAddress] : [])
           ]
         },
         status: editLead?.status || 'Pending',
@@ -703,6 +721,12 @@ const AddLeadFormMultiStep = ({
           </div>
         ))}
       </div>
+
+      <div>
+        <Button type="button" variant="outline" className="mt-4">
+          Add Co-Applicant
+        </Button>
+      </div>
     </div>
   );
 
@@ -957,7 +981,7 @@ const AddLeadFormMultiStep = ({
                 <Checkbox
                   id={`verification-${index}`}
                   checked={address.requireVerification}
-                  onCheckedChange={(checked) => updateHomeAddress(index, 'requireVerification', checked)}
+                  onCheckedChange={(checked) => updateHomeAddress(index, 'requireVerification', !!checked)}
                 />
                 <Label htmlFor={`verification-${index}`}>Require verification for this address</Label>
               </div>
