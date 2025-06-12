@@ -86,49 +86,18 @@ const Step5HomeAddresses = ({ locationData }: Step5Props) => {
     ));
   };
 
+  // Using the same logic as Step 6
   const getDistrictsForState = (stateId: string) => {
-    console.log('Step5 - Getting districts for state:', stateId);
-    console.log('Step5 - Available location data:', locationData);
-    
-    if (!locationData?.states || !stateId) {
-      console.log('Step5 - No location data or state ID');
-      return [];
-    }
-    
+    if (!locationData?.states || !stateId) return [];
     const state = locationData.states.find(s => s.id === stateId);
-    if (!state) {
-      console.log('Step5 - State not found');
-      return [];
-    }
-    
-    const districts = state.districts || [];
-    console.log('Step5 - Found districts:', districts);
-    return districts;
+    return state ? state.districts : [];
   };
 
   const getCitiesForDistrict = (stateId: string, districtId: string) => {
-    console.log('Step5 - Getting cities for state:', stateId, 'district:', districtId);
-    
-    if (!locationData?.states || !stateId || !districtId) {
-      console.log('Step5 - Missing required data for cities');
-      return [];
-    }
-    
+    if (!locationData?.states || !stateId || !districtId) return [];
     const state = locationData.states.find(s => s.id === stateId);
-    if (!state) {
-      console.log('Step5 - State not found for cities');
-      return [];
-    }
-    
-    const district = state.districts.find(d => d.id === districtId);
-    if (!district) {
-      console.log('Step5 - District not found for cities');
-      return [];
-    }
-    
-    const cities = district.cities || [];
-    console.log('Step5 - Found cities:', cities);
-    return cities;
+    const district = state?.districts.find(d => d.id === districtId);
+    return district ? district.cities : [];
   };
 
   const getStateName = (stateId: string) => {

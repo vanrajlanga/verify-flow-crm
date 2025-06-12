@@ -31,15 +31,62 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
     setValue('agencyFileNo', agencyFileNo);
   }, [setValue]);
 
+  // Initialize dummy data if needed
+  useEffect(() => {
+    // Add dummy products if none exist
+    const storedProducts = localStorage.getItem('products');
+    if (!storedProducts || JSON.parse(storedProducts).length === 0) {
+      const dummyProducts = [
+        { id: 'home-loan', name: 'Home Loan', description: 'Residential property loan', banks: banks.map(b => b.id) },
+        { id: 'personal-loan', name: 'Personal Loan', description: 'Personal loan verification', banks: banks.map(b => b.id) },
+        { id: 'auto-loan', name: 'Auto Loan', description: 'Vehicle loan verification', banks: banks.map(b => b.id) },
+        { id: 'business-loan', name: 'Business Loan', description: 'Business loan verification', banks: banks.map(b => b.id) },
+        { id: 'credit-card', name: 'Credit Card', description: 'Credit card application', banks: banks.map(b => b.id) }
+      ];
+      localStorage.setItem('products', JSON.stringify(dummyProducts));
+    }
+
+    // Add dummy vehicle brands if none exist
+    const storedBrands = localStorage.getItem('vehicleBrands');
+    if (!storedBrands || JSON.parse(storedBrands).length === 0) {
+      const dummyBrands = [
+        { id: 'maruti', name: 'Maruti Suzuki' },
+        { id: 'hyundai', name: 'Hyundai' },
+        { id: 'honda', name: 'Honda' },
+        { id: 'toyota', name: 'Toyota' },
+        { id: 'tata', name: 'Tata Motors' }
+      ];
+      localStorage.setItem('vehicleBrands', JSON.stringify(dummyBrands));
+    }
+
+    // Add dummy vehicle models if none exist
+    const storedModels = localStorage.getItem('vehicleModels');
+    if (!storedModels || JSON.parse(storedModels).length === 0) {
+      const dummyModels = [
+        { id: 'swift', name: 'Swift', brandId: 'maruti' },
+        { id: 'baleno', name: 'Baleno', brandId: 'maruti' },
+        { id: 'i20', name: 'i20', brandId: 'hyundai' },
+        { id: 'creta', name: 'Creta', brandId: 'hyundai' },
+        { id: 'city', name: 'City', brandId: 'honda' },
+        { id: 'civic', name: 'Civic', brandId: 'honda' }
+      ];
+      localStorage.setItem('vehicleModels', JSON.stringify(dummyModels));
+    }
+  }, [banks]);
+
   useEffect(() => {
     console.log('Step1 - Selected Bank:', selectedBank);
     console.log('Step1 - Available Products:', products);
     console.log('Step1 - Available Branches:', branches);
 
     if (selectedBank) {
+      // Get updated products from localStorage
+      const storedProducts = localStorage.getItem('products');
+      const allProducts = storedProducts ? JSON.parse(storedProducts) : products;
+      
       // Filter products - check if products array exists and has items
-      if (products && products.length > 0) {
-        const bankProducts = products.filter(product => {
+      if (allProducts && allProducts.length > 0) {
+        const bankProducts = allProducts.filter((product: any) => {
           console.log('Checking product:', product.name, 'Banks:', product.banks, 'Looking for:', selectedBank);
           return product.banks && Array.isArray(product.banks) && product.banks.includes(selectedBank);
         });
@@ -71,16 +118,26 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
 
   useEffect(() => {
     console.log('Step1 - Selected Vehicle Brand:', selectedVehicleBrand);
-    console.log('Step1 - Available Vehicle Models:', vehicleModels);
+    
+    // Get updated vehicle models from localStorage
+    const storedModels = localStorage.getItem('vehicleModels');
+    const allModels = storedModels ? JSON.parse(storedModels) : vehicleModels;
+    console.log('Step1 - Available Vehicle Models:', allModels);
 
-    if (selectedVehicleBrand && vehicleModels && vehicleModels.length > 0) {
-      const brandModels = vehicleModels.filter(model => model.brandId === selectedVehicleBrand);
+    if (selectedVehicleBrand && allModels && allModels.length > 0) {
+      const brandModels = allModels.filter((model: any) => model.brandId === selectedVehicleBrand);
       console.log('Step1 - Filtered Vehicle Models:', brandModels);
       setFilteredVehicleModels(brandModels);
     } else {
       setFilteredVehicleModels([]);
     }
   }, [selectedVehicleBrand, vehicleModels]);
+
+  // Get updated vehicle brands from localStorage
+  const getVehicleBrands = () => {
+    const storedBrands = localStorage.getItem('vehicleBrands');
+    return storedBrands ? JSON.parse(storedBrands) : vehicleBrands;
+  };
 
   const isAutoLoan = selectedLeadType && filteredProducts.length > 0 && 
     (selectedLeadType === 'auto-loan' || 
@@ -185,7 +242,7 @@ const Step1LeadTypeBasicInfo = ({ banks, products, branches, vehicleBrands, vehi
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent className="bg-background border border-border shadow-lg z-50">
-                        {vehicleBrands && vehicleBrands.length > 0 ? vehicleBrands.map((brand) => (
+                        {getVehicleBrands() && getVehicleBrands().length > 0 ? getVehicleBrands().map((brand: any) => (
                           <SelectItem key={brand.id} value={brand.id}>{brand.name}</SelectItem>
                         )) : (
                           <SelectItem value="no-brands" disabled>No vehicle brands available</SelectItem>
