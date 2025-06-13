@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,6 +10,7 @@ import AdminLeads from "./pages/admin/AdminLeads";
 import AdminLeadsSheet from "./pages/admin/AdminLeadsSheet";
 import AdminAgents from "./pages/admin/AdminAgents";
 import AdminBanks from "./pages/admin/AdminBanks";
+import BankProductModule from "./pages/admin/BankProductModule";
 import AdminVerifications from "./pages/admin/AdminVerifications";
 import AdminReports from "./pages/admin/AdminReports";
 import AdminSettings from "./pages/admin/AdminSettings";
@@ -40,6 +40,7 @@ const App = () => (
           <Route path="/admin/leads/:id" element={<LeadDetail />} />
           <Route path="/admin/agents" element={<AdminAgents />} />
           <Route path="/admin/banks" element={<AdminBanks />} />
+          <Route path="/admin/bank-product" element={<BankProductModule />} />
           <Route path="/admin/verifications" element={<AdminVerifications />} />
           <Route path="/admin/reports" element={<AdminReports />} />
           <Route path="/admin/settings" element={<AdminSettings />} />

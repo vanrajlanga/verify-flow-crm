@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { User } from '@/utils/mockData';
@@ -40,6 +39,7 @@ const Sidebar = ({ user, isOpen }: SidebarProps) => {
     { icon: FileSpreadsheet, label: 'Lead Sheet', path: '/admin/leads-sheet' },
     { icon: Users, label: 'Agents', path: '/admin/agents' },
     { icon: Building2, label: 'Banks', path: '/admin/banks' },
+    { icon: Building2, label: 'Bank & Product', path: '/admin/bank-product' },
     { icon: UserCheck, label: 'Verifications', path: '/admin/verifications' },
     { icon: BarChart3, label: 'Reports', path: '/admin/reports' },
     { icon: Settings, label: 'Settings', path: '/admin/settings' },

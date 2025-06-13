@@ -1,1265 +1,713 @@
-import React, { useState, useEffect } from 'react';
+
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Plus, Trash2, Upload } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { format } from "date-fns";
+import { User, Lead, Address, AdditionalDetails } from '@/utils/mockData';
+import { ArrowLeft, ArrowRight, X } from 'lucide-react';
+import { toast } from '@/components/ui/use-toast';
+import { Bank, BankProduct, BankBranch } from '@/types/bank-product';
+import { getBanks, getBankProducts, getBankBranches, getBankProductsByBankId, getBankBranchesByBankId } from '@/lib/bank-product-operations';
+
+interface LocationData {
+  states: {
+    id: string;
+    name: string;
+    districts: {
+      id: string;
+      name: string;
+      cities: {
+        id: string;
+        name: string;
+      }[];
+    }[];
+  }[];
+}
 
 interface AddLeadFormMultiStepProps {
-  agents: any[];
+  agents: User[];
   banks: any[];
-  onAddLead: (lead: any) => void;
+  onAddLead: (lead: Lead) => void;
   onClose: () => void;
-  locationData: any;
+  locationData: LocationData;
 }
 
-interface Product {
-  id: string;
-  name: string;
-  description: string;
-  banks: string[];
-}
+const AddLeadFormMultiStep = ({ agents, banks: oldBanks, onAddLead, onClose, locationData }: AddLeadFormMultiStepProps) => {
+  const [currentStep, setCurrentStep] = useState(1);
+  const [banks, setBanks] = useState<Bank[]>([]);
+  const [bankProducts, setBankProducts] = useState<BankProduct[]>([]);
+  const [bankBranches, setBankBranches] = useState<BankBranch[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<BankProduct[]>([]);
+  const [filteredBranches, setFilteredBranches] = useState<BankBranch[]>([]);
 
-interface Address {
-  id: string;
-  state: string;
-  district: string;
-  city: string;
-  street: string;
-  pincode: string;
-  requiresVerification: boolean;
-  assignedAgent?: string;
-}
-
-interface Document {
-  id: string;
-  title: string;
-  file: File | null;
-}
-
-interface CoApplicant {
-  id: string;
-  name: string;
-  phone: string;
-  email: string;
-  age: string;
-  gender: string;
-  fatherName: string;
-  motherName: string;
-  maritalStatus: string;
-}
-
-const AddLeadFormMultiStep = ({ agents, banks, onAddLead, onClose, locationData }: AddLeadFormMultiStepProps) => {
-  const [currentStep, setCurrentStep] = useState(0);
-  
-  // Step titles for navigation
-  const stepTitles = [
-    "Lead Type & Basic Info",
-    "Personal Information", 
-    "Job Details",
-    "Property & Income",
-    "Home Addresses",
-    "Work & Office Address",
-    "Document Upload",
-    "Verification Options",
-    "Agent Assignment"
-  ];
-
+  // Form data state
   const [formData, setFormData] = useState({
     // Step 1: Lead Type & Basic Info
-    bankName: '',
     leadType: '',
-    initiatedUnderBranch: '',
-    buildUnderBranch: '',
-    agencyFileNo: '',
-    applicationBarcode: '',
-    caseId: '',
-    schemeDescription: '',
-    loanAmount: '',
-    
-    // Step 2: Personal Information
-    customerName: '',
+    bankProduct: '',
+    name: '',
+    age: '',
     phoneNumber: '',
     email: '',
-    age: '',
-    gender: 'Male',
-    fatherName: '',
-    motherName: '',
-    maritalStatus: 'Single',
+    selectedBank: '',
+    initiatedUnderBranch: '',
+    buildUnderBranch: '',
     
-    // Step 3: Job Details
-    companyName: '',
+    // Step 2: Address Information
+    streetAddress: '',
+    city: '',
+    district: '',
+    state: '',
+    pincode: '',
+    visitType: 'Residence' as 'Residence' | 'Office' | 'Both',
+    
+    // Step 3: Professional Details
+    job: '',
+    company: '',
     designation: '',
     workExperience: '',
-    employmentType: 'Full-time',
-    currentJobDuration: '',
-    
-    // Step 4: Property & Income
-    propertyType: 'Apartment',
-    ownershipStatus: 'Owned',
-    propertyAge: '',
     monthlyIncome: '',
     annualIncome: '',
     otherIncome: '',
     
-    // Step 6: Work & Office Address
-    workState: '',
-    workDistrict: '',
-    workCity: '',
-    officeAddress: '',
-    workPincode: '',
+    // Step 4: Property Details
+    propertyType: '',
+    ownershipStatus: '',
+    propertyAge: '',
     
-    // Step 8: Verification Options
-    visitType: 'Residence Verification',
-    preferredVerificationDate: undefined as Date | undefined,
-    specialInstructions: '',
-    
-    // Step 9: Agent Assignment
+    // Step 5: Additional Information
+    hasCoApplicant: false,
+    coApplicantName: '',
+    coApplicantPhone: '',
+    coApplicantRelation: '',
     assignedAgent: '',
-    assignInhouseTeam: false,
-    inhouseTeamAgent: ''
+    verificationDate: '',
+    instructions: '',
+    additionalComments: ''
   });
 
-  const [addresses, setAddresses] = useState<Address[]>([{
-    id: '1',
-    state: '',
-    district: '',
-    city: '',
-    street: '',
-    pincode: '',
-    requiresVerification: false,
-    assignedAgent: ''
-  }]);
-
-  const [documents, setDocuments] = useState<Document[]>([
-    { id: '1', title: 'PAN Card', file: null },
-    { id: '2', title: 'Aadhar Card', file: null }
-  ]);
-
-  const [coApplicants, setCoApplicants] = useState<CoApplicant[]>([]);
-  const [hasCoApplicant, setHasCoApplicant] = useState(false);
-  
-  const [products, setProducts] = useState<Product[]>([]);
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-  const [inhouseTeamAgents, setInhouseTeamAgents] = useState<any[]>([]);
-
-  // Auto-generate Agency File No.
-  const generateAgencyFileNo = () => {
-    const timestamp = Date.now();
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    return `AGF${timestamp}${random}`;
-  };
-
   useEffect(() => {
-    setFormData(prev => ({
-      ...prev,
-      agencyFileNo: generateAgencyFileNo()
-    }));
-    
-    // Load products
-    const storedProducts = localStorage.getItem('products');
-    if (storedProducts) {
-      const parsedProducts = JSON.parse(storedProducts);
-      setProducts(parsedProducts);
-      setFilteredProducts(parsedProducts);
-    }
-
-    // Load Inhouse Team agents
-    loadInhouseTeamAgents();
+    loadBankData();
   }, []);
 
-  const loadInhouseTeamAgents = () => {
-    // Filter agents with role 'Inhouse Team'
-    const inhouseAgents = agents.filter(agent => agent.role === 'Inhouse Team');
-    setInhouseTeamAgents(inhouseAgents);
+  useEffect(() => {
+    if (formData.selectedBank) {
+      loadBankProducts(formData.selectedBank);
+      loadBankBranches(formData.selectedBank);
+    }
+  }, [formData.selectedBank]);
+
+  const loadBankData = async () => {
+    try {
+      const banksData = await getBanks();
+      setBanks(banksData);
+    } catch (error) {
+      console.error('Error loading banks:', error);
+    }
   };
 
-  // Filter products when bank is selected
-  useEffect(() => {
-    console.log('Bank selection changed:', formData.bankName);
-    console.log('Available products:', products);
-    
-    if (formData.bankName && banks.length > 0) {
-      const selectedBank = banks.find(bank => bank.name === formData.bankName);
-      console.log('Selected bank:', selectedBank);
-      
-      if (selectedBank) {
-        const filtered = products.filter(product => {
-          const productBanks = product.banks || [];
-          const hasBank = Array.isArray(productBanks) && productBanks.includes(selectedBank.id);
-          console.log(`Product ${product.name} banks:`, productBanks, 'includes bank:', hasBank);
-          return hasBank;
-        });
-        console.log('Filtered products:', filtered);
-        setFilteredProducts(filtered);
-      } else {
-        setFilteredProducts([]);
-      }
-    } else {
+  const loadBankProducts = async (bankId: string) => {
+    try {
+      const products = await getBankProductsByBankId(bankId);
       setFilteredProducts(products);
+    } catch (error) {
+      console.error('Error loading bank products:', error);
     }
-  }, [formData.bankName, products, banks]);
+  };
 
-  const nextStep = () => setCurrentStep(prev => prev + 1);
-  const prevStep = () => setCurrentStep(prev => prev - 1);
-  const goToStep = (stepIndex: number) => setCurrentStep(stepIndex);
+  const loadBankBranches = async (bankId: string) => {
+    try {
+      const branches = await getBankBranchesByBankId(bankId);
+      setFilteredBranches(branches);
+    } catch (error) {
+      console.error('Error loading bank branches:', error);
+    }
+  };
 
   const handleInputChange = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const addAddress = () => {
-    const newAddress: Address = {
-      id: Date.now().toString(),
-      state: '',
-      district: '',
-      city: '',
-      street: '',
-      pincode: '',
-      requiresVerification: false,
-      assignedAgent: ''
-    };
-    setAddresses([...addresses, newAddress]);
-  };
-
-  const removeAddress = (id: string) => {
-    if (addresses.length > 1) {
-      setAddresses(addresses.filter(addr => addr.id !== id));
+  const validateStep = (step: number): boolean => {
+    switch (step) {
+      case 1:
+        return true; // No required fields for now
+      case 2:
+        return true; // No required fields for now
+      case 3:
+        return true; // No required fields for now
+      case 4:
+        return true; // No required fields for now
+      case 5:
+        return true; // No required fields for now
+      default:
+        return true;
     }
   };
 
-  const updateAddress = (id: string, field: keyof Address, value: any) => {
-    setAddresses(addresses.map(addr => 
-      addr.id === id ? { ...addr, [field]: value } : addr
-    ));
+  const handleNext = () => {
+    if (validateStep(currentStep)) {
+      setCurrentStep(prev => Math.min(prev + 1, 5));
+    }
   };
 
-  const addDocument = () => {
-    const newDocument: Document = {
-      id: Date.now().toString(),
-      title: '',
-      file: null
-    };
-    setDocuments([...documents, newDocument]);
-  };
-
-  const removeDocument = (id: string) => {
-    setDocuments(documents.filter(doc => doc.id !== id));
-  };
-
-  const updateDocument = (id: string, field: keyof Document, value: any) => {
-    setDocuments(documents.map(doc => 
-      doc.id === id ? { ...doc, [field]: value } : doc
-    ));
-  };
-
-  const addCoApplicant = () => {
-    const newCoApplicant: CoApplicant = {
-      id: Date.now().toString(),
-      name: '',
-      phone: '',
-      email: '',
-      age: '',
-      gender: 'Male',
-      fatherName: '',
-      motherName: '',
-      maritalStatus: 'Single'
-    };
-    setCoApplicants([...coApplicants, newCoApplicant]);
-  };
-
-  const removeCoApplicant = (id: string) => {
-    setCoApplicants(coApplicants.filter(co => co.id !== id));
-  };
-
-  const updateCoApplicant = (id: string, field: keyof CoApplicant, value: string) => {
-    setCoApplicants(coApplicants.map(co => 
-      co.id === id ? { ...co, [field]: value } : co
-    ));
+  const handlePrev = () => {
+    setCurrentStep(prev => Math.max(prev - 1, 1));
   };
 
   const handleSubmit = () => {
-    // Remove all required field validations
-    
-    // Check if addresses requiring verification have agents assigned
-    const addressesRequiringVerification = addresses.filter(addr => addr.requiresVerification);
-    const hasUnassignedAddresses = addressesRequiringVerification.some(addr => !addr.assignedAgent);
-    
-    if (hasUnassignedAddresses) {
-      alert('Please assign agents to all addresses that require verification.');
+    if (!validateStep(currentStep)) {
       return;
     }
 
-    const leadData = {
+    // Create the lead object
+    const newLead: Lead = {
       id: `lead-${Date.now()}`,
-      name: formData.customerName || 'Unknown Customer',
-      age: parseInt(formData.age) || 30,
-      job: formData.designation || 'Not specified',
+      name: formData.name || 'Unknown',
+      age: parseInt(formData.age) || 0,
+      job: formData.job || '',
       address: {
-        type: 'Residence',
-        street: addresses[0]?.street || '',
-        city: addresses[0]?.city || '',
-        district: addresses[0]?.district || '',
-        state: addresses[0]?.state || '',
-        pincode: addresses[0]?.pincode || ''
+        street: formData.streetAddress || '',
+        city: formData.city || '',
+        district: formData.district || '',
+        state: formData.state || '',
+        pincode: formData.pincode || ''
       },
       additionalDetails: {
-        company: formData.companyName,
-        designation: formData.designation,
-        workExperience: formData.workExperience,
-        employmentType: formData.employmentType,
-        currentJobDuration: formData.currentJobDuration,
-        propertyType: formData.propertyType,
-        ownershipStatus: formData.ownershipStatus,
-        propertyAge: formData.propertyAge,
-        monthlyIncome: formData.monthlyIncome,
-        annualIncome: formData.annualIncome,
-        otherIncome: formData.otherIncome,
-        phoneNumber: formData.phoneNumber,
-        email: formData.email,
-        dateOfBirth: '',
-        agencyFileNo: formData.agencyFileNo,
-        applicationBarcode: formData.applicationBarcode,
-        caseId: formData.caseId,
-        schemeDesc: formData.schemeDescription,
-        additionalComments: '',
-        leadType: formData.leadType,
-        loanAmount: formData.loanAmount,
-        gender: formData.gender,
-        fatherName: formData.fatherName,
-        motherName: formData.motherName,
-        maritalStatus: formData.maritalStatus,
-        addresses: addresses,
-        coApplicants: coApplicants,
-        inhouseTeamAgent: formData.assignInhouseTeam ? formData.inhouseTeamAgent : null
+        company: formData.company || '',
+        designation: formData.designation || '',
+        workExperience: formData.workExperience || '',
+        propertyType: formData.propertyType || '',
+        ownershipStatus: formData.ownershipStatus || '',
+        propertyAge: formData.propertyAge || '',
+        monthlyIncome: formData.monthlyIncome || '',
+        annualIncome: formData.annualIncome || '',
+        otherIncome: formData.otherIncome || '',
+        phoneNumber: formData.phoneNumber || '',
+        email: formData.email || '',
+        leadType: formData.leadType || '',
+        bankBranch: formData.initiatedUnderBranch || '',
+        additionalComments: formData.additionalComments || '',
+        addresses: []
       },
-      status: 'Pending' as const,
-      bank: formData.bankName,
-      visitType: formData.visitType === 'Both Residence & Office' ? 'Both' : 
-                 formData.visitType === 'Office Verification' ? 'Office' : 'Residence',
-      assignedTo: formData.assignedAgent,
+      status: 'Pending',
+      bank: formData.selectedBank || '',
+      visitType: formData.visitType,
+      assignedTo: formData.assignedAgent || '',
       createdAt: new Date(),
-      documents: documents.filter(doc => doc.file !== null),
-      instructions: formData.specialInstructions
+      verificationDate: formData.verificationDate ? new Date(formData.verificationDate) : undefined,
+      documents: [],
+      instructions: formData.instructions || ''
     };
 
-    onAddLead(leadData);
+    onAddLead(newLead);
   };
 
-  const renderStep = () => {
-    switch (currentStep) {
-      case 0: // Step 1: Lead Type & Basic Info
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Lead Type & Basic Info</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="bankName">Bank Name</Label>
-                  <Select value={formData.bankName} onValueChange={(value) => handleInputChange('bankName', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select bank" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {banks.map((bank) => (
-                        <SelectItem key={bank.id} value={bank.name}>{bank.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="leadType">Lead Type/Product</Label>
-                  <Select value={formData.leadType} onValueChange={(value) => handleInputChange('leadType', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select lead type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredProducts.length > 0 ? (
-                        filteredProducts.map((product) => (
-                          <SelectItem key={product.id} value={product.name}>{product.name}</SelectItem>
-                        ))
-                      ) : (
-                        <SelectItem value="no-products" disabled>
-                          {formData.bankName ? 'No products available for selected bank' : 'Please select a bank first'}
-                        </SelectItem>
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="initiatedUnderBranch">Initiated Under Branch</Label>
-                  <Select value={formData.initiatedUnderBranch} onValueChange={(value) => handleInputChange('initiatedUnderBranch', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select initiated branch" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Main Branch">Main Branch</SelectItem>
-                      <SelectItem value="Secondary Branch">Secondary Branch</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="buildUnderBranch">Build Under Branch</Label>
-                  <Select value={formData.buildUnderBranch} onValueChange={(value) => handleInputChange('buildUnderBranch', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select build branch" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Main Branch">Main Branch</SelectItem>
-                      <SelectItem value="Secondary Branch">Secondary Branch</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="agencyFileNo">Agency File No. *</Label>
-                  <Input
-                    id="agencyFileNo"
-                    value={formData.agencyFileNo}
-                    onChange={(e) => handleInputChange('agencyFileNo', e.target.value)}
-                    placeholder="Enter agency file number"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="applicationBarcode">Application Barcode</Label>
-                  <Input
-                    id="applicationBarcode"
-                    value={formData.applicationBarcode}
-                    onChange={(e) => handleInputChange('applicationBarcode', e.target.value)}
-                    placeholder="Enter application barcode"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="caseId">Case ID</Label>
-                  <Input
-                    id="caseId"
-                    value={formData.caseId}
-                    onChange={(e) => handleInputChange('caseId', e.target.value)}
-                    placeholder="Enter case ID"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="loanAmount">Loan Amount</Label>
-                  <Input
-                    id="loanAmount"
-                    value={formData.loanAmount}
-                    onChange={(e) => handleInputChange('loanAmount', e.target.value)}
-                    placeholder="Enter loan amount"
-                  />
-                </div>
+  const renderStep1 = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle>Step 1: Lead Type & Basic Information</CardTitle>
+        <CardDescription>Enter basic lead information and bank details</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="bankName">Bank Name</Label>
+            <Select value={formData.selectedBank} onValueChange={(value) => handleInputChange('selectedBank', value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select bank" />
+              </SelectTrigger>
+              <SelectContent>
+                {banks.map((bank) => (
+                  <SelectItem key={bank.id} value={bank.id}>{bank.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="bankProduct">Bank Product</Label>
+            <Select 
+              value={formData.bankProduct} 
+              onValueChange={(value) => handleInputChange('bankProduct', value)}
+              disabled={!formData.selectedBank}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select bank product" />
+              </SelectTrigger>
+              <SelectContent>
+                {filteredProducts.map((product) => (
+                  <SelectItem key={product.id} value={product.id}>{product.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="initiatedUnderBranch">Initiated Under Branch</Label>
+            <Select 
+              value={formData.initiatedUnderBranch} 
+              onValueChange={(value) => handleInputChange('initiatedUnderBranch', value)}
+              disabled={!formData.selectedBank}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select branch" />
+              </SelectTrigger>
+              <SelectContent>
+                {filteredBranches.map((branch) => (
+                  <SelectItem key={branch.id} value={branch.id}>{branch.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="buildUnderBranch">Build Under Branch</Label>
+            <Select 
+              value={formData.buildUnderBranch} 
+              onValueChange={(value) => handleInputChange('buildUnderBranch', value)}
+              disabled={!formData.selectedBank}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select branch" />
+              </SelectTrigger>
+              <SelectContent>
+                {filteredBranches.map((branch) => (
+                  <SelectItem key={branch.id} value={branch.id}>{branch.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="name">Customer Name</Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) => handleInputChange('name', e.target.value)}
+              placeholder="Enter customer name"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="age">Age</Label>
+            <Input
+              id="age"
+              type="number"
+              value={formData.age}
+              onChange={(e) => handleInputChange('age', e.target.value)}
+              placeholder="Enter age"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="phoneNumber">Phone Number</Label>
+            <Input
+              id="phoneNumber"
+              value={formData.phoneNumber}
+              onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+              placeholder="Enter phone number"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => handleInputChange('email', e.target.value)}
+              placeholder="Enter email address"
+            />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const renderStep2 = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle>Step 2: Address Information</CardTitle>
+        <CardDescription>Enter customer address details</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="md:col-span-2">
+            <Label htmlFor="streetAddress">Street Address</Label>
+            <Textarea
+              id="streetAddress"
+              value={formData.streetAddress}
+              onChange={(e) => handleInputChange('streetAddress', e.target.value)}
+              placeholder="Enter street address"
+              rows={2}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="city">City</Label>
+            <Input
+              id="city"
+              value={formData.city}
+              onChange={(e) => handleInputChange('city', e.target.value)}
+              placeholder="Enter city"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="district">District</Label>
+            <Input
+              id="district"
+              value={formData.district}
+              onChange={(e) => handleInputChange('district', e.target.value)}
+              placeholder="Enter district"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="state">State</Label>
+            <Input
+              id="state"
+              value={formData.state}
+              onChange={(e) => handleInputChange('state', e.target.value)}
+              placeholder="Enter state"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="pincode">Pincode</Label>
+            <Input
+              id="pincode"
+              value={formData.pincode}
+              onChange={(e) => handleInputChange('pincode', e.target.value)}
+              placeholder="Enter pincode"
+            />
+          </div>
+
+          <div className="md:col-span-2">
+            <Label>Visit Type</Label>
+            <RadioGroup
+              value={formData.visitType}
+              onValueChange={(value) => handleInputChange('visitType', value)}
+              className="flex space-x-6 mt-2"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="Residence" id="residence" />
+                <Label htmlFor="residence">Residence</Label>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="schemeDescription">Scheme Description</Label>
-                <Textarea
-                  id="schemeDescription"
-                  value={formData.schemeDescription}
-                  onChange={(e) => handleInputChange('schemeDescription', e.target.value)}
-                  placeholder="Enter scheme description"
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="Office" id="office" />
+                <Label htmlFor="office">Office</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="Both" id="both" />
+                <Label htmlFor="both">Both</Label>
+              </div>
+            </RadioGroup>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const renderStep3 = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle>Step 3: Professional Details</CardTitle>
+        <CardDescription>Enter employment and income information</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="job">Job Title</Label>
+            <Input
+              id="job"
+              value={formData.job}
+              onChange={(e) => handleInputChange('job', e.target.value)}
+              placeholder="Enter job title"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="company">Company</Label>
+            <Input
+              id="company"
+              value={formData.company}
+              onChange={(e) => handleInputChange('company', e.target.value)}
+              placeholder="Enter company name"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="designation">Designation</Label>
+            <Input
+              id="designation"
+              value={formData.designation}
+              onChange={(e) => handleInputChange('designation', e.target.value)}
+              placeholder="Enter designation"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="workExperience">Work Experience</Label>
+            <Input
+              id="workExperience"
+              value={formData.workExperience}
+              onChange={(e) => handleInputChange('workExperience', e.target.value)}
+              placeholder="Enter work experience"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="monthlyIncome">Monthly Income</Label>
+            <Input
+              id="monthlyIncome"
+              value={formData.monthlyIncome}
+              onChange={(e) => handleInputChange('monthlyIncome', e.target.value)}
+              placeholder="Enter monthly income"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="annualIncome">Annual Income</Label>
+            <Input
+              id="annualIncome"
+              value={formData.annualIncome}
+              onChange={(e) => handleInputChange('annualIncome', e.target.value)}
+              placeholder="Enter annual income"
+            />
+          </div>
+
+          <div className="md:col-span-2">
+            <Label htmlFor="otherIncome">Other Income Sources</Label>
+            <Textarea
+              id="otherIncome"
+              value={formData.otherIncome}
+              onChange={(e) => handleInputChange('otherIncome', e.target.value)}
+              placeholder="Enter other income sources"
+              rows={2}
+            />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const renderStep4 = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle>Step 4: Property Details</CardTitle>
+        <CardDescription>Enter property information</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="propertyType">Property Type</Label>
+            <Input
+              id="propertyType"
+              value={formData.propertyType}
+              onChange={(e) => handleInputChange('propertyType', e.target.value)}
+              placeholder="Enter property type"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="ownershipStatus">Ownership Status</Label>
+            <Input
+              id="ownershipStatus"
+              value={formData.ownershipStatus}
+              onChange={(e) => handleInputChange('ownershipStatus', e.target.value)}
+              placeholder="Enter ownership status"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="propertyAge">Property Age</Label>
+            <Input
+              id="propertyAge"
+              value={formData.propertyAge}
+              onChange={(e) => handleInputChange('propertyAge', e.target.value)}
+              placeholder="Enter property age"
+            />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const renderStep5 = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle>Step 5: Additional Information</CardTitle>
+        <CardDescription>Final details and assignment</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-4">
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="hasCoApplicant"
+              checked={formData.hasCoApplicant}
+              onCheckedChange={(checked) => handleInputChange('hasCoApplicant', checked)}
+            />
+            <Label htmlFor="hasCoApplicant">Has Co-Applicant</Label>
+          </div>
+
+          {formData.hasCoApplicant && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border rounded-lg bg-gray-50">
+              <div>
+                <Label htmlFor="coApplicantName">Co-Applicant Name</Label>
+                <Input
+                  id="coApplicantName"
+                  value={formData.coApplicantName}
+                  onChange={(e) => handleInputChange('coApplicantName', e.target.value)}
+                  placeholder="Enter co-applicant name"
                 />
               </div>
-            </CardContent>
-          </Card>
-        );
-
-      case 1: // Step 2: Personal Information
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Personal Information</CardTitle>
-              <p className="text-sm text-muted-foreground">Enter customer personal details</p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="customerName">Customer Name *</Label>
-                  <Input
-                    id="customerName"
-                    value={formData.customerName}
-                    onChange={(e) => handleInputChange('customerName', e.target.value)}
-                    placeholder="Enter customer name"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phoneNumber">Phone Number *</Label>
-                  <Input
-                    id="phoneNumber"
-                    value={formData.phoneNumber}
-                    onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-                    placeholder="Enter phone number"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    placeholder="Enter email"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="age">Age</Label>
-                  <Input
-                    id="age"
-                    type="number"
-                    value={formData.age}
-                    onChange={(e) => handleInputChange('age', e.target.value)}
-                    placeholder="Enter age"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="gender">Gender</Label>
-                  <Select value={formData.gender} onValueChange={(value) => handleInputChange('gender', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select gender" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Male">Male</SelectItem>
-                      <SelectItem value="Female">Female</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="fatherName">Father's Name</Label>
-                  <Input
-                    id="fatherName"
-                    value={formData.fatherName}
-                    onChange={(e) => handleInputChange('fatherName', e.target.value)}
-                    placeholder="Enter father's name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="motherName">Mother's Name</Label>
-                  <Input
-                    id="motherName"
-                    value={formData.motherName}
-                    onChange={(e) => handleInputChange('motherName', e.target.value)}
-                    placeholder="Enter mother's name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="maritalStatus">Marital Status</Label>
-                  <Select value={formData.maritalStatus} onValueChange={(value) => handleInputChange('maritalStatus', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select marital status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Single">Single</SelectItem>
-                      <SelectItem value="Married">Married</SelectItem>
-                      <SelectItem value="Divorced">Divorced</SelectItem>
-                      <SelectItem value="Widowed">Widowed</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div>
+                <Label htmlFor="coApplicantPhone">Co-Applicant Phone</Label>
+                <Input
+                  id="coApplicantPhone"
+                  value={formData.coApplicantPhone}
+                  onChange={(e) => handleInputChange('coApplicantPhone', e.target.value)}
+                  placeholder="Enter co-applicant phone"
+                />
               </div>
-
-              <div className="mt-6">
-                <div className="flex items-center space-x-2 mb-4">
-                  <Checkbox
-                    id="hasCoApplicant"
-                    checked={hasCoApplicant}
-                    onCheckedChange={(checked) => setHasCoApplicant(checked as boolean)}
-                  />
-                  <Label htmlFor="hasCoApplicant">Add Co-Applicant</Label>
-                </div>
-
-                {hasCoApplicant && (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-medium">Co-Applicants</h4>
-                      <Button type="button" onClick={addCoApplicant} variant="outline" size="sm">
-                        <Plus className="w-4 h-4 mr-2" />
-                        Add Co-Applicant
-                      </Button>
-                    </div>
-
-                    {coApplicants.map((coApplicant, index) => (
-                      <div key={coApplicant.id} className="p-4 border rounded-lg space-y-4">
-                        <div className="flex items-center justify-between">
-                          <h5 className="font-medium">Co-Applicant {index + 1}</h5>
-                          <Button
-                            type="button"
-                            onClick={() => removeCoApplicant(coApplicant.id)}
-                            variant="outline"
-                            size="sm"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label>Name</Label>
-                            <Input
-                              value={coApplicant.name}
-                              onChange={(e) => updateCoApplicant(coApplicant.id, 'name', e.target.value)}
-                              placeholder="Enter name"
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <Label>Phone</Label>
-                            <Input
-                              value={coApplicant.phone}
-                              onChange={(e) => updateCoApplicant(coApplicant.id, 'phone', e.target.value)}
-                              placeholder="Enter phone"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+              <div>
+                <Label htmlFor="coApplicantRelation">Relationship</Label>
+                <Input
+                  id="coApplicantRelation"
+                  value={formData.coApplicantRelation}
+                  onChange={(e) => handleInputChange('coApplicantRelation', e.target.value)}
+                  placeholder="Enter relationship"
+                />
               </div>
-            </CardContent>
-          </Card>
-        );
+            </div>
+          )}
 
-      case 2: // Step 3: Job Details
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Job Details</CardTitle>
-              <p className="text-sm text-muted-foreground">Enter employment and job details</p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="companyName">Company Name</Label>
-                  <Input
-                    id="companyName"
-                    value={formData.companyName}
-                    onChange={(e) => handleInputChange('companyName', e.target.value)}
-                    placeholder="Enter company name"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="designation">Designation</Label>
-                  <Input
-                    id="designation"
-                    value={formData.designation}
-                    onChange={(e) => handleInputChange('designation', e.target.value)}
-                    placeholder="Enter designation"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="workExperience">Work Experience (Years)</Label>
-                  <Input
-                    id="workExperience"
-                    value={formData.workExperience}
-                    onChange={(e) => handleInputChange('workExperience', e.target.value)}
-                    placeholder="Enter work experience"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="employmentType">Employment Type</Label>
-                  <Select value={formData.employmentType} onValueChange={(value) => handleInputChange('employmentType', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select employment type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Full-time">Full-time</SelectItem>
-                      <SelectItem value="Part-time">Part-time</SelectItem>
-                      <SelectItem value="Self-employed">Self-employed</SelectItem>
-                      <SelectItem value="Unemployed">Unemployed</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="currentJobDuration">Current Job Duration (Years)</Label>
-                  <Input
-                    id="currentJobDuration"
-                    value={formData.currentJobDuration}
-                    onChange={(e) => handleInputChange('currentJobDuration', e.target.value)}
-                    placeholder="Enter current job duration"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        );
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="assignedAgent">Assign to Agent</Label>
+              <Select value={formData.assignedAgent} onValueChange={(value) => handleInputChange('assignedAgent', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select agent" />
+                </SelectTrigger>
+                <SelectContent>
+                  {agents.map((agent) => (
+                    <SelectItem key={agent.id} value={agent.id}>{agent.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-      case 3: // Step 4: Property & Income
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Property & Income</CardTitle>
-              <p className="text-sm text-muted-foreground">Enter property and income information</p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="propertyType">Property Type</Label>
-                  <Select value={formData.propertyType} onValueChange={(value) => handleInputChange('propertyType', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select property type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Apartment">Apartment</SelectItem>
-                      <SelectItem value="House">House</SelectItem>
-                      <SelectItem value="Villa">Villa</SelectItem>
-                      <SelectItem value="Land">Land</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="ownershipStatus">Ownership Status</Label>
-                  <Select value={formData.ownershipStatus} onValueChange={(value) => handleInputChange('ownershipStatus', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select ownership status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Owned">Owned</SelectItem>
-                      <SelectItem value="Rented">Rented</SelectItem>
-                      <SelectItem value="Leased">Leased</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="propertyAge">Property Age (Years)</Label>
-                  <Input
-                    id="propertyAge"
-                    value={formData.propertyAge}
-                    onChange={(e) => handleInputChange('propertyAge', e.target.value)}
-                    placeholder="Enter property age"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="monthlyIncome">Monthly Income</Label>
-                  <Input
-                    id="monthlyIncome"
-                    value={formData.monthlyIncome}
-                    onChange={(e) => handleInputChange('monthlyIncome', e.target.value)}
-                    placeholder="Enter monthly income"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="annualIncome">Annual Income</Label>
-                  <Input
-                    id="annualIncome"
-                    value={formData.annualIncome}
-                    onChange={(e) => handleInputChange('annualIncome', e.target.value)}
-                    placeholder="Enter annual income"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="otherIncome">Other Income</Label>
-                  <Input
-                    id="otherIncome"
-                    value={formData.otherIncome}
-                    onChange={(e) => handleInputChange('otherIncome', e.target.value)}
-                    placeholder="Enter other income"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        );
+            <div>
+              <Label htmlFor="verificationDate">Verification Date</Label>
+              <Input
+                id="verificationDate"
+                type="date"
+                value={formData.verificationDate}
+                onChange={(e) => handleInputChange('verificationDate', e.target.value)}
+              />
+            </div>
+          </div>
 
-      case 4: // Step 5: Home Addresses
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <div>
-                  <h3>Home Addresses</h3>
-                  <p className="text-sm text-muted-foreground">Enter home address details (you can add multiple addresses)</p>
-                </div>
-                <Button type="button" onClick={addAddress} variant="outline" size="sm">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Address
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {addresses.map((address, index) => (
-                <div key={address.id} className="p-4 border rounded-lg space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-medium">Address {index + 1}</h4>
-                    {addresses.length > 1 && (
-                      <Button
-                        type="button"
-                        onClick={() => removeAddress(address.id)}
-                        variant="outline"
-                        size="sm"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>State</Label>
-                      <Select value={address.state} onValueChange={(value) => updateAddress(address.id, 'state', value)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select state" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {locationData.states.map((state: any) => (
-                            <SelectItem key={state.id} value={state.name}>{state.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>District</Label>
-                      <Select value={address.district} onValueChange={(value) => updateAddress(address.id, 'district', value)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select district" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {locationData.states.map((state: any) => (
-                            state.districts.map((district: any) => (
-                              <SelectItem key={district.id} value={district.name}>{district.name}</SelectItem>
-                            ))
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>City</Label>
-                      <Select value={address.city} onValueChange={(value) => updateAddress(address.id, 'city', value)}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select city" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {locationData.states.map((state: any) => (
-                            state.districts.map((district: any) => (
-                              district.cities.map((city: any) => (
-                                <SelectItem key={city.id} value={city.name}>{city.name}</SelectItem>
-                              ))
-                            ))
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Street Address</Label>
-                      <Input
-                        value={address.street}
-                        onChange={(e) => updateAddress(address.id, 'street', e.target.value)}
-                        placeholder="Enter complete address"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Pincode</Label>
-                      <Input
-                        value={address.pincode}
-                        onChange={(e) => updateAddress(address.id, 'pincode', e.target.value)}
-                        placeholder="Enter pincode"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`verification-${address.id}`}
-                      checked={address.requiresVerification}
-                      onCheckedChange={(checked) => updateAddress(address.id, 'requiresVerification', checked)}
-                    />
-                    <Label htmlFor={`verification-${address.id}`}>
-                      Require verification for this address
-                    </Label>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        );
+          <div>
+            <Label htmlFor="instructions">Special Instructions</Label>
+            <Textarea
+              id="instructions"
+              value={formData.instructions}
+              onChange={(e) => handleInputChange('instructions', e.target.value)}
+              placeholder="Enter any special instructions for the agent"
+              rows={3}
+            />
+          </div>
 
-      case 5: // Step 6: Work & Office Address
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Work & Office Address</CardTitle>
-              <p className="text-sm text-muted-foreground">Enter work and office address</p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="workState">State</Label>
-                  <Select value={formData.workState} onValueChange={(value) => handleInputChange('workState', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select state" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {locationData.states.map((state: any) => (
-                        <SelectItem key={state.id} value={state.name}>{state.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="workDistrict">District</Label>
-                  <Select value={formData.workDistrict} onValueChange={(value) => handleInputChange('workDistrict', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select district" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {locationData.states.map((state: any) => (
-                        state.districts.map((district: any) => (
-                          <SelectItem key={district.id} value={district.name}>{district.name}</SelectItem>
-                        ))
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="workCity">City</Label>
-                  <Select value={formData.workCity} onValueChange={(value) => handleInputChange('workCity', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select city" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {locationData.states.map((state: any) => (
-                        state.districts.map((district: any) => (
-                          district.cities.map((city: any) => (
-                            <SelectItem key={city.id} value={city.name}>{city.name}</SelectItem>
-                          ))
-                        ))
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="officeAddress">Office Address</Label>
-                  <Textarea
-                    id="officeAddress"
-                    value={formData.officeAddress}
-                    onChange={(e) => handleInputChange('officeAddress', e.target.value)}
-                    placeholder="Enter office address"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="workPincode">Pincode</Label>
-                  <Input
-                    id="workPincode"
-                    value={formData.workPincode}
-                    onChange={(e) => handleInputChange('workPincode', e.target.value)}
-                    placeholder="Enter pincode"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        );
+          <div>
+            <Label htmlFor="additionalComments">Additional Comments</Label>
+            <Textarea
+              id="additionalComments"
+              value={formData.additionalComments}
+              onChange={(e) => handleInputChange('additionalComments', e.target.value)}
+              placeholder="Enter any additional comments"
+              rows={3}
+            />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
-      case 6: // Step 7: Document Upload
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Document Upload</CardTitle>
-              <p className="text-sm text-muted-foreground">Upload required documents</p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {documents.map((document, index) => (
-                <div key={document.id} className="p-4 border rounded-lg space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-medium">Document {index + 1}</h4>
-                    {documents.length > 2 && (
-                      <Button
-                        type="button"
-                        onClick={() => removeDocument(document.id)}
-                        variant="outline"
-                        size="sm"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Document Title</Label>
-                      <Input
-                        value={document.title}
-                        onChange={(e) => updateDocument(document.id, 'title', e.target.value)}
-                        placeholder="Enter document title"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Upload File</Label>
-                      <div className="flex items-center space-x-2">
-                        <Input
-                          type="file"
-                          onChange={(e) => updateDocument(document.id, 'file', e.target.files?.[0] || null)}
-                          className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
-                        />
-                        <Upload className="w-4 h-4" />
-                      </div>
-                      {!document.file && <p className="text-xs text-muted-foreground">No file chosen</p>}
-                    </div>
-                  </div>
-                </div>
-              ))}
-              <Button type="button" onClick={addDocument} variant="outline" className="w-full">
-                <Plus className="w-4 h-4 mr-2" />
-                Add More Document
-              </Button>
-            </CardContent>
-          </Card>
-        );
-
-      case 7: // Step 8: Verification Options
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Verification Options</CardTitle>
-              <p className="text-sm text-muted-foreground">Set verification preferences</p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Visit Type</Label>
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="radio"
-                        id="residence"
-                        name="visitType"
-                        value="Residence Verification"
-                        checked={formData.visitType === 'Residence Verification'}
-                        onChange={(e) => handleInputChange('visitType', e.target.value)}
-                      />
-                      <Label htmlFor="residence">Residence Verification</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="radio"
-                        id="office"
-                        name="visitType"
-                        value="Office Verification"
-                        checked={formData.visitType === 'Office Verification'}
-                        onChange={(e) => handleInputChange('visitType', e.target.value)}
-                      />
-                      <Label htmlFor="office">Office Verification</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="radio"
-                        id="both"
-                        name="visitType"
-                        value="Both Residence & Office"
-                        checked={formData.visitType === 'Both Residence & Office'}
-                        onChange={(e) => handleInputChange('visitType', e.target.value)}
-                      />
-                      <Label htmlFor="both">Both Residence & Office</Label>
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Preferred Verification Date</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "w-full justify-start text-left font-normal",
-                          !formData.preferredVerificationDate && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {formData.preferredVerificationDate ? format(formData.preferredVerificationDate, "dd-MM-yyyy") : "dd-mm-yyyy"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={formData.preferredVerificationDate}
-                        onSelect={(date) => handleInputChange('preferredVerificationDate', date)}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="specialInstructions">Special Instructions</Label>
-                  <Textarea
-                    id="specialInstructions"
-                    value={formData.specialInstructions}
-                    onChange={(e) => handleInputChange('specialInstructions', e.target.value)}
-                    placeholder="Enter special instructions"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        );
-
-      case 8: // Step 9: Agent Assignment
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle>Agent Assignment</CardTitle>
-              <p className="text-sm text-muted-foreground">Assign agents for verification and review</p>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Address-specific agent assignment */}
-              <div className="space-y-4">
-                <h4 className="font-medium text-lg">Address Verification Assignment</h4>
-                {addresses.filter(addr => addr.requiresVerification).length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No addresses require verification</p>
-                ) : (
-                  addresses.filter(addr => addr.requiresVerification).map((address, index) => (
-                    <div key={address.id} className="p-4 border rounded-lg space-y-3">
-                      <div className="space-y-2">
-                        <Label className="font-medium">Address {addresses.indexOf(address) + 1}</Label>
-                        <p className="text-sm text-muted-foreground">
-                          {address.street}, {address.city}, {address.district}, {address.state} - {address.pincode}
-                        </p>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Assign Agent for this Address</Label>
-                        <Select 
-                          value={address.assignedAgent || ''} 
-                          onValueChange={(value) => updateAddress(address.id, 'assignedAgent', value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select agent for this address" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {agents.filter(agent => agent.role === 'agent').map((agent) => (
-                              <SelectItem key={agent.id} value={agent.name}>
-                                {agent.name} ({agent.district || 'No District'})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {/* Primary agent assignment */}
-              <div className="space-y-4">
-                <h4 className="font-medium text-lg">Primary Agent Assignment</h4>
-                <div className="space-y-2">
-                  <Label htmlFor="assignedAgent">Primary Assigned Agent</Label>
-                  <Select value={formData.assignedAgent} onValueChange={(value) => handleInputChange('assignedAgent', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select primary agent" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {agents.filter(agent => agent.role === 'agent').map((agent) => (
-                        <SelectItem key={agent.id} value={agent.name}>{agent.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Inhouse Team Assignment */}
-              <div className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="assignInhouseTeam"
-                    checked={formData.assignInhouseTeam}
-                    onCheckedChange={(checked) => handleInputChange('assignInhouseTeam', checked)}
-                  />
-                  <Label htmlFor="assignInhouseTeam" className="font-medium">
-                    Assign this lead to Inhouse Team Agent too
-                  </Label>
-                </div>
-
-                {formData.assignInhouseTeam && (
-                  <div className="space-y-2 ml-6">
-                    <Label htmlFor="inhouseTeamAgent">Select Inhouse Team Agent</Label>
-                    <Select value={formData.inhouseTeamAgent} onValueChange={(value) => handleInputChange('inhouseTeamAgent', value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select Inhouse Team agent" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {inhouseTeamAgents.length > 0 ? (
-                          inhouseTeamAgents.map((agent) => (
-                            <SelectItem key={agent.id} value={agent.name}>
-                              {agent.name} ({agent.email})
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <SelectItem value="no-agents" disabled>
-                            No Inhouse Team agents available
-                          </SelectItem>
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        );
-
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 1:
+        return renderStep1();
+      case 2:
+        return renderStep2();
+      case 3:
+        return renderStep3();
+      case 4:
+        return renderStep4();
+      case 5:
+        return renderStep5();
       default:
-        return <div>Unknown step</div>;
+        return renderStep1();
     }
   };
 
   return (
-    <div className="container mx-auto mt-8">
-      <h2 className="text-2xl font-bold mb-4">Add New Lead</h2>
-      
-      {/* Step Navigation */}
-      <div className="mb-6">
-        <div className="flex flex-wrap gap-2 mb-4">
-          {stepTitles.map((title, index) => (
-            <Button
-              key={index}
-              variant={currentStep === index ? "default" : "outline"}
-              size="sm"
-              onClick={() => goToStep(index)}
-              className={cn(
-                "text-xs px-3 py-1",
-                currentStep === index && "bg-primary text-primary-foreground"
-              )}
-            >
-              {index + 1}. {title}
-            </Button>
-          ))}
-        </div>
-        
-        {/* Progress Indicator */}
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium">Step {currentStep + 1} of {stepTitles.length}</span>
-          <span className="text-sm text-muted-foreground">
-            {Math.round(((currentStep + 1) / stepTitles.length) * 100)}% Complete
-          </span>
-        </div>
-        <div className="w-full bg-muted rounded-full h-2">
-          <div 
-            className="bg-primary h-2 rounded-full transition-all duration-300" 
-            style={{ width: `${((currentStep + 1) / stepTitles.length) * 100}%` }}
-          ></div>
-        </div>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Add New Lead</h1>
+        <Button variant="outline" onClick={onClose}>
+          <X className="mr-2 h-4 w-4" />
+          Close
+        </Button>
       </div>
 
-      {renderStep()}
-      
-      <div className="flex justify-between mt-6">
-        <Button variant="outline" onClick={onClose}>
-          Cancel
+      {/* Step indicator */}
+      <div className="flex items-center justify-center space-x-4 mb-8">
+        {[1, 2, 3, 4, 5].map((step) => (
+          <div
+            key={step}
+            className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
+              step === currentStep
+                ? 'border-blue-500 bg-blue-500 text-white'
+                : step < currentStep
+                ? 'border-green-500 bg-green-500 text-white'
+                : 'border-gray-300 bg-white text-gray-400'
+            }`}
+          >
+            {step}
+          </div>
+        ))}
+      </div>
+
+      {renderStepContent()}
+
+      {/* Navigation buttons */}
+      <div className="flex justify-between">
+        <Button
+          variant="outline"
+          onClick={handlePrev}
+          disabled={currentStep === 1}
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Previous
         </Button>
-        <div>
-          {currentStep > 0 && (
-            <Button onClick={prevStep} className="mr-2">
-              Previous
-            </Button>
-          )}
-          {currentStep < stepTitles.length - 1 ? (
-            <Button onClick={nextStep}>
+
+        <div className="space-x-2">
+          {currentStep < 5 ? (
+            <Button onClick={handleNext}>
               Next
+              <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           ) : (
             <Button onClick={handleSubmit}>
-              Submit
+              Create Lead
             </Button>
           )}
         </div>

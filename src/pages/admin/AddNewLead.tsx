@@ -1,6 +1,7 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, mockBanks } from '@/utils/mockData';
+import { User } from '@/utils/mockData';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
 import AddLeadFormMultiStep from '@/components/admin/AddLeadFormMultiStep';
@@ -226,7 +227,7 @@ const AddNewLead = () => {
           <div className="max-w-7xl mx-auto">
             <AddLeadFormMultiStep 
               agents={agents}
-              banks={mockBanks}
+              banks={[]} // Empty array since we're now using the new bank module
               onAddLead={handleAddLead}
               onClose={handleClose}
               locationData={locationData}
