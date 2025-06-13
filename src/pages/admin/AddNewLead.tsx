@@ -28,7 +28,6 @@ interface LocationData {
 const AddNewLead = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [agents, setAgents] = useState<User[]>([]);
   const [locationData, setLocationData] = useState<LocationData>({
     states: []
   });
@@ -49,59 +48,8 @@ const AddNewLead = () => {
     }
 
     setCurrentUser(parsedUser);
-    loadAgents();
     loadLocationData();
   }, [navigate]);
-
-  const loadAgents = async () => {
-    try {
-      // Try to get agents from database first
-      const { data: dbAgents, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('role', 'agent');
-
-      if (!error && dbAgents && dbAgents.length > 0) {
-        const transformedAgents = dbAgents.map((agent: any) => ({
-          id: agent.id,
-          name: agent.name,
-          role: agent.role,
-          email: agent.email,
-          phone: agent.phone || '',
-          district: agent.district || '',
-          status: agent.status || 'Active',
-          state: agent.state,
-          city: agent.city,
-          baseLocation: agent.base_location,
-          maxTravelDistance: agent.max_travel_distance,
-          extraChargePerKm: agent.extra_charge_per_km,
-          profilePicture: agent.profile_picture,
-          totalVerifications: agent.total_verifications || 0,
-          completionRate: agent.completion_rate || 0,
-          password: agent.password
-        }));
-        setAgents(transformedAgents);
-        return;
-      }
-    } catch (error) {
-      console.error('Error loading agents from database:', error);
-    }
-
-    // Fall back to localStorage
-    const storedUsers = localStorage.getItem('mockUsers');
-    if (storedUsers) {
-      try {
-        const parsedUsers = JSON.parse(storedUsers);
-        const filteredAgents = parsedUsers.filter((user: User) => user.role === 'agent');
-        setAgents(filteredAgents);
-      } catch (error) {
-        console.error("Error parsing stored users:", error);
-        setAgents([]);
-      }
-    } else {
-      setAgents([]);
-    }
-  };
 
   const loadLocationData = () => {
     // Get location data from localStorage or initialize empty structure
@@ -204,10 +152,6 @@ const AddNewLead = () => {
     }
   };
 
-  const handleClose = () => {
-    navigate('/admin/leads');
-  };
-
   if (!currentUser) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
   }
@@ -226,10 +170,7 @@ const AddNewLead = () => {
         <main className="flex-1 p-4 md:p-6">
           <div className="max-w-7xl mx-auto">
             <AddLeadFormMultiStep 
-              agents={agents}
-              banks={[]} // Empty array since we're now using the new bank module
-              onAddLead={handleAddLead}
-              onClose={handleClose}
+              onSubmit={handleAddLead}
               locationData={locationData}
             />
           </div>

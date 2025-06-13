@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -16,6 +17,21 @@ import { banks, bankBranches, leadTypes, agents } from '@/utils/mockData';
 import { Address } from '@/utils/mockData';
 import { getPropertyTypes } from '@/lib/property-operations';
 import { getVehicleBrands, getVehicleTypes, getVehicleModels } from '@/lib/vehicle-operations';
+
+interface LocationData {
+  states: {
+    id: string;
+    name: string;
+    districts: {
+      id: string;
+      name: string;
+      cities: {
+        id: string;
+        name: string;
+      }[];
+    }[];
+  }[];
+}
 
 interface FormData {
   // Step 1: Lead Type & Basic Information
@@ -86,9 +102,10 @@ interface FormData {
 
 interface AddLeadFormMultiStepProps {
   onSubmit: (data: any) => void;
+  locationData: LocationData;
 }
 
-const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({ onSubmit }) => {
+const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({ onSubmit, locationData }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [propertyTypes, setPropertyTypes] = useState<Array<{ id: string; name: string }>>([]);
   const [vehicleBrands, setVehicleBrands] = useState<Array<{ id: string; name: string }>>([]);
@@ -392,6 +409,20 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({ onSubmit })
     }
   };
 
+  // Helper function to get districts based on selected state
+  const getDistrictsForState = (stateId: string) => {
+    const state = locationData.states.find(s => s.id === stateId || s.name === stateId);
+    return state ? state.districts : [];
+  };
+
+  // Helper function to get cities based on selected district
+  const getCitiesForDistrict = (stateId: string, districtId: string) => {
+    const state = locationData.states.find(s => s.id === stateId || s.name === stateId);
+    if (!state) return [];
+    const district = state.districts.find(d => d.id === districtId || d.name === districtId);
+    return district ? district.cities : [];
+  };
+
   const renderStep = () => {
     switch (currentStep) {
       case 1:
@@ -556,42 +587,57 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({ onSubmit })
 
                     <div>
                       <Label>State</Label>
-                      <Select value={address.state} onValueChange={(value) => handleAddressChange(index, 'state', value)}>
+                      <Select value={address.state} onValueChange={(value) => {
+                        handleAddressChange(index, 'state', value);
+                        handleAddressChange(index, 'district', ''); // Reset district when state changes
+                        handleAddressChange(index, 'city', ''); // Reset city when state changes
+                      }}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select state" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Karnataka">Karnataka</SelectItem>
-                          <SelectItem value="Maharashtra">Maharashtra</SelectItem>
-                          <SelectItem value="Tamil Nadu">Tamil Nadu</SelectItem>
+                          {locationData.states.map(state => (
+                            <SelectItem key={state.id} value={state.name}>{state.name}</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
 
                     <div>
                       <Label>District</Label>
-                      <Select value={address.district} onValueChange={(value) => handleAddressChange(index, 'district', value)}>
+                      <Select 
+                        value={address.district} 
+                        onValueChange={(value) => {
+                          handleAddressChange(index, 'district', value);
+                          handleAddressChange(index, 'city', ''); // Reset city when district changes
+                        }}
+                        disabled={!address.state}
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="Select district" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Bangalore Urban">Bangalore Urban</SelectItem>
-                          <SelectItem value="Mumbai">Mumbai</SelectItem>
-                          <SelectItem value="Chennai">Chennai</SelectItem>
+                          {getDistrictsForState(address.state).map(district => (
+                            <SelectItem key={district.id} value={district.name}>{district.name}</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
 
                     <div>
                       <Label>City</Label>
-                      <Select value={address.city} onValueChange={(value) => handleAddressChange(index, 'city', value)}>
+                      <Select 
+                        value={address.city} 
+                        onValueChange={(value) => handleAddressChange(index, 'city', value)}
+                        disabled={!address.district}
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="Select city" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Bangalore">Bangalore</SelectItem>
-                          <SelectItem value="Mumbai">Mumbai</SelectItem>
-                          <SelectItem value="Chennai">Chennai</SelectItem>
+                          {getCitiesForDistrict(address.state, address.district).map(city => (
+                            <SelectItem key={city.id} value={city.name}>{city.name}</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -610,7 +656,7 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({ onSubmit })
                     <Checkbox
                       id={`verify-${index}`}
                       checked={address.requiresVerification}
-                      onCheckedChange={(checked) => handleAddressChange(index, 'requiresVerification', checked)}
+                      onCheckedChange={(checked) => handleAddressChange(index, 'requiresVerification', checked as boolean)}
                     />
                     <Label htmlFor={`verify-${index}`}>This address requires verification</Label>
                   </div>
@@ -699,49 +745,66 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({ onSubmit })
                     <Label>State</Label>
                     <Select value={formData.officeAddress.state} onValueChange={(value) => setFormData(prev => ({
                       ...prev,
-                      officeAddress: { ...prev.officeAddress, state: value }
+                      officeAddress: { 
+                        ...prev.officeAddress, 
+                        state: value,
+                        district: '', // Reset district when state changes
+                        city: '' // Reset city when state changes
+                      }
                     }))}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select state" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Karnataka">Karnataka</SelectItem>
-                        <SelectItem value="Maharashtra">Maharashtra</SelectItem>
-                        <SelectItem value="Tamil Nadu">Tamil Nadu</SelectItem>
+                        {locationData.states.map(state => (
+                          <SelectItem key={state.id} value={state.name}>{state.name}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div>
                     <Label>District</Label>
-                    <Select value={formData.officeAddress.district} onValueChange={(value) => setFormData(prev => ({
-                      ...prev,
-                      officeAddress: { ...prev.officeAddress, district: value }
-                    }))}>
+                    <Select 
+                      value={formData.officeAddress.district} 
+                      onValueChange={(value) => setFormData(prev => ({
+                        ...prev,
+                        officeAddress: { 
+                          ...prev.officeAddress, 
+                          district: value,
+                          city: '' // Reset city when district changes
+                        }
+                      }))}
+                      disabled={!formData.officeAddress.state}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select district" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Bangalore Urban">Bangalore Urban</SelectItem>
-                        <SelectItem value="Mumbai">Mumbai</SelectItem>
-                        <SelectItem value="Chennai">Chennai</SelectItem>
+                        {getDistrictsForState(formData.officeAddress.state).map(district => (
+                          <SelectItem key={district.id} value={district.name}>{district.name}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div>
                     <Label>City</Label>
-                    <Select value={formData.officeAddress.city} onValueChange={(value) => setFormData(prev => ({
-                      ...prev,
-                      officeAddress: { ...prev.officeAddress, city: value }
-                    }))}>
+                    <Select 
+                      value={formData.officeAddress.city} 
+                      onValueChange={(value) => setFormData(prev => ({
+                        ...prev,
+                        officeAddress: { ...prev.officeAddress, city: value }
+                      }))}
+                      disabled={!formData.officeAddress.district}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select city" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Bangalore">Bangalore</SelectItem>
-                        <SelectItem value="Mumbai">Mumbai</SelectItem>
-                        <SelectItem value="Chennai">Chennai</SelectItem>
+                        {getCitiesForDistrict(formData.officeAddress.state, formData.officeAddress.district).map(city => (
+                          <SelectItem key={city.id} value={city.name}>{city.name}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
