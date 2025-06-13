@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,8 +10,9 @@ import { Separator } from "@/components/ui/separator";
 import { User, Lead, mockLeads } from '@/utils/mockData';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
+import DocumentViewer from '@/components/shared/DocumentViewer';
 import { toast } from '@/components/ui/use-toast';
-import { Save, ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
+import { Save, ArrowLeft, CheckCircle, XCircle, FileText } from 'lucide-react';
 
 interface VerificationField {
   fieldName: string;
@@ -108,6 +108,13 @@ const TvtLeadDetail = () => {
     
     const fields: VerificationField[] = [
       {
+        fieldName: 'Lead ID',
+        originalValue: leadData.id || '',
+        verifiedValue: '',
+        isCorrect: null,
+        notes: ''
+      },
+      {
         fieldName: 'Customer Name',
         originalValue: leadData.name || '',
         verifiedValue: '',
@@ -150,8 +157,43 @@ const TvtLeadDetail = () => {
         notes: ''
       },
       {
+        fieldName: 'Designation',
+        originalValue: leadData.additionalDetails?.designation || 'Not provided',
+        verifiedValue: '',
+        isCorrect: null,
+        notes: ''
+      },
+      {
+        fieldName: 'Work Experience',
+        originalValue: leadData.additionalDetails?.workExperience || 'Not provided',
+        verifiedValue: '',
+        isCorrect: null,
+        notes: ''
+      },
+      {
         fieldName: 'Monthly Income',
         originalValue: leadData.additionalDetails?.monthlyIncome || 'Not provided',
+        verifiedValue: '',
+        isCorrect: null,
+        notes: ''
+      },
+      {
+        fieldName: 'Annual Income',
+        originalValue: leadData.additionalDetails?.annualIncome || 'Not provided',
+        verifiedValue: '',
+        isCorrect: null,
+        notes: ''
+      },
+      {
+        fieldName: 'Other Income',
+        originalValue: leadData.additionalDetails?.otherIncome || 'Not provided',
+        verifiedValue: '',
+        isCorrect: null,
+        notes: ''
+      },
+      {
+        fieldName: 'Date of Birth',
+        originalValue: leadData.additionalDetails?.dateOfBirth || 'Not provided',
         verifiedValue: '',
         isCorrect: null,
         notes: ''
@@ -161,6 +203,139 @@ const TvtLeadDetail = () => {
         originalValue: leadData.address ? 
           `${leadData.address.street || ''}, ${leadData.address.city || ''}, ${leadData.address.district || ''}, ${leadData.address.state || ''} - ${leadData.address.pincode || ''}` : 
           'Address not provided',
+        verifiedValue: '',
+        isCorrect: null,
+        notes: ''
+      },
+      {
+        fieldName: 'Property Type',
+        originalValue: leadData.additionalDetails?.propertyType || 'Not provided',
+        verifiedValue: '',
+        isCorrect: null,
+        notes: ''
+      },
+      {
+        fieldName: 'Property Age',
+        originalValue: leadData.additionalDetails?.propertyAge || 'Not provided',
+        verifiedValue: '',
+        isCorrect: null,
+        notes: ''
+      },
+      {
+        fieldName: 'Ownership Status',
+        originalValue: leadData.additionalDetails?.ownershipStatus || 'Not provided',
+        verifiedValue: '',
+        isCorrect: null,
+        notes: ''
+      },
+      {
+        fieldName: 'Bank',
+        originalValue: leadData.bank || '',
+        verifiedValue: '',
+        isCorrect: null,
+        notes: ''
+      },
+      {
+        fieldName: 'Bank Branch',
+        originalValue: leadData.additionalDetails?.bankBranch || 'Not provided',
+        verifiedValue: '',
+        isCorrect: null,
+        notes: ''
+      },
+      {
+        fieldName: 'Lead Type',
+        originalValue: leadData.additionalDetails?.leadType || 'Not provided',
+        verifiedValue: '',
+        isCorrect: null,
+        notes: ''
+      },
+      {
+        fieldName: 'Loan Type',
+        originalValue: leadData.additionalDetails?.loanType || 'Not provided',
+        verifiedValue: '',
+        isCorrect: null,
+        notes: ''
+      },
+      {
+        fieldName: 'Loan Amount',
+        originalValue: leadData.additionalDetails?.loanAmount || 'Not provided',
+        verifiedValue: '',
+        isCorrect: null,
+        notes: ''
+      },
+      {
+        fieldName: 'Application Barcode',
+        originalValue: leadData.additionalDetails?.applicationBarcode || 'Not provided',
+        verifiedValue: '',
+        isCorrect: null,
+        notes: ''
+      },
+      {
+        fieldName: 'Agency File No',
+        originalValue: leadData.additionalDetails?.agencyFileNo || 'Not provided',
+        verifiedValue: '',
+        isCorrect: null,
+        notes: ''
+      },
+      {
+        fieldName: 'Case ID',
+        originalValue: leadData.additionalDetails?.caseId || 'Not provided',
+        verifiedValue: '',
+        isCorrect: null,
+        notes: ''
+      },
+      {
+        fieldName: 'Vehicle Brand',
+        originalValue: leadData.additionalDetails?.vehicleBrandName || 'Not provided',
+        verifiedValue: '',
+        isCorrect: null,
+        notes: ''
+      },
+      {
+        fieldName: 'Vehicle Model',
+        originalValue: leadData.additionalDetails?.vehicleModelName || 'Not provided',
+        verifiedValue: '',
+        isCorrect: null,
+        notes: ''
+      },
+      {
+        fieldName: 'Scheme Description',
+        originalValue: leadData.additionalDetails?.schemeDesc || 'Not provided',
+        verifiedValue: '',
+        isCorrect: null,
+        notes: ''
+      },
+      {
+        fieldName: 'Additional Comments',
+        originalValue: leadData.additionalDetails?.additionalComments || 'Not provided',
+        verifiedValue: '',
+        isCorrect: null,
+        notes: ''
+      },
+      {
+        fieldName: 'Visit Type',
+        originalValue: leadData.visitType || '',
+        verifiedValue: '',
+        isCorrect: null,
+        notes: ''
+      },
+      {
+        fieldName: 'Instructions',
+        originalValue: leadData.instructions || 'No instructions',
+        verifiedValue: '',
+        isCorrect: null,
+        notes: ''
+      },
+      {
+        fieldName: 'Assigned To',
+        originalValue: leadData.assignedTo || 'Unassigned',
+        verifiedValue: '',
+        isCorrect: null,
+        notes: ''
+      },
+      {
+        fieldName: 'Created Date',
+        originalValue: new Date(leadData.createdAt).toLocaleDateString(),
         verifiedValue: '',
         isCorrect: null,
         notes: ''
@@ -179,6 +354,20 @@ const TvtLeadDetail = () => {
       fields.push({
         fieldName: 'Co-Applicant Phone',
         originalValue: leadData.additionalDetails.coApplicant.phone || '',
+        verifiedValue: '',
+        isCorrect: null,
+        notes: ''
+      });
+      fields.push({
+        fieldName: 'Co-Applicant Email',
+        originalValue: leadData.additionalDetails.coApplicant.email || '',
+        verifiedValue: '',
+        isCorrect: null,
+        notes: ''
+      });
+      fields.push({
+        fieldName: 'Co-Applicant Relationship',
+        originalValue: leadData.additionalDetails.coApplicant.relationship || '',
         verifiedValue: '',
         isCorrect: null,
         notes: ''
@@ -252,6 +441,37 @@ const TvtLeadDetail = () => {
     localStorage.removeItem('kycUser');
     navigate('/');
   };
+
+  // Mock documents for demonstration
+  const mockDocuments = [
+    {
+      id: '1',
+      name: 'Aadhaar Card.pdf',
+      type: 'PDF',
+      url: '/placeholder.svg',
+      uploadedBy: 'System',
+      uploadDate: new Date(),
+      size: 245760
+    },
+    {
+      id: '2',
+      name: 'Income Certificate.jpg',
+      type: 'Image',
+      url: '/placeholder.svg',
+      uploadedBy: 'Agent',
+      uploadDate: new Date(),
+      size: 512000
+    },
+    {
+      id: '3',
+      name: 'Bank Statement.pdf',
+      type: 'PDF',
+      url: '/placeholder.svg',
+      uploadedBy: 'Customer',
+      uploadDate: new Date(),
+      size: 1024000
+    }
+  ];
 
   if (isLoading) {
     return (
@@ -346,6 +566,22 @@ const TvtLeadDetail = () => {
               </CardContent>
             </Card>
 
+            {/* Documents Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Lead Documents
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <DocumentViewer 
+                  documents={mockDocuments} 
+                  title="Uploaded Documents"
+                />
+              </CardContent>
+            </Card>
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Original Lead Data */}
               <Card>
@@ -356,13 +592,13 @@ const TvtLeadDetail = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="space-y-3">
+                  <div className="space-y-3 max-h-[800px] overflow-y-auto">
                     {verificationFields.map((field, index) => (
-                      <div key={field.fieldName} className="space-y-2">
+                      <div key={field.fieldName} className="space-y-2 p-3 border rounded-lg">
                         <label className="text-sm font-medium text-muted-foreground">
                           {field.fieldName}:
                         </label>
-                        <p className="text-sm bg-muted p-2 rounded border">
+                        <p className="text-sm bg-muted p-2 rounded border min-h-[40px] flex items-center">
                           {field.originalValue || 'N/A'}
                         </p>
                       </div>
@@ -383,7 +619,7 @@ const TvtLeadDetail = () => {
                   <div className="text-sm text-muted-foreground mb-4">
                     Enter verified data and mark if each field is correct or incorrect
                   </div>
-                  <div className="space-y-4 max-h-[600px] overflow-y-auto">
+                  <div className="space-y-4 max-h-[800px] overflow-y-auto">
                     {verificationFields.map((field, index) => (
                       <div key={field.fieldName} className="space-y-2 p-3 border rounded-lg">
                         <label className="text-sm font-medium">
