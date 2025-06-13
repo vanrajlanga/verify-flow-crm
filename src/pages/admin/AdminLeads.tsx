@@ -1,58 +1,45 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, Lead, mockBanks } from '@/utils/mockData';
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { User, Lead } from '@/utils/mockData';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
-import LeadList from '@/components/dashboard/LeadList';
-import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { toast } from '@/components/ui/use-toast';
-import EditLeadForm from '@/components/admin/EditLeadForm';
-import { Plus, Download, Upload } from 'lucide-react';
 import { 
-  getLeadsFromDatabase, 
-  updateLeadInDatabase, 
-  deleteLeadFromDatabase 
-} from '@/lib/lead-operations';
+  Search, 
+  Eye, 
+  RefreshCw,
+  Plus,
+  MapPin,
+  Building,
+  Calendar,
+  UserPlus,
+  Phone
+} from 'lucide-react';
+import { getLeadsFromDatabase, updateLeadInDatabase } from '@/lib/lead-operations';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
-
-interface LocationData {
-  states: {
-    id: string;
-    name: string;
-    districts: {
-      id: string;
-      name: string;
-      cities: {
-        id: string;
-        name: string;
-      }[];
-    }[];
-  }[];
-}
 
 const AdminLeads = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [agents, setAgents] = useState<User[]>([]);
-  const [locationData, setLocationData] = useState<LocationData>({
-    states: []
-  });
-  const [editingLead, setEditingLead] = useState<Lead | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [banks, setBanks] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [bankFilter, setBankFilter] = useState('all');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user is logged in
     const storedUser = localStorage.getItem('kycUser');
     if (!storedUser) {
       navigate('/');
@@ -66,96 +53,72 @@ const AdminLeads = () => {
     }
 
     setCurrentUser(parsedUser);
-    loadLeadsAndAgents();
-    loadLocationData();
+    loadAllData();
   }, [navigate]);
 
-  // Force refresh on page focus/visibility change
+  // Auto-refresh every 3 seconds when page is active
   useEffect(() => {
-    const handleFocus = () => {
-      console.log('AdminLeads: Window focused, force refreshing leads...');
-      loadLeadsAndAgents(true);
-    };
-
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        console.log('AdminLeads: Page became visible, force refreshing leads...');
-        loadLeadsAndAgents(true);
-      }
-    };
-
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    // More aggressive refresh - every 3 seconds when page is active
     const interval = setInterval(() => {
       if (!document.hidden) {
-        console.log('AdminLeads: Aggressive refresh - loading leads...');
-        loadLeadsAndAgents(true);
+        console.log('AdminLeads: Auto-refresh from database...');
+        loadAllData();
       }
     }, 3000);
 
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      clearInterval(interval);
-    };
+    return () => clearInterval(interval);
   }, []);
 
-  const loadLeadsAndAgents = async (forceRefresh = false) => {
-    if (isLoading && !forceRefresh) return;
-    
-    setIsLoading(true);
+  const loadAllData = async () => {
     try {
-      console.log('AdminLeads: Starting data load with force refresh:', forceRefresh);
+      console.log('AdminLeads: Loading all data from database...');
       
-      // ALWAYS load from database, never from localStorage
-      const dbLeads = await getLeadsFromDatabase(forceRefresh);
-      console.log('AdminLeads: Database leads loaded:', dbLeads.length);
-      
+      // Load leads from database
+      const dbLeads = await getLeadsFromDatabase(true);
+      console.log('AdminLeads: Loaded leads from database:', dbLeads.length);
       setLeads(dbLeads);
-      
-      // Force update the UI by setting leads again
-      setTimeout(() => {
-        setLeads([...dbLeads]);
-      }, 100);
 
       // Load agents from database
-      try {
-        const { data: dbAgents, error } = await supabase
-          .from('users')
-          .select('*')
-          .eq('role', 'agent');
+      const { data: dbAgents, error: agentsError } = await supabase
+        .from('users')
+        .select('*')
+        .in('role', ['agent', 'tvtteam']);
 
-        if (!error && dbAgents && dbAgents.length > 0) {
-          const transformedAgents = dbAgents.map((agent: any) => ({
-            id: agent.id,
-            name: agent.name,
-            role: agent.role,
-            email: agent.email,
-            phone: agent.phone || '',
-            district: agent.district || '',
-            status: agent.status || 'active',
-            state: agent.state,
-            city: agent.city,
-            baseLocation: agent.base_location,
-            maxTravelDistance: agent.max_travel_distance,
-            extraChargePerKm: agent.extra_charge_per_km,
-            profilePicture: agent.profile_picture,
-            totalVerifications: agent.total_verifications || 0,
-            completionRate: agent.completion_rate || 0,
-            password: agent.password
-          }));
-          setAgents(transformedAgents);
-        }
-      } catch (error) {
-        console.error('Error loading agents from database:', error);
+      if (!agentsError && dbAgents) {
+        const transformedAgents = dbAgents.map((agent: any) => ({
+          id: agent.id,
+          name: agent.name,
+          role: agent.role,
+          email: agent.email,
+          phone: agent.phone || '',
+          district: agent.district || '',
+          status: agent.status || 'active',
+          state: agent.state,
+          city: agent.city,
+          baseLocation: agent.base_location,
+          maxTravelDistance: agent.max_travel_distance,
+          extraChargePerKm: agent.extra_charge_per_km,
+          profilePicture: agent.profile_picture,
+          totalVerifications: agent.total_verifications || 0,
+          completionRate: agent.completion_rate || 0,
+          password: agent.password
+        }));
+        setAgents(transformedAgents);
       }
+
+      // Load banks from database
+      const { data: dbBanks, error: banksError } = await supabase
+        .from('banks')
+        .select('*');
+
+      if (!banksError && dbBanks) {
+        setBanks(dbBanks);
+      }
+
     } catch (error) {
-      console.error('AdminLeads: Error in loadLeadsAndAgents:', error);
+      console.error('AdminLeads: Error loading data:', error);
       toast({
         title: "Data Loading Error",
-        description: "Failed to load latest data. Please refresh manually.",
+        description: "Failed to load data from database.",
         variant: "destructive"
       });
     } finally {
@@ -163,56 +126,24 @@ const AdminLeads = () => {
     }
   };
 
-  const loadLocationData = () => {
-    const storedLocationData = localStorage.getItem('locationData');
-    if (storedLocationData) {
-      try {
-        const parsedLocationData = JSON.parse(storedLocationData);
-        setLocationData(parsedLocationData);
-      } catch (error) {
-        console.error("Error parsing stored location data:", error);
-        initializeDefaultLocationData();
-      }
-    } else {
-      initializeDefaultLocationData();
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await loadAllData();
+      toast({
+        title: "Data Refreshed",
+        description: "All data refreshed from database successfully.",
+      });
+    } catch (error) {
+      console.error('AdminLeads: Error refreshing data:', error);
+      toast({
+        title: "Refresh Failed",
+        description: "Failed to refresh data from database.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshing(false);
     }
-  };
-
-  const initializeDefaultLocationData = () => {
-    const defaultLocationData = {
-      states: [
-        {
-          id: 'state-1',
-          name: 'Karnataka',
-          districts: [
-            {
-              id: 'district-1',
-              name: 'Bangalore Urban',
-              cities: [
-                { id: 'city-1', name: 'Bangalore' },
-                { id: 'city-2', name: 'Electronic City' }
-              ]
-            }
-          ]
-        },
-        {
-          id: 'state-2',
-          name: 'Maharashtra',
-          districts: [
-            {
-              id: 'district-2',
-              name: 'Mumbai',
-              cities: [
-                { id: 'city-3', name: 'Mumbai' },
-                { id: 'city-4', name: 'Navi Mumbai' }
-              ]
-            }
-          ]
-        }
-      ]
-    };
-    setLocationData(defaultLocationData);
-    localStorage.setItem('locationData', JSON.stringify(defaultLocationData));
   };
 
   const handleLogout = () => {
@@ -220,456 +151,61 @@ const AdminLeads = () => {
     navigate('/');
   };
 
-  // Force refresh function for manual calls
-  const handleForceRefresh = async () => {
-    console.log('AdminLeads: Manual force refresh requested...');
-    await loadLeadsAndAgents(true);
-    toast({
-      title: "Data Refreshed",
-      description: "Lead data has been refreshed from database.",
-    });
+  const handleViewLead = (leadId: string) => {
+    navigate(`/admin/leads/${leadId}`);
   };
 
-  const handleUpdateLead = async (leadId: string, newStatus: Lead['status']) => {
+  const handleAssignAgent = async (leadId: string, agentId: string) => {
     try {
-      await updateLeadInDatabase(leadId, { status: newStatus });
-      
-      const updatedLeads = leads.map(lead =>
-        lead.id === leadId ? { ...lead, status: newStatus } : lead
-      );
-      setLeads(updatedLeads);
-
-      toast({
-        title: "Lead updated",
-        description: `Lead ${leadId} status updated to ${newStatus}.`,
-      });
-
-      // Force reload from database
-      loadLeadsAndAgents(true);
-    } catch (error) {
-      console.error('Error updating lead:', error);
-      toast({
-        title: "Update failed",
-        description: "Failed to update lead status.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleEditLead = (lead: Lead) => {
-    setEditingLead(lead);
-  };
-
-  const handleUpdateLeadData = async (updatedLead: Lead) => {
-    try {
-      await updateLeadInDatabase(updatedLead.id, updatedLead);
-      
-      const updatedLeads = leads.map(lead =>
-        lead.id === updatedLead.id ? updatedLead : lead
-      );
-      setLeads(updatedLeads);
-
-      toast({
-        title: "Lead updated",
-        description: `Lead ${updatedLead.name} has been updated successfully.`,
-      });
-      setEditingLead(null);
-      
-      loadLeadsAndAgents(true);
-    } catch (error) {
-      console.error('Error updating lead data:', error);
-      toast({
-        title: "Update failed",
-        description: "Failed to update lead data.",
-        variant: "destructive"
-      });
-      setEditingLead(null);
-    }
-  };
-
-  const handleAddNewLead = () => {
-    navigate('/admin/add-lead');
-  };
-
-  const handleDeleteLead = async (leadId: string) => {
-    try {
-      await deleteLeadFromDatabase(leadId);
-      
-      const updatedLeads = leads.filter(lead => lead.id !== leadId);
-      setLeads(updatedLeads);
-
-      toast({
-        title: "Lead deleted",
-        description: `Lead ${leadId} has been removed.`,
-      });
-
-      loadLeadsAndAgents(true);
-    } catch (error) {
-      console.error('Error deleting lead:', error);
-      toast({
-        title: "Delete failed",
-        description: "Failed to delete lead.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleBulkDelete = async (leadIds: string[]) => {
-    try {
-      console.log('Bulk deleting leads:', leadIds);
-      
-      for (const leadId of leadIds) {
-        try {
-          await deleteLeadFromDatabase(leadId);
-          console.log('Deleted lead from database:', leadId);
-        } catch (error) {
-          console.error('Error deleting lead from database:', leadId, error);
-        }
-      }
-      
-      const updatedLeads = leads.filter(lead => !leadIds.includes(lead.id));
-      setLeads(updatedLeads);
-
-      console.log('Bulk delete completed. Remaining leads:', updatedLeads.length);
-
-      toast({
-        title: "Leads deleted",
-        description: `${leadIds.length} leads have been permanently removed.`,
-      });
-
-      loadLeadsAndAgents(true);
-    } catch (error) {
-      console.error('Error bulk deleting leads:', error);
-      
-      toast({
-        title: "Bulk delete failed",
-        description: "Some leads could not be deleted. Please try again.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleAssignLead = async (leadId: string, agentId: string) => {
-    try {
-      console.log('Assigning lead in AdminLeads:', leadId, 'to agent:', agentId);
-      
       await updateLeadInDatabase(leadId, { 
-        assignedTo: agentId, 
-        status: 'Pending' as Lead['status'] 
+        assignedTo: agentId,
+        status: 'Pending' as Lead['status']
       });
       
-      const updatedLeads = leads.map(lead => {
-        if (lead.id === leadId) {
-          const updatedLead = {
-            ...lead,
-            assignedTo: agentId,
-            status: 'Pending' as Lead['status'],
-            verification: {
-              ...lead.verification,
-              agentId: agentId,
-              status: 'Not Started'
-            }
-          } as Lead;
-          return updatedLead;
-        }
-        return lead;
-      });
+      await loadAllData(); // Refresh from database
       
-      setLeads(updatedLeads);
-
       const agent = agents.find(a => a.id === agentId);
       toast({
-        title: "Lead assigned",
-        description: `Lead has been assigned to ${agent?.name || 'the selected agent'}.`,
+        title: "Agent Assigned",
+        description: `Lead assigned to ${agent?.name || 'agent'} successfully.`,
       });
-
-      loadLeadsAndAgents(true);
     } catch (error) {
-      console.error('Error assigning lead:', error);
+      console.error('Error assigning agent:', error);
       toast({
-        title: "Assignment failed",
-        description: "Failed to assign lead to agent.",
+        title: "Assignment Failed",
+        description: "Failed to assign agent to lead.",
         variant: "destructive"
       });
     }
   };
 
-  const handleExport = (format: 'csv' | 'xls') => {
-    // This is handled in LeadList component with enhanced functionality
-  };
-
-  const handleImport = async (file: File) => {
-    try {
-      const content = await file.text();
-      let importedLeads: Lead[] = [];
-      
-      // Check if it's JSON (from our enhanced export) or CSV
-      if (file.name.endsWith('.json') || content.startsWith('[')) {
-        try {
-          importedLeads = JSON.parse(content);
-        } catch (error) {
-          console.error('Error parsing JSON:', error);
-          throw new Error('Invalid JSON format');
-        }
-      } else {
-        // Handle CSV import (existing logic)
-        const lines = content.split('\n');
-        const headers = lines[0].split(',');
-        
-        for (let i = 1; i < lines.length; i++) {
-          const values = lines[i].split(',');
-          if (values.length >= 3 && values[1].trim()) {
-            const newLead: Lead = {
-              id: `imported-lead-${Date.now()}-${i}`,
-              name: values[1].trim(),
-              age: 30,
-              job: values[3] || 'Not specified',
-              address: {
-                type: 'Residence',
-                street: values[5] || '',
-                city: 'Not specified',
-                district: 'Not specified',
-                state: 'Not specified',
-                pincode: '000000'
-              },
-              additionalDetails: {
-                agencyFileNo: values[0] || '',
-                phoneNumber: values[2] || '',
-                company: '',
-                designation: '',
-                workExperience: '',
-                propertyType: '',
-                ownershipStatus: '',
-                propertyAge: '',
-                monthlyIncome: '',
-                annualIncome: '',
-                otherIncome: '',
-                addresses: []
-              },
-              status: 'Pending',
-              bank: 'bank-1',
-              visitType: 'Residence',
-              assignedTo: '',
-              createdAt: new Date(),
-              documents: [],
-              instructions: ''
-            };
-            importedLeads.push(newLead);
-          }
-        }
-      }
-      
-      if (importedLeads.length > 0) {
-        const updatedLeads = [...leads, ...importedLeads];
-        setLeads(updatedLeads);
-        localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
-        
-        toast({
-          title: "Import successful",
-          description: `${importedLeads.length} leads have been imported with complete data.`,
-        });
-
-        // Reload data from database
-        loadLeadsAndAgents(true);
-      } else {
-        toast({
-          title: "Import failed",
-          description: "No valid leads found in the file.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error('Import error:', error);
-      toast({
-        title: "Import failed",
-        description: "Error reading the file. Please check the format.",
-        variant: "destructive",
-      });
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Pending': return 'bg-yellow-100 text-yellow-800';
+      case 'In Progress': return 'bg-blue-100 text-blue-800';
+      case 'Completed': return 'bg-green-100 text-green-800';
+      case 'Rejected': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const exportToCSV = () => {
-    const headers = [
-      'Name', 'Age', 'Job', 'Phone', 'Email', 'Street', 'City', 'District', 'State', 'Pincode',
-      'Bank', 'Visit Type', 'Status', 'Assigned To', 'Company', 'Designation', 'Work Experience',
-      'Property Type', 'Ownership Status', 'Property Age', 'Monthly Income', 'Annual Income',
-      'Other Income', 'Agency File No', 'Application Barcode', 'Case ID', 'Scheme Description',
-      'Bank Branch', 'Lead Type', 'Loan Amount', 'Loan Type', 'Vehicle Brand', 'Vehicle Model',
-      'Additional Comments', 'Instructions', 'Created At'
-    ];
-
-    const csvData = leads.map(lead => [
-      lead.name,
-      lead.age,
-      lead.job,
-      lead.additionalDetails?.phoneNumber || '',
-      lead.additionalDetails?.email || '',
-      lead.address?.street || '',
-      lead.address?.city || '',
-      lead.address?.district || '',
-      lead.address?.state || '',
-      lead.address?.pincode || '',
-      lead.bank,
-      lead.visitType,
-      lead.status,
-      lead.assignedTo,
-      lead.additionalDetails?.company || '',
-      lead.additionalDetails?.designation || '',
-      lead.additionalDetails?.workExperience || '',
-      lead.additionalDetails?.propertyType || '',
-      lead.additionalDetails?.ownershipStatus || '',
-      lead.additionalDetails?.propertyAge || '',
-      lead.additionalDetails?.monthlyIncome || '',
-      lead.additionalDetails?.annualIncome || '',
-      lead.additionalDetails?.otherIncome || '',
-      lead.additionalDetails?.agencyFileNo || '',
-      lead.additionalDetails?.applicationBarcode || '',
-      lead.additionalDetails?.caseId || '',
-      lead.additionalDetails?.schemeDesc || '',
-      lead.additionalDetails?.bankBranch || '',
-      lead.additionalDetails?.leadType || '',
-      lead.additionalDetails?.loanAmount || '',
-      lead.additionalDetails?.loanType || '',
-      lead.additionalDetails?.vehicleBrandName || '',
-      lead.additionalDetails?.vehicleModelName || '',
-      lead.additionalDetails?.additionalComments || '',
-      lead.instructions || '',
-      lead.createdAt ? new Date(lead.createdAt).toLocaleDateString() : ''
-    ]);
-
-    const csvContent = [headers, ...csvData]
-      .map(row => row.map(field => `"${field}"`).join(','))
-      .join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `leads_export_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
-
-    toast({
-      title: "Export Successful",
-      description: `${leads.length} leads exported to CSV`
-    });
-  };
-
-  const downloadSampleCSV = () => {
-    const headers = [
-      'Name', 'Age', 'Job', 'Phone', 'Email', 'Street', 'City', 'District', 'State', 'Pincode',
-      'Bank', 'Visit Type', 'Status', 'Assigned To', 'Company', 'Designation', 'Work Experience',
-      'Property Type', 'Ownership Status', 'Property Age', 'Monthly Income', 'Annual Income',
-      'Other Income', 'Agency File No', 'Application Barcode', 'Case ID', 'Scheme Description',
-      'Bank Branch', 'Lead Type', 'Loan Amount', 'Loan Type', 'Vehicle Brand', 'Vehicle Model',
-      'Additional Comments', 'Instructions', 'Created At'
-    ];
-
-    const sampleData = [
-      'John Doe', '30', 'Software Engineer', '+91 9876543210', 'john@example.com', '123 Main St',
-      'Mumbai', 'Mumbai', 'Maharashtra', '400001', 'HDFC Bank', 'Residence', 'Pending',
-      'Agent Name', 'Tech Corp', 'Senior Developer', '5 years', 'Apartment', 'Owned',
-      '2 years', '75000', '900000', '50000', 'AGF123456', 'BC789', 'CS001', 'Home Loan Scheme',
-      'HDFC Bandra', 'Home Loan', '2500000', 'Home Loan', '', '', 'Sample lead for testing',
-      'Please verify during business hours', new Date().toLocaleDateString()
-    ];
-
-    const csvContent = [headers, sampleData]
-      .map(row => Array.isArray(row) ? row.map(field => `"${field}"`).join(',') : row)
-      .join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'leads_sample_data.csv';
-    a.click();
-    window.URL.revokeObjectURL(url);
-
-    toast({
-      title: "Sample Data Downloaded",
-      description: "Sample CSV file downloaded successfully"
-    });
-  };
-
-  const importFromCSV = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const csv = e.target?.result as string;
-      const lines = csv.split('\n');
-      const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
-      
-      const newLeads = lines.slice(1)
-        .filter(line => line.trim())
-        .map((line, index) => {
-          const values = line.split(',').map(v => v.replace(/"/g, '').trim());
-          
-          return {
-            id: `imported-lead-${Date.now()}-${index}`,
-            name: values[0] || '',
-            age: parseInt(values[1]) || 0,
-            job: values[2] || '',
-            address: {
-              type: 'Residence' as const,
-              street: values[5] || '',
-              city: values[6] || '',
-              district: values[7] || '',
-              state: values[8] || '',
-              pincode: values[9] || ''
-            },
-            additionalDetails: {
-              phoneNumber: values[3] || '',
-              email: values[4] || '',
-              company: values[14] || '',
-              designation: values[15] || '',
-              workExperience: values[16] || '',
-              propertyType: values[17] || '',
-              ownershipStatus: values[18] || '',
-              propertyAge: values[19] || '',
-              monthlyIncome: values[20] || '',
-              annualIncome: values[21] || '',
-              otherIncome: values[22] || '',
-              agencyFileNo: values[23] || '',
-              applicationBarcode: values[24] || '',
-              caseId: values[25] || '',
-              schemeDesc: values[26] || '',
-              bankBranch: values[27] || '',
-              leadType: values[28] || '',
-              loanAmount: values[29] || '',
-              loanType: values[30] || '',
-              vehicleBrandName: values[31] || '',
-              vehicleModelName: values[32] || '',
-              additionalComments: values[33] || '',
-              addresses: []
-            },
-            status: (values[12] as 'Pending' | 'In Progress' | 'Completed' | 'Rejected') || 'Pending',
-            bank: values[10] || '',
-            visitType: (values[11] as 'Office' | 'Residence' | 'Both') || 'Residence',
-            assignedTo: values[13] || '',
-            createdAt: new Date(),
-            documents: [],
-            instructions: values[34] || ''
-          };
-        });
-
-      const updatedLeads = [...leads, ...newLeads];
-      setLeads(updatedLeads);
-      localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
-
-      toast({
-        title: "Import Successful",
-        description: `${newLeads.length} leads imported successfully`
-      });
-    };
-    reader.readAsText(file);
-  };
+  // Filter leads
+  const filteredLeads = leads.filter(lead => {
+    const matchesSearch = searchTerm === '' || 
+      lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.bank.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.address.city.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === 'all' || lead.status === statusFilter;
+    const matchesBank = bankFilter === 'all' || lead.bank === bankFilter;
+    
+    return matchesSearch && matchesStatus && matchesBank;
+  });
 
   if (!currentUser) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
-  };
+  }
 
   return (
     <div className="flex min-h-screen bg-muted/30">
@@ -684,89 +220,183 @@ const AdminLeads = () => {
         
         <main className="flex-1 p-4 md:p-6">
           <div className="max-w-7xl mx-auto space-y-6">
+            {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
                 <h1 className="text-2xl font-bold tracking-tight">Leads Management</h1>
                 <p className="text-muted-foreground">
-                  Manage and track all verification leads - Database-driven with real-time updates
+                  Database-driven lead management - {leads.length} leads loaded
                 </p>
               </div>
               <div className="flex gap-2 flex-wrap">
-                <Button onClick={downloadSampleCSV} variant="outline">
-                  <Download className="h-4 w-4 mr-2" />
-                  Download Sample Data
+                <Button 
+                  onClick={handleManualRefresh} 
+                  variant="outline" 
+                  disabled={isRefreshing}
+                  className="flex items-center gap-2"
+                >
+                  <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  Refresh from DB
                 </Button>
-                <Button onClick={exportToCSV} variant="outline">
-                  <Download className="h-4 w-4 mr-2" />
-                  Export CSV
-                </Button>
-                <div className="relative">
-                  <input
-                    type="file"
-                    accept=".csv"
-                    onChange={importFromCSV}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  />
-                  <Button variant="outline">
-                    <Upload className="h-4 w-4 mr-2" />
-                    Import CSV
-                  </Button>
-                </div>
                 <Button asChild>
                   <Link to="/admin/add-lead">
                     <Plus className="h-4 w-4 mr-2" />
                     Add New Lead
                   </Link>
                 </Button>
+                <Button asChild variant="outline">
+                  <Link to="/admin/leads-sheet">
+                    View Sheet
+                  </Link>
+                </Button>
               </div>
             </div>
+
+            {/* Filters */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex-1 relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                      placeholder="Search leads..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                  
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-full sm:w-[180px]">
+                      <SelectValue placeholder="Filter by status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="Pending">Pending</SelectItem>
+                      <SelectItem value="In Progress">In Progress</SelectItem>
+                      <SelectItem value="Completed">Completed</SelectItem>
+                      <SelectItem value="Rejected">Rejected</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={bankFilter} onValueChange={setBankFilter}>
+                    <SelectTrigger className="w-full sm:w-[180px]">
+                      <SelectValue placeholder="Filter by bank" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Banks</SelectItem>
+                      {banks.map((bank) => (
+                        <SelectItem key={bank.id} value={bank.name}>
+                          {bank.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Leads List */}
             <Card>
               <CardHeader>
-                <CardTitle>Leads List ({leads.length})</CardTitle>
+                <CardTitle>Leads ({filteredLeads.length})</CardTitle>
                 <CardDescription>
-                  Real-time lead data loaded directly from database - Auto-refreshes every 3 seconds
+                  Real-time data from database - Auto-refreshes every 3 seconds
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <LeadList 
-                  leads={leads} 
-                  currentUser={currentUser}
-                  banks={mockBanks}
-                  agents={agents}
-                  onLeadUpdate={(lead) => {
-                    if (lead && lead.id && lead.status) {
-                      handleUpdateLead(lead.id, lead.status);
-                    }
-                  }}
-                  onViewLead={(leadId) => navigate(`/lead/${leadId}`)}
-                  onRefresh={handleForceRefresh}
-                />
+                {isLoading ? (
+                  <div className="text-center py-8">Loading leads from database...</div>
+                ) : filteredLeads.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground mb-4">No leads found in database.</p>
+                    <Button 
+                      onClick={handleManualRefresh} 
+                      variant="outline"
+                      disabled={isRefreshing}
+                    >
+                      <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                      Refresh from Database
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {filteredLeads.map((lead) => (
+                      <Card key={lead.id} className="hover:shadow-md transition-shadow">
+                        <CardContent className="pt-6">
+                          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                            <div className="flex-1 space-y-2">
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                                <h3 className="font-semibold text-lg">{lead.name}</h3>
+                                <Badge className={getStatusColor(lead.status)}>
+                                  {lead.status}
+                                </Badge>
+                              </div>
+                              
+                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-sm text-muted-foreground">
+                                <div className="flex items-center gap-1">
+                                  <Building className="h-4 w-4" />
+                                  <span>{lead.bank}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <MapPin className="h-4 w-4" />
+                                  <span>{lead.address.city}, {lead.address.state}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="h-4 w-4" />
+                                  <span>{new Date(lead.createdAt).toLocaleDateString()}</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <UserPlus className="h-4 w-4" />
+                                  <span>{lead.assignedTo || 'Unassigned'}</span>
+                                </div>
+                              </div>
+                              
+                              {lead.additionalDetails?.phoneNumber && (
+                                <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                  <Phone className="h-4 w-4" />
+                                  <span>{lead.additionalDetails.phoneNumber}</span>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleViewLead(lead.id)}
+                              >
+                                <Eye className="h-4 w-4 mr-1" />
+                                View
+                              </Button>
+
+                              <Select onValueChange={(agentId) => handleAssignAgent(lead.id, agentId)}>
+                                <SelectTrigger asChild>
+                                  <Button variant="outline" size="sm">
+                                    <UserPlus className="h-4 w-4 mr-1" />
+                                    Assign Agent
+                                  </Button>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {agents.map((agent) => (
+                                    <SelectItem key={agent.id} value={agent.id}>
+                                      {agent.name} ({agent.role})
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
         </main>
       </div>
-
-      {editingLead && (
-        <Dialog open={!!editingLead} onOpenChange={() => setEditingLead(null)}>
-          <DialogContent className="sm:max-w-5xl w-full">
-            <DialogHeader>
-              <DialogTitle>Edit Complete Lead Data</DialogTitle>
-              <DialogDescription>
-                Update all lead information including personal details, addresses, financial data, and verification details.
-              </DialogDescription>
-            </DialogHeader>
-            <EditLeadForm 
-              lead={editingLead}
-              agents={agents}
-              banks={mockBanks}
-              onUpdate={handleUpdateLeadData}
-              onClose={() => setEditingLead(null)}
-              locationData={locationData}
-            />
-          </DialogContent>
-        </Dialog>
-      )}
     </div>
   );
 };

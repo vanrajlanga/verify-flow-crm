@@ -7,12 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { User, Lead, mockBanks } from '@/utils/mockData';
+import { User, Lead } from '@/utils/mockData';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
 import { toast } from '@/components/ui/use-toast';
-import { Save, Edit, Download, Upload, FileDown, FileUp, RefreshCw } from 'lucide-react';
+import { Save, Edit, RefreshCw } from 'lucide-react';
 import { getLeadsFromDatabase, updateLeadInDatabase } from '@/lib/lead-operations';
+import { supabase } from '@/integrations/supabase/client';
 
 const AdminLeadsSheet = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -22,6 +23,7 @@ const AdminLeadsSheet = () => {
   const [editingCell, setEditingCell] = useState<{leadId: string, field: string} | null>(null);
   const [editValue, setEditValue] = useState<string>('');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -38,86 +40,83 @@ const AdminLeadsSheet = () => {
     }
 
     setCurrentUser(parsedUser);
-    loadData();
+    loadAllData();
   }, [navigate]);
 
-  // Super aggressive refresh for sheet page
+  // Super aggressive refresh for sheet page - every 2 seconds
   useEffect(() => {
-    const handleFocus = () => {
-      console.log('AdminLeadsSheet: Window focused, force refreshing data...');
-      loadData(true);
-    };
-
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        console.log('AdminLeadsSheet: Page became visible, force refreshing data...');
-        loadData(true);
-      }
-    };
-
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    // Ultra-aggressive refresh every 2 seconds for sheet view
     const interval = setInterval(() => {
       if (!document.hidden) {
-        console.log('AdminLeadsSheet: Ultra-aggressive refresh - loading data...');
-        loadData(true);
+        console.log('AdminLeadsSheet: Ultra-aggressive refresh from database...');
+        loadAllData();
       }
     }, 2000);
 
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      clearInterval(interval);
-    };
+    return () => clearInterval(interval);
   }, []);
 
-  const loadData = async (forceRefresh = false) => {
+  const loadAllData = async () => {
     try {
-      console.log('AdminLeadsSheet: Loading data with force refresh:', forceRefresh);
+      console.log('AdminLeadsSheet: Loading all data from database...');
       
-      // ALWAYS load from database, never from localStorage
-      const dbLeads = await getLeadsFromDatabase(forceRefresh);
-      console.log('AdminLeadsSheet: Database leads loaded for sheet:', dbLeads.length);
-      
+      // Load leads from database
+      const dbLeads = await getLeadsFromDatabase(true);
+      console.log('AdminLeadsSheet: Loaded leads from database:', dbLeads.length);
       setLeads(dbLeads);
-      
-      // Force update the UI by setting leads again
-      setTimeout(() => {
-        setLeads([...dbLeads]);
-      }, 100);
 
-      // Load agents
-      const storedUsers = localStorage.getItem('mockUsers');
-      if (storedUsers) {
-        const users = JSON.parse(storedUsers);
-        setAgents(users.filter((user: User) => user.role === 'agent'));
+      // Load agents from database
+      const { data: dbAgents, error: agentsError } = await supabase
+        .from('users')
+        .select('*')
+        .in('role', ['agent', 'tvtteam']);
+
+      if (!agentsError && dbAgents) {
+        const transformedAgents = dbAgents.map((agent: any) => ({
+          id: agent.id,
+          name: agent.name,
+          role: agent.role,
+          email: agent.email,
+          phone: agent.phone || '',
+          district: agent.district || '',
+          status: agent.status || 'active',
+          state: agent.state,
+          city: agent.city,
+          baseLocation: agent.base_location,
+          maxTravelDistance: agent.max_travel_distance,
+          extraChargePerKm: agent.extra_charge_per_km,
+          profilePicture: agent.profile_picture,
+          totalVerifications: agent.total_verifications || 0,
+          completionRate: agent.completion_rate || 0,
+          password: agent.password
+        }));
+        setAgents(transformedAgents);
       }
+
     } catch (error) {
-      console.error('AdminLeadsSheet: Error loading data for sheet:', error);
+      console.error('AdminLeadsSheet: Error loading data:', error);
       toast({
         title: "Data Loading Error",
-        description: "Failed to load latest data for the sheet.",
+        description: "Failed to load data from database.",
         variant: "destructive"
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Manual refresh with loading state
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await loadData(true);
+      await loadAllData();
       toast({
         title: "Sheet Refreshed",
-        description: "Lead sheet data has been refreshed from database.",
+        description: "Sheet data refreshed from database successfully.",
       });
     } catch (error) {
       console.error('AdminLeadsSheet: Error refreshing sheet:', error);
       toast({
         title: "Refresh Failed",
-        description: "Failed to refresh sheet data. Please try again.",
+        description: "Failed to refresh sheet data from database.",
         variant: "destructive",
       });
     } finally {
@@ -139,105 +138,96 @@ const AdminLeadsSheet = () => {
     if (!editingCell) return;
 
     try {
-      const updatedLeads = leads.map(lead => {
-        if (lead.id === editingCell.leadId) {
-          const updatedLead = { ...lead };
-          
-          // Handle different field types
-          switch (editingCell.field) {
-            case 'name':
-              updatedLead.name = editValue;
-              break;
-            case 'age':
-              updatedLead.age = parseInt(editValue) || 0;
-              break;
-            case 'job':
-              updatedLead.job = editValue;
-              break;
-            case 'status':
-              updatedLead.status = editValue as Lead['status'];
-              break;
-            case 'visitType':
-              updatedLead.visitType = editValue as Lead['visitType'];
-              break;
-            case 'assignedTo':
-              updatedLead.assignedTo = editValue;
-              break;
-            case 'instructions':
-              updatedLead.instructions = editValue;
-              break;
-            case 'phoneNumber':
-              if (!updatedLead.additionalDetails) updatedLead.additionalDetails = {} as any;
-              updatedLead.additionalDetails.phoneNumber = editValue;
-              break;
-            case 'email':
-              if (!updatedLead.additionalDetails) updatedLead.additionalDetails = {} as any;
-              updatedLead.additionalDetails.email = editValue;
-              break;
-            case 'company':
-              if (!updatedLead.additionalDetails) updatedLead.additionalDetails = {} as any;
-              updatedLead.additionalDetails.company = editValue;
-              break;
-            case 'designation':
-              if (!updatedLead.additionalDetails) updatedLead.additionalDetails = {} as any;
-              updatedLead.additionalDetails.designation = editValue;
-              break;
-            case 'loanAmount':
-              if (!updatedLead.additionalDetails) updatedLead.additionalDetails = {} as any;
-              updatedLead.additionalDetails.loanAmount = editValue;
-              break;
-            case 'monthlyIncome':
-              if (!updatedLead.additionalDetails) updatedLead.additionalDetails = {} as any;
-              updatedLead.additionalDetails.monthlyIncome = editValue;
-              break;
-            case 'annualIncome':
-              if (!updatedLead.additionalDetails) updatedLead.additionalDetails = {} as any;
-              updatedLead.additionalDetails.annualIncome = editValue;
-              break;
-            case 'street':
-              updatedLead.address.street = editValue;
-              break;
-            case 'city':
-              updatedLead.address.city = editValue;
-              break;
-            case 'state':
-              updatedLead.address.state = editValue;
-              break;
-            case 'pincode':
-              updatedLead.address.pincode = editValue;
-              break;
-            default:
-              break;
-          }
-          
-          return updatedLead;
-        }
-        return lead;
-      });
+      const leadToUpdate = leads.find(l => l.id === editingCell.leadId);
+      if (!leadToUpdate) return;
 
-      setLeads(updatedLeads);
+      const updatedLead = { ...leadToUpdate };
       
-      // Update in database
-      const leadToUpdate = updatedLeads.find(l => l.id === editingCell.leadId);
-      if (leadToUpdate) {
-        await updateLeadInDatabase(editingCell.leadId, leadToUpdate);
+      // Handle different field types
+      switch (editingCell.field) {
+        case 'name':
+          updatedLead.name = editValue;
+          break;
+        case 'age':
+          updatedLead.age = parseInt(editValue) || 0;
+          break;
+        case 'job':
+          updatedLead.job = editValue;
+          break;
+        case 'status':
+          updatedLead.status = editValue as Lead['status'];
+          break;
+        case 'visitType':
+          updatedLead.visitType = editValue as Lead['visitType'];
+          break;
+        case 'assignedTo':
+          updatedLead.assignedTo = editValue;
+          break;
+        case 'instructions':
+          updatedLead.instructions = editValue;
+          break;
+        case 'phoneNumber':
+          if (!updatedLead.additionalDetails) updatedLead.additionalDetails = {} as any;
+          updatedLead.additionalDetails.phoneNumber = editValue;
+          break;
+        case 'email':
+          if (!updatedLead.additionalDetails) updatedLead.additionalDetails = {} as any;
+          updatedLead.additionalDetails.email = editValue;
+          break;
+        case 'company':
+          if (!updatedLead.additionalDetails) updatedLead.additionalDetails = {} as any;
+          updatedLead.additionalDetails.company = editValue;
+          break;
+        case 'designation':
+          if (!updatedLead.additionalDetails) updatedLead.additionalDetails = {} as any;
+          updatedLead.additionalDetails.designation = editValue;
+          break;
+        case 'loanAmount':
+          if (!updatedLead.additionalDetails) updatedLead.additionalDetails = {} as any;
+          updatedLead.additionalDetails.loanAmount = editValue;
+          break;
+        case 'monthlyIncome':
+          if (!updatedLead.additionalDetails) updatedLead.additionalDetails = {} as any;
+          updatedLead.additionalDetails.monthlyIncome = editValue;
+          break;
+        case 'annualIncome':
+          if (!updatedLead.additionalDetails) updatedLead.additionalDetails = {} as any;
+          updatedLead.additionalDetails.annualIncome = editValue;
+          break;
+        case 'street':
+          updatedLead.address.street = editValue;
+          break;
+        case 'city':
+          updatedLead.address.city = editValue;
+          break;
+        case 'state':
+          updatedLead.address.state = editValue;
+          break;
+        case 'pincode':
+          updatedLead.address.pincode = editValue;
+          break;
+        default:
+          break;
       }
 
+      // Update in database
+      await updateLeadInDatabase(editingCell.leadId, updatedLead);
+
       toast({
-        title: "Cell updated",
-        description: "Lead data has been updated in database successfully.",
+        title: "Cell Updated",
+        description: "Lead data updated in database successfully.",
       });
 
       setEditingCell(null);
       setEditValue('');
       
-      // Force refresh data to ensure consistency
-      loadData(true);
+      // Force refresh from database
+      await loadAllData();
     } catch (error) {
       console.error('AdminLeadsSheet: Error updating cell:', error);
       toast({
-        title: "Update failed",
-        description: "Failed to update the cell. Please try again.",
+        title: "Update Failed",
+        description: "Failed to update cell in database.",
         variant: "destructive",
       });
     }
@@ -346,7 +336,7 @@ const AdminLeadsSheet = () => {
               <div>
                 <h1 className="text-2xl font-bold tracking-tight">Lead Management Sheet</h1>
                 <p className="text-muted-foreground">
-                  Real-time spreadsheet interface - {leads.length} leads loaded from database (Auto-refreshes every 2 seconds)
+                  Real-time database sheet - {leads.length} leads (Auto-refreshes every 2 seconds)
                 </p>
               </div>
               <div className="flex gap-2">
@@ -357,107 +347,111 @@ const AdminLeadsSheet = () => {
                   className="flex items-center gap-2"
                 >
                   <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                  Refresh Sheet
+                  Refresh from DB
                 </Button>
                 <Button variant="outline" onClick={() => navigate('/admin/leads')}>
-                  Back to Lead List
+                  Back to Leads List
                 </Button>
               </div>
             </div>
 
             <Card>
               <CardHeader>
-                <CardTitle>Interactive Lead Data Sheet</CardTitle>
+                <CardTitle>Interactive Database Sheet</CardTitle>
                 <CardDescription>
-                  Click on any cell to edit. Data is saved directly to database and auto-refreshes every 2 seconds.
+                  Click any cell to edit. All changes save directly to database.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[120px]">Lead ID</TableHead>
-                        <TableHead className="w-[150px]">Customer Name</TableHead>
-                        <TableHead className="w-[80px]">Age</TableHead>
-                        <TableHead className="w-[120px]">Job/Designation</TableHead>
-                        <TableHead className="w-[120px]">Phone</TableHead>
-                        <TableHead className="w-[150px]">Email</TableHead>
-                        <TableHead className="w-[120px]">Company</TableHead>
-                        <TableHead className="w-[100px]">Status</TableHead>
-                        <TableHead className="w-[100px]">Visit Type</TableHead>
-                        <TableHead className="w-[130px]">Assigned Agent</TableHead>
-                        <TableHead className="w-[150px]">Street Address</TableHead>
-                        <TableHead className="w-[100px]">City</TableHead>
-                        <TableHead className="w-[100px]">State</TableHead>
-                        <TableHead className="w-[100px]">Pincode</TableHead>
-                        <TableHead className="w-[120px]">Loan Amount</TableHead>
-                        <TableHead className="w-[120px]">Monthly Income</TableHead>
-                        <TableHead className="w-[120px]">Annual Income</TableHead>
-                        <TableHead className="w-[200px]">Instructions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {leads.length === 0 ? (
+                  {isLoading ? (
+                    <div className="text-center py-8">Loading sheet data from database...</div>
+                  ) : (
+                    <Table>
+                      <TableHeader>
                         <TableRow>
-                          <TableCell colSpan={18} className="text-center py-8">
-                            <div className="flex flex-col items-center gap-4">
-                              <p className="text-muted-foreground">No leads found in the database.</p>
-                              <Button 
-                                onClick={handleManualRefresh} 
-                                variant="outline"
-                                disabled={isRefreshing}
-                              >
-                                <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-                                Refresh to check for leads
-                              </Button>
-                            </div>
-                          </TableCell>
+                          <TableHead className="w-[120px]">Lead ID</TableHead>
+                          <TableHead className="w-[150px]">Customer Name</TableHead>
+                          <TableHead className="w-[80px]">Age</TableHead>
+                          <TableHead className="w-[120px]">Job/Designation</TableHead>
+                          <TableHead className="w-[120px]">Phone</TableHead>
+                          <TableHead className="w-[150px]">Email</TableHead>
+                          <TableHead className="w-[120px]">Company</TableHead>
+                          <TableHead className="w-[100px]">Status</TableHead>
+                          <TableHead className="w-[100px]">Visit Type</TableHead>
+                          <TableHead className="w-[130px]">Assigned Agent</TableHead>
+                          <TableHead className="w-[150px]">Street Address</TableHead>
+                          <TableHead className="w-[100px]">City</TableHead>
+                          <TableHead className="w-[100px]">State</TableHead>
+                          <TableHead className="w-[100px]">Pincode</TableHead>
+                          <TableHead className="w-[120px]">Loan Amount</TableHead>
+                          <TableHead className="w-[120px]">Monthly Income</TableHead>
+                          <TableHead className="w-[120px]">Annual Income</TableHead>
+                          <TableHead className="w-[200px]">Instructions</TableHead>
                         </TableRow>
-                      ) : (
-                        leads.map((lead) => (
-                          <TableRow key={lead.id} className="group">
-                            <TableCell className="font-mono text-xs">{lead.id}</TableCell>
-                            <TableCell>{renderEditableCell(lead, 'name', lead.name)}</TableCell>
-                            <TableCell>{renderEditableCell(lead, 'age', lead.age?.toString() || '')}</TableCell>
-                            <TableCell>{renderEditableCell(lead, 'designation', lead.additionalDetails?.designation || lead.job || '')}</TableCell>
-                            <TableCell>{renderEditableCell(lead, 'phoneNumber', lead.additionalDetails?.phoneNumber || '')}</TableCell>
-                            <TableCell>{renderEditableCell(lead, 'email', lead.additionalDetails?.email || '')}</TableCell>
-                            <TableCell>{renderEditableCell(lead, 'company', lead.additionalDetails?.company || '')}</TableCell>
-                            <TableCell>
-                              {editingCell?.leadId === lead.id && editingCell?.field === 'status' ? (
-                                renderEditableCell(lead, 'status', lead.status, 'select', ['Pending', 'In Progress', 'Completed', 'Rejected'])
-                              ) : (
-                                <div onClick={() => handleCellEdit(lead.id, 'status', lead.status)}>
-                                  <Badge className={getStatusColor(lead.status)}>{lead.status}</Badge>
-                                </div>
-                              )}
+                      </TableHeader>
+                      <TableBody>
+                        {leads.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={18} className="text-center py-8">
+                              <div className="flex flex-col items-center gap-4">
+                                <p className="text-muted-foreground">No leads found in database.</p>
+                                <Button 
+                                  onClick={handleManualRefresh} 
+                                  variant="outline"
+                                  disabled={isRefreshing}
+                                >
+                                  <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                                  Refresh from Database
+                                </Button>
+                              </div>
                             </TableCell>
-                            <TableCell>
-                              {renderEditableCell(lead, 'visitType', lead.visitType, 'select', ['Residence', 'Office', 'Both'])}
-                            </TableCell>
-                            <TableCell>
-                              {editingCell?.leadId === lead.id && editingCell?.field === 'assignedTo' ? (
-                                renderEditableCell(lead, 'assignedTo', lead.assignedTo || '', 'select', ['', ...agents.map(a => a.id)])
-                              ) : (
-                                <div onClick={() => handleCellEdit(lead.id, 'assignedTo', lead.assignedTo || '')}>
-                                  <Badge variant="outline">{getAgentName(lead.assignedTo || '')}</Badge>
-                                </div>
-                              )}
-                            </TableCell>
-                            <TableCell>{renderEditableCell(lead, 'street', lead.address.street)}</TableCell>
-                            <TableCell>{renderEditableCell(lead, 'city', lead.address.city)}</TableCell>
-                            <TableCell>{renderEditableCell(lead, 'state', lead.address.state)}</TableCell>
-                            <TableCell>{renderEditableCell(lead, 'pincode', lead.address.pincode)}</TableCell>
-                            <TableCell>{renderEditableCell(lead, 'loanAmount', lead.additionalDetails?.loanAmount || '')}</TableCell>
-                            <TableCell>{renderEditableCell(lead, 'monthlyIncome', lead.additionalDetails?.monthlyIncome || '')}</TableCell>
-                            <TableCell>{renderEditableCell(lead, 'annualIncome', lead.additionalDetails?.annualIncome || '')}</TableCell>
-                            <TableCell>{renderEditableCell(lead, 'instructions', lead.instructions || '')}</TableCell>
                           </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
+                        ) : (
+                          leads.map((lead) => (
+                            <TableRow key={lead.id} className="group">
+                              <TableCell className="font-mono text-xs">{lead.id}</TableCell>
+                              <TableCell>{renderEditableCell(lead, 'name', lead.name)}</TableCell>
+                              <TableCell>{renderEditableCell(lead, 'age', lead.age?.toString() || '')}</TableCell>
+                              <TableCell>{renderEditableCell(lead, 'designation', lead.additionalDetails?.designation || lead.job || '')}</TableCell>
+                              <TableCell>{renderEditableCell(lead, 'phoneNumber', lead.additionalDetails?.phoneNumber || '')}</TableCell>
+                              <TableCell>{renderEditableCell(lead, 'email', lead.additionalDetails?.email || '')}</TableCell>
+                              <TableCell>{renderEditableCell(lead, 'company', lead.additionalDetails?.company || '')}</TableCell>
+                              <TableCell>
+                                {editingCell?.leadId === lead.id && editingCell?.field === 'status' ? (
+                                  renderEditableCell(lead, 'status', lead.status, 'select', ['Pending', 'In Progress', 'Completed', 'Rejected'])
+                                ) : (
+                                  <div onClick={() => handleCellEdit(lead.id, 'status', lead.status)}>
+                                    <Badge className={getStatusColor(lead.status)}>{lead.status}</Badge>
+                                  </div>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {renderEditableCell(lead, 'visitType', lead.visitType, 'select', ['Residence', 'Office', 'Both'])}
+                              </TableCell>
+                              <TableCell>
+                                {editingCell?.leadId === lead.id && editingCell?.field === 'assignedTo' ? (
+                                  renderEditableCell(lead, 'assignedTo', lead.assignedTo || '', 'select', ['', ...agents.map(a => a.id)])
+                                ) : (
+                                  <div onClick={() => handleCellEdit(lead.id, 'assignedTo', lead.assignedTo || '')}>
+                                    <Badge variant="outline">{getAgentName(lead.assignedTo || '')}</Badge>
+                                  </div>
+                                )}
+                              </TableCell>
+                              <TableCell>{renderEditableCell(lead, 'street', lead.address.street)}</TableCell>
+                              <TableCell>{renderEditableCell(lead, 'city', lead.address.city)}</TableCell>
+                              <TableCell>{renderEditableCell(lead, 'state', lead.address.state)}</TableCell>
+                              <TableCell>{renderEditableCell(lead, 'pincode', lead.address.pincode)}</TableCell>
+                              <TableCell>{renderEditableCell(lead, 'loanAmount', lead.additionalDetails?.loanAmount || '')}</TableCell>
+                              <TableCell>{renderEditableCell(lead, 'monthlyIncome', lead.additionalDetails?.monthlyIncome || '')}</TableCell>
+                              <TableCell>{renderEditableCell(lead, 'annualIncome', lead.additionalDetails?.annualIncome || '')}</TableCell>
+                              <TableCell>{renderEditableCell(lead, 'instructions', lead.instructions || '')}</TableCell>
+                            </TableRow>
+                          ))
+                        )}
+                      </TableBody>
+                    </Table>
+                  )}
                 </div>
               </CardContent>
             </Card>
