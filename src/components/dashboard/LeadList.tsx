@@ -23,7 +23,6 @@ import {
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from '@/components/ui/use-toast';
 import { User, Lead, Bank } from '@/utils/mockData';
-import { getLeadsFromDatabase } from '@/lib/lead-operations';
 
 interface LeadListProps {
   leads: Lead[];
@@ -50,6 +49,9 @@ const LeadList: React.FC<LeadListProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  console.log('LeadList received leads:', leads);
+  console.log('Current user:', currentUser);
 
   // Auto-refresh leads every 30 seconds
   useEffect(() => {
@@ -86,9 +88,10 @@ const LeadList: React.FC<LeadListProps> = ({
     }
   };
 
-  // Filter leads based on user role - FIXED: removed role-based filtering here since it's handled in parent
+  // Filter leads based on search and filters
   const visibleLeads = useMemo(() => {
-    let filtered = leads; // Use all passed leads without additional filtering
+    let filtered = leads;
+    console.log('Filtering leads, starting with:', filtered.length);
     
     // Apply search filter
     if (searchTerm) {
@@ -96,20 +99,24 @@ const LeadList: React.FC<LeadListProps> = ({
         lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         lead.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         lead.bank.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.address.city.toLowerCase().includes(searchTerm.toLowerCase())
+        lead.address?.city?.toLowerCase().includes(searchTerm.toLowerCase())
       );
+      console.log('After search filter:', filtered.length);
     }
     
     // Apply status filter
     if (statusFilter !== 'all') {
       filtered = filtered.filter(lead => lead.status === statusFilter);
+      console.log('After status filter:', filtered.length);
     }
     
     // Apply bank filter
     if (bankFilter !== 'all') {
       filtered = filtered.filter(lead => lead.bank === bankFilter);
+      console.log('After bank filter:', filtered.length);
     }
     
+    console.log('Final filtered leads:', filtered);
     return filtered;
   }, [leads, searchTerm, statusFilter, bankFilter]);
 
@@ -141,6 +148,7 @@ const LeadList: React.FC<LeadListProps> = ({
   };
 
   const handleViewLead = (leadId: string) => {
+    console.log('Viewing lead:', leadId, 'User role:', currentUser.role);
     if (onViewLead) {
       onViewLead(leadId);
     }
@@ -153,7 +161,7 @@ const LeadList: React.FC<LeadListProps> = ({
         <div>
           <h2 className="text-2xl font-bold">Leads Management</h2>
           <p className="text-muted-foreground">
-            {visibleLeads.length} total leads
+            {visibleLeads.length} leads found {leads.length > visibleLeads.length && `(filtered from ${leads.length})`}
           </p>
         </div>
         <Button 
@@ -211,13 +219,30 @@ const LeadList: React.FC<LeadListProps> = ({
         </CardContent>
       </Card>
 
+      {/* Debug Information for TVT Users */}
+      {currentUser.role === 'tvtteam' && (
+        <Card className="bg-blue-50 border-blue-200">
+          <CardContent className="pt-6">
+            <div className="text-sm">
+              <p><strong>Debug Info:</strong></p>
+              <p>User: {currentUser.name} (Role: {currentUser.role})</p>
+              <p>Total leads passed to component: {leads.length}</p>
+              <p>Filtered leads: {visibleLeads.length}</p>
+              <p>Paginated leads: {paginatedLeads.length}</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Leads Grid */}
       <div className="grid gap-4">
         {paginatedLeads.length === 0 ? (
           <Card>
             <CardContent className="pt-6">
               <div className="text-center py-8">
-                <p className="text-muted-foreground">No leads found matching your criteria.</p>
+                <p className="text-muted-foreground">
+                  {leads.length === 0 ? 'No leads assigned to you yet.' : 'No leads found matching your criteria.'}
+                </p>
                 <Button 
                   onClick={handleManualRefresh} 
                   variant="outline" 
@@ -250,7 +275,7 @@ const LeadList: React.FC<LeadListProps> = ({
                       </div>
                       <div className="flex items-center gap-1">
                         <MapPin className="h-4 w-4" />
-                        <span>{lead.address.city}, {lead.address.state}</span>
+                        <span>{lead.address?.city || 'N/A'}, {lead.address?.state || 'N/A'}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Calendar className="h-4 w-4" />
@@ -274,10 +299,13 @@ const LeadList: React.FC<LeadListProps> = ({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleViewLead(lead.id)}
+                      onClick={() => {
+                        console.log('View button clicked for lead:', lead.id);
+                        handleViewLead(lead.id);
+                      }}
                     >
                       <Eye className="h-4 w-4 mr-1" />
-                      View
+                      {currentUser.role === 'tvtteam' ? 'Verify' : 'View'}
                     </Button>
 
                     {currentUser.role === 'admin' && (

@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { User, Lead } from '@/utils/mockData';
+import { User, Lead, mockLeads } from '@/utils/mockData';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
 import { toast } from '@/components/ui/use-toast';
@@ -29,6 +29,7 @@ const TvtLeadDetail = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [lead, setLead] = useState<Lead | null>(null);
   const [verificationFields, setVerificationFields] = useState<VerificationField[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Check if user is logged in and has TVTTEAM role
@@ -39,7 +40,10 @@ const TvtLeadDetail = () => {
     }
 
     const parsedUser = JSON.parse(storedUser);
+    console.log('TVT Lead Detail - Current user:', parsedUser);
+    
     if (parsedUser.role !== 'tvtteam') {
+      console.log('User is not TVT team member, redirecting...');
       navigate('/');
       return;
     }
@@ -49,22 +53,43 @@ const TvtLeadDetail = () => {
   }, [leadId, navigate]);
 
   const loadLeadData = () => {
+    setIsLoading(true);
     try {
+      console.log('Loading lead data for leadId:', leadId);
+      
+      // First try localStorage
       const storedLeads = localStorage.getItem('mockLeads');
+      let allLeads = [];
+      
       if (storedLeads) {
-        const leads = JSON.parse(storedLeads);
-        const foundLead = leads.find((l: Lead) => l.id === leadId);
-        if (foundLead) {
-          setLead(foundLead);
-          initializeVerificationFields(foundLead);
-        } else {
-          toast({
-            title: "Lead not found",
-            description: "The requested lead could not be found.",
-            variant: "destructive"
-          });
-          navigate('/tvt');
+        try {
+          allLeads = JSON.parse(storedLeads);
+          console.log('Found leads in localStorage:', allLeads.length);
+        } catch (error) {
+          console.error('Error parsing stored leads:', error);
         }
+      }
+      
+      // If no stored leads, use mockLeads
+      if (allLeads.length === 0) {
+        allLeads = mockLeads;
+        console.log('Using mock leads:', allLeads.length);
+      }
+      
+      const foundLead = allLeads.find((l: Lead) => l.id === leadId);
+      console.log('Found lead:', foundLead);
+      
+      if (foundLead) {
+        setLead(foundLead);
+        initializeVerificationFields(foundLead);
+      } else {
+        console.error('Lead not found with ID:', leadId);
+        toast({
+          title: "Lead not found",
+          description: "The requested lead could not be found.",
+          variant: "destructive"
+        });
+        navigate('/tvt');
       }
     } catch (error) {
       console.error('Error loading lead data:', error);
@@ -73,14 +98,18 @@ const TvtLeadDetail = () => {
         description: "There was an error loading the lead data.",
         variant: "destructive"
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const initializeVerificationFields = (leadData: Lead) => {
+    console.log('Initializing verification fields for:', leadData);
+    
     const fields: VerificationField[] = [
       {
         fieldName: 'Customer Name',
-        originalValue: leadData.name,
+        originalValue: leadData.name || '',
         verifiedValue: '',
         isCorrect: null,
         notes: ''
@@ -101,63 +130,37 @@ const TvtLeadDetail = () => {
       },
       {
         fieldName: 'Phone Number',
-        originalValue: leadData.additionalDetails?.phoneNumber || '',
+        originalValue: leadData.additionalDetails?.phoneNumber || 'Not provided',
         verifiedValue: '',
         isCorrect: null,
         notes: ''
       },
       {
         fieldName: 'Email',
-        originalValue: leadData.additionalDetails?.email || '',
+        originalValue: leadData.additionalDetails?.email || 'Not provided',
         verifiedValue: '',
         isCorrect: null,
         notes: ''
       },
       {
         fieldName: 'Company',
-        originalValue: leadData.additionalDetails?.company || '',
-        verifiedValue: '',
-        isCorrect: null,
-        notes: ''
-      },
-      {
-        fieldName: 'Designation',
-        originalValue: leadData.additionalDetails?.designation || '',
+        originalValue: leadData.additionalDetails?.company || 'Not provided',
         verifiedValue: '',
         isCorrect: null,
         notes: ''
       },
       {
         fieldName: 'Monthly Income',
-        originalValue: leadData.additionalDetails?.monthlyIncome || '',
-        verifiedValue: '',
-        isCorrect: null,
-        notes: ''
-      },
-      {
-        fieldName: 'Annual Income',
-        originalValue: leadData.additionalDetails?.annualIncome || '',
-        verifiedValue: '',
-        isCorrect: null,
-        notes: ''
-      },
-      {
-        fieldName: 'Property Type',
-        originalValue: leadData.additionalDetails?.propertyType || '',
-        verifiedValue: '',
-        isCorrect: null,
-        notes: ''
-      },
-      {
-        fieldName: 'Ownership Status',
-        originalValue: leadData.additionalDetails?.ownershipStatus || '',
+        originalValue: leadData.additionalDetails?.monthlyIncome || 'Not provided',
         verifiedValue: '',
         isCorrect: null,
         notes: ''
       },
       {
         fieldName: 'Residence Address',
-        originalValue: `${leadData.address?.street || ''}, ${leadData.address?.city || ''}, ${leadData.address?.district || ''}, ${leadData.address?.state || ''} - ${leadData.address?.pincode || ''}`,
+        originalValue: leadData.address ? 
+          `${leadData.address.street || ''}, ${leadData.address.city || ''}, ${leadData.address.district || ''}, ${leadData.address.state || ''} - ${leadData.address.pincode || ''}` : 
+          'Address not provided',
         verifiedValue: '',
         isCorrect: null,
         notes: ''
@@ -182,6 +185,7 @@ const TvtLeadDetail = () => {
       });
     }
 
+    console.log('Initialized verification fields:', fields);
     setVerificationFields(fields);
   };
 
@@ -191,14 +195,18 @@ const TvtLeadDetail = () => {
     setVerificationFields(updatedFields);
   };
 
-  const handleSaveVerification = () => {
+  const handleSaveVerification = async () => {
     try {
+      console.log('Saving verification for lead:', leadId);
+      console.log('Verification fields:', verificationFields);
+      
       // Save verification data to localStorage
       const verificationData = {
         leadId,
         verificationFields,
         completedAt: new Date().toISOString(),
-        completedBy: currentUser?.id
+        completedBy: currentUser?.id,
+        completedByName: currentUser?.name
       };
 
       const existingVerifications = localStorage.getItem('leadVerifications') || '[]';
@@ -210,11 +218,25 @@ const TvtLeadDetail = () => {
       
       localStorage.setItem('leadVerifications', JSON.stringify(filteredVerifications));
 
+      // Update lead status to completed
+      const storedLeads = localStorage.getItem('mockLeads');
+      if (storedLeads) {
+        const leads = JSON.parse(storedLeads);
+        const updatedLeads = leads.map((l: Lead) => {
+          if (l.id === leadId) {
+            return { ...l, status: 'Completed' as const };
+          }
+          return l;
+        });
+        localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+      }
+
       toast({
         title: "Verification Saved",
         description: "Lead verification data has been saved successfully.",
       });
 
+      // Navigate back to dashboard
       navigate('/tvt');
     } catch (error) {
       console.error('Error saving verification:', error);
@@ -231,8 +253,28 @@ const TvtLeadDetail = () => {
     navigate('/');
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p>Loading lead details...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!currentUser || !lead) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <p className="text-red-600">Error: Unable to load lead data</p>
+          <Button onClick={() => navigate('/tvt')} className="mt-4">
+            Back to Dashboard
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -271,7 +313,41 @@ const TvtLeadDetail = () => {
               </Button>
             </div>
 
+            {/* Lead Basic Info Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Lead Information</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium text-muted-foreground">Lead ID:</span>
+                    <p>{lead.id}</p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-muted-foreground">Bank:</span>
+                    <p>{lead.bank}</p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-muted-foreground">Visit Type:</span>
+                    <p>{lead.visitType}</p>
+                  </div>
+                  <div>
+                    <span className="font-medium text-muted-foreground">Status:</span>
+                    <Badge className={
+                      lead.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                      lead.status === 'Completed' ? 'bg-green-100 text-green-800' :
+                      'bg-blue-100 text-blue-800'
+                    }>
+                      {lead.status}
+                    </Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Original Lead Data */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -280,17 +356,6 @@ const TvtLeadDetail = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <span className="text-sm font-medium text-muted-foreground">Agency File No:</span>
-                      <p className="text-sm">{lead.additionalDetails?.agencyFileNo || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium text-muted-foreground">Application ID:</span>
-                      <p className="text-sm">{lead.additionalDetails?.applicationBarcode || 'N/A'}</p>
-                    </div>
-                  </div>
-                  <Separator />
                   <div className="space-y-3">
                     {verificationFields.map((field, index) => (
                       <div key={field.fieldName} className="space-y-2">
@@ -306,6 +371,7 @@ const TvtLeadDetail = () => {
                 </CardContent>
               </Card>
 
+              {/* Verified Data Entry */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -317,7 +383,7 @@ const TvtLeadDetail = () => {
                   <div className="text-sm text-muted-foreground mb-4">
                     Enter verified data and mark if each field is correct or incorrect
                   </div>
-                  <div className="space-y-4">
+                  <div className="space-y-4 max-h-[600px] overflow-y-auto">
                     {verificationFields.map((field, index) => (
                       <div key={field.fieldName} className="space-y-2 p-3 border rounded-lg">
                         <label className="text-sm font-medium">
@@ -381,6 +447,7 @@ const TvtLeadDetail = () => {
               </Card>
             </div>
 
+            {/* Verification Summary */}
             <Card>
               <CardHeader>
                 <CardTitle>Verification Summary</CardTitle>
