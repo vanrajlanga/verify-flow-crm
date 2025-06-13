@@ -779,7 +779,8 @@ const AdminLeads = () => {
                 <LeadList 
                   leads={leads} 
                   currentUser={currentUser}
-                  isAdmin={true}
+                  banks={mockBanks}
+                  agents={agents}
                   onUpdate={(lead) => {
                     if (lead && lead.id && lead.status) {
                       handleUpdateLead(lead.id, lead.status);

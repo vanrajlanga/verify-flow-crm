@@ -1,6 +1,4 @@
-
-
-import { IconType } from 'lucide-react';
+import { LucideIcon } from 'lucide-react';
 
 export interface User {
   id: string;
@@ -78,7 +76,7 @@ export interface Verification {
   leadId: string;
   status: "Not Started" | "In Progress" | "Completed" | "Rejected";
   agentId: string;
-  photos: (string | { id: string; name: string; url: string; uploadDate: Date; })[];
+  photos: { id: string; name: string; url: string; uploadDate: Date; }[];
   documents: { id: string; name: string; url: string; uploadDate: Date; }[];
   notes: string;
   startTime?: Date;
@@ -133,7 +131,7 @@ export interface Lead {
 export interface NavItem {
   title: string;
   href: string;
-  icon?: IconType;
+  icon?: LucideIcon;
   disabled?: boolean;
   external?: boolean;
 }
@@ -194,4 +192,3 @@ export const agents: User[] = [
     status: 'active'
   }
 ];
-

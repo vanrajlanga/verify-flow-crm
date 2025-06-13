@@ -241,6 +241,7 @@ const AddLeadForm: React.FC<AddLeadFormProps> = ({ agents: propAgents, banks: pr
       age: 30,
       job: formData.occupation,
       address: {
+        type: 'Residence',
         street: addresses[0]?.addressLine1 || '',
         city: addresses[0]?.city || '',
         district: addresses[0]?.district || '',
@@ -278,7 +279,7 @@ const AddLeadForm: React.FC<AddLeadFormProps> = ({ agents: propAgents, banks: pr
       },
       status: 'Pending',
       bank: formData.bank,
-      visitType: visitTypes.length > 0 ? 'Both' : 'Residence',
+      visitType: visitTypes.length > 0 ? 'Both' as 'Residence' | 'Office' | 'Both' : 'Residence',
       assignedTo: selectedAgent,
       createdAt: new Date(),
       documents: [],

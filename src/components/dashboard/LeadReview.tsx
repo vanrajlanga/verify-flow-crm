@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -160,21 +159,26 @@ const LeadReview = ({
               <h3 className="text-sm font-medium mb-3">Uploaded Photos</h3>
               {verification?.photos && verification.photos.length > 0 ? (
                 <div className="grid grid-cols-2 gap-4">
-                  {verification.photos.map((photo) => (
-                    <div key={photo.id} className="border rounded-md overflow-hidden">
-                      <img 
-                        src={photo.url} 
-                        alt={photo.name} 
-                        className="w-full h-32 object-cover" 
-                      />
-                      <div className="p-2">
-                        <p className="text-xs">{photo.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {format(photo.uploadDate, 'MMM d, yyyy')}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                  {verification.photos.map((photo) => {
+                    if (typeof photo === 'object' && photo.id) {
+                      return (
+                        <div key={photo.id} className="border rounded-md overflow-hidden">
+                          <img 
+                            src={photo.url} 
+                            alt={photo.name} 
+                            className="w-full h-32 object-cover" 
+                          />
+                          <div className="p-2">
+                            <p className="text-xs">{photo.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {format(photo.uploadDate, 'MMM d, yyyy')}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })}
                 </div>
               ) : (
                 <div className="border rounded-md p-4 bg-muted/30 flex items-center justify-center h-32">
