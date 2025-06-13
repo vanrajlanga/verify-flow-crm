@@ -608,7 +608,7 @@ const LeadList = ({
               <TableHead className="w-[120px]">Branch</TableHead>
               <TableHead className="w-[120px]">Application ID</TableHead>
               <TableHead className="w-[150px]">Customer Name</TableHead>
-              <TableHead className="w-[120px]">Assigned TVT</TableHead>
+              <TableHead className="w-[120px]">Assigned Agent</TableHead>
               <TableHead className="w-[100px]">Address Type</TableHead>
               <TableHead className="w-[120px]">Product Type</TableHead>
               <TableHead className="w-[200px]">Residence Address</TableHead>
@@ -737,7 +737,7 @@ const LeadList = ({
                           )}
                           <DropdownMenuItem onClick={() => handleAssignLead(lead.id)}>
                             <UserPlus className="h-4 w-4 mr-2" />
-                            Assign TVT
+                            Assign Agent
                           </DropdownMenuItem>
                           {onDelete && (
                             <DropdownMenuItem 
@@ -762,17 +762,17 @@ const LeadList = ({
       <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Assign Lead to TVT</DialogTitle>
+            <DialogTitle>Assign Lead to Agent</DialogTitle>
             <DialogDescription>
-              Select a TVT member to assign this lead to.
+              Select an agent to assign this lead to.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Available TVT Members ({allAvailableAgents.length})</label>
+              <label className="text-sm font-medium">Available Agents ({allAvailableAgents.length})</label>
               <Select value={selectedAgent} onValueChange={setSelectedAgent}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select a TVT member" />
+                  <SelectValue placeholder="Select an agent" />
                 </SelectTrigger>
                 <SelectContent>
                   {allAvailableAgents.map((agent) => (
@@ -783,7 +783,7 @@ const LeadList = ({
                 </SelectContent>
               </Select>
               {allAvailableAgents.length === 0 && (
-                <p className="text-sm text-red-600">No TVT members available. Please create TVT members first.</p>
+                <p className="text-sm text-red-600">No agents available. Please create agents first.</p>
               )}
             </div>
             <div className="flex justify-end gap-2">
