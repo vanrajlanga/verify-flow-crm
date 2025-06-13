@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -656,7 +655,7 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({ onSubmit, l
                     <Checkbox
                       id={`verify-${index}`}
                       checked={address.requiresVerification}
-                      onCheckedChange={(checked) => handleAddressChange(index, 'requiresVerification', checked as boolean)}
+                      onCheckedChange={(checked) => handleAddressChange(index, 'requiresVerification', Boolean(checked))}
                     />
                     <Label htmlFor={`verify-${index}`}>This address requires verification</Label>
                   </div>
@@ -828,7 +827,7 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({ onSubmit, l
                     checked={formData.officeAddress.requiresVerification}
                     onCheckedChange={(checked) => setFormData(prev => ({
                       ...prev,
-                      officeAddress: { ...prev.officeAddress, requiresVerification: checked as boolean }
+                      officeAddress: { ...prev.officeAddress, requiresVerification: Boolean(checked) }
                     }))}
                   />
                   <Label htmlFor="verify-office">This office address requires verification</Label>
