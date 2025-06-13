@@ -98,7 +98,7 @@ export interface Document {
   name: string;
   url: string;
   uploadDate: Date;
-  type?: string;
+  type: string;
 }
 
 export interface Bank {

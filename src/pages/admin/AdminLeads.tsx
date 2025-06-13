@@ -781,18 +781,12 @@ const AdminLeads = () => {
                   currentUser={currentUser}
                   banks={mockBanks}
                   agents={agents}
-                  onUpdate={(lead) => {
+                  onLeadUpdate={(lead) => {
                     if (lead && lead.id && lead.status) {
                       handleUpdateLead(lead.id, lead.status);
                     }
                   }}
-                  onEdit={handleEditLead}
-                  onDelete={handleDeleteLead}
-                  onBulkDelete={handleBulkDelete}
-                  onAssignLead={handleAssignLead}
-                  onExport={handleExport}
-                  onImport={handleImport}
-                  availableAgents={agents}
+                  onViewLead={(leadId) => navigate(`/lead/${leadId}`)}
                 />
               </CardContent>
             </Card>

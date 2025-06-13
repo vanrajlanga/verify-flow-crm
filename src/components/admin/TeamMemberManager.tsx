@@ -104,7 +104,7 @@ const TeamMemberManager = () => {
         role: formData.role as 'admin' | 'agent',
         password: formData.password || 'defaultPassword123',
         district: '',
-        status: 'Active',
+        status: 'active',
         totalVerifications: 0,
         completionRate: 0
       };
