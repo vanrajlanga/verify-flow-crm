@@ -72,13 +72,13 @@ const LeadList = ({
   const [leadToAssign, setLeadToAssign] = useState<string>('');
   const [selectedAgent, setSelectedAgent] = useState<string>('');
 
-  // Get all agents from localStorage to ensure we have the latest data
+  // Get all agents and TVT team members from localStorage
   const getAllAgents = () => {
     try {
       const storedUsers = localStorage.getItem('mockUsers');
       if (storedUsers) {
         const users = JSON.parse(storedUsers);
-        return users.filter((user: User) => user.role === 'agent');
+        return users.filter((user: User) => user.role === 'agent' || user.role === 'tvtteam');
       }
     } catch (error) {
       console.error('Error getting agents:', error);
@@ -226,14 +226,14 @@ const LeadList = ({
   const confirmAssignment = () => {
     if (!selectedAgent) {
       toast({
-        title: "No agent selected",
-        description: "Please select an agent to assign the lead",
+        title: "No TVT member selected",
+        description: "Please select a TVT member to assign the lead",
         variant: "destructive",
       });
       return;
     }
 
-    console.log('Assigning lead:', leadToAssign, 'to agent:', selectedAgent);
+    console.log('Assigning lead:', leadToAssign, 'to TVT member:', selectedAgent);
     
     if (onAssignLead) {
       onAssignLead(leadToAssign, selectedAgent);
@@ -262,7 +262,7 @@ const LeadList = ({
       const selectedAgentInfo = allAvailableAgents.find(a => a.id === selectedAgent);
       toast({
         title: "Lead assigned successfully",
-        description: `Lead has been assigned to ${selectedAgentInfo?.name || 'the selected agent'}.`,
+        description: `Lead has been assigned to ${selectedAgentInfo?.name || 'the selected TVT member'}.`,
       });
     }
     
@@ -737,7 +737,7 @@ const LeadList = ({
                           )}
                           <DropdownMenuItem onClick={() => handleAssignLead(lead.id)}>
                             <UserPlus className="h-4 w-4 mr-2" />
-                            Assign Agent
+                            Assign TVT
                           </DropdownMenuItem>
                           {onDelete && (
                             <DropdownMenuItem 
@@ -762,28 +762,28 @@ const LeadList = ({
       <Dialog open={assignDialogOpen} onOpenChange={setAssignDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Assign Lead to Agent</DialogTitle>
+            <DialogTitle>Assign Lead to TVT Member</DialogTitle>
             <DialogDescription>
-              Select an agent to assign this lead to.
+              Select a TVT member to assign this lead to.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Available Agents ({allAvailableAgents.length})</label>
+              <label className="text-sm font-medium">Available TVT Members ({allAvailableAgents.length})</label>
               <Select value={selectedAgent} onValueChange={setSelectedAgent}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select an agent" />
+                  <SelectValue placeholder="Select a TVT member" />
                 </SelectTrigger>
                 <SelectContent>
                   {allAvailableAgents.map((agent) => (
                     <SelectItem key={agent.id} value={agent.id}>
-                      {agent.name} - {agent.district || 'No district'} ({agent.email})
+                      {agent.name} - {agent.role.toUpperCase()} - {agent.district || 'No district'} ({agent.email})
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               {allAvailableAgents.length === 0 && (
-                <p className="text-sm text-red-600">No agents available. Please create agents first.</p>
+                <p className="text-sm text-red-600">No TVT members available. Please create TVT team members first.</p>
               )}
             </div>
             <div className="flex justify-end gap-2">

@@ -40,7 +40,9 @@ export const saveLeadToDatabase = async (leadData: Lead) => {
         visit_type: leadData.visitType,
         assigned_to: leadData.assignedTo || null,
         verification_date: leadData.verificationDate?.toISOString(),
-        instructions: leadData.instructions
+        instructions: leadData.instructions,
+        has_co_applicant: leadData.additionalDetails?.coApplicant ? true : false,
+        co_applicant_name: leadData.additionalDetails?.coApplicant?.name || null
       })
       .select()
       .single();
@@ -89,6 +91,26 @@ export const saveLeadToDatabase = async (leadData: Lead) => {
         throw detailsError;
       }
 
+      // Save co-applicant if exists
+      if (leadData.additionalDetails.coApplicant) {
+        const { error: coApplicantError } = await supabase
+          .from('co_applicants')
+          .insert({
+            lead_id: leadData.id,
+            name: leadData.additionalDetails.coApplicant.name,
+            age: leadData.additionalDetails.coApplicant.age,
+            phone_number: leadData.additionalDetails.coApplicant.phone,
+            email: leadData.additionalDetails.coApplicant.email,
+            relationship: leadData.additionalDetails.coApplicant.relationship,
+            occupation: leadData.additionalDetails.coApplicant.occupation,
+            monthly_income: leadData.additionalDetails.coApplicant.monthlyIncome
+          });
+
+        if (coApplicantError) {
+          console.error('Error saving co-applicant:', coApplicantError);
+        }
+      }
+
       // Save additional addresses if they exist
       if (leadData.additionalDetails.addresses && leadData.additionalDetails.addresses.length > 0) {
         for (const addr of leadData.additionalDetails.addresses) {
@@ -121,6 +143,25 @@ export const saveLeadToDatabase = async (leadData: Lead) => {
           if (linkError) {
             console.error('Error linking address to lead:', linkError);
           }
+        }
+      }
+
+      // Save vehicle details if exists
+      if (leadData.additionalDetails.vehicleBrandName || leadData.additionalDetails.vehicleModelName) {
+        const { error: vehicleError } = await supabase
+          .from('vehicle_details')
+          .insert({
+            lead_id: leadData.id,
+            vehicle_brand_name: leadData.additionalDetails.vehicleBrandName,
+            vehicle_brand_id: leadData.additionalDetails.vehicleBrandId,
+            vehicle_model_name: leadData.additionalDetails.vehicleModelName,
+            vehicle_model_id: leadData.additionalDetails.vehicleModelId,
+            vehicle_type: leadData.additionalDetails.loanType,
+            vehicle_price: leadData.additionalDetails.loanAmount
+          });
+
+        if (vehicleError) {
+          console.error('Error saving vehicle details:', vehicleError);
         }
       }
     }

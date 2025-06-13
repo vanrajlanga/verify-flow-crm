@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,12 @@ export interface Role {
   createdAt: Date;
 }
 
+export interface Permission {
+  id: string;
+  name: string;
+  description: string;
+}
+
 const RoleManager = () => {
   const [roles, setRoles] = useState<Role[]>([]);
   const [newRole, setNewRole] = useState({
@@ -30,7 +37,7 @@ const RoleManager = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    // Mock data for roles
+    // Mock data for roles including TVTTEAM
     const mockRoles: Role[] = [
       {
         id: '1',
@@ -45,6 +52,14 @@ const RoleManager = () => {
         name: 'Agent',
         description: 'Agent role with limited access',
         permissions: ['read', 'write'],
+        status: 'Active',
+        createdAt: new Date(),
+      },
+      {
+        id: '3',
+        name: 'TVTTEAM',
+        description: 'TVT Team member role with verification access to assigned leads',
+        permissions: ['read', 'verify', 'update_verification'],
         status: 'Active',
         createdAt: new Date(),
       },
@@ -179,6 +194,13 @@ const RoleManager = () => {
                         <Badge variant={role.status === 'Active' ? 'default' : 'secondary'}>
                           {role.status}
                         </Badge>
+                        {role.name === 'TVTTEAM' && (
+                          <div className="mt-2">
+                            <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                              Lead Verification Access
+                            </Badge>
+                          </div>
+                        )}
                       </div>
                       <div className="space-x-2">
                         <Button
