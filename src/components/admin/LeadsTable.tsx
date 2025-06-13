@@ -8,16 +8,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Lead } from '@/utils/mockData';
 import { Eye, Edit, Download, Upload, FileDown, Search } from 'lucide-react';
 import { exportLeadsToCSV, generateSampleCSV, downloadFile } from '@/lib/csv-operations';
+import { updateLeadInDatabase } from '@/lib/lead-operations';
 import { toast } from '@/components/ui/use-toast';
+import EditableCell from './EditableCell';
 
 interface LeadsTableProps {
   leads: Lead[];
   onViewLead: (leadId: string) => void;
   onEditLead?: (leadId: string) => void;
   onImportCSV?: (file: File) => void;
+  onLeadUpdate?: () => void;
   showActions?: boolean;
   title?: string;
   description?: string;
+  enableInlineEdit?: boolean;
 }
 
 const LeadsTable: React.FC<LeadsTableProps> = ({
@@ -25,9 +29,11 @@ const LeadsTable: React.FC<LeadsTableProps> = ({
   onViewLead,
   onEditLead,
   onImportCSV,
+  onLeadUpdate,
   showActions = true,
   title = "100% Database-Driven Leads Sheet",
-  description = "Complete database view with all lead fields and CSV operations"
+  description = "Complete database view with all lead fields and CSV operations",
+  enableInlineEdit = false
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isExporting, setIsExporting] = useState(false);
@@ -86,6 +92,91 @@ const LeadsTable: React.FC<LeadsTableProps> = ({
     }
   };
 
+  const handleCellUpdate = async (leadId: string, field: string, value: string | number) => {
+    try {
+      const lead = leads.find(l => l.id === leadId);
+      if (!lead) return;
+
+      let updates: Partial<Lead> = {};
+
+      // Handle different field types
+      switch (field) {
+        case 'name':
+          updates.name = value.toString();
+          break;
+        case 'age':
+          updates.age = typeof value === 'number' ? value : parseInt(value.toString()) || 0;
+          break;
+        case 'job':
+          updates.job = value.toString();
+          break;
+        case 'bank':
+          updates.bank = value.toString();
+          break;
+        case 'status':
+          updates.status = value.toString() as Lead['status'];
+          break;
+        case 'visitType':
+          updates.visitType = value.toString() as Lead['visitType'];
+          break;
+        case 'city':
+          updates.address = { ...lead.address, city: value.toString() };
+          break;
+        case 'state':
+          updates.address = { ...lead.address, state: value.toString() };
+          break;
+        case 'phoneNumber':
+          updates.additionalDetails = {
+            ...lead.additionalDetails,
+            phoneNumber: value.toString()
+          };
+          break;
+        case 'email':
+          updates.additionalDetails = {
+            ...lead.additionalDetails,
+            email: value.toString()
+          };
+          break;
+        case 'company':
+          updates.additionalDetails = {
+            ...lead.additionalDetails,
+            company: value.toString()
+          };
+          break;
+        case 'loanType':
+          updates.additionalDetails = {
+            ...lead.additionalDetails,
+            loanType: value.toString()
+          };
+          break;
+        case 'loanAmount':
+          updates.additionalDetails = {
+            ...lead.additionalDetails,
+            loanAmount: value.toString()
+          };
+          break;
+      }
+
+      await updateLeadInDatabase(leadId, updates);
+      
+      if (onLeadUpdate) {
+        onLeadUpdate();
+      }
+
+      toast({
+        title: "Field Updated",
+        description: `${field} updated successfully.`,
+      });
+    } catch (error) {
+      console.error('Error updating field:', error);
+      toast({
+        title: "Update Failed",
+        description: `Failed to update ${field}. Please try again.`,
+        variant: "destructive",
+      });
+    }
+  };
+
   // Filter leads based on search term
   const filteredLeads = leads.filter(lead =>
     lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -96,13 +187,29 @@ const LeadsTable: React.FC<LeadsTableProps> = ({
     (lead.additionalDetails?.email && lead.additionalDetails.email.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
+  const statusOptions = [
+    { value: 'Pending', label: 'Pending' },
+    { value: 'In Progress', label: 'In Progress' },
+    { value: 'Completed', label: 'Completed' },
+    { value: 'Rejected', label: 'Rejected' }
+  ];
+
+  const visitTypeOptions = [
+    { value: 'Residence', label: 'Residence' },
+    { value: 'Office', label: 'Office' },
+    { value: 'Both', label: 'Both' }
+  ];
+
   return (
     <Card>
       <CardHeader>
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <CardTitle>{title}</CardTitle>
-            <CardDescription>{description} - {filteredLeads.length} of {leads.length} leads</CardDescription>
+            <CardDescription>
+              {description} - {filteredLeads.length} of {leads.length} leads
+              {enableInlineEdit && " | Click any cell to edit"}
+            </CardDescription>
           </div>
           
           {showActions && (
@@ -178,23 +285,153 @@ const LeadsTable: React.FC<LeadsTableProps> = ({
                 filteredLeads.map((lead) => (
                   <TableRow key={lead.id} className="hover:bg-muted/50">
                     <TableCell className="font-medium">{lead.id}</TableCell>
-                    <TableCell className="font-semibold">{lead.name}</TableCell>
-                    <TableCell>{lead.age}</TableCell>
-                    <TableCell>{lead.job}</TableCell>
                     <TableCell>
-                      <Badge className={getStatusColor(lead.status)}>
-                        {lead.status}
-                      </Badge>
+                      {enableInlineEdit ? (
+                        <EditableCell
+                          value={lead.name}
+                          onSave={(value) => handleCellUpdate(lead.id, 'name', value)}
+                          placeholder="Enter name"
+                        />
+                      ) : (
+                        <span className="font-semibold">{lead.name}</span>
+                      )}
                     </TableCell>
-                    <TableCell>{lead.bank}</TableCell>
-                    <TableCell>{lead.visitType}</TableCell>
-                    <TableCell>{lead.address.city}</TableCell>
-                    <TableCell>{lead.address.state}</TableCell>
-                    <TableCell>{lead.additionalDetails?.phoneNumber || '-'}</TableCell>
-                    <TableCell>{lead.additionalDetails?.email || '-'}</TableCell>
-                    <TableCell>{lead.additionalDetails?.company || '-'}</TableCell>
-                    <TableCell>{lead.additionalDetails?.loanType || '-'}</TableCell>
-                    <TableCell>{lead.additionalDetails?.loanAmount || '-'}</TableCell>
+                    <TableCell>
+                      {enableInlineEdit ? (
+                        <EditableCell
+                          value={lead.age}
+                          onSave={(value) => handleCellUpdate(lead.id, 'age', value)}
+                          type="number"
+                        />
+                      ) : (
+                        lead.age
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {enableInlineEdit ? (
+                        <EditableCell
+                          value={lead.job}
+                          onSave={(value) => handleCellUpdate(lead.id, 'job', value)}
+                          placeholder="Enter job"
+                        />
+                      ) : (
+                        lead.job
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {enableInlineEdit ? (
+                        <EditableCell
+                          value={lead.status}
+                          onSave={(value) => handleCellUpdate(lead.id, 'status', value)}
+                          type="select"
+                          options={statusOptions}
+                        />
+                      ) : (
+                        <Badge className={getStatusColor(lead.status)}>
+                          {lead.status}
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {enableInlineEdit ? (
+                        <EditableCell
+                          value={lead.bank}
+                          onSave={(value) => handleCellUpdate(lead.id, 'bank', value)}
+                          placeholder="Enter bank"
+                        />
+                      ) : (
+                        lead.bank
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {enableInlineEdit ? (
+                        <EditableCell
+                          value={lead.visitType}
+                          onSave={(value) => handleCellUpdate(lead.id, 'visitType', value)}
+                          type="select"
+                          options={visitTypeOptions}
+                        />
+                      ) : (
+                        lead.visitType
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {enableInlineEdit ? (
+                        <EditableCell
+                          value={lead.address.city}
+                          onSave={(value) => handleCellUpdate(lead.id, 'city', value)}
+                          placeholder="Enter city"
+                        />
+                      ) : (
+                        lead.address.city
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {enableInlineEdit ? (
+                        <EditableCell
+                          value={lead.address.state}
+                          onSave={(value) => handleCellUpdate(lead.id, 'state', value)}
+                          placeholder="Enter state"
+                        />
+                      ) : (
+                        lead.address.state
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {enableInlineEdit ? (
+                        <EditableCell
+                          value={lead.additionalDetails?.phoneNumber || ''}
+                          onSave={(value) => handleCellUpdate(lead.id, 'phoneNumber', value)}
+                          placeholder="Enter phone"
+                        />
+                      ) : (
+                        lead.additionalDetails?.phoneNumber || '-'
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {enableInlineEdit ? (
+                        <EditableCell
+                          value={lead.additionalDetails?.email || ''}
+                          onSave={(value) => handleCellUpdate(lead.id, 'email', value)}
+                          placeholder="Enter email"
+                        />
+                      ) : (
+                        lead.additionalDetails?.email || '-'
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {enableInlineEdit ? (
+                        <EditableCell
+                          value={lead.additionalDetails?.company || ''}
+                          onSave={(value) => handleCellUpdate(lead.id, 'company', value)}
+                          placeholder="Enter company"
+                        />
+                      ) : (
+                        lead.additionalDetails?.company || '-'
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {enableInlineEdit ? (
+                        <EditableCell
+                          value={lead.additionalDetails?.loanType || ''}
+                          onSave={(value) => handleCellUpdate(lead.id, 'loanType', value)}
+                          placeholder="Enter loan type"
+                        />
+                      ) : (
+                        lead.additionalDetails?.loanType || '-'
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {enableInlineEdit ? (
+                        <EditableCell
+                          value={lead.additionalDetails?.loanAmount || ''}
+                          onSave={(value) => handleCellUpdate(lead.id, 'loanAmount', value)}
+                          placeholder="Enter amount"
+                        />
+                      ) : (
+                        lead.additionalDetails?.loanAmount || '-'
+                      )}
+                    </TableCell>
                     <TableCell>{lead.assignedTo || 'Unassigned'}</TableCell>
                     <TableCell>{new Date(lead.createdAt).toLocaleDateString()}</TableCell>
                     {showActions && (
@@ -229,6 +466,7 @@ const LeadsTable: React.FC<LeadsTableProps> = ({
         {filteredLeads.length > 0 && (
           <div className="mt-4 text-sm text-muted-foreground">
             Showing {filteredLeads.length} of {leads.length} total leads from database
+            {enableInlineEdit && " | Click any cell to edit data inline"}
           </div>
         )}
       </CardContent>

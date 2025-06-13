@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { User, Lead } from '@/utils/mockData';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
+import EditLeadDialog from '@/components/admin/EditLeadDialog';
 import { toast } from '@/components/ui/use-toast';
 import { 
   Search, 
@@ -42,6 +43,8 @@ const AdminLeads = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isImporting, setIsImporting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [editingLead, setEditingLead] = useState<Lead | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
@@ -368,7 +371,7 @@ const AdminLeads = () => {
               <div>
                 <h1 className="text-2xl font-bold tracking-tight">Database-Driven Leads Management</h1>
                 <p className="text-muted-foreground">
-                  100% Database Source - {leads.length} leads (Auto-refresh: 2s)
+                  100% Database Source - {leads.length} leads (Auto-refresh: 2s) | Edit Lead Dialog | Multi-Agent Assignment | Enhanced Lead Cards
                 </p>
               </div>
               <div className="flex gap-2 flex-wrap">
@@ -571,6 +574,15 @@ const AdminLeads = () => {
                                 View
                               </Button>
 
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEditLead(lead.id)}
+                              >
+                                <Edit className="h-4 w-4 mr-1" />
+                                Edit
+                              </Button>
+
                               <Select onValueChange={(agentId) => handleAssignAgent(lead.id, agentId)}>
                                 <SelectTrigger className="w-[140px]">
                                   <UserPlus className="h-4 w-4 mr-1" />
@@ -596,6 +608,19 @@ const AdminLeads = () => {
           </div>
         </main>
       </div>
+
+      {/* Edit Lead Dialog */}
+      <EditLeadDialog
+        lead={editingLead}
+        isOpen={isEditDialogOpen}
+        onClose={() => {
+          setIsEditDialogOpen(false);
+          setEditingLead(null);
+        }}
+        onSave={handleSaveLead}
+        agents={agents}
+        banks={banks}
+      />
     </div>
   );
 };

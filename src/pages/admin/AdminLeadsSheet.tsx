@@ -104,6 +104,11 @@ const AdminLeadsSheet = () => {
     navigate(`/admin/leads/${leadId}?edit=true`);
   };
 
+  const handleLeadUpdate = () => {
+    // Refresh leads after inline edit
+    loadLeads(false);
+  };
+
   if (!currentUser) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
   }
@@ -131,9 +136,9 @@ const AdminLeadsSheet = () => {
                   </Link>
                 </Button>
                 <div>
-                  <h1 className="text-2xl font-bold tracking-tight">Database Leads Sheet View</h1>
+                  <h1 className="text-2xl font-bold tracking-tight">100% Database-Driven Leads Sheet</h1>
                   <p className="text-muted-foreground">
-                    100% Real-time database sheet - {leads.length} leads | Auto-refresh: 5s
+                    Real-time spreadsheet view - {leads.length} leads | Auto-refresh: 5s | Click any cell to edit
                   </p>
                 </div>
               </div>
@@ -159,16 +164,18 @@ const AdminLeadsSheet = () => {
             {isLoading ? (
               <div className="text-center py-12">
                 <div className="text-lg font-semibold mb-2">Loading leads sheet from database...</div>
-                <div className="text-muted-foreground">Fetching all lead data with complete field mapping.</div>
+                <div className="text-muted-foreground">Fetching all lead data with complete field mapping and inline editing.</div>
               </div>
             ) : (
               <LeadsTable 
                 leads={leads}
                 onViewLead={handleViewLead}
                 onEditLead={handleEditLead}
+                onLeadUpdate={handleLeadUpdate}
                 showActions={true}
-                title="100% Database-Driven Leads Sheet"
-                description={`Real-time database view with comprehensive field mapping | Last update: ${new Date().toLocaleTimeString()}`}
+                enableInlineEdit={true}
+                title="100% Database-Driven Leads Sheet with Inline Editing"
+                description={`Real-time database view with spreadsheet-like editing | Last update: ${new Date().toLocaleTimeString()}`}
               />
             )}
           </div>
