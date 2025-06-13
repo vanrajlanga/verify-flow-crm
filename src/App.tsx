@@ -45,6 +45,7 @@ function App() {
           <Route path="/tvt" element={<TvtDashboard />} />
           <Route path="/tvt/leads/:leadId" element={<TvtLeadDetail />} />
           <Route path="/agent" element={<AgentDashboard />} />
+          <Route path="/agent/dashboard" element={<AgentDashboard />} />
           <Route path="/agent/leads" element={<AgentLeads />} />
           <Route path="/agent/leads/:leadId" element={<AgentLeadDetail />} />
           <Route path="/agent/profile" element={<AgentProfile />} />
