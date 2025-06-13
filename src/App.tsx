@@ -48,6 +48,7 @@ function App() {
             <Route path="/admin/bank-products" element={<BankProductModule />} />
             
             <Route path="/agent" element={<AgentDashboard />} />
+            <Route path="/agent/dashboard" element={<AgentDashboard />} />
             <Route path="/agent/leads" element={<AgentLeads />} />
             <Route path="/agent/leads/:leadId" element={<LeadDetail />} />
             <Route path="/agent/profile" element={<AgentProfile />} />
