@@ -41,31 +41,30 @@ const AdminLeadsSheet = () => {
     loadData();
   }, [navigate]);
 
-  // Enhanced auto-refresh for sheet page
+  // Super aggressive refresh for sheet page
   useEffect(() => {
     const handleFocus = () => {
-      console.log('Sheet page focused, refreshing data...');
-      loadData();
+      console.log('AdminLeadsSheet: Window focused, force refreshing data...');
+      loadData(true);
     };
 
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        console.log('Sheet page became visible, refreshing data...');
-        loadData();
+        console.log('AdminLeadsSheet: Page became visible, force refreshing data...');
+        loadData(true);
       }
     };
 
-    // Listen for focus and visibility change events
     window.addEventListener('focus', handleFocus);
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // Set up aggressive refresh every 5 seconds for sheet view
+    // Ultra-aggressive refresh every 2 seconds for sheet view
     const interval = setInterval(() => {
       if (!document.hidden) {
-        console.log('Sheet auto-refresh: Loading data...');
-        loadData();
+        console.log('AdminLeadsSheet: Ultra-aggressive refresh - loading data...');
+        loadData(true);
       }
-    }, 5000);
+    }, 2000);
 
     return () => {
       window.removeEventListener('focus', handleFocus);
@@ -74,18 +73,20 @@ const AdminLeadsSheet = () => {
     };
   }, []);
 
-  const loadData = async () => {
+  const loadData = async (forceRefresh = false) => {
     try {
-      console.log('Loading data for leads sheet...');
+      console.log('AdminLeadsSheet: Loading data with force refresh:', forceRefresh);
       
-      // Always prioritize database data
-      const dbLeads = await getLeadsFromDatabase();
-      console.log('Database leads loaded for sheet:', dbLeads.length);
+      // ALWAYS load from database, never from localStorage
+      const dbLeads = await getLeadsFromDatabase(forceRefresh);
+      console.log('AdminLeadsSheet: Database leads loaded for sheet:', dbLeads.length);
       
-      if (dbLeads && dbLeads.length >= 0) {
-        setLeads(dbLeads);
-        console.log('Sheet updated with database leads:', dbLeads.length);
-      }
+      setLeads(dbLeads);
+      
+      // Force update the UI by setting leads again
+      setTimeout(() => {
+        setLeads([...dbLeads]);
+      }, 100);
 
       // Load agents
       const storedUsers = localStorage.getItem('mockUsers');
@@ -94,7 +95,7 @@ const AdminLeadsSheet = () => {
         setAgents(users.filter((user: User) => user.role === 'agent'));
       }
     } catch (error) {
-      console.error('Error loading data for sheet:', error);
+      console.error('AdminLeadsSheet: Error loading data for sheet:', error);
       toast({
         title: "Data Loading Error",
         description: "Failed to load latest data for the sheet.",
@@ -107,13 +108,13 @@ const AdminLeadsSheet = () => {
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
     try {
-      await loadData();
+      await loadData(true);
       toast({
         title: "Sheet Refreshed",
-        description: "Lead sheet data has been refreshed successfully.",
+        description: "Lead sheet data has been refreshed from database.",
       });
     } catch (error) {
-      console.error('Error refreshing sheet:', error);
+      console.error('AdminLeadsSheet: Error refreshing sheet:', error);
       toast({
         title: "Refresh Failed",
         description: "Failed to refresh sheet data. Please try again.",
@@ -221,22 +222,19 @@ const AdminLeadsSheet = () => {
       if (leadToUpdate) {
         await updateLeadInDatabase(editingCell.leadId, leadToUpdate);
       }
-      
-      // Also update localStorage as fallback
-      localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
 
       toast({
         title: "Cell updated",
-        description: "Lead data has been updated successfully.",
+        description: "Lead data has been updated in database successfully.",
       });
 
       setEditingCell(null);
       setEditValue('');
       
-      // Refresh data to ensure consistency
-      loadData();
+      // Force refresh data to ensure consistency
+      loadData(true);
     } catch (error) {
-      console.error('Error updating cell:', error);
+      console.error('AdminLeadsSheet: Error updating cell:', error);
       toast({
         title: "Update failed",
         description: "Failed to update the cell. Please try again.",
@@ -348,7 +346,7 @@ const AdminLeadsSheet = () => {
               <div>
                 <h1 className="text-2xl font-bold tracking-tight">Lead Management Sheet</h1>
                 <p className="text-muted-foreground">
-                  Spreadsheet-like interface for bulk lead editing - {leads.length} leads loaded (Real-time updates)
+                  Real-time spreadsheet interface - {leads.length} leads loaded from database (Auto-refreshes every 2 seconds)
                 </p>
               </div>
               <div className="flex gap-2">
@@ -371,7 +369,7 @@ const AdminLeadsSheet = () => {
               <CardHeader>
                 <CardTitle>Interactive Lead Data Sheet</CardTitle>
                 <CardDescription>
-                  Click on any cell to edit. Press Enter to save or Escape to cancel. Data auto-refreshes every 5 seconds.
+                  Click on any cell to edit. Data is saved directly to database and auto-refreshes every 2 seconds.
                 </CardDescription>
               </CardHeader>
               <CardContent>

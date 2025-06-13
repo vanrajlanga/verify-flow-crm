@@ -36,6 +36,7 @@ function App() {
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/leads" element={<AdminLeads />} />
             <Route path="/admin/leads/:leadId" element={<LeadDetail />} />
+            <Route path="/lead/:leadId" element={<LeadDetail />} />
             <Route path="/admin/add-lead" element={<AddNewLead />} />
             <Route path="/admin/agents" element={<AdminAgents />} />
             <Route path="/admin/banks" element={<AdminBanks />} />

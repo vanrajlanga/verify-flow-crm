@@ -191,10 +191,14 @@ export const saveLeadToDatabase = async (leadData: Lead) => {
   }
 };
 
-// Get all leads from the database
-export const getLeadsFromDatabase = async () => {
+// Get all leads from the database - FORCE FRESH DATA
+export const getLeadsFromDatabase = async (forceRefresh = false) => {
   try {
-    console.log('Fetching leads from database...');
+    console.log('Fetching leads from database - force refresh:', forceRefresh);
+    
+    // Add cache busting parameter
+    const timestamp = new Date().getTime();
+    
     const { data: leads, error } = await supabase
       .from('leads')
       .select(`
@@ -207,11 +211,12 @@ export const getLeadsFromDatabase = async () => {
         lead_addresses(
           addresses(*)
         )
-      `);
+      `)
+      .order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error fetching leads from database:', error);
-      return [];
+      throw error;
     }
 
     if (!leads) {
@@ -219,7 +224,7 @@ export const getLeadsFromDatabase = async () => {
       return [];
     }
 
-    console.log('Raw leads from database:', leads.length);
+    console.log(`Raw leads from database: ${leads.length} leads found`);
 
     // Transform database leads to match our Lead interface
     const transformedLeads: Lead[] = leads.map((lead: any) => {
@@ -286,7 +291,7 @@ export const getLeadsFromDatabase = async () => {
         },
         additionalDetails,
         status: lead.status as Lead['status'],
-        bank: lead.bank_id || '',
+        bank: lead.banks?.name || lead.bank_id || '',
         visitType: lead.visit_type || 'Residence',
         assignedTo: lead.assigned_to || '',
         createdAt: new Date(lead.created_at),
@@ -305,11 +310,11 @@ export const getLeadsFromDatabase = async () => {
       };
     });
 
-    console.log('Transformed leads:', transformedLeads.length);
+    console.log(`Transformed leads: ${transformedLeads.length} leads processed`);
     return transformedLeads;
   } catch (error) {
     console.error('Error in getLeadsFromDatabase:', error);
-    return [];
+    throw error;
   }
 };
 
@@ -333,6 +338,127 @@ export const updateLeadInDatabase = async (leadId: string, updates: Partial<Lead
     console.log('Lead updated successfully in database');
   } catch (error) {
     console.error('Error in updateLeadInDatabase:', error);
+    throw error;
+  }
+};
+
+// Get single lead by ID
+export const getLeadByIdFromDatabase = async (leadId: string) => {
+  try {
+    console.log('Fetching lead by ID from database:', leadId);
+    
+    const { data: lead, error } = await supabase
+      .from('leads')
+      .select(`
+        *,
+        addresses!leads_address_id_fkey(*),
+        banks!leads_bank_id_fkey(*),
+        users!leads_assigned_to_fkey(*),
+        additional_details(*),
+        verifications(*),
+        lead_addresses(
+          addresses(*)
+        )
+      `)
+      .eq('id', leadId)
+      .single();
+
+    if (error) {
+      console.error('Error fetching lead by ID:', error);
+      throw error;
+    }
+
+    if (!lead) {
+      console.log('No lead found with ID:', leadId);
+      return null;
+    }
+
+    // Transform single lead data (same transformation logic as above)
+    const additionalDetails: AdditionalDetails = lead.additional_details?.[0] ? {
+      company: lead.additional_details[0].company || '',
+      designation: lead.additional_details[0].designation || '',
+      workExperience: lead.additional_details[0].work_experience || '',
+      propertyType: lead.additional_details[0].property_type || '',
+      ownershipStatus: lead.additional_details[0].ownership_status || '',
+      propertyAge: lead.additional_details[0].property_age || '',
+      monthlyIncome: lead.additional_details[0].monthly_income || '',
+      annualIncome: lead.additional_details[0].annual_income || '',
+      otherIncome: lead.additional_details[0].other_income || '',
+      phoneNumber: lead.additional_details[0].phone_number,
+      email: lead.additional_details[0].email,
+      dateOfBirth: lead.additional_details[0].date_of_birth,
+      agencyFileNo: lead.additional_details[0].agency_file_no,
+      applicationBarcode: lead.additional_details[0].application_barcode,
+      caseId: lead.additional_details[0].case_id,
+      schemeDesc: lead.additional_details[0].scheme_desc,
+      bankBranch: lead.additional_details[0].bank_branch,
+      additionalComments: lead.additional_details[0].additional_comments,
+      leadType: lead.additional_details[0].lead_type,
+      leadTypeId: lead.additional_details[0].lead_type_id,
+      loanAmount: lead.additional_details[0].loan_amount,
+      loanType: lead.additional_details[0].loan_type,
+      vehicleBrandName: lead.additional_details[0].vehicle_brand_name,
+      vehicleBrandId: lead.additional_details[0].vehicle_brand_id,
+      vehicleModelName: lead.additional_details[0].vehicle_model_name,
+      vehicleModelId: lead.additional_details[0].vehicle_model_id,
+      addresses: lead.lead_addresses?.map((la: any) => ({
+        type: la.addresses.type,
+        street: la.addresses.street,
+        city: la.addresses.city,
+        district: la.addresses.district,
+        state: la.addresses.state,
+        pincode: la.addresses.pincode
+      })) || []
+    } : {
+      company: '',
+      designation: '',
+      workExperience: '',
+      propertyType: '',
+      ownershipStatus: '',
+      propertyAge: '',
+      monthlyIncome: '',
+      annualIncome: '',
+      otherIncome: '',
+      addresses: []
+    };
+
+    const transformedLead: Lead = {
+      id: lead.id,
+      name: lead.name,
+      age: lead.age || 0,
+      job: lead.job || '',
+      address: {
+        type: lead.addresses?.type || 'Residence',
+        street: lead.addresses?.street || '',
+        city: lead.addresses?.city || '',
+        district: lead.addresses?.district || '',
+        state: lead.addresses?.state || '',
+        pincode: lead.addresses?.pincode || ''
+      },
+      additionalDetails,
+      status: lead.status as Lead['status'],
+      bank: lead.banks?.name || lead.bank_id || '',
+      visitType: lead.visit_type || 'Residence',
+      assignedTo: lead.assigned_to || '',
+      createdAt: new Date(lead.created_at),
+      verificationDate: lead.verification_date ? new Date(lead.verification_date) : undefined,
+      documents: [],
+      instructions: lead.instructions || '',
+      verification: lead.verifications?.[0] ? {
+        id: lead.verifications[0].id,
+        leadId: lead.id,
+        status: lead.verifications[0].status as "Not Started" | "In Progress" | "Completed" | "Rejected",
+        agentId: lead.verifications[0].agent_id,
+        photos: [],
+        documents: [],
+        notes: lead.verifications[0].notes || ""
+      } : undefined
+    };
+
+    console.log('Lead fetched and transformed successfully:', transformedLead.id);
+    return transformedLead;
+  } catch (error) {
+    console.error('Error in getLeadByIdFromDatabase:', error);
     throw error;
   }
 };
