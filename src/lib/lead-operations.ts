@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Lead, Address, AdditionalDetails } from '@/utils/mockData';
 
@@ -687,8 +686,11 @@ export const getLeadByIdFromDatabase = async (leadId: string) => {
 };
 
 // Delete lead from database
-export const deleteLeadFromDatabase = async (leadId: string) => {
+export const deleteLeadFromDatabase = async (leadId: string): Promise<void> => {
   try {
+    console.log(`Deleting lead ${leadId} from database...`);
+    
+    // Delete from leads table (cascade should handle related records)
     const { error } = await supabase
       .from('leads')
       .delete()
@@ -696,10 +698,10 @@ export const deleteLeadFromDatabase = async (leadId: string) => {
 
     if (error) {
       console.error('Error deleting lead from database:', error);
-      throw error;
+      throw new Error(`Failed to delete lead: ${error.message}`);
     }
 
-    console.log('Lead deleted successfully from database');
+    console.log(`Successfully deleted lead ${leadId} from database`);
   } catch (error) {
     console.error('Error in deleteLeadFromDatabase:', error);
     throw error;

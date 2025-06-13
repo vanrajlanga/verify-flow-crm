@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { User, Lead } from '@/utils/mockData';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
@@ -23,9 +24,10 @@ import {
   Download,
   Upload,
   FileDown,
-  Edit
+  Edit,
+  Trash2
 } from 'lucide-react';
-import { getLeadsFromDatabase, updateLeadInDatabase, saveLeadToDatabase } from '@/lib/lead-operations';
+import { getLeadsFromDatabase, updateLeadInDatabase, saveLeadToDatabase, deleteLeadFromDatabase } from '@/lib/lead-operations';
 import { exportLeadsToCSV, parseCSVToLeads, generateSampleCSV, downloadFile } from '@/lib/csv-operations';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
@@ -45,6 +47,9 @@ const AdminLeads = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [selectedLeads, setSelectedLeads] = useState<string[]>([]);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isAssigning, setIsAssigning] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
@@ -389,6 +394,8 @@ const AdminLeads = () => {
     return matchesSearch && matchesStatus && matchesBank;
   });
 
+  const tvtAgents = agents.filter(agent => agent.role === 'tvtteam');
+
   if (!currentUser) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
   }
@@ -411,7 +418,7 @@ const AdminLeads = () => {
               <div>
                 <h1 className="text-2xl font-bold tracking-tight">Database-Driven Leads Management</h1>
                 <p className="text-muted-foreground">
-                  100% Database Source - {leads.length} leads (Auto-refresh: 2s) | Edit Lead Dialog | Multi-Agent Assignment | Enhanced Lead Cards
+                  100% Database Source - {leads.length} leads (Auto-refresh: 2s) | Bulk Operations | Multi-Agent Assignment | Enhanced Lead Cards
                 </p>
               </div>
               <div className="flex gap-2 flex-wrap">
@@ -437,6 +444,53 @@ const AdminLeads = () => {
                 </Button>
               </div>
             </div>
+
+            {/* Bulk Operations */}
+            {selectedLeads.length > 0 && (
+              <Card className="border-orange-200 bg-orange-50">
+                <CardContent className="pt-6">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{selectedLeads.length} leads selected</span>
+                    </div>
+                    
+                    <div className="flex gap-2 flex-wrap">
+                      <Button
+                        onClick={handleBulkDelete}
+                        disabled={isDeleting}
+                        variant="destructive"
+                        size="sm"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        {isDeleting ? 'Deleting...' : `Delete Selected (${selectedLeads.length})`}
+                      </Button>
+                      
+                      <Select onValueChange={handleBulkAssignTVT} disabled={isAssigning}>
+                        <SelectTrigger className="w-[200px]">
+                          <UserPlus className="h-4 w-4 mr-2" />
+                          <SelectValue placeholder={isAssigning ? 'Assigning...' : 'Assign to TVT'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {tvtAgents.map((agent) => (
+                            <SelectItem key={agent.id} value={agent.id}>
+                              {agent.name} (TVT)
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      
+                      <Button
+                        onClick={() => setSelectedLeads([])}
+                        variant="outline"
+                        size="sm"
+                      >
+                        Clear Selection
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* CSV Import/Export Section */}
             <Card>
@@ -540,10 +594,22 @@ const AdminLeads = () => {
             {/* Leads List */}
             <Card>
               <CardHeader>
-                <CardTitle>Database Leads ({filteredLeads.length})</CardTitle>
-                <CardDescription>
-                  Real-time database sync - Auto-refresh every 2 seconds | Last update: {new Date().toLocaleTimeString()}
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Database Leads ({filteredLeads.length})</CardTitle>
+                    <CardDescription>
+                      Real-time database sync - Auto-refresh every 2 seconds | Last update: {new Date().toLocaleTimeString()}
+                    </CardDescription>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      checked={selectedLeads.length === filteredLeads.length && filteredLeads.length > 0}
+                      onCheckedChange={handleSelectAll}
+                    />
+                    <span className="text-sm text-muted-foreground">Select All</span>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 {isLoading ? (
@@ -569,39 +635,46 @@ const AdminLeads = () => {
                       <Card key={lead.id} className="hover:shadow-md transition-shadow">
                         <CardContent className="pt-6">
                           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-                            <div className="flex-1 space-y-2">
-                              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                                <h3 className="font-semibold text-lg">{lead.name}</h3>
-                                <Badge className={getStatusColor(lead.status)}>
-                                  {lead.status}
-                                </Badge>
-                              </div>
+                            <div className="flex items-start gap-4 flex-1">
+                              <Checkbox
+                                checked={selectedLeads.includes(lead.id)}
+                                onCheckedChange={() => handleSelectLead(lead.id)}
+                              />
                               
-                              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-sm text-muted-foreground">
-                                <div className="flex items-center gap-1">
-                                  <Building className="h-4 w-4" />
-                                  <span>{lead.bank}</span>
+                              <div className="flex-1 space-y-2">
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                                  <h3 className="font-semibold text-lg">{lead.name}</h3>
+                                  <Badge className={getStatusColor(lead.status)}>
+                                    {lead.status}
+                                  </Badge>
                                 </div>
-                                <div className="flex items-center gap-1">
-                                  <MapPin className="h-4 w-4" />
-                                  <span>{lead.address.city}, {lead.address.state}</span>
+                                
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 text-sm text-muted-foreground">
+                                  <div className="flex items-center gap-1">
+                                    <Building className="h-4 w-4" />
+                                    <span>{lead.bank}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <MapPin className="h-4 w-4" />
+                                    <span>{lead.address.city}, {lead.address.state}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <Calendar className="h-4 w-4" />
+                                    <span>{new Date(lead.createdAt).toLocaleDateString()}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <UserPlus className="h-4 w-4" />
+                                    <span>{lead.assignedTo || 'Unassigned'}</span>
+                                  </div>
                                 </div>
-                                <div className="flex items-center gap-1">
-                                  <Calendar className="h-4 w-4" />
-                                  <span>{new Date(lead.createdAt).toLocaleDateString()}</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <UserPlus className="h-4 w-4" />
-                                  <span>{lead.assignedTo || 'Unassigned'}</span>
-                                </div>
+                                
+                                {lead.additionalDetails?.phoneNumber && (
+                                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                    <Phone className="h-4 w-4" />
+                                    <span>{lead.additionalDetails.phoneNumber}</span>
+                                  </div>
+                                )}
                               </div>
-                              
-                              {lead.additionalDetails?.phoneNumber && (
-                                <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                  <Phone className="h-4 w-4" />
-                                  <span>{lead.additionalDetails.phoneNumber}</span>
-                                </div>
-                              )}
                             </div>
 
                             <div className="flex items-center gap-2">

@@ -4,9 +4,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Lead } from '@/utils/mockData';
-import { Eye, Edit, Download, Upload, FileDown, Search } from 'lucide-react';
+import { Eye, Edit, Download, FileDown, Search } from 'lucide-react';
 import { exportLeadsToCSV, generateSampleCSV, downloadFile } from '@/lib/csv-operations';
 import { updateLeadInDatabase } from '@/lib/lead-operations';
 import { toast } from '@/components/ui/use-toast';
@@ -22,6 +23,9 @@ interface LeadsTableProps {
   title?: string;
   description?: string;
   enableInlineEdit?: boolean;
+  enableBulkSelect?: boolean;
+  selectedLeads?: string[];
+  onSelectLeads?: (leadIds: string[]) => void;
 }
 
 const LeadsTable: React.FC<LeadsTableProps> = ({
@@ -33,7 +37,10 @@ const LeadsTable: React.FC<LeadsTableProps> = ({
   showActions = true,
   title = "100% Database-Driven Leads Sheet",
   description = "Complete database view with all lead fields and CSV operations",
-  enableInlineEdit = false
+  enableInlineEdit = false,
+  enableBulkSelect = false,
+  selectedLeads = [],
+  onSelectLeads
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isExporting, setIsExporting] = useState(false);
@@ -89,6 +96,26 @@ const LeadsTable: React.FC<LeadsTableProps> = ({
         description: "Failed to download sample CSV template.",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleSelectAll = () => {
+    if (!onSelectLeads) return;
+    
+    if (selectedLeads.length === filteredLeads.length && filteredLeads.length > 0) {
+      onSelectLeads([]);
+    } else {
+      onSelectLeads(filteredLeads.map(lead => lead.id));
+    }
+  };
+
+  const handleSelectLead = (leadId: string) => {
+    if (!onSelectLeads) return;
+    
+    if (selectedLeads.includes(leadId)) {
+      onSelectLeads(selectedLeads.filter(id => id !== leadId));
+    } else {
+      onSelectLeads([...selectedLeads, leadId]);
     }
   };
 
@@ -209,6 +236,7 @@ const LeadsTable: React.FC<LeadsTableProps> = ({
             <CardDescription>
               {description} - {filteredLeads.length} of {leads.length} leads
               {enableInlineEdit && " | Click any cell to edit"}
+              {enableBulkSelect && " | Select multiple for bulk operations"}
             </CardDescription>
           </div>
           
@@ -253,6 +281,14 @@ const LeadsTable: React.FC<LeadsTableProps> = ({
           <Table>
             <TableHeader>
               <TableRow>
+                {enableBulkSelect && (
+                  <TableHead className="w-[50px]">
+                    <Checkbox
+                      checked={selectedLeads.length === filteredLeads.length && filteredLeads.length > 0}
+                      onCheckedChange={handleSelectAll}
+                    />
+                  </TableHead>
+                )}
                 <TableHead>Lead ID</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Age</TableHead>
@@ -275,7 +311,7 @@ const LeadsTable: React.FC<LeadsTableProps> = ({
             <TableBody>
               {filteredLeads.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={showActions ? 17 : 16} className="text-center py-8">
+                  <TableCell colSpan={enableBulkSelect ? (showActions ? 18 : 17) : (showActions ? 17 : 16)} className="text-center py-8">
                     <div className="text-muted-foreground">
                       {searchTerm ? 'No leads found matching your search criteria.' : 'No leads available in database.'}
                     </div>
@@ -284,6 +320,14 @@ const LeadsTable: React.FC<LeadsTableProps> = ({
               ) : (
                 filteredLeads.map((lead) => (
                   <TableRow key={lead.id} className="hover:bg-muted/50">
+                    {enableBulkSelect && (
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedLeads.includes(lead.id)}
+                          onCheckedChange={() => handleSelectLead(lead.id)}
+                        />
+                      </TableCell>
+                    )}
                     <TableCell className="font-medium">{lead.id}</TableCell>
                     <TableCell>
                       {enableInlineEdit ? (
@@ -467,6 +511,7 @@ const LeadsTable: React.FC<LeadsTableProps> = ({
           <div className="mt-4 text-sm text-muted-foreground">
             Showing {filteredLeads.length} of {leads.length} total leads from database
             {enableInlineEdit && " | Click any cell to edit data inline"}
+            {enableBulkSelect && selectedLeads.length > 0 && ` | ${selectedLeads.length} selected`}
           </div>
         )}
       </CardContent>

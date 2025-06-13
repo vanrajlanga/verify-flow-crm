@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -34,6 +34,7 @@ const AdminDashboard = () => {
   const [agents, setAgents] = useState<AgentPerformance[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     // Check if user is logged in
@@ -49,11 +50,17 @@ const AdminDashboard = () => {
       return;
     }
 
+    // If user is on /admin/dashboard, redirect to /admin
+    if (location.pathname === '/admin/dashboard') {
+      navigate('/admin', { replace: true });
+      return;
+    }
+
     setCurrentUser(parsedUser);
     
     // Load data
     loadDashboardData();
-  }, [navigate]);
+  }, [navigate, location.pathname]);
 
   const loadDashboardData = async () => {
     try {
