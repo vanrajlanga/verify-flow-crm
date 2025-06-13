@@ -1,106 +1,151 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import LoginForm from '@/components/auth/LoginForm';
-import { User } from '@/utils/mockData';
-import { insertDefaultUsers } from '@/lib/insert-default-users';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { loginUser } from '@/lib/supabase-queries';
 
 const Index = () => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   useEffect(() => {
     // Check if user is already logged in
     const storedUser = localStorage.getItem('kycUser');
     if (storedUser) {
       const parsedUser = JSON.parse(storedUser);
-      setCurrentUser(parsedUser);
+      console.log('User already logged in:', parsedUser.role);
       
-      // Redirect to appropriate dashboard
+      // Redirect based on role
       if (parsedUser.role === 'admin') {
         navigate('/admin/dashboard');
-      } else {
+      } else if (parsedUser.role === 'agent') {
         navigate('/agent/dashboard');
+      } else if (parsedUser.role === 'tvtteam') {
+        navigate('/tvt/dashboard');
       }
     }
-
-    // Insert default users into database
-    insertDefaultUsers();
   }, [navigate]);
 
-  const handleLogin = (user: User) => {
-    setCurrentUser(user);
-    localStorage.setItem('kycUser', JSON.stringify(user));
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      console.log('Attempting login for:', email);
+      const user = await loginUser(email, password);
+      
+      if (user) {
+        console.log('Login successful for user:', user.name, 'Role:', user.role);
+        localStorage.setItem('kycUser', JSON.stringify(user));
+        
+        toast({
+          title: "Login Successful",
+          description: `Welcome back, ${user.name}!`
+        });
+
+        // Navigate based on user role
+        if (user.role === 'admin') {
+          console.log('Redirecting admin to /admin/dashboard');
+          navigate('/admin/dashboard');
+        } else if (user.role === 'agent') {
+          console.log('Redirecting agent to /agent/dashboard');
+          navigate('/agent/dashboard');
+        } else if (user.role === 'tvtteam') {
+          console.log('Redirecting TVT user to /tvt/dashboard');
+          navigate('/tvt/dashboard');
+        } else {
+          console.log('Unknown role, redirecting to admin dashboard');
+          navigate('/admin/dashboard');
+        }
+      } else {
+        toast({
+          title: "Login Failed", 
+          description: "Invalid email or password",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      toast({
+        title: "Login Error",
+        description: "An error occurred during login. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-muted/30">
-      <header className="bg-white border-b px-8 py-4">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <div className="flex items-center space-x-2">
-            <img src="https://theeclipso.com/wp-content/uploads/2025/03/the-eclipso-black-logo.png" alt="Bank Verification CRM" className="h-10 w-auto" />
-            <h1 className="text-lg font-bold">Bank Verification CRM</h1>
-          </div>
-        </div>
-      </header>
-
-      <main className="flex-1 flex flex-col md:flex-row px-4 py-12 max-w-7xl mx-auto w-full">
-        <div className="flex-1 flex flex-col justify-center pr-0 md:pr-12 mb-8 md:mb-0">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">
-            Streamline Your 
-            <span className="text-accent"> KYC </span>
-            Verification Process
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            KYC Verification System
           </h2>
-          <p className="text-lg text-muted-foreground mb-6">
-            A comprehensive platform for banks and verification agents to manage the KYC verification pipeline efficiently and securely.
+          <p className="mt-2 text-center text-sm text-gray-600">
+            Sign in to your account
           </p>
-          <ul className="space-y-4">
-            {[
-              "Field verification management for banks",
-              "Auto-assignment of verification agents",
-              "Document collection and validation",
-              "Real-time tracking and reporting",
-              "End-to-end verification workflow"
-            ].map((feature, index) => (
-              <li key={index} className="flex items-start">
-                <div className="bg-accent/10 rounded-full p-1 mr-3 mt-0.5">
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    width="16" 
-                    height="16" 
-                    viewBox="0 0 24 24" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    strokeWidth="2" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    className="text-accent"
-                  >
-                    <polyline points="20 6 9 17 4 12"></polyline>
-                  </svg>
-                </div>
-                <span>{feature}</span>
-              </li>
-            ))}
-          </ul>
         </div>
         
-        <div className="flex-1 flex items-center justify-center">
-          <LoginForm onLogin={handleLogin} />
-        </div>
-      </main>
-
-      <footer className="bg-white border-t px-8 py-6">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center text-sm text-muted-foreground">
-          <div className="mb-4 md:mb-0">
-            &copy; 2025 Bank Verification CRM. All rights reserved.
-          </div>
-          <div className="flex space-x-6">
-            <a href="#" className="hover:text-accent">Privacy Policy</a>
-            <a href="#" className="hover:text-accent">Terms of Service</a>
-            <a href="#" className="hover:text-accent">Contact</a>
-          </div>
-        </div>
-      </footer>
+        <Card>
+          <CardHeader>
+            <CardTitle>Login</CardTitle>
+            <CardDescription>Enter your credentials to access the system</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+              
+              <Button 
+                type="submit" 
+                className="w-full"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Signing in...' : 'Sign In'}
+              </Button>
+            </form>
+            
+            <div className="mt-6 space-y-2">
+              <p className="text-sm font-medium text-gray-700">Demo Accounts:</p>
+              <div className="space-y-1 text-xs text-gray-600">
+                <p><strong>Admin:</strong> admin@kycverification.com / password</p>
+                <p><strong>Agent:</strong> rajesh@kycverification.com / password</p>
+                <p><strong>TVT Team:</strong> mike.tvt@example.com / password</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

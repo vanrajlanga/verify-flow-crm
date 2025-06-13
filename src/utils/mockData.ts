@@ -263,6 +263,66 @@ export const mockLeads: Lead[] = [
       documents: [],
       notes: 'Started verification process'
     }
+  },
+  {
+    id: 'lead-3',
+    name: 'Rajesh Patel',
+    age: 42,
+    job: 'Business Owner',
+    address: {
+      type: 'Residence',
+      street: '789 Park Road',
+      city: 'Mumbai',
+      district: 'Mumbai',
+      state: 'Maharashtra',
+      pincode: '400003'
+    },
+    status: 'Pending',
+    bank: 'SBI Bank',
+    visitType: 'Office',
+    assignedTo: 'Mike TVT',
+    createdAt: new Date(),
+    documents: [],
+    instructions: 'Verify business address and income documents',
+    verification: {
+      id: 'verification-3',
+      leadId: 'lead-3',
+      status: 'Not Started',
+      agentId: 'tvt-1',
+      photos: [],
+      documents: [],
+      notes: ''
+    }
+  },
+  {
+    id: 'lead-4',
+    name: 'Priya Sharma',
+    age: 31,
+    job: 'Teacher',
+    address: {
+      type: 'Residence',
+      street: '321 School Lane',
+      city: 'Mumbai',
+      district: 'Mumbai',
+      state: 'Maharashtra',
+      pincode: '400004'
+    },
+    status: 'Completed',
+    bank: 'Axis Bank',
+    visitType: 'Residence',
+    assignedTo: 'Rajesh Kumar',
+    createdAt: new Date(),
+    documents: [],
+    instructions: 'Standard residence verification',
+    verification: {
+      id: 'verification-4',
+      leadId: 'lead-4',
+      status: 'Completed',
+      agentId: 'agent-1',
+      photos: [],
+      documents: [],
+      notes: 'Verification completed successfully'
+    }
   }
 ];
 

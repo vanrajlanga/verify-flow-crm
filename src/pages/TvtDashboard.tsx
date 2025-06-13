@@ -26,19 +26,22 @@ const TvtDashboard = () => {
     }
 
     const parsedUser = JSON.parse(storedUser);
+    console.log('Current user in TVT Dashboard:', parsedUser);
+    
     if (parsedUser.role !== 'tvtteam') {
+      console.log('User is not TVT team member, redirecting...');
       navigate('/');
       return;
     }
 
     setCurrentUser(parsedUser);
-    loadAssignedLeads(parsedUser.name);
+    loadAssignedLeads(parsedUser);
   }, [navigate]);
 
-  const loadAssignedLeads = async (userName: string) => {
+  const loadAssignedLeads = async (user: User) => {
     setIsLoading(true);
     try {
-      console.log('Loading leads for TVT user:', userName);
+      console.log('Loading leads for TVT user:', user.name, 'ID:', user.id);
       
       // First try to get leads from database
       let allLeads: Lead[] = [];
@@ -75,18 +78,57 @@ const TvtDashboard = () => {
         localStorage.setItem('mockLeads', JSON.stringify(mockLeads));
       }
 
-      // Filter leads assigned to current TVT member by name
-      const assignedLeads = allLeads.filter(lead => 
-        lead.assignedTo === userName || lead.assignedTo === 'Mike TVT'
-      );
+      console.log('All available leads:', allLeads.length);
+      console.log('Looking for leads assigned to:', user.name, 'or', user.id, 'or Mike TVT');
+
+      // Filter leads assigned to current TVT member
+      // Check multiple possible assignment formats
+      const assignedLeads = allLeads.filter(lead => {
+        const isAssigned = lead.assignedTo === user.name || 
+                          lead.assignedTo === user.id ||
+                          lead.assignedTo === 'Mike TVT' ||
+                          lead.assignedTo === 'mike.tvt@example.com' ||
+                          (user.name === 'Mike TVT' && (lead.assignedTo === 'Mike TVT' || lead.assignedTo === 'mike.tvt@example.com'));
+        
+        if (isAssigned) {
+          console.log('Found assigned lead:', lead.name, 'assigned to:', lead.assignedTo);
+        }
+        return isAssigned;
+      });
       
-      console.log('Filtered assigned leads for', userName, ':', assignedLeads.length);
-      setLeads(assignedLeads);
+      console.log('Filtered assigned leads for', user.name, ':', assignedLeads.length);
+      
+      // If no leads found, let's check if we need to assign some leads to this user
+      if (assignedLeads.length === 0 && user.name === 'Mike TVT') {
+        console.log('No leads found for Mike TVT, assigning some leads...');
+        
+        // Assign first 2 leads to Mike TVT if none are assigned
+        const leadsToAssign = allLeads.slice(0, 2).map(lead => ({
+          ...lead,
+          assignedTo: 'Mike TVT'
+        }));
+        
+        // Update the leads array
+        const updatedLeads = allLeads.map(lead => {
+          const shouldAssign = leadsToAssign.some(assignedLead => assignedLead.id === lead.id);
+          return shouldAssign ? { ...lead, assignedTo: 'Mike TVT' } : lead;
+        });
+        
+        // Store updated leads
+        localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+        
+        console.log('Assigned leads to Mike TVT:', leadsToAssign.length);
+        setLeads(leadsToAssign);
+      } else {
+        setLeads(assignedLeads);
+      }
     } catch (error) {
       console.error('Error in loadAssignedLeads:', error);
       // Fall back to mock data
       const assignedLeads = mockLeads.filter(lead => 
-        lead.assignedTo === userName || lead.assignedTo === 'Mike TVT'
+        lead.assignedTo === user.name || 
+        lead.assignedTo === user.id ||
+        lead.assignedTo === 'Mike TVT'
       );
       setLeads(assignedLeads);
     } finally {
@@ -105,7 +147,7 @@ const TvtDashboard = () => {
 
   const handleRefresh = async () => {
     if (currentUser) {
-      await loadAssignedLeads(currentUser.name);
+      await loadAssignedLeads(currentUser);
     }
   };
 
@@ -192,6 +234,10 @@ const TvtDashboard = () => {
                 {isLoading ? (
                   <div className="text-center py-8">
                     <p className="text-muted-foreground">Loading leads...</p>
+                  </div>
+                ) : leads.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">No leads assigned to you yet.</p>
                   </div>
                 ) : (
                   <LeadList 
