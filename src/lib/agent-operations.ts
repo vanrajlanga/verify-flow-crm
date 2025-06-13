@@ -2,6 +2,51 @@
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@/utils/mockData';
 
+// Transform database user to User type
+const transformDatabaseUser = (dbUser: any): User => {
+  return {
+    id: dbUser.id,
+    name: dbUser.name,
+    email: dbUser.email,
+    role: dbUser.role as 'admin' | 'agent' | 'tvtteam',
+    district: dbUser.district,
+    phone: dbUser.phone,
+    city: dbUser.city,
+    state: dbUser.state,
+    baseLocation: dbUser.base_location,
+    branch: dbUser.branch,
+    profilePicture: dbUser.profile_picture,
+    maxTravelDistance: dbUser.max_travel_distance,
+    extraChargePerKm: dbUser.extra_charge_per_km,
+    totalVerifications: dbUser.total_verifications,
+    completionRate: dbUser.completion_rate,
+    status: dbUser.status as 'active' | 'inactive',
+    password: dbUser.password
+  };
+};
+
+// Transform User type to database format
+const transformUserToDatabase = (user: User) => {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    district: user.district || null,
+    phone: user.phone || null,
+    city: user.city || null,
+    state: user.state || null,
+    base_location: user.baseLocation || null,
+    profile_picture: user.profilePicture || null,
+    max_travel_distance: user.maxTravelDistance || null,
+    extra_charge_per_km: user.extraChargePerKm || null,
+    total_verifications: user.totalVerifications || 0,
+    completion_rate: user.completionRate || 0,
+    status: user.status || 'active',
+    password: user.password || ''
+  };
+};
+
 export const getAgentsFromDatabase = async (): Promise<User[]> => {
   try {
     const { data, error } = await supabase
@@ -14,7 +59,7 @@ export const getAgentsFromDatabase = async (): Promise<User[]> => {
       return [];
     }
 
-    return data || [];
+    return data ? data.map(transformDatabaseUser) : [];
   } catch (error) {
     console.error('Error in getAgentsFromDatabase:', error);
     return [];
@@ -23,9 +68,10 @@ export const getAgentsFromDatabase = async (): Promise<User[]> => {
 
 export const addAgentToDatabase = async (agent: User): Promise<void> => {
   try {
+    const dbAgent = transformUserToDatabase(agent);
     const { error } = await supabase
       .from('users')
-      .insert([agent]);
+      .insert([dbAgent]);
 
     if (error) {
       console.error('Error adding agent to database:', error);
@@ -39,9 +85,10 @@ export const addAgentToDatabase = async (agent: User): Promise<void> => {
 
 export const updateAgentInDatabase = async (agent: User): Promise<void> => {
   try {
+    const dbAgent = transformUserToDatabase(agent);
     const { error } = await supabase
       .from('users')
-      .update(agent)
+      .update(dbAgent)
       .eq('id', agent.id);
 
     if (error) {
