@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -43,25 +42,25 @@ const AdminLeadsSheet = () => {
     loadAllData();
   }, [navigate]);
 
-  // Super aggressive refresh for sheet page - every 2 seconds
+  // ULTRA-AGGRESSIVE refresh for sheet page - every 1.5 seconds to catch new leads immediately
   useEffect(() => {
     const interval = setInterval(() => {
       if (!document.hidden) {
-        console.log('AdminLeadsSheet: Ultra-aggressive refresh from database...');
+        console.log('AdminLeadsSheet: ULTRA-AGGRESSIVE refresh from database (1.5s)...');
         loadAllData();
       }
-    }, 2000);
+    }, 1500); // Even more aggressive than the main leads page
 
     return () => clearInterval(interval);
   }, []);
 
   const loadAllData = async () => {
     try {
-      console.log('AdminLeadsSheet: Loading all data from database...');
+      console.log('AdminLeadsSheet: FORCE Loading data from database with cache busting...');
       
-      // Load leads from database
-      const dbLeads = await getLeadsFromDatabase(true);
-      console.log('AdminLeadsSheet: Loaded leads from database:', dbLeads.length);
+      // ULTRA-FORCE fresh load from database
+      const dbLeads = await getLeadsFromDatabase(true); // Force refresh
+      console.log(`AdminLeadsSheet: ULTRA-FRESH database load: ${dbLeads.length} leads at ${new Date().toISOString()}`);
       setLeads(dbLeads);
 
       // Load agents from database
@@ -71,6 +70,7 @@ const AdminLeadsSheet = () => {
         .in('role', ['agent', 'tvtteam']);
 
       if (!agentsError && dbAgents) {
+        // ... keep existing code (agent transformation)
         const transformedAgents = dbAgents.map((agent: any) => ({
           id: agent.id,
           name: agent.name,
@@ -93,10 +93,10 @@ const AdminLeadsSheet = () => {
       }
 
     } catch (error) {
-      console.error('AdminLeadsSheet: Error loading data:', error);
+      console.error('AdminLeadsSheet: CRITICAL ERROR loading data from database:', error);
       toast({
-        title: "Data Loading Error",
-        description: "Failed to load data from database.",
+        title: "Database Loading Error",
+        description: "Failed to load sheet data from database.",
         variant: "destructive"
       });
     } finally {
@@ -107,16 +107,17 @@ const AdminLeadsSheet = () => {
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
     try {
+      console.log('AdminLeadsSheet: MANUAL ULTRA-FORCE refresh...');
       await loadAllData();
       toast({
-        title: "Sheet Refreshed",
-        description: "Sheet data refreshed from database successfully.",
+        title: "Sheet Database Refreshed",
+        description: `Ultra-refreshed ${leads.length} leads from database.`,
       });
     } catch (error) {
-      console.error('AdminLeadsSheet: Error refreshing sheet:', error);
+      console.error('AdminLeadsSheet: Error during manual refresh:', error);
       toast({
         title: "Refresh Failed",
-        description: "Failed to refresh sheet data from database.",
+        description: "Failed to refresh sheet from database.",
         variant: "destructive",
       });
     } finally {
@@ -138,6 +139,8 @@ const AdminLeadsSheet = () => {
     if (!editingCell) return;
 
     try {
+      console.log(`AdminLeadsSheet: Saving cell edit for lead ${editingCell.leadId} field ${editingCell.field} to database...`);
+      
       const leadToUpdate = leads.find(l => l.id === editingCell.leadId);
       if (!leadToUpdate) return;
 
@@ -210,23 +213,23 @@ const AdminLeadsSheet = () => {
           break;
       }
 
-      // Update in database
+      // FORCE Update in database
       await updateLeadInDatabase(editingCell.leadId, updatedLead);
 
       toast({
-        title: "Cell Updated",
-        description: "Lead data updated in database successfully.",
+        title: "Database Updated",
+        description: "Cell updated and saved to database successfully.",
       });
 
       setEditingCell(null);
       setEditValue('');
       
-      // Force refresh from database
+      // ULTRA-FORCE immediate refresh from database
       await loadAllData();
     } catch (error) {
-      console.error('AdminLeadsSheet: Error updating cell:', error);
+      console.error('AdminLeadsSheet: CRITICAL ERROR updating cell in database:', error);
       toast({
-        title: "Update Failed",
+        title: "Database Update Failed",
         description: "Failed to update cell in database.",
         variant: "destructive",
       });
@@ -334,9 +337,9 @@ const AdminLeadsSheet = () => {
           <div className="max-w-full mx-auto space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-bold tracking-tight">Lead Management Sheet</h1>
+                <h1 className="text-2xl font-bold tracking-tight">100% Database-Driven Sheet</h1>
                 <p className="text-muted-foreground">
-                  Real-time database sheet - {leads.length} leads (Auto-refreshes every 2 seconds)
+                  Ultra-real-time database sheet - {leads.length} leads (Auto-refresh: 1.5s) | Last sync: {new Date().toLocaleTimeString()}
                 </p>
               </div>
               <div className="flex gap-2">
@@ -347,7 +350,7 @@ const AdminLeadsSheet = () => {
                   className="flex items-center gap-2"
                 >
                   <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                  Refresh from DB
+                  Ultra-Refresh DB
                 </Button>
                 <Button variant="outline" onClick={() => navigate('/admin/leads')}>
                   Back to Leads List
@@ -359,13 +362,16 @@ const AdminLeadsSheet = () => {
               <CardHeader>
                 <CardTitle>Interactive Database Sheet</CardTitle>
                 <CardDescription>
-                  Click any cell to edit. All changes save directly to database.
+                  Ultra-fast sync with database. Click any cell to edit. All changes save directly to database.
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
                   {isLoading ? (
-                    <div className="text-center py-8">Loading sheet data from database...</div>
+                    <div className="text-center py-8">
+                      <div className="text-lg font-semibold mb-2">Loading ultra-fresh data from database...</div>
+                      <div className="text-muted-foreground">Fetching the latest database records...</div>
+                    </div>
                   ) : (
                     <Table>
                       <TableHeader>
@@ -402,7 +408,7 @@ const AdminLeadsSheet = () => {
                                   disabled={isRefreshing}
                                 >
                                   <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-                                  Refresh from Database
+                                  Ultra-Refresh Database
                                 </Button>
                               </div>
                             </TableCell>

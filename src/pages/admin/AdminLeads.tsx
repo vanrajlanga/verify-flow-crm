@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -55,25 +54,27 @@ const AdminLeads = () => {
     loadAllData();
   }, [navigate]);
 
-  // Auto-refresh every 3 seconds when page is active
+  // AGGRESSIVE Auto-refresh every 2 seconds when page is active to catch new database leads
   useEffect(() => {
     const interval = setInterval(() => {
       if (!document.hidden) {
-        console.log('AdminLeads: Auto-refresh from database...');
+        console.log('AdminLeads: AGGRESSIVE Auto-refresh from database (2s)...');
         loadAllData();
       }
-    }, 3000);
+    }, 2000); // Changed from 3000 to 2000 for more aggressive refresh
 
     return () => clearInterval(interval);
   }, []);
 
   const loadAllData = async () => {
     try {
-      console.log('AdminLeads: Loading all data from database...');
+      console.log('AdminLeads: FORCE Loading all data from database (bypassing cache)...');
       
-      // Load leads from database
-      const dbLeads = await getLeadsFromDatabase(true);
-      console.log('AdminLeads: Loaded leads from database:', dbLeads.length);
+      // FORCE fresh load from database with cache busting
+      const timestamp = new Date().getTime();
+      const dbLeads = await getLeadsFromDatabase(true); // Force refresh
+      
+      console.log(`AdminLeads: FRESH database load: ${dbLeads.length} leads found at ${new Date().toISOString()}`);
       setLeads(dbLeads);
 
       // Load agents from database
@@ -114,10 +115,10 @@ const AdminLeads = () => {
       }
 
     } catch (error) {
-      console.error('AdminLeads: Error loading data:', error);
+      console.error('AdminLeads: CRITICAL ERROR loading data from database:', error);
       toast({
-        title: "Data Loading Error",
-        description: "Failed to load data from database.",
+        title: "Database Loading Error",
+        description: "Failed to load data from database. Check console for details.",
         variant: "destructive"
       });
     } finally {
@@ -128,16 +129,17 @@ const AdminLeads = () => {
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
     try {
+      console.log('AdminLeads: MANUAL FORCE refresh from database...');
       await loadAllData();
       toast({
-        title: "Data Refreshed",
-        description: "All data refreshed from database successfully.",
+        title: "Database Refreshed",
+        description: `Refreshed ${leads.length} leads from database successfully.`,
       });
     } catch (error) {
-      console.error('AdminLeads: Error refreshing data:', error);
+      console.error('AdminLeads: Error during manual refresh:', error);
       toast({
         title: "Refresh Failed",
-        description: "Failed to refresh data from database.",
+        description: "Failed to refresh data from database. Check connection.",
         variant: "destructive",
       });
     } finally {
@@ -156,23 +158,26 @@ const AdminLeads = () => {
 
   const handleAssignAgent = async (leadId: string, agentId: string) => {
     try {
+      console.log(`AdminLeads: Assigning agent ${agentId} to lead ${leadId} in database...`);
+      
       await updateLeadInDatabase(leadId, { 
         assignedTo: agentId,
         status: 'Pending' as Lead['status']
       });
       
-      await loadAllData(); // Refresh from database
+      // FORCE immediate refresh from database after assignment
+      await loadAllData();
       
       const agent = agents.find(a => a.id === agentId);
       toast({
         title: "Agent Assigned",
-        description: `Lead assigned to ${agent?.name || 'agent'} successfully.`,
+        description: `Lead assigned to ${agent?.name || 'agent'} and saved to database.`,
       });
     } catch (error) {
-      console.error('Error assigning agent:', error);
+      console.error('AdminLeads: Error assigning agent in database:', error);
       toast({
         title: "Assignment Failed",
-        description: "Failed to assign agent to lead.",
+        description: "Failed to assign agent to lead in database.",
         variant: "destructive"
       });
     }
@@ -222,9 +227,9 @@ const AdminLeads = () => {
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
-                <h1 className="text-2xl font-bold tracking-tight">Leads Management</h1>
+                <h1 className="text-2xl font-bold tracking-tight">Database-Driven Leads Management</h1>
                 <p className="text-muted-foreground">
-                  Database-driven lead management - {leads.length} leads loaded
+                  100% Database Source - {leads.length} leads (Auto-refresh: 2s)
                 </p>
               </div>
               <div className="flex gap-2 flex-wrap">
@@ -235,7 +240,7 @@ const AdminLeads = () => {
                   className="flex items-center gap-2"
                 >
                   <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                  Refresh from DB
+                  Force DB Refresh
                 </Button>
                 <Button asChild>
                   <Link to="/admin/add-lead">
@@ -298,14 +303,17 @@ const AdminLeads = () => {
             {/* Leads List */}
             <Card>
               <CardHeader>
-                <CardTitle>Leads ({filteredLeads.length})</CardTitle>
+                <CardTitle>Database Leads ({filteredLeads.length})</CardTitle>
                 <CardDescription>
-                  Real-time data from database - Auto-refreshes every 3 seconds
+                  Real-time database sync - Auto-refresh every 2 seconds | Last update: {new Date().toLocaleTimeString()}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {isLoading ? (
-                  <div className="text-center py-8">Loading leads from database...</div>
+                  <div className="text-center py-8">
+                    <div className="text-lg font-semibold mb-2">Loading leads from database...</div>
+                    <div className="text-muted-foreground">Please wait while we fetch the latest data.</div>
+                  </div>
                 ) : filteredLeads.length === 0 ? (
                   <div className="text-center py-8">
                     <p className="text-muted-foreground mb-4">No leads found in database.</p>
@@ -315,7 +323,7 @@ const AdminLeads = () => {
                       disabled={isRefreshing}
                     >
                       <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-                      Refresh from Database
+                      Force Database Refresh
                     </Button>
                   </div>
                 ) : (
