@@ -252,8 +252,6 @@ const AdminDashboard = () => {
                 <LeadList 
                   leads={recentLeads} 
                   currentUser={currentUser} 
-                  banks={mockBanks}
-                  agents={[]}
                 />
               </CardContent>
             </Card>
