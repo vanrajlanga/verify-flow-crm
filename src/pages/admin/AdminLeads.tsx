@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -70,14 +69,33 @@ const AdminLeads = () => {
     loadLocationData();
   }, [navigate]);
 
+  // Add refresh function that can be called when returning from add lead page
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // Page became visible, refresh data
+        console.log('Page became visible, refreshing leads...');
+        loadLeadsAndAgents();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
   const loadLeadsAndAgents = async () => {
     try {
+      console.log('Loading leads and agents...');
+      
       // Load leads from database
       const dbLeads = await getLeadsFromDatabase();
+      console.log('Database leads loaded:', dbLeads.length);
+      
       if (dbLeads.length > 0) {
-        console.log('Loaded leads from database:', dbLeads.length);
+        console.log('Setting leads from database:', dbLeads.length);
         setLeads(dbLeads);
       } else {
+        console.log('No database leads, checking localStorage...');
         // Fall back to localStorage if no database leads
         const storedLeads = localStorage.getItem('mockLeads');
         if (storedLeads) {
@@ -90,6 +108,7 @@ const AdminLeads = () => {
             setLeads([]);
           }
         } else {
+          console.log('No localStorage leads found');
           setLeads([]);
         }
       }
@@ -772,7 +791,7 @@ const AdminLeads = () => {
             </div>
             <Card>
               <CardHeader>
-                <CardTitle>Leads List</CardTitle>
+                <CardTitle>Leads List ({leads.length})</CardTitle>
                 <CardDescription>
                   A comprehensive list of all leads in the system with enhanced import/export
                 </CardDescription>

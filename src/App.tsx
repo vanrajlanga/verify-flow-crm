@@ -33,6 +33,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route path="/admin/leads" element={<AdminLeads />} />
             <Route path="/admin/leads/:leadId" element={<LeadDetail />} />
             <Route path="/admin/add-lead" element={<AddNewLead />} />

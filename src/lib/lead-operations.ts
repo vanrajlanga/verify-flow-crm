@@ -194,6 +194,7 @@ export const saveLeadToDatabase = async (leadData: Lead) => {
 // Get all leads from the database
 export const getLeadsFromDatabase = async () => {
   try {
+    console.log('Fetching leads from database...');
     const { data: leads, error } = await supabase
       .from('leads')
       .select(`
@@ -213,7 +214,12 @@ export const getLeadsFromDatabase = async () => {
       return [];
     }
 
-    if (!leads) return [];
+    if (!leads) {
+      console.log('No leads found in database');
+      return [];
+    }
+
+    console.log('Raw leads from database:', leads.length);
 
     // Transform database leads to match our Lead interface
     const transformedLeads: Lead[] = leads.map((lead: any) => {
@@ -299,7 +305,7 @@ export const getLeadsFromDatabase = async () => {
       };
     });
 
-    console.log('Loaded leads from database:', transformedLeads.length);
+    console.log('Transformed leads:', transformedLeads.length);
     return transformedLeads;
   } catch (error) {
     console.error('Error in getLeadsFromDatabase:', error);

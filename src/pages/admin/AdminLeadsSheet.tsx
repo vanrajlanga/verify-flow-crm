@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -39,10 +40,28 @@ const AdminLeadsSheet = () => {
     loadData();
   }, [navigate]);
 
+  // Add refresh function that can be called when returning to this page
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // Page became visible, refresh data
+        console.log('Page became visible, refreshing leads sheet...');
+        loadData();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
   const loadData = async () => {
     try {
+      console.log('Loading data for leads sheet...');
+      
       // Load leads from database
       const dbLeads = await getLeadsFromDatabase();
+      console.log('Database leads loaded for sheet:', dbLeads.length);
+      
       if (dbLeads.length > 0) {
         setLeads(dbLeads);
       } else {
@@ -285,14 +304,14 @@ const AdminLeadsSheet = () => {
               <div>
                 <h1 className="text-2xl font-bold tracking-tight">Lead Management Sheet</h1>
                 <p className="text-muted-foreground">
-                  Spreadsheet-like interface for bulk lead editing and management
+                  Spreadsheet-like interface for bulk lead editing and management - {leads.length} leads loaded
                 </p>
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => navigate('/admin/leads')}>
                   Back to Lead List
                 </Button>
-                <Button onClick={() => window.location.reload()}>
+                <Button onClick={() => loadData()}>
                   Refresh Data
                 </Button>
               </div>
