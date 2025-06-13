@@ -459,13 +459,6 @@ export type Database = {
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "leads_bank_id_fkey"
-            columns: ["bank_id"]
-            isOneToOne: false
-            referencedRelation: "banks"
-            referencedColumns: ["id"]
-          },
         ]
       }
       phone_numbers: {

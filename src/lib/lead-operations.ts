@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Lead, Address, AdditionalDetails } from '@/utils/mockData';
 
@@ -26,6 +25,25 @@ export const saveLeadToDatabase = async (leadData: Lead) => {
       throw addressError;
     }
 
+    // Map bank name to bank ID - handle both old and new format
+    const getBankId = (bankName: string): string => {
+      const bankMapping: { [key: string]: string } = {
+        'HDFC': 'hdfc',
+        'ICICI': 'icici', 
+        'AXIS': 'axis',
+        'SBI': 'sbi',
+        'Kotak Mahindra Bank': 'kotak',
+        'Punjab National Bank': 'pnb',
+        'Bank of Baroda': 'bob',
+        'Canara Bank': 'canara',
+        'Union Bank of India': 'union',
+        'Indian Bank': 'indian'
+      };
+      
+      // Return mapped bank ID or use the bank name as-is if not found
+      return bankMapping[bankName] || bankName.toLowerCase();
+    };
+
     // Save the lead
     const { data: lead, error: leadError } = await supabase
       .from('leads')
@@ -36,7 +54,7 @@ export const saveLeadToDatabase = async (leadData: Lead) => {
         job: leadData.job,
         address_id: addressData.id,
         status: leadData.status,
-        bank_id: leadData.bank,
+        bank_id: getBankId(leadData.bank),
         visit_type: leadData.visitType,
         assigned_to: leadData.assignedTo || null,
         verification_date: leadData.verificationDate?.toISOString(),
@@ -196,9 +214,6 @@ export const getLeadsFromDatabase = async (forceRefresh = false) => {
   try {
     console.log('Fetching leads from database - force refresh:', forceRefresh);
     
-    // Add cache busting parameter
-    const timestamp = new Date().getTime();
-    
     const { data: leads, error } = await supabase
       .from('leads')
       .select(`
@@ -284,6 +299,24 @@ export const getLeadsFromDatabase = async (forceRefresh = false) => {
         return 'Residence'; // Default fallback
       };
 
+      // Get bank name from bank_id using mapping
+      const getBankName = (bankId: string): string => {
+        const bankMapping: { [key: string]: string } = {
+          'hdfc': 'HDFC',
+          'icici': 'ICICI',
+          'axis': 'AXIS',
+          'sbi': 'SBI',
+          'kotak': 'Kotak Mahindra Bank',
+          'pnb': 'Punjab National Bank',
+          'bob': 'Bank of Baroda',
+          'canara': 'Canara Bank',
+          'union': 'Union Bank of India',
+          'indian': 'Indian Bank'
+        };
+        
+        return bankMapping[bankId] || bankId.toUpperCase();
+      };
+
       return {
         id: lead.id,
         name: lead.name,
@@ -299,7 +332,7 @@ export const getLeadsFromDatabase = async (forceRefresh = false) => {
         },
         additionalDetails,
         status: lead.status as Lead['status'],
-        bank: lead.banks?.name || lead.bank_id || '',
+        bank: getBankName(lead.bank_id || ''),
         visitType: getValidVisitType(lead.visit_type),
         assignedTo: lead.assigned_to || '',
         createdAt: new Date(lead.created_at),
@@ -438,6 +471,24 @@ export const getLeadByIdFromDatabase = async (leadId: string) => {
       return 'Residence'; // Default fallback
     };
 
+    // Get bank name from bank_id using mapping
+    const getBankName = (bankId: string): string => {
+      const bankMapping: { [key: string]: string } = {
+        'hdfc': 'HDFC',
+        'icici': 'ICICI',
+        'axis': 'AXIS',
+        'sbi': 'SBI',
+        'kotak': 'Kotak Mahindra Bank',
+        'pnb': 'Punjab National Bank',
+        'bob': 'Bank of Baroda',
+        'canara': 'Canara Bank',
+        'union': 'Union Bank of India',
+        'indian': 'Indian Bank'
+      };
+      
+      return bankMapping[bankId] || bankId.toUpperCase();
+    };
+
     const transformedLead: Lead = {
       id: lead.id,
       name: lead.name,
@@ -453,7 +504,7 @@ export const getLeadByIdFromDatabase = async (leadId: string) => {
       },
       additionalDetails,
       status: lead.status as Lead['status'],
-      bank: lead.banks?.name || lead.bank_id || '',
+      bank: getBankName(lead.bank_id || ''),
       visitType: getValidVisitType(lead.visit_type),
       assignedTo: lead.assigned_to || '',
       createdAt: new Date(lead.created_at),
