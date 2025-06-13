@@ -2,13 +2,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "@/components/ui/use-toast";
@@ -17,261 +17,222 @@ import { saveLeadToDatabase } from '@/lib/lead-operations';
 import { Lead } from '@/utils/mockData';
 
 const formSchema = z.object({
-  // Step 1: Bank & Product Details
-  bankName: z.string().min(1, "Bank name is required"),
-  bankProduct: z.string().min(1, "Bank product is required"),
-  initiatedBranch: z.string().min(1, "Initiated branch is required"),
-  buildBranch: z.string().min(1, "Build branch is required"),
-  
-  // Step 2: Applicant Information
-  applicantName: z.string().min(1, "Applicant name is required"),
-  fatherName: z.string().min(1, "Father's name is required"),
-  motherName: z.string().optional(),
-  gender: z.enum(["Male", "Female", "Other"]),
-  dateOfBirth: z.string().min(1, "Date of birth is required"),
-  applicantAge: z.number().min(18, "Age must be at least 18"),
-  maritalStatus: z.enum(["Single", "Married", "Divorced", "Widowed"]),
-  spouseName: z.string().optional(),
-  applicantPhone: z.string().min(10, "Valid phone number is required"),
-  applicantEmail: z.string().email("Valid email is required"),
-  
-  // Step 3: Co-Applicant (Optional)
-  hasCoApplicant: z.boolean().default(false),
-  coApplicantName: z.string().optional(),
-  coApplicantPhone: z.string().optional(),
-  coApplicantRelation: z.string().optional(),
-  coApplicantEmail: z.string().optional(),
-  coApplicantAge: z.string().optional(),
-  
-  // Step 4: Address Information
-  primaryStreet: z.string().min(1, "Street address is required"),
-  primaryCity: z.string().min(1, "City is required"),
-  primaryDistrict: z.string().min(1, "District is required"),
-  primaryState: z.string().min(1, "State is required"),
-  primaryPincode: z.string().min(6, "Valid pincode is required"),
-  
-  // Step 5: Professional Details
-  companyName: z.string().min(1, "Company name is required"),
-  designation: z.string().min(1, "Designation is required"),
-  employmentType: z.enum(["Salaried", "Self Employed", "Business"]),
-  workExperience: z.string().min(1, "Work experience is required"),
-  currentJobDuration: z.string().min(1, "Current job duration is required"),
-  
-  // Step 6: Financial Details
-  monthlyIncome: z.string().min(1, "Monthly income is required"),
-  annualIncome: z.string().min(1, "Annual income is required"),
+  applicantName: z.string().min(2, {
+    message: "Applicant name must be at least 2 characters.",
+  }),
+  applicantAge: z.number().optional().nullable(),
+  applicantPhone: z.string().min(10, {
+    message: "Phone number must be at least 10 characters.",
+  }),
+  applicantEmail: z.string().email({
+    message: "Invalid email address.",
+  }),
+  dateOfBirth: z.string().optional(),
+  companyName: z.string().optional(),
+  designation: z.string().optional(),
+  workExperience: z.string().optional(),
+  monthlyIncome: z.string().optional(),
+  annualIncome: z.string().optional(),
   otherIncome: z.string().optional(),
-  loanAmount: z.string().min(1, "Loan amount is required"),
-  propertyType: z.string().optional(),
-  propertyOwnership: z.string().optional(),
-  propertyAge: z.string().optional(),
-  
-  // Step 7: Vehicle Details (for auto loans)
-  vehicleBrandName: z.string().optional(),
-  vehicleModelName: z.string().optional(),
-  vehicleVariant: z.string().optional(),
-  vehicleType: z.string().optional(),
-  vehiclePrice: z.string().optional(),
-  downPayment: z.string().optional(),
-  
-  // Step 8: Instructions & Assignment
-  visitType: z.enum(["Office", "Residence", "Both"]).default("Residence"),
-  specialInstructions: z.string().optional(),
-  
-  // Additional fields
-  leadType: z.string().min(1, "Lead type is required"),
+  residenceAddress: z.string().min(5, {
+    message: "Residence address must be at least 5 characters.",
+  }),
+  residenceCity: z.string().optional(),
+  residenceDistrict: z.string().optional(),
+  residenceState: z.string().optional(),
+  residencePincode: z.string().min(6, {
+    message: "Pincode must be at least 6 characters.",
+  }),
+  officeAddress: z.string().optional(),
+  officeCity: z.string().optional(),
+  officeDistrict: z.string().optional(),
+  officeState: z.string().optional(),
+  officePincode: z.string().optional(),
+  permanentAddress: z.string().optional(),
+  permanentCity: z.string().optional(),
+  permanentDistrict: z.string().optional(),
+  permanentState: z.string().optional(),
+  permanentPincode: z.string().optional(),
+  bankName: z.string().optional(),
+  visitType: z.enum(['Residence', 'Office', 'Both']).default('Residence'),
+  productType: z.string().optional(),
+  productTypeId: z.string().optional(),
+  loanAmount: z.string().optional(),
+  loanType: z.string().optional(),
+  vehicleBrand: z.string().optional(),
+  vehicleBrandId: z.string().optional(),
+  vehicleModel: z.string().optional(),
+  vehicleModelId: z.string().optional(),
+  buildBranch: z.string().optional(),
+  schemeDescription: z.string().optional(),
+  additionalComments: z.string().optional(),
+  instructions: z.string().optional(),
   agencyFileNo: z.string().optional(),
   applicationId: z.string().optional(),
   caseId: z.string().optional(),
+  propertyType: z.string().optional(),
+  propertyOwnership: z.string().optional(),
+  propertyAge: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
 
-interface AddLeadFormMultiStepProps {
-  onSubmit?: (lead: any) => Promise<void>;
-  locationData?: any;
-}
-
-const AddLeadFormMultiStep = ({ onSubmit, locationData }: AddLeadFormMultiStepProps) => {
+const AddLeadFormMultiStep = () => {
   const [currentStep, setCurrentStep] = useState(1);
-  const [uploadedDocuments, setUploadedDocuments] = useState<File[]>([]);
-  const [additionalAddresses, setAdditionalAddresses] = useState<any[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadedDocuments, setUploadedDocuments] = useState<any[]>([]);
   const navigate = useNavigate();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      hasCoApplicant: false,
+      applicantName: "",
+      applicantAge: 0,
+      applicantPhone: "",
+      applicantEmail: "",
+      residenceAddress: "",
+      residenceCity: "",
+      residenceDistrict: "",
+      residenceState: "",
+      residencePincode: "",
       visitType: "Residence",
-      employmentType: "Salaried",
-      gender: "Male",
-      maritalStatus: "Single",
     },
+    mode: "onChange"
   });
 
-  const totalSteps = 9;
-  const progress = (currentStep / totalSteps) * 100;
-
-  const nextStep = () => {
-    if (currentStep < totalSteps) {
-      setCurrentStep(currentStep + 1);
-    }
+  const handleNextStep = () => {
+    setCurrentStep(currentStep + 1);
   };
 
-  const prevStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
+  const handlePrevStep = () => {
+    setCurrentStep(currentStep - 1);
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const onFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files) {
-      setUploadedDocuments(prev => [...prev, ...Array.from(files)]);
-      toast({
-        title: "Documents uploaded",
-        description: `${files.length} document(s) uploaded successfully.`,
-      });
+      const newDocuments = Array.from(files).map(file => ({
+        id: `doc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        name: file.name,
+        url: URL.createObjectURL(file),
+        uploadDate: new Date()
+      }));
+      setUploadedDocuments([...uploadedDocuments, ...newDocuments]);
     }
   };
 
-  const addAddress = () => {
-    setAdditionalAddresses(prev => [...prev, {
-      type: 'Office',
-      street: '',
-      city: '',
-      district: '',
-      state: '',
-      pincode: ''
-    }]);
-  };
-
-  const removeAddress = (index: number) => {
-    setAdditionalAddresses(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const updateAddress = (index: number, field: string, value: string) => {
-    setAdditionalAddresses(prev => prev.map((addr, i) => 
-      i === index ? { ...addr, [field]: value } : addr
-    ));
-  };
-
-  const handleSubmit = async (data: FormData) => {
+  const onSubmit = async (data: FormData) => {
     try {
-      // Create lead object
-      const leadId = `lead-${Date.now()}`;
-      
-      const newLead: any = {
+      setIsSubmitting(true);
+
+      // Generate a unique lead ID
+      const leadId = `lead-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+      // Create the complete lead object
+      const leadData: Lead = {
         id: leadId,
         name: data.applicantName,
-        age: data.applicantAge,
-        status: 'Pending',
-        visitType: data.visitType,
-        assignedTo: '',
-        instructions: data.specialInstructions || '',
-        createdAt: new Date().toISOString(),
+        age: data.applicantAge || 0,
+        job: data.designation || '',
         address: {
-          street: data.primaryStreet,
-          city: data.primaryCity,
-          district: data.primaryDistrict,
-          state: data.primaryState,
-          pincode: data.primaryPincode
+          street: data.residenceAddress || '',
+          city: data.residenceCity || '',
+          district: data.residenceDistrict || '',
+          state: data.residenceState || '',
+          pincode: data.residencePincode || ''
         },
         additionalDetails: {
-          // Bank Details
-          bankName: data.bankName,
-          bankProduct: data.bankProduct,
-          initiatedBranch: data.initiatedBranch,
-          buildBranch: data.buildBranch,
-          
-          // Applicant Details
-          fatherName: data.fatherName,
-          motherName: data.motherName,
-          gender: data.gender,
-          dateOfBirth: data.dateOfBirth,
-          maritalStatus: data.maritalStatus,
-          spouseName: data.spouseName,
-          phoneNumber: data.applicantPhone,
-          email: data.applicantEmail,
-          
-          // Co-Applicant
-          coApplicant: data.hasCoApplicant ? {
-            name: data.coApplicantName,
-            phone: data.coApplicantPhone,
-            relation: data.coApplicantRelation,
-            email: data.coApplicantEmail,
-            age: data.coApplicantAge
-          } : null,
-          
-          // Addresses
-          addresses: additionalAddresses,
-          
-          // Professional
-          company: data.companyName,
-          designation: data.designation,
-          employmentType: data.employmentType,
-          workExperience: data.workExperience,
-          currentJobDuration: data.currentJobDuration,
-          
-          // Financial
-          monthlyIncome: data.monthlyIncome,
-          annualIncome: data.annualIncome,
-          otherIncome: data.otherIncome,
-          loanAmount: data.loanAmount,
-          propertyType: data.propertyType,
-          ownershipStatus: data.propertyOwnership,
-          
-          // Vehicle
-          vehicleBrandName: data.vehicleBrandName,
-          vehicleModelName: data.vehicleModelName,
-          vehicleVariant: data.vehicleVariant,
-          vehicleType: data.vehicleType,
-          vehiclePrice: data.vehiclePrice,
-          downPayment: data.downPayment,
-          
-          // Lead Type and IDs
-          leadType: data.leadType,
-          agencyFileNo: data.agencyFileNo,
-          applicationId: data.applicationId,
-          caseId: data.caseId
+          agencyFileNo: data.agencyFileNo || '',
+          applicationBarcode: data.applicationId || '',
+          caseId: data.caseId || '',
+          phoneNumber: data.applicantPhone || '',
+          email: data.applicantEmail || '',
+          dateOfBirth: data.dateOfBirth || '',
+          company: data.companyName || '',
+          designation: data.designation || '',
+          workExperience: data.workExperience || '',
+          propertyType: data.propertyType || '',
+          ownershipStatus: data.propertyOwnership || '',
+          propertyAge: data.propertyAge || '',
+          monthlyIncome: data.monthlyIncome || '',
+          annualIncome: data.annualIncome || '',
+          otherIncome: data.otherIncome || '',
+          leadType: data.productType || '',
+          leadTypeId: data.productTypeId || '',
+          loanAmount: data.loanAmount || '',
+          loanType: data.loanType || '',
+          vehicleBrandName: data.vehicleBrand || '',
+          vehicleBrandId: data.vehicleBrandId || '',
+          vehicleModelName: data.vehicleModel || '',
+          vehicleModelId: data.vehicleModelId || '',
+          bankBranch: data.buildBranch || '',
+          schemeDesc: data.schemeDescription || '',
+          additionalComments: data.additionalComments || '',
+          addresses: [
+            {
+              type: 'Office' as const,
+              street: data.officeAddress || '',
+              city: data.officeCity || '',
+              district: data.officeDistrict || '',
+              state: data.officeState || '',
+              pincode: data.officePincode || ''
+            },
+            {
+              type: 'Permanent' as const,
+              street: data.permanentAddress || '',
+              city: data.permanentCity || '',
+              district: data.permanentDistrict || '',
+              state: data.permanentState || '',
+              pincode: data.permanentPincode || ''
+            }
+          ]
         },
-        documents: uploadedDocuments.map((file, index) => ({
-          id: `doc-${index}`,
-          name: file.name,
-          type: file.type,
-          uploadDate: new Date().toISOString(),
-          url: URL.createObjectURL(file)
-        }))
+        status: 'Pending',
+        bank: data.bankName || '',
+        visitType: data.visitType || 'Residence',
+        assignedTo: '',
+        createdAt: new Date(),
+        documents: uploadedDocuments,
+        instructions: data.instructions || '',
+        verification: {
+          id: `verification-${leadId}`,
+          leadId: leadId,
+          status: 'Not Started',
+          agentId: '',
+          photos: [],
+          documents: [],
+          notes: ''
+        }
       };
 
-      if (onSubmit) {
-        await onSubmit(newLead);
-      } else {
-        // Default save behavior
-        await saveLeadToDatabase(newLead);
+      console.log('Saving lead data:', leadData);
+
+      // Save to database
+      try {
+        await saveLeadToDatabase(leadData);
+        console.log('Lead saved to database successfully');
+      } catch (dbError) {
+        console.error('Database save failed, saving to localStorage:', dbError);
         
-        // Also save to localStorage as backup
-        const storedLeads = localStorage.getItem('mockLeads');
-        let currentLeads = [];
-        if (storedLeads) {
-          try {
-            currentLeads = JSON.parse(storedLeads);
-          } catch (error) {
-            console.error("Error parsing stored leads:", error);
-            currentLeads = [];
-          }
-        }
-        
-        const updatedLeads = [...currentLeads, newLead];
-        localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
-        
-        toast({
-          title: "Lead created successfully",
-          description: `Lead for ${data.applicantName} has been created and saved.`,
-        });
-        
-        navigate('/admin/leads');
+        // Fallback to localStorage
+        const existingLeads = localStorage.getItem('mockLeads');
+        const leads = existingLeads ? JSON.parse(existingLeads) : [];
+        leads.push(leadData);
+        localStorage.setItem('mockLeads', JSON.stringify(leads));
+        console.log('Lead saved to localStorage successfully');
       }
+
+      toast({
+        title: "Lead Created Successfully",
+        description: `Lead ${leadData.name} has been created with ID: ${leadId}`,
+      });
+
+      // Reset form and navigate back
+      form.reset();
+      setCurrentStep(1);
+      setUploadedDocuments([]);
+      navigate('/admin/leads');
+
     } catch (error) {
       console.error('Error creating lead:', error);
       toast({
@@ -279,570 +240,676 @@ const AddLeadFormMultiStep = ({ onSubmit, locationData }: AddLeadFormMultiStepPr
         description: "Failed to create lead. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="space-y-6">
+    <div className="md:container md:mx-auto">
       <Card>
         <CardHeader>
           <CardTitle>Add New Lead</CardTitle>
           <CardDescription>
-            Step {currentStep} of {totalSteps}: Complete all required information
+            Fill in the details to create a new lead.
           </CardDescription>
-          <Progress value={progress} className="w-full" />
         </CardHeader>
-        <CardContent>
-          <form onSubmit={form.handleSubmit(handleSubmit)}>
-            <Tabs value={`step${currentStep}`} className="w-full">
-              <TabsList className="grid w-full grid-cols-9">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((step) => (
-                  <TabsTrigger
-                    key={step}
-                    value={`step${step}`}
-                    onClick={() => setCurrentStep(step)}
-                    className="text-xs"
-                  >
-                    {step}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
+        <CardContent className="space-y-4">
+          <Progress value={(currentStep / 4) * 100} className="mb-4" />
 
-              {/* Step 1: Bank & Product Details */}
-              <TabsContent value="step1" className="space-y-4">
-                <h3 className="text-lg font-semibold">Bank & Product Details</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Bank Name *</label>
-                    <Input {...form.register("bankName")} />
-                    {form.formState.errors.bankName && (
-                      <p className="text-sm text-red-500">{form.formState.errors.bankName.message}</p>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+              {currentStep === 1 && (
+                <div className="space-y-4">
+                  <h3 className="text-xl font-semibold">Applicant Information</h3>
+                  <FormField
+                    control={form.control}
+                    name="applicantName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Applicant Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Applicant name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
                     )}
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Bank Product *</label>
-                    <Input {...form.register("bankProduct")} />
-                    {form.formState.errors.bankProduct && (
-                      <p className="text-sm text-red-500">{form.formState.errors.bankProduct.message}</p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Initiated Branch *</label>
-                    <Input {...form.register("initiatedBranch")} />
-                    {form.formState.errors.initiatedBranch && (
-                      <p className="text-sm text-red-500">{form.formState.errors.initiatedBranch.message}</p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Build Branch *</label>
-                    <Input {...form.register("buildBranch")} />
-                    {form.formState.errors.buildBranch && (
-                      <p className="text-sm text-red-500">{form.formState.errors.buildBranch.message}</p>
-                    )}
-                  </div>
-                </div>
-              </TabsContent>
-
-              {/* Step 2: Applicant Information */}
-              <TabsContent value="step2" className="space-y-4">
-                <h3 className="text-lg font-semibold">Applicant Information</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Full Name *</label>
-                    <Input {...form.register("applicantName")} />
-                    {form.formState.errors.applicantName && (
-                      <p className="text-sm text-red-500">{form.formState.errors.applicantName.message}</p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Father's Name *</label>
-                    <Input {...form.register("fatherName")} />
-                    {form.formState.errors.fatherName && (
-                      <p className="text-sm text-red-500">{form.formState.errors.fatherName.message}</p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Mother's Name</label>
-                    <Input {...form.register("motherName")} />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Gender *</label>
-                    <Select onValueChange={(value) => form.setValue("gender", value as any)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select gender" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Male">Male</SelectItem>
-                        <SelectItem value="Female">Female</SelectItem>
-                        <SelectItem value="Other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Date of Birth *</label>
-                    <Input type="date" {...form.register("dateOfBirth")} />
-                    {form.formState.errors.dateOfBirth && (
-                      <p className="text-sm text-red-500">{form.formState.errors.dateOfBirth.message}</p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Age *</label>
-                    <Input 
-                      type="number" 
-                      {...form.register("applicantAge", { valueAsNumber: true })} 
-                    />
-                    {form.formState.errors.applicantAge && (
-                      <p className="text-sm text-red-500">{form.formState.errors.applicantAge.message}</p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Marital Status *</label>
-                    <Select onValueChange={(value) => form.setValue("maritalStatus", value as any)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Single">Single</SelectItem>
-                        <SelectItem value="Married">Married</SelectItem>
-                        <SelectItem value="Divorced">Divorced</SelectItem>
-                        <SelectItem value="Widowed">Widowed</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  {form.watch("maritalStatus") === "Married" && (
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Spouse Name</label>
-                      <Input {...form.register("spouseName")} />
-                    </div>
-                  )}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Phone Number *</label>
-                    <Input {...form.register("applicantPhone")} />
-                    {form.formState.errors.applicantPhone && (
-                      <p className="text-sm text-red-500">{form.formState.errors.applicantPhone.message}</p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Email *</label>
-                    <Input type="email" {...form.register("applicantEmail")} />
-                    {form.formState.errors.applicantEmail && (
-                      <p className="text-sm text-red-500">{form.formState.errors.applicantEmail.message}</p>
-                    )}
-                  </div>
-                </div>
-              </TabsContent>
-
-              {/* Step 3: Co-Applicant */}
-              <TabsContent value="step3" className="space-y-4">
-                <h3 className="text-lg font-semibold">Co-Applicant Information</h3>
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="hasCoApplicant"
-                    {...form.register("hasCoApplicant")}
                   />
-                  <label htmlFor="hasCoApplicant" className="text-sm font-medium">
-                    Add Co-Applicant
-                  </label>
-                </div>
-                
-                {form.watch("hasCoApplicant") && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Co-Applicant Name</label>
-                      <Input {...form.register("coApplicantName")} />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Phone Number</label>
-                      <Input {...form.register("coApplicantPhone")} />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Relation</label>
-                      <Input {...form.register("coApplicantRelation")} />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Email</label>
-                      <Input type="email" {...form.register("coApplicantEmail")} />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Age</label>
-                      <Input {...form.register("coApplicantAge")} />
-                    </div>
-                  </div>
-                )}
-              </TabsContent>
-
-              {/* Step 4: Address Information */}
-              <TabsContent value="step4" className="space-y-4">
-                <h3 className="text-lg font-semibold">Address Information</h3>
-                <div className="space-y-4">
-                  <h4 className="font-medium">Primary Address</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Street Address *</label>
-                      <Input {...form.register("primaryStreet")} />
-                      {form.formState.errors.primaryStreet && (
-                        <p className="text-sm text-red-500">{form.formState.errors.primaryStreet.message}</p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">City *</label>
-                      <Input {...form.register("primaryCity")} />
-                      {form.formState.errors.primaryCity && (
-                        <p className="text-sm text-red-500">{form.formState.errors.primaryCity.message}</p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">District *</label>
-                      <Input {...form.register("primaryDistrict")} />
-                      {form.formState.errors.primaryDistrict && (
-                        <p className="text-sm text-red-500">{form.formState.errors.primaryDistrict.message}</p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">State *</label>
-                      <Input {...form.register("primaryState")} />
-                      {form.formState.errors.primaryState && (
-                        <p className="text-sm text-red-500">{form.formState.errors.primaryState.message}</p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Pincode *</label>
-                      <Input {...form.register("primaryPincode")} />
-                      {form.formState.errors.primaryPincode && (
-                        <p className="text-sm text-red-500">{form.formState.errors.primaryPincode.message}</p>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-medium">Additional Addresses</h4>
-                      <Button type="button" variant="outline" onClick={addAddress}>
-                        Add Address
-                      </Button>
-                    </div>
-                    
-                    {additionalAddresses.map((addr, index) => (
-                      <div key={index} className="border p-4 rounded-lg space-y-4">
-                        <div className="flex items-center justify-between">
-                          <h5 className="font-medium">Address {index + 1}</h5>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => removeAddress(index)}
-                          >
-                            Remove
-                          </Button>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">Type</label>
-                            <Select
-                              value={addr.type}
-                              onValueChange={(value) => updateAddress(index, 'type', value)}
-                            >
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="Office">Office</SelectItem>
-                                <SelectItem value="Residence">Residence</SelectItem>
-                                <SelectItem value="Property">Property</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">Street</label>
-                            <Input
-                              value={addr.street}
-                              onChange={(e) => updateAddress(index, 'street', e.target.value)}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">City</label>
-                            <Input
-                              value={addr.city}
-                              onChange={(e) => updateAddress(index, 'city', e.target.value)}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">District</label>
-                            <Input
-                              value={addr.district}
-                              onChange={(e) => updateAddress(index, 'district', e.target.value)}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">State</label>
-                            <Input
-                              value={addr.state}
-                              onChange={(e) => updateAddress(index, 'state', e.target.value)}
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium">Pincode</label>
-                            <Input
-                              value={addr.pincode}
-                              onChange={(e) => updateAddress(index, 'pincode', e.target.value)}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </TabsContent>
-
-              {/* Step 5: Professional Details */}
-              <TabsContent value="step5" className="space-y-4">
-                <h3 className="text-lg font-semibold">Professional Details</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Company Name *</label>
-                    <Input {...form.register("companyName")} />
-                    {form.formState.errors.companyName && (
-                      <p className="text-sm text-red-500">{form.formState.errors.companyName.message}</p>
+                  <FormField
+                    control={form.control}
+                    name="applicantAge"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Applicant Age</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            placeholder="Applicant age"
+                            {...field}
+                            onChange={(e) => field.onChange(Number(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
                     )}
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Designation *</label>
-                    <Input {...form.register("designation")} />
-                    {form.formState.errors.designation && (
-                      <p className="text-sm text-red-500">{form.formState.errors.designation.message}</p>
+                  />
+                  <FormField
+                    control={form.control}
+                    name="applicantPhone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Applicant Phone</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Applicant phone" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
                     )}
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Employment Type *</label>
-                    <Select onValueChange={(value) => form.setValue("employmentType", value as any)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Salaried">Salaried</SelectItem>
-                        <SelectItem value="Self Employed">Self Employed</SelectItem>
-                        <SelectItem value="Business">Business</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Work Experience *</label>
-                    <Input {...form.register("workExperience")} />
-                    {form.formState.errors.workExperience && (
-                      <p className="text-sm text-red-500">{form.formState.errors.workExperience.message}</p>
+                  />
+                  <FormField
+                    control={form.control}
+                    name="applicantEmail"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Applicant Email</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Applicant email" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
                     )}
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Current Job Duration *</label>
-                    <Input {...form.register("currentJobDuration")} />
-                    {form.formState.errors.currentJobDuration && (
-                      <p className="text-sm text-red-500">{form.formState.errors.currentJobDuration.message}</p>
+                  />
+                  <FormField
+                    control={form.control}
+                    name="dateOfBirth"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Date of Birth</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="date"
+                            placeholder="Date of Birth"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
                     )}
-                  </div>
-                </div>
-              </TabsContent>
-
-              {/* Step 6: Financial Details */}
-              <TabsContent value="step6" className="space-y-4">
-                <h3 className="text-lg font-semibold">Financial Details</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Monthly Income *</label>
-                    <Input {...form.register("monthlyIncome")} />
-                    {form.formState.errors.monthlyIncome && (
-                      <p className="text-sm text-red-500">{form.formState.errors.monthlyIncome.message}</p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Annual Income *</label>
-                    <Input {...form.register("annualIncome")} />
-                    {form.formState.errors.annualIncome && (
-                      <p className="text-sm text-red-500">{form.formState.errors.annualIncome.message}</p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Other Income</label>
-                    <Input {...form.register("otherIncome")} />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Loan Amount *</label>
-                    <Input {...form.register("loanAmount")} />
-                    {form.formState.errors.loanAmount && (
-                      <p className="text-sm text-red-500">{form.formState.errors.loanAmount.message}</p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Property Type</label>
-                    <Input {...form.register("propertyType")} />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Property Ownership</label>
-                    <Input {...form.register("propertyOwnership")} />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Property Age</label>
-                    <Input {...form.register("propertyAge")} />
-                  </div>
-                </div>
-              </TabsContent>
-
-              {/* Step 7: Vehicle Details */}
-              <TabsContent value="step7" className="space-y-4">
-                <h3 className="text-lg font-semibold">Vehicle Details</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Vehicle Brand</label>
-                    <Input {...form.register("vehicleBrandName")} />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Vehicle Model</label>
-                    <Input {...form.register("vehicleModelName")} />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Vehicle Variant</label>
-                    <Input {...form.register("vehicleVariant")} />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Vehicle Type</label>
-                    <Input {...form.register("vehicleType")} />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Vehicle Price</label>
-                    <Input {...form.register("vehiclePrice")} />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Down Payment</label>
-                    <Input {...form.register("downPayment")} />
-                  </div>
-                </div>
-              </TabsContent>
-
-              {/* Step 8: Documents */}
-              <TabsContent value="step8" className="space-y-4">
-                <h3 className="text-lg font-semibold">Document Upload</h3>
-                <div className="space-y-4">
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
-                    <div className="text-center">
-                      <Paperclip className="mx-auto h-12 w-12 text-gray-400" />
-                      <div className="mt-4">
-                        <label htmlFor="upload" className="cursor-pointer">
-                          <span className="mt-2 block text-sm font-medium text-gray-900">
-                            Upload documents
-                          </span>
-                        </label>
-                        <input
-                          id="upload"
-                          type="file"
-                          multiple
-                          className="hidden"
-                          onChange={handleFileUpload}
-                          accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                        />
-                      </div>
-                      <Button type="button" variant="outline" onClick={() => document.getElementById('upload')?.click()}>
-                        <Paperclip className="h-4 w-4 mr-2" />
-                        Choose Files
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  {uploadedDocuments.length > 0 && (
-                    <div className="space-y-2">
-                      <h4 className="font-medium">Uploaded Documents:</h4>
-                      <ul className="space-y-1">
-                        {uploadedDocuments.map((file, index) => (
-                          <li key={index} className="text-sm text-gray-600">
-                            {file.name} ({(file.size / 1024).toFixed(1)} KB)
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-
-              {/* Step 9: Instructions & Assignment */}
-              <TabsContent value="step9" className="space-y-4">
-                <h3 className="text-lg font-semibold">Instructions & Assignment</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Lead Type *</label>
-                    <Select onValueChange={(value) => form.setValue("leadType", value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select lead type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Home Loan">Home Loan</SelectItem>
-                        <SelectItem value="Personal Loan">Personal Loan</SelectItem>
-                        <SelectItem value="Auto Loan">Auto Loan</SelectItem>
-                        <SelectItem value="Business Loan">Business Loan</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {form.formState.errors.leadType && (
-                      <p className="text-sm text-red-500">{form.formState.errors.leadType.message}</p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Visit Type *</label>
-                    <Select onValueChange={(value) => form.setValue("visitType", value as any)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select visit type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Office">Office</SelectItem>
-                        <SelectItem value="Residence">Residence</SelectItem>
-                        <SelectItem value="Both">Both</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Agency File No</label>
-                    <Input {...form.register("agencyFileNo")} />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Application ID</label>
-                    <Input {...form.register("applicationId")} />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Case ID</label>
-                    <Input {...form.register("caseId")} />
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Special Instructions</label>
-                  <Textarea 
-                    {...form.register("specialInstructions")}
-                    placeholder="Any special instructions for this lead..."
-                    rows={4}
                   />
                 </div>
-              </TabsContent>
-            </Tabs>
-
-            {/* Navigation */}
-            <div className="flex justify-between pt-6">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={prevStep}
-                disabled={currentStep === 1}
-              >
-                Previous
-              </Button>
-              
-              {currentStep < totalSteps ? (
-                <Button type="button" onClick={nextStep}>
-                  Next
-                </Button>
-              ) : (
-                <Button type="submit">
-                  Create Lead
-                </Button>
               )}
-            </div>
-          </form>
+
+              {currentStep === 2 && (
+                <div className="space-y-4">
+                  <h3 className="text-xl font-semibold">Employment Information</h3>
+                  <FormField
+                    control={form.control}
+                    name="companyName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Company Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Company name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="designation"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Designation</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Designation" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="workExperience"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Work Experience</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Work experience" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="monthlyIncome"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Monthly Income</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Monthly income" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="annualIncome"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Annual Income</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Annual income" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={form.control}
+                    name="otherIncome"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Other Income</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Other income" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
+
+              {currentStep === 3 && (
+                <div className="space-y-4">
+                  <h3 className="text-xl font-semibold">Address Information</h3>
+                  <FormField
+                    control={form.control}
+                    name="residenceAddress"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Residence Address</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Residence address" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="residenceCity"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Residence City</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Residence city" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="residenceDistrict"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Residence District</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Residence district" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="residenceState"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Residence State</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Residence state" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="residencePincode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Residence Pincode</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Residence pincode" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="officeAddress"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Office Address</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Office address" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="officeCity"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Office City</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Office city" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="officeDistrict"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Office District</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Office district" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="officeState"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Office State</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Office state" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="officePincode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Office Pincode</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Office pincode" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="permanentAddress"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Permanent Address</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Permanent address" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="permanentCity"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Permanent City</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Permanent city" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="permanentDistrict"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Permanent District</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Permanent district" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="permanentState"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Permanent State</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Permanent state" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="permanentPincode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Permanent Pincode</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Permanent pincode" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
+
+              {currentStep === 4 && (
+                <div className="space-y-4">
+                  <h3 className="text-xl font-semibold">Additional Information</h3>
+                  <FormField
+                    control={form.control}
+                    name="bankName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Bank Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Bank name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="visitType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Visit Type</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a visit type" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="Residence">Residence</SelectItem>
+                            <SelectItem value="Office">Office</SelectItem>
+                            <SelectItem value="Both">Both</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="productType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Product Type</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Product type" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="productTypeId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Product Type ID</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Product type ID" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="loanAmount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Loan Amount</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Loan amount" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="loanType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Loan Type</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Loan type" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="vehicleBrand"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Vehicle Brand</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Vehicle brand" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="vehicleBrandId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Vehicle Brand ID</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Vehicle brand ID" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="vehicleModel"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Vehicle Model</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Vehicle model" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="vehicleModelId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Vehicle Model ID</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Vehicle model ID" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="buildBranch"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Build Branch</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Build branch" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="schemeDescription"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Scheme Description</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Scheme description" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="additionalComments"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Additional Comments</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Additional comments" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="instructions"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Instructions</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Instructions"
+                            className="resize-none"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="agencyFileNo"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Agency File No</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Agency File No" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="applicationId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Application ID</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Application ID" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="caseId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Case ID</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Case ID" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <div>
+                    <FormLabel>Upload Documents</FormLabel>
+                    <Input
+                      type="file"
+                      multiple
+                      onChange={onFileUpload}
+                      id="upload"
+                      className="hidden"
+                    />
+                    <Button asChild variant="outline" onClick={() => document.getElementById('upload')?.click()}>
+                      <label htmlFor="upload" className="cursor-pointer">
+                        <Paperclip className="h-4 w-4 mr-2" />
+                        Upload Documents
+                      </label>
+                    </Button>
+                    {uploadedDocuments.length > 0 && (
+                      <div className="mt-2">
+                        {uploadedDocuments.map((doc) => (
+                          <div key={doc.id} className="flex items-center justify-between p-2 border rounded-md">
+                            <a href={doc.url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium">
+                              {doc.name}
+                            </a>
+                            <span className="text-xs text-muted-foreground">{doc.uploadDate.toLocaleDateString()}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-between">
+                {currentStep > 1 && (
+                  <Button variant="secondary" onClick={handlePrevStep}>
+                    Previous
+                  </Button>
+                )}
+                {currentStep < 4 ? (
+                  <Button type="button" onClick={handleNextStep}>
+                    Next
+                  </Button>
+                ) : (
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? "Submitting..." : "Submit"}
+                  </Button>
+                )}
+              </div>
+            </form>
+          </Form>
         </CardContent>
       </Card>
     </div>
