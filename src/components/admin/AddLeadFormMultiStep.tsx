@@ -45,7 +45,7 @@ const AddLeadFormMultiStep = ({ agents, banks: oldBanks, onAddLead, onClose, loc
   const [filteredProducts, setFilteredProducts] = useState<BankProduct[]>([]);
   const [filteredBranches, setFilteredBranches] = useState<BankBranch[]>([]);
 
-  // Form data state
+  // Form data state - restored to original 9-step structure
   const [formData, setFormData] = useState({
     // Step 1: Lead Type & Basic Info
     leadType: '',
@@ -80,7 +80,34 @@ const AddLeadFormMultiStep = ({ agents, banks: oldBanks, onAddLead, onClose, loc
     ownershipStatus: '',
     propertyAge: '',
     
-    // Step 5: Additional Information
+    // Step 5: Vehicle Details (restored)
+    vehicleType: '',
+    vehicleBrand: '',
+    vehicleModel: '',
+    vehicleYear: '',
+    vehiclePrice: '',
+    downPayment: '',
+    
+    // Step 6: Loan Details (restored)
+    loanAmount: '',
+    loanTenure: '',
+    loanPurpose: '',
+    existingLoans: '',
+    
+    // Step 7: Documents (restored)
+    documentsRequired: [] as string[],
+    documentsReceived: [] as string[],
+    pendingDocuments: '',
+    
+    // Step 8: References (restored)
+    reference1Name: '',
+    reference1Phone: '',
+    reference1Relation: '',
+    reference2Name: '',
+    reference2Phone: '',
+    reference2Relation: '',
+    
+    // Step 9: Final Details & Assignment
     hasCoApplicant: false,
     coApplicantName: '',
     coApplicantPhone: '',
@@ -145,6 +172,14 @@ const AddLeadFormMultiStep = ({ agents, banks: oldBanks, onAddLead, onClose, loc
         return true; // No required fields for now
       case 5:
         return true; // No required fields for now
+      case 6:
+        return true; // No required fields for now
+      case 7:
+        return true; // No required fields for now
+      case 8:
+        return true; // No required fields for now
+      case 9:
+        return true; // No required fields for now
       default:
         return true;
     }
@@ -152,7 +187,7 @@ const AddLeadFormMultiStep = ({ agents, banks: oldBanks, onAddLead, onClose, loc
 
   const handleNext = () => {
     if (validateStep(currentStep)) {
-      setCurrentStep(prev => Math.min(prev + 1, 5));
+      setCurrentStep(prev => Math.min(prev + 1, 9));
     }
   };
 
@@ -206,6 +241,30 @@ const AddLeadFormMultiStep = ({ agents, banks: oldBanks, onAddLead, onClose, loc
     };
 
     onAddLead(newLead);
+  };
+
+  // Document options for step 7
+  const documentOptions = [
+    'Aadhar Card',
+    'PAN Card',
+    'Salary Slips',
+    'Bank Statements',
+    'Property Documents',
+    'Income Tax Returns',
+    'Form 16',
+    'Passport Size Photos',
+    'Utility Bills',
+    'Employment Certificate'
+  ];
+
+  const handleDocumentChange = (document: string, checked: boolean, type: 'required' | 'received') => {
+    const field = type === 'required' ? 'documentsRequired' : 'documentsReceived';
+    setFormData(prev => ({
+      ...prev,
+      [field]: checked 
+        ? [...prev[field], document]
+        : prev[field].filter(doc => doc !== document)
+    }));
   };
 
   const renderStep1 = () => (
@@ -543,8 +602,266 @@ const AddLeadFormMultiStep = ({ agents, banks: oldBanks, onAddLead, onClose, loc
   const renderStep5 = () => (
     <Card>
       <CardHeader>
-        <CardTitle>Step 5: Additional Information</CardTitle>
-        <CardDescription>Final details and assignment</CardDescription>
+        <CardTitle>Step 5: Vehicle Details</CardTitle>
+        <CardDescription>Enter vehicle information (if applicable)</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="vehicleType">Vehicle Type</Label>
+            <Input
+              id="vehicleType"
+              value={formData.vehicleType}
+              onChange={(e) => handleInputChange('vehicleType', e.target.value)}
+              placeholder="Enter vehicle type"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="vehicleBrand">Vehicle Brand</Label>
+            <Input
+              id="vehicleBrand"
+              value={formData.vehicleBrand}
+              onChange={(e) => handleInputChange('vehicleBrand', e.target.value)}
+              placeholder="Enter vehicle brand"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="vehicleModel">Vehicle Model</Label>
+            <Input
+              id="vehicleModel"
+              value={formData.vehicleModel}
+              onChange={(e) => handleInputChange('vehicleModel', e.target.value)}
+              placeholder="Enter vehicle model"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="vehicleYear">Vehicle Year</Label>
+            <Input
+              id="vehicleYear"
+              value={formData.vehicleYear}
+              onChange={(e) => handleInputChange('vehicleYear', e.target.value)}
+              placeholder="Enter vehicle year"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="vehiclePrice">Vehicle Price</Label>
+            <Input
+              id="vehiclePrice"
+              value={formData.vehiclePrice}
+              onChange={(e) => handleInputChange('vehiclePrice', e.target.value)}
+              placeholder="Enter vehicle price"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="downPayment">Down Payment</Label>
+            <Input
+              id="downPayment"
+              value={formData.downPayment}
+              onChange={(e) => handleInputChange('downPayment', e.target.value)}
+              placeholder="Enter down payment"
+            />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const renderStep6 = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle>Step 6: Loan Details</CardTitle>
+        <CardDescription>Enter loan-specific information</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="loanAmount">Loan Amount</Label>
+            <Input
+              id="loanAmount"
+              value={formData.loanAmount}
+              onChange={(e) => handleInputChange('loanAmount', e.target.value)}
+              placeholder="Enter loan amount"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="loanTenure">Loan Tenure</Label>
+            <Input
+              id="loanTenure"
+              value={formData.loanTenure}
+              onChange={(e) => handleInputChange('loanTenure', e.target.value)}
+              placeholder="Enter loan tenure"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="loanPurpose">Loan Purpose</Label>
+            <Input
+              id="loanPurpose"
+              value={formData.loanPurpose}
+              onChange={(e) => handleInputChange('loanPurpose', e.target.value)}
+              placeholder="Enter loan purpose"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="existingLoans">Existing Loans</Label>
+            <Textarea
+              id="existingLoans"
+              value={formData.existingLoans}
+              onChange={(e) => handleInputChange('existingLoans', e.target.value)}
+              placeholder="Enter details of existing loans"
+              rows={2}
+            />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const renderStep7 = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle>Step 7: Documents</CardTitle>
+        <CardDescription>Select required and received documents</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <Label className="text-base font-semibold">Documents Required</Label>
+            <div className="space-y-2 mt-2">
+              {documentOptions.map((doc) => (
+                <div key={doc} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`required-${doc}`}
+                    checked={formData.documentsRequired.includes(doc)}
+                    onCheckedChange={(checked) => handleDocumentChange(doc, !!checked, 'required')}
+                  />
+                  <Label htmlFor={`required-${doc}`} className="text-sm">{doc}</Label>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <Label className="text-base font-semibold">Documents Received</Label>
+            <div className="space-y-2 mt-2">
+              {documentOptions.map((doc) => (
+                <div key={doc} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`received-${doc}`}
+                    checked={formData.documentsReceived.includes(doc)}
+                    onCheckedChange={(checked) => handleDocumentChange(doc, !!checked, 'received')}
+                  />
+                  <Label htmlFor={`received-${doc}`} className="text-sm">{doc}</Label>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <Label htmlFor="pendingDocuments">Pending Documents / Notes</Label>
+          <Textarea
+            id="pendingDocuments"
+            value={formData.pendingDocuments}
+            onChange={(e) => handleInputChange('pendingDocuments', e.target.value)}
+            placeholder="Enter details about pending documents or additional notes"
+            rows={3}
+          />
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const renderStep8 = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle>Step 8: References</CardTitle>
+        <CardDescription>Enter reference contact information</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-6">
+          <div>
+            <Label className="text-base font-semibold">Reference 1</Label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+              <div>
+                <Label htmlFor="reference1Name">Name</Label>
+                <Input
+                  id="reference1Name"
+                  value={formData.reference1Name}
+                  onChange={(e) => handleInputChange('reference1Name', e.target.value)}
+                  placeholder="Enter reference name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="reference1Phone">Phone</Label>
+                <Input
+                  id="reference1Phone"
+                  value={formData.reference1Phone}
+                  onChange={(e) => handleInputChange('reference1Phone', e.target.value)}
+                  placeholder="Enter phone number"
+                />
+              </div>
+              <div>
+                <Label htmlFor="reference1Relation">Relationship</Label>
+                <Input
+                  id="reference1Relation"
+                  value={formData.reference1Relation}
+                  onChange={(e) => handleInputChange('reference1Relation', e.target.value)}
+                  placeholder="Enter relationship"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <Label className="text-base font-semibold">Reference 2</Label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+              <div>
+                <Label htmlFor="reference2Name">Name</Label>
+                <Input
+                  id="reference2Name"
+                  value={formData.reference2Name}
+                  onChange={(e) => handleInputChange('reference2Name', e.target.value)}
+                  placeholder="Enter reference name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="reference2Phone">Phone</Label>
+                <Input
+                  id="reference2Phone"
+                  value={formData.reference2Phone}
+                  onChange={(e) => handleInputChange('reference2Phone', e.target.value)}
+                  placeholder="Enter phone number"
+                />
+              </div>
+              <div>
+                <Label htmlFor="reference2Relation">Relationship</Label>
+                <Input
+                  id="reference2Relation"
+                  value={formData.reference2Relation}
+                  onChange={(e) => handleInputChange('reference2Relation', e.target.value)}
+                  placeholder="Enter relationship"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const renderStep9 = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle>Step 9: Final Details & Assignment</CardTitle>
+        <CardDescription>Co-applicant details and assignment</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-4">
@@ -653,6 +970,14 @@ const AddLeadFormMultiStep = ({ agents, banks: oldBanks, onAddLead, onClose, loc
         return renderStep4();
       case 5:
         return renderStep5();
+      case 6:
+        return renderStep6();
+      case 7:
+        return renderStep7();
+      case 8:
+        return renderStep8();
+      case 9:
+        return renderStep9();
       default:
         return renderStep1();
     }
@@ -669,11 +994,11 @@ const AddLeadFormMultiStep = ({ agents, banks: oldBanks, onAddLead, onClose, loc
       </div>
 
       {/* Step indicator */}
-      <div className="flex items-center justify-center space-x-4 mb-8">
-        {[1, 2, 3, 4, 5].map((step) => (
+      <div className="flex items-center justify-center space-x-2 mb-8 overflow-x-auto">
+        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((step) => (
           <div
             key={step}
-            className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
+            className={`flex items-center justify-center w-8 h-8 rounded-full border-2 text-xs ${
               step === currentStep
                 ? 'border-blue-500 bg-blue-500 text-white'
                 : step < currentStep
@@ -700,7 +1025,7 @@ const AddLeadFormMultiStep = ({ agents, banks: oldBanks, onAddLead, onClose, loc
         </Button>
 
         <div className="space-x-2">
-          {currentStep < 5 ? (
+          {currentStep < 9 ? (
             <Button onClick={handleNext}>
               Next
               <ArrowRight className="ml-2 h-4 w-4" />
