@@ -271,6 +271,7 @@ export const getLeadsFromDatabase = async () => {
         age: lead.age || 0,
         job: lead.job || '',
         address: {
+          type: lead.addresses?.type || 'Residence',
           street: lead.addresses?.street || '',
           city: lead.addresses?.city || '',
           district: lead.addresses?.district || '',

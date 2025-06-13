@@ -1,3 +1,4 @@
+
 import { IconType } from 'lucide-react';
 
 export interface User {
@@ -16,6 +17,8 @@ export interface User {
   totalVerifications?: number;
   completionRate?: number;
   status?: 'active' | 'inactive';
+  password?: string;
+  documents?: Document[];
 }
 
 export interface Address {
@@ -79,6 +82,10 @@ export interface Verification {
   startTime?: Date;
   endTime?: Date;
   completionTime?: Date;
+  arrivalTime?: Date;
+  reviewedAt?: Date;
+  reviewedBy?: string;
+  adminRemarks?: string;
   location?: {
     latitude: number;
     longitude: number;
@@ -91,14 +98,16 @@ export interface Document {
   name: string;
   url: string;
   uploadDate: Date;
+  type?: string;
 }
 
 export interface Bank {
   id: string;
   name: string;
-  code: string;
-  logo: string;
-  products: string[];
+  code?: string;
+  logo?: string;
+  products?: string[];
+  totalApplications?: number;
 }
 
 export interface Lead {
@@ -138,3 +147,12 @@ export interface NavItemWithOptionalChildren extends NavItem {
 export type MainNavItem = NavItemWithOptionalChildren
 
 export type SidebarNavItem = NavItemWithChildren
+
+// Mock data exports for backward compatibility
+export const mockUsers: User[] = [];
+export const mockLeads: Lead[] = [];
+export const mockBanks: Bank[] = [];
+export const banks: Bank[] = [];
+export const bankBranches: any[] = [];
+export const leadTypes: any[] = [];
+export const agents: User[] = [];

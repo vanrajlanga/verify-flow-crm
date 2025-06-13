@@ -1,5 +1,5 @@
 
-import { User, Lead, Bank, Address, AdditionalDetails, VerificationData } from '@/utils/mockData';
+import { User, Lead, Bank, Address, AdditionalDetails, Verification } from '@/utils/mockData';
 
 export const transformSupabaseUser = (supabaseUser: any): User => {
   return {
@@ -65,7 +65,7 @@ export const transformSupabaseAdditionalDetails = (details: any): AdditionalDeta
   };
 };
 
-export const transformSupabaseVerification = (verification: any): VerificationData => {
+export const transformSupabaseVerification = (verification: any): Verification => {
   return {
     id: verification.id,
     leadId: verification.lead_id,
@@ -91,6 +91,7 @@ export const transformSupabaseVerification = (verification: any): VerificationDa
 
 export const transformSupabaseLead = (supabaseLead: any): Lead => {
   const address = supabaseLead.addresses ? transformSupabaseAddress(supabaseLead.addresses) : {
+    type: 'Residence',
     street: '',
     city: '',
     district: '',
@@ -146,7 +147,6 @@ export const transformSupabaseLead = (supabaseLead: any): Lead => {
 export const transformSupabaseBank = (supabaseBank: any): Bank => {
   return {
     id: supabaseBank.id,
-    name: supabaseBank.name,
-    totalApplications: supabaseBank.total_applications
+    name: supabaseBank.name
   };
 };
