@@ -365,6 +365,33 @@ export type Database = {
           },
         ]
       }
+      lead_documents: {
+        Row: {
+          document_name: string
+          document_type: string
+          document_url: string
+          id: string
+          lead_id: string
+          uploaded_at: string
+        }
+        Insert: {
+          document_name: string
+          document_type: string
+          document_url: string
+          id?: string
+          lead_id: string
+          uploaded_at?: string
+        }
+        Update: {
+          document_name?: string
+          document_type?: string
+          document_url?: string
+          id?: string
+          lead_id?: string
+          uploaded_at?: string
+        }
+        Relationships: []
+      }
       leads: {
         Row: {
           address_id: string | null
@@ -476,6 +503,27 @@ export type Database = {
           },
         ]
       }
+      property_types: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       users: {
         Row: {
           base_location: string | null
@@ -536,6 +584,27 @@ export type Database = {
         }
         Relationships: []
       }
+      vehicle_brands: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       vehicle_details: {
         Row: {
           created_at: string
@@ -585,6 +654,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      vehicle_models: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      vehicle_types: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       verifications: {
         Row: {

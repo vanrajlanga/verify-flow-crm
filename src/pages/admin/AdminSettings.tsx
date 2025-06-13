@@ -9,6 +9,8 @@ import ProductManager from '@/components/admin/ProductManager';
 import LocationManager from '@/components/admin/LocationManager';
 import RoleManager from '@/components/admin/RoleManager';
 import TeamMemberManager from '@/components/admin/TeamMemberManager';
+import PropertyTypeManager from '@/components/admin/PropertyTypeManager';
+import VehicleManagement from '@/components/admin/VehicleManagement';
 
 interface LocationData {
   states: {
@@ -92,6 +94,8 @@ const AdminSettings = () => {
               <TabsList>
                 <TabsTrigger value="products">Products</TabsTrigger>
                 <TabsTrigger value="locations">Locations</TabsTrigger>
+                <TabsTrigger value="property-types">Property Types</TabsTrigger>
+                <TabsTrigger value="vehicles">Vehicles</TabsTrigger>
                 <TabsTrigger value="permissions">Permissions</TabsTrigger>
                 <TabsTrigger value="team">Team Members</TabsTrigger>
               </TabsList>
@@ -105,6 +109,14 @@ const AdminSettings = () => {
                   locationData={locationData}
                   setLocationData={setLocationData}
                 />
+              </TabsContent>
+
+              <TabsContent value="property-types">
+                <PropertyTypeManager />
+              </TabsContent>
+
+              <TabsContent value="vehicles">
+                <VehicleManagement />
               </TabsContent>
 
               <TabsContent value="permissions">
