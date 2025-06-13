@@ -7,6 +7,15 @@ export const saveLeadToDatabase = async (leadData: Lead) => {
   try {
     console.log('Saving lead to database:', leadData);
 
+    // Validate required data
+    if (!leadData.address) {
+      throw new Error('Address is required');
+    }
+
+    if (!leadData.name || leadData.name.trim() === '') {
+      throw new Error('Lead name is required');
+    }
+
     // First, save the primary address
     const { data: addressData, error: addressError } = await supabase
       .from('addresses')
@@ -23,7 +32,7 @@ export const saveLeadToDatabase = async (leadData: Lead) => {
 
     if (addressError) {
       console.error('Error saving address:', addressError);
-      throw addressError;
+      throw new Error(`Failed to save address: ${addressError.message}`);
     }
 
     console.log('Address saved successfully:', addressData);
@@ -40,7 +49,11 @@ export const saveLeadToDatabase = async (leadData: Lead) => {
         'Bank of Baroda': 'bob',
         'Canara Bank': 'canara',
         'Union Bank of India': 'union',
-        'Indian Bank': 'indian'
+        'Indian Bank': 'indian',
+        'axis': 'axis', // Handle lowercase
+        'hdfc': 'hdfc',
+        'icici': 'icici',
+        'sbi': 'sbi'
       };
       
       // Return mapped bank ID or use the bank name as-is if not found
@@ -74,7 +87,7 @@ export const saveLeadToDatabase = async (leadData: Lead) => {
 
     if (leadError) {
       console.error('Error saving lead:', leadError);
-      throw leadError;
+      throw new Error(`Failed to save lead: ${leadError.message}`);
     }
 
     console.log('Lead saved successfully:', lead);
@@ -119,10 +132,10 @@ export const saveLeadToDatabase = async (leadData: Lead) => {
 
       if (detailsError) {
         console.error('Error saving additional details:', detailsError);
-        throw detailsError;
+        // Don't throw here, just log the error as additional details are optional
+      } else {
+        console.log('Additional details saved successfully');
       }
-
-      console.log('Additional details saved successfully');
 
       // Save co-applicant if exists
       if (leadData.additionalDetails.coApplicant) {

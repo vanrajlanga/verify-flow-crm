@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User } from '@/utils/mockData';
@@ -7,6 +6,7 @@ import Sidebar from '@/components/shared/Sidebar';
 import AddLeadFormMultiStep from '@/components/admin/AddLeadFormMultiStep';
 import { toast } from '@/components/ui/use-toast';
 import { saveLeadToDatabase } from '@/lib/lead-operations';
+import { transformFormDataToLead } from '@/lib/form-data-transformer';
 
 interface LocationData {
   states: {
@@ -108,18 +108,23 @@ const AddNewLead = () => {
     navigate('/');
   };
 
-  const handleAddLead = async (newLead: any) => {
+  const handleAddLead = async (formData: any) => {
     try {
-      console.log('AddNewLead: Saving lead to database:', newLead);
+      console.log('AddNewLead: Received form data:', formData);
+      
+      // Transform form data to Lead format
+      const leadData = transformFormDataToLead(formData);
+      
+      console.log('AddNewLead: Transformed lead data:', leadData);
       
       // Save lead to database
-      await saveLeadToDatabase(newLead);
+      await saveLeadToDatabase(leadData);
 
       console.log('AddNewLead: Lead successfully saved to database');
       
       toast({
         title: "Lead added successfully",
-        description: `New lead ${newLead.name} has been saved to database and is ready for management.`,
+        description: `New lead ${leadData.name} has been saved to database and is ready for management.`,
       });
 
       // Navigate back to leads list
@@ -129,7 +134,7 @@ const AddNewLead = () => {
       
       toast({
         title: "Database Save Failed",
-        description: `Failed to save lead ${newLead.name} to database. Please check your connection and try again.`,
+        description: `Failed to save lead to database. Error: ${error instanceof Error ? error.message : 'Unknown error'}. Please check your connection and try again.`,
         variant: "destructive"
       });
 
