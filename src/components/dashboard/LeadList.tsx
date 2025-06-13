@@ -35,7 +35,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Eye, MapPin, Calendar, Clock, User as UserIcon, Building, Phone, CreditCard, Edit, Trash2, UserPlus, MoreVertical, Download, Upload, FileDown, FileUp, Mail, Users } from 'lucide-react';
+import { Eye, MapPin, Calendar, Clock, User as UserIcon, Building, Phone, CreditCard, Edit, Trash2, UserPlus, MoreVertical, Download, Upload, FileDown, FileUp, Mail, Users, DollarSign } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from '@/components/ui/use-toast';
 
@@ -282,16 +282,17 @@ const LeadList = ({
     const csvContent = [
       headers.join(','),
       ...leads.map(lead => {
+        const hasCoApplicant = lead.additionalDetails?.coApplicant ? true : false;
         return [
           lead.id,
           lead.name,
           lead.additionalDetails?.phoneNumber || '',
           lead.additionalDetails?.email || '',
           lead.age || '',
-          getBankName(lead.additionalDetails?.bankName || ''),
-          getProductName(lead.additionalDetails?.bankProduct || ''),
-          getBranchName(lead.additionalDetails?.initiatedBranch || ''),
-          getBranchName(lead.additionalDetails?.buildBranch || ''),
+          lead.bank || '',
+          lead.additionalDetails?.bankProduct || '',
+          lead.additionalDetails?.initiatedBranch || '',
+          lead.additionalDetails?.buildBranch || '',
           `"${getResidenceAddress(lead)}"`,
           `"${getOfficeAddress(lead)}"`,
           lead.additionalDetails?.monthlyIncome || '',
@@ -301,7 +302,7 @@ const LeadList = ({
           lead.additionalDetails?.workExperience || '',
           lead.additionalDetails?.propertyType || '',
           lead.additionalDetails?.ownershipStatus || '',
-          lead.additionalDetails?.hasCoApplicant ? 'Yes' : 'No',
+          hasCoApplicant ? 'Yes' : 'No',
           lead.additionalDetails?.coApplicant?.name || '',
           lead.additionalDetails?.coApplicant?.phone || '',
           lead.additionalDetails?.coApplicant?.email || '',
@@ -364,7 +365,6 @@ const LeadList = ({
               additionalDetails: {
                 phoneNumber: values[2] || '',
                 email: values[3] || '',
-                bankName: values[5] || '',
                 bankProduct: values[6] || '',
                 initiatedBranch: values[7] || '',
                 buildBranch: values[8] || '',
@@ -375,12 +375,12 @@ const LeadList = ({
                 workExperience: values[15] || '',
                 propertyType: values[16] || '',
                 ownershipStatus: values[17] || '',
-                hasCoApplicant: values[18] === 'Yes',
                 coApplicant: values[18] === 'Yes' ? {
                   name: values[19] || '',
                   phone: values[20] || '',
                   email: values[21] || '',
-                  age: values[22] || ''
+                  age: values[22] || '',
+                  relation: 'Spouse'
                 } : null,
                 addresses: []
               },
@@ -589,8 +589,8 @@ const LeadList = ({
                   <div className="flex items-center gap-2">
                     <UserIcon className="h-4 w-4 text-muted-foreground" />
                     {lead.name}
-                    {lead.additionalDetails?.hasCoApplicant && (
-                      <Users className="h-4 w-4 text-blue-600" title="Has Co-Applicant" />
+                    {lead.additionalDetails?.coApplicant && (
+                      <Users className="h-4 w-4 text-blue-600" />
                     )}
                   </div>
                 </TableCell>
@@ -608,7 +608,7 @@ const LeadList = ({
                 </TableCell>
                 <TableCell>{lead.age || 'N/A'}</TableCell>
                 <TableCell>
-                  {getBankName(lead.additionalDetails?.bankName || '')}
+                  {getBankName(lead.bank || '')}
                 </TableCell>
                 <TableCell>
                   {getProductName(lead.additionalDetails?.bankProduct || '')}
