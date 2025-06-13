@@ -98,12 +98,12 @@ export const saveLeadToDatabase = async (leadData: Lead) => {
           .insert({
             lead_id: leadData.id,
             name: leadData.additionalDetails.coApplicant.name,
-            age: leadData.additionalDetails.coApplicant.age,
+            age: leadData.additionalDetails.coApplicant.age || null,
             phone_number: leadData.additionalDetails.coApplicant.phone,
-            email: leadData.additionalDetails.coApplicant.email,
-            relationship: leadData.additionalDetails.coApplicant.relationship,
-            occupation: leadData.additionalDetails.coApplicant.occupation,
-            monthly_income: leadData.additionalDetails.coApplicant.monthlyIncome
+            email: leadData.additionalDetails.coApplicant.email || null,
+            relationship: leadData.additionalDetails.coApplicant.relation,
+            occupation: leadData.additionalDetails.coApplicant.occupation || null,
+            monthly_income: leadData.additionalDetails.coApplicant.monthlyIncome || null
           });
 
         if (coApplicantError) {
