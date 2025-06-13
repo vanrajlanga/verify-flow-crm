@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -253,7 +252,8 @@ const AdminDashboard = () => {
                 <LeadList 
                   leads={recentLeads} 
                   currentUser={currentUser} 
-                  isAdmin={true} 
+                  banks={mockBanks}
+                  agents={[]}
                 />
               </CardContent>
             </Card>

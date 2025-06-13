@@ -254,7 +254,7 @@ const VerificationProcess = ({
                                 }}
                               />
                             </div>
-                            <p className="text-xs mt-2 break-words">{doc.name} ({doc.type || 'Document'})</p>
+                            <p className="text-xs mt-2 break-words">{doc.name} (Document)</p>
                           </div>
                         ))
                       ) : (
