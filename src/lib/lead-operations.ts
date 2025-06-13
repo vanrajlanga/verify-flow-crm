@@ -209,17 +209,17 @@ export const saveLeadToDatabase = async (leadData: Lead) => {
   }
 };
 
-// Get all leads from the database - FORCE FRESH DATA
+// Get all leads from the database - FIXED to remove foreign key joins
 export const getLeadsFromDatabase = async (forceRefresh = false) => {
   try {
     console.log('Fetching leads from database - force refresh:', forceRefresh);
     
+    // FIXED: Remove the banks join since we removed the foreign key
     const { data: leads, error } = await supabase
       .from('leads')
       .select(`
         *,
         addresses!leads_address_id_fkey(*),
-        banks!leads_bank_id_fkey(*),
         users!leads_assigned_to_fkey(*),
         additional_details(*),
         verifications(*),
@@ -393,7 +393,6 @@ export const getLeadByIdFromDatabase = async (leadId: string) => {
       .select(`
         *,
         addresses!leads_address_id_fkey(*),
-        banks!leads_bank_id_fkey(*),
         users!leads_assigned_to_fkey(*),
         additional_details(*),
         verifications(*),
