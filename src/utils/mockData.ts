@@ -1,3 +1,4 @@
+
 import { LucideIcon } from 'lucide-react';
 
 export interface User {
@@ -163,8 +164,108 @@ export type MainNavItem = NavItemWithOptionalChildren
 export type SidebarNavItem = NavItemWithChildren
 
 // Mock data exports for backward compatibility
-export const mockUsers: User[] = [];
-export const mockLeads: Lead[] = [];
+export const mockUsers: User[] = [
+  {
+    id: 'admin-1',
+    name: 'Admin User',
+    email: 'admin@kycverification.com',
+    password: 'password',
+    role: 'admin',
+    phone: '9999999999',
+    district: 'Mumbai',
+    state: 'Maharashtra',
+    city: 'Mumbai',
+    status: 'active'
+  },
+  {
+    id: 'agent-1',
+    name: 'Rajesh Kumar',
+    email: 'rajesh@kycverification.com',
+    password: 'password',
+    role: 'agent',
+    phone: '9876543210',
+    district: 'Mumbai',
+    state: 'Maharashtra',
+    city: 'Mumbai',
+    status: 'active'
+  },
+  {
+    id: 'tvt-1',
+    name: 'Mike TVT',
+    email: 'mike.tvt@example.com',
+    password: 'password',
+    role: 'tvtteam',
+    phone: '9876543211',
+    district: 'Mumbai',
+    state: 'Maharashtra',
+    city: 'Mumbai',
+    status: 'active'
+  }
+];
+
+export const mockLeads: Lead[] = [
+  {
+    id: 'lead-1',
+    name: 'John Doe',
+    age: 35,
+    job: 'Software Engineer',
+    address: {
+      type: 'Residence',
+      street: '123 Main Street',
+      city: 'Mumbai',
+      district: 'Mumbai',
+      state: 'Maharashtra',
+      pincode: '400001'
+    },
+    status: 'Pending',
+    bank: 'HDFC Bank',
+    visitType: 'Residence',
+    assignedTo: 'Mike TVT',
+    createdAt: new Date(),
+    documents: [],
+    instructions: 'Verify residence address and employment details',
+    verification: {
+      id: 'verification-1',
+      leadId: 'lead-1',
+      status: 'Not Started',
+      agentId: 'tvt-1',
+      photos: [],
+      documents: [],
+      notes: ''
+    }
+  },
+  {
+    id: 'lead-2',
+    name: 'Jane Smith',
+    age: 28,
+    job: 'Marketing Manager',
+    address: {
+      type: 'Residence',
+      street: '456 Oak Avenue',
+      city: 'Mumbai',
+      district: 'Mumbai',
+      state: 'Maharashtra',
+      pincode: '400002'
+    },
+    status: 'In Progress',
+    bank: 'ICICI Bank',
+    visitType: 'Both',
+    assignedTo: 'Mike TVT',
+    createdAt: new Date(),
+    documents: [],
+    instructions: 'Verify both residence and office address',
+    verification: {
+      id: 'verification-2',
+      leadId: 'lead-2',
+      status: 'In Progress',
+      agentId: 'tvt-1',
+      photos: [],
+      documents: [],
+      notes: 'Started verification process'
+    }
+  }
+];
+
 export const mockBanks: Bank[] = [];
 export const banks: Bank[] = [
   { id: 'hdfc', name: 'HDFC Bank' },
@@ -203,6 +304,15 @@ export const agents: User[] = [
     role: 'tvtteam', 
     branch: 'Delhi Main',
     password: 'password123',
+    status: 'active'
+  },
+  { 
+    id: 'tvt-1', 
+    name: 'Mike TVT', 
+    email: 'mike.tvt@example.com', 
+    role: 'tvtteam', 
+    branch: 'Mumbai Central',
+    password: 'password',
     status: 'active'
   }
 ];

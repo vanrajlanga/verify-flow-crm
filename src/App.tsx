@@ -55,6 +55,7 @@ function App() {
             <Route path="/agent/history" element={<AgentHistory />} />
             
             <Route path="/tvt" element={<TvtDashboard />} />
+            <Route path="/tvt/dashboard" element={<TvtDashboard />} />
             <Route path="/tvt/leads/:leadId" element={<TvtLeadDetail />} />
             
             <Route path="*" element={<NotFound />} />

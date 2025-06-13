@@ -42,7 +42,7 @@ export const loginUser = async (email: string, password: string) => {
       return transformSupabaseUser(user);
     }
 
-    // If no users found in database, check if this is the admin account
+    // If no users found in database, check hardcoded accounts
     if (email === 'admin@kycverification.com' && password === 'password') {
       console.log('Admin login attempt - inserting admin user into database');
       
@@ -90,7 +90,6 @@ export const loginUser = async (email: string, password: string) => {
     // Check for agent account
     if (email === 'rajesh@kycverification.com' && password === 'password') {
       console.log('Agent login attempt - using existing agent from database');
-      // This should already exist from the migration, but let's make sure
       return {
         id: 'agent-1',
         name: 'Rajesh Kumar',
@@ -98,6 +97,23 @@ export const loginUser = async (email: string, password: string) => {
         password: 'password',
         role: 'agent',
         phone: '9876543210',
+        district: 'Mumbai',
+        state: 'Maharashtra',
+        city: 'Mumbai',
+        status: 'active'
+      };
+    }
+
+    // Check for TVT account
+    if (email === 'mike.tvt@example.com' && password === 'password') {
+      console.log('TVT login attempt - using TVT user');
+      return {
+        id: 'tvt-1',
+        name: 'Mike TVT',
+        email: 'mike.tvt@example.com',
+        password: 'password',
+        role: 'tvtteam',
+        phone: '9876543211',
         district: 'Mumbai',
         state: 'Maharashtra',
         city: 'Mumbai',
@@ -143,6 +159,22 @@ export const loginUser = async (email: string, password: string) => {
         password: 'password',
         role: 'agent',
         phone: '9876543210',
+        district: 'Mumbai',
+        state: 'Maharashtra',
+        city: 'Mumbai',
+        status: 'active'
+      };
+    }
+
+    if (email === 'mike.tvt@example.com' && password === 'password') {
+      console.log('Emergency fallback - returning hardcoded TVT user');
+      return {
+        id: 'tvt-1',
+        name: 'Mike TVT',
+        email: 'mike.tvt@example.com',
+        password: 'password',
+        role: 'tvtteam',
+        phone: '9876543211',
         district: 'Mumbai',
         state: 'Maharashtra',
         city: 'Mumbai',

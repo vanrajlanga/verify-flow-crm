@@ -1,7 +1,8 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, Lead } from '@/utils/mockData';
+import { User, Lead, mockLeads } from '@/utils/mockData';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
 import LeadList from '@/components/dashboard/LeadList';
@@ -13,6 +14,7 @@ const TvtDashboard = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -30,37 +32,65 @@ const TvtDashboard = () => {
     }
 
     setCurrentUser(parsedUser);
-    loadAssignedLeads(parsedUser.id);
+    loadAssignedLeads(parsedUser.name);
   }, [navigate]);
 
-  const loadAssignedLeads = async (userId: string) => {
+  const loadAssignedLeads = async (userName: string) => {
+    setIsLoading(true);
     try {
-      // Load leads from database
-      const dbLeads = await getLeadsFromDatabase();
-      if (dbLeads.length > 0) {
-        // Filter leads assigned to current TVT member
-        const assignedLeads = dbLeads.filter(lead => lead.assignedTo === userId);
-        console.log('Loaded assigned leads from database:', assignedLeads.length);
-        setLeads(assignedLeads);
-      } else {
-        // Fall back to localStorage if no database leads
+      console.log('Loading leads for TVT user:', userName);
+      
+      // First try to get leads from database
+      let allLeads: Lead[] = [];
+      
+      try {
+        const dbLeads = await getLeadsFromDatabase();
+        if (dbLeads && dbLeads.length > 0) {
+          console.log('Loaded leads from database:', dbLeads.length);
+          allLeads = dbLeads;
+        }
+      } catch (error) {
+        console.log('Database not available, using mock data');
+      }
+
+      // If no database leads, check localStorage
+      if (allLeads.length === 0) {
         const storedLeads = localStorage.getItem('mockLeads');
         if (storedLeads) {
           try {
             const parsedLeads = JSON.parse(storedLeads);
-            const assignedLeads = parsedLeads.filter((lead: Lead) => lead.assignedTo === userId);
-            console.log('Loaded assigned leads from localStorage:', assignedLeads.length);
-            setLeads(assignedLeads);
+            allLeads = parsedLeads;
+            console.log('Loaded leads from localStorage:', allLeads.length);
           } catch (error) {
             console.error("Error parsing stored leads:", error);
-            setLeads([]);
           }
-        } else {
-          setLeads([]);
         }
       }
+
+      // If still no leads, use mock data and store it
+      if (allLeads.length === 0) {
+        console.log('Using default mock leads');
+        allLeads = mockLeads;
+        // Store mock leads in localStorage for persistence
+        localStorage.setItem('mockLeads', JSON.stringify(mockLeads));
+      }
+
+      // Filter leads assigned to current TVT member by name
+      const assignedLeads = allLeads.filter(lead => 
+        lead.assignedTo === userName || lead.assignedTo === 'Mike TVT'
+      );
+      
+      console.log('Filtered assigned leads for', userName, ':', assignedLeads.length);
+      setLeads(assignedLeads);
     } catch (error) {
       console.error('Error in loadAssignedLeads:', error);
+      // Fall back to mock data
+      const assignedLeads = mockLeads.filter(lead => 
+        lead.assignedTo === userName || lead.assignedTo === 'Mike TVT'
+      );
+      setLeads(assignedLeads);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -71,6 +101,12 @@ const TvtDashboard = () => {
 
   const handleViewLead = (leadId: string) => {
     navigate(`/tvt/leads/${leadId}`);
+  };
+
+  const handleRefresh = async () => {
+    if (currentUser) {
+      await loadAssignedLeads(currentUser.name);
+    }
   };
 
   if (!currentUser) {
@@ -93,7 +129,7 @@ const TvtDashboard = () => {
             <div>
               <h1 className="text-2xl font-bold tracking-tight">TVT Dashboard</h1>
               <p className="text-muted-foreground">
-                View and verify leads assigned to you
+                Welcome {currentUser.name}, view and verify leads assigned to you
               </p>
             </div>
 
@@ -149,15 +185,22 @@ const TvtDashboard = () => {
               <CardHeader>
                 <CardTitle>My Assigned Leads</CardTitle>
                 <CardDescription>
-                  Leads assigned to you for verification
+                  Leads assigned to you for verification. Click "View" to verify and update lead status.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <LeadList 
-                  leads={leads} 
-                  currentUser={currentUser}
-                  onViewLead={handleViewLead}
-                />
+                {isLoading ? (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">Loading leads...</p>
+                  </div>
+                ) : (
+                  <LeadList 
+                    leads={leads} 
+                    currentUser={currentUser}
+                    onViewLead={handleViewLead}
+                    onRefresh={handleRefresh}
+                  />
+                )}
               </CardContent>
             </Card>
           </div>
