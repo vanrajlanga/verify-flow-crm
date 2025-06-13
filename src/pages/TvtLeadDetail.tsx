@@ -367,7 +367,7 @@ const TvtLeadDetail = () => {
       });
       fields.push({
         fieldName: 'Co-Applicant Relationship',
-        originalValue: leadData.additionalDetails.coApplicant.relationship || '',
+        originalValue: leadData.additionalDetails.coApplicant.relation || '',
         verifiedValue: '',
         isCorrect: null,
         notes: ''
