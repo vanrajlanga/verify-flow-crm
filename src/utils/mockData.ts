@@ -1,4 +1,5 @@
 
+
 import { IconType } from 'lucide-react';
 
 export interface User {
@@ -11,6 +12,7 @@ export interface User {
   city?: string;
   state?: string;
   baseLocation?: string;
+  branch?: string;
   profilePicture?: string;
   maxTravelDistance?: number;
   extraChargePerKm?: number;
@@ -119,7 +121,7 @@ export interface Lead {
   additionalDetails?: AdditionalDetails;
   status: 'Pending' | 'In Progress' | 'Completed' | 'Rejected';
   bank: string;
-  visitType: 'Residence' | 'Office';
+  visitType: 'Residence' | 'Office' | 'Both';
   assignedTo: string;
   createdAt: Date;
   verificationDate?: Date;
@@ -152,7 +154,44 @@ export type SidebarNavItem = NavItemWithChildren
 export const mockUsers: User[] = [];
 export const mockLeads: Lead[] = [];
 export const mockBanks: Bank[] = [];
-export const banks: Bank[] = [];
-export const bankBranches: any[] = [];
-export const leadTypes: any[] = [];
-export const agents: User[] = [];
+export const banks: Bank[] = [
+  { id: 'hdfc', name: 'HDFC Bank' },
+  { id: 'icici', name: 'ICICI Bank' },
+  { id: 'sbi', name: 'State Bank of India' },
+  { id: 'axis', name: 'Axis Bank' },
+  { id: 'kotak', name: 'Kotak Mahindra Bank' }
+];
+export const bankBranches: any[] = [
+  { id: '1', name: 'Mumbai Central', bank: 'HDFC Bank' },
+  { id: '2', name: 'Delhi Main', bank: 'ICICI Bank' },
+  { id: '3', name: 'Bangalore Tech', bank: 'State Bank of India' },
+  { id: '4', name: 'Chennai South', bank: 'Axis Bank' },
+  { id: '5', name: 'Pune West', bank: 'Kotak Mahindra Bank' }
+];
+export const leadTypes: any[] = [
+  { id: '1', name: 'Home Loan' },
+  { id: '2', name: 'Personal Loan' },
+  { id: '3', name: 'Vehicle Loan' },
+  { id: '4', name: 'Business Loan' }
+];
+export const agents: User[] = [
+  { 
+    id: 'agent1', 
+    name: 'John Agent', 
+    email: 'john@example.com', 
+    role: 'agent', 
+    branch: 'Mumbai Central',
+    password: 'password123',
+    status: 'active'
+  },
+  { 
+    id: 'tvt1', 
+    name: 'Sarah TVT', 
+    email: 'sarah@example.com', 
+    role: 'tvtteam', 
+    branch: 'Delhi Main',
+    password: 'password123',
+    status: 'active'
+  }
+];
+
