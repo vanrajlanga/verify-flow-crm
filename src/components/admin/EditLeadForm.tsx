@@ -26,42 +26,61 @@ interface EditLeadFormProps {
 }
 
 const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: EditLeadFormProps) => {
-  const [activeTab, setActiveTab] = useState("step1");
+  const [activeTab, setActiveTab] = useState("bank");
   const [formData, setFormData] = useState<any>({
     ...lead,
     additionalDetails: {
+      // Bank Details
       bankName: '',
       bankProduct: '',
       initiatedBranch: '',
       buildBranch: '',
+      
+      // Personal Details
       fatherName: '',
       motherName: '',
       gender: '',
       dateOfBirth: '',
       maritalStatus: '',
       spouseName: '',
+      phoneNumber: '',
+      email: '',
+      
+      // Co-Applicant
       coApplicant: null,
+      
+      // Addresses
       addresses: [],
+      
+      // Professional
       company: '',
       designation: '',
       employmentType: '',
       workExperience: '',
       currentJobDuration: '',
+      
+      // Financial
       monthlyIncome: '',
       annualIncome: '',
       otherIncome: '',
       loanAmount: '',
+      
+      // Property
       propertyType: '',
       ownershipStatus: '',
+      propertyAge: '',
+      
+      // Vehicle
+      vehicleType: '',
       vehicleBrandName: '',
       vehicleModelName: '',
       vehicleVariant: '',
-      vehicleType: '',
       vehiclePrice: '',
       downPayment: '',
-      leadType: '',
-      phoneNumber: '',
-      email: '',
+      
+      // References
+      references: [],
+      
       ...lead.additionalDetails
     }
   });
@@ -188,6 +207,44 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
     }));
   };
 
+  const addReference = () => {
+    const newReference = {
+      name: '',
+      phone: '',
+      relationship: ''
+    };
+    
+    setFormData((prev: any) => ({
+      ...prev,
+      additionalDetails: {
+        ...prev.additionalDetails,
+        references: [...(prev.additionalDetails.references || []), newReference]
+      }
+    }));
+  };
+
+  const removeReference = (index: number) => {
+    setFormData((prev: any) => ({
+      ...prev,
+      additionalDetails: {
+        ...prev.additionalDetails,
+        references: prev.additionalDetails.references.filter((_: any, i: number) => i !== index)
+      }
+    }));
+  };
+
+  const handleReferenceChange = (index: number, field: string, value: string) => {
+    setFormData((prev: any) => ({
+      ...prev,
+      additionalDetails: {
+        ...prev.additionalDetails,
+        references: prev.additionalDetails.references.map((ref: any, i: number) => 
+          i === index ? { ...ref, [field]: value } : ref
+        )
+      }
+    }));
+  };
+
   const handleUpdate = () => {
     if (!formData.name.trim()) {
       toast({
@@ -209,60 +266,101 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
   return (
     <div className="space-y-6 max-h-[70vh] overflow-y-auto p-1">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-9 text-xs">
-          <TabsTrigger value="step1" className="text-xs">Bank</TabsTrigger>
-          <TabsTrigger value="step2" className="text-xs">Applicant</TabsTrigger>
-          <TabsTrigger value="step3" className="text-xs">Co-Applicant</TabsTrigger>
-          <TabsTrigger value="step4" className="text-xs">Addresses</TabsTrigger>
-          <TabsTrigger value="step5" className="text-xs">Professional</TabsTrigger>
-          <TabsTrigger value="step6" className="text-xs">Financial</TabsTrigger>
-          <TabsTrigger value="step7" className="text-xs">Vehicle</TabsTrigger>
-          <TabsTrigger value="step8" className="text-xs">Documents</TabsTrigger>
-          <TabsTrigger value="step9" className="text-xs">Instructions</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-10 text-xs">
+          <TabsTrigger value="bank" className="text-xs">Bank</TabsTrigger>
+          <TabsTrigger value="applicant" className="text-xs">Applicant</TabsTrigger>
+          <TabsTrigger value="coapplicant" className="text-xs">Co-Applicant</TabsTrigger>
+          <TabsTrigger value="addresses" className="text-xs">Addresses</TabsTrigger>
+          <TabsTrigger value="professional" className="text-xs">Professional</TabsTrigger>
+          <TabsTrigger value="property" className="text-xs">Property</TabsTrigger>
+          <TabsTrigger value="vehicle" className="text-xs">Vehicle</TabsTrigger>
+          <TabsTrigger value="financial" className="text-xs">Financial</TabsTrigger>
+          <TabsTrigger value="references" className="text-xs">References</TabsTrigger>
+          <TabsTrigger value="assignment" className="text-xs">Assignment</TabsTrigger>
         </TabsList>
         
-        {/* Step 1: Bank Details */}
-        <TabsContent value="step1" className="space-y-4 pt-4">
+        {/* Bank Details */}
+        <TabsContent value="bank" className="space-y-4 pt-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Bank Name</label>
-              <Input
-                value={formData.additionalDetails?.bankName || ''}
-                onChange={(e) => handleAdditionalDetailsChange('bankName', e.target.value)}
-              />
+              <label className="text-sm font-medium">Bank Name *</label>
+              <Select
+                value={formData.additionalDetails?.bankName || formData.bank || ''}
+                onValueChange={(value) => handleAdditionalDetailsChange('bankName', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select bank" />
+                </SelectTrigger>
+                <SelectContent>
+                  {banks.map((bank) => (
+                    <SelectItem key={bank.id} value={bank.name}>{bank.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Bank Product</label>
+              <label className="text-sm font-medium">Bank Product *</label>
               <Input
                 value={formData.additionalDetails?.bankProduct || ''}
                 onChange={(e) => handleAdditionalDetailsChange('bankProduct', e.target.value)}
+                placeholder="e.g., Home Loan, Personal Loan"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Initiated Branch</label>
+              <label className="text-sm font-medium">Initiated Under Branch *</label>
               <Input
                 value={formData.additionalDetails?.initiatedBranch || ''}
                 onChange={(e) => handleAdditionalDetailsChange('initiatedBranch', e.target.value)}
+                placeholder="Branch name"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Build Branch</label>
+              <label className="text-sm font-medium">Build Under Branch *</label>
               <Input
-                value={formData.additionalDetails?.buildBranch || ''}
+                value={formData.additionalDetails?.buildBranch || formData.additionalDetails?.bankBranch || ''}
                 onChange={(e) => handleAdditionalDetailsChange('buildBranch', e.target.value)}
+                placeholder="Branch name"
               />
             </div>
           </div>
         </TabsContent>
 
-        {/* Step 2: Applicant Information */}
-        <TabsContent value="step2" className="space-y-4 pt-4">
+        {/* Applicant Information */}
+        <TabsContent value="applicant" className="space-y-4 pt-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Full Name</label>
+              <label className="text-sm font-medium">Full Name *</label>
               <Input
                 value={formData.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
+                placeholder="Enter full name"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Phone Number * (10 digits)</label>
+              <Input
+                value={formData.additionalDetails?.phoneNumber || ''}
+                onChange={(e) => handleAdditionalDetailsChange('phoneNumber', e.target.value)}
+                placeholder="Enter 10-digit phone number"
+                maxLength={10}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Age *</label>
+              <Input
+                type="number"
+                value={formData.age}
+                onChange={(e) => handleInputChange('age', parseInt(e.target.value))}
+                placeholder="Enter age"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Email *</label>
+              <Input
+                type="email"
+                value={formData.additionalDetails?.email || ''}
+                onChange={(e) => handleAdditionalDetailsChange('email', e.target.value)}
+                placeholder="Enter email address"
               />
             </div>
             <div className="space-y-2">
@@ -270,6 +368,7 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
               <Input
                 value={formData.additionalDetails?.fatherName || ''}
                 onChange={(e) => handleAdditionalDetailsChange('fatherName', e.target.value)}
+                placeholder="Enter father's name"
               />
             </div>
             <div className="space-y-2">
@@ -277,6 +376,7 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
               <Input
                 value={formData.additionalDetails?.motherName || ''}
                 onChange={(e) => handleAdditionalDetailsChange('motherName', e.target.value)}
+                placeholder="Enter mother's name"
               />
             </div>
             <div className="space-y-2">
@@ -304,14 +404,6 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Age</label>
-              <Input
-                type="number"
-                value={formData.age}
-                onChange={(e) => handleInputChange('age', parseInt(e.target.value))}
-              />
-            </div>
-            <div className="space-y-2">
               <label className="text-sm font-medium">Marital Status</label>
               <Select 
                 value={formData.additionalDetails?.maritalStatus || ''}
@@ -328,35 +420,21 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Phone Number</label>
-              <Input
-                value={formData.additionalDetails?.phoneNumber || ''}
-                onChange={(e) => handleAdditionalDetailsChange('phoneNumber', e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Email</label>
-              <Input
-                type="email"
-                value={formData.additionalDetails?.email || ''}
-                onChange={(e) => handleAdditionalDetailsChange('email', e.target.value)}
-              />
-            </div>
+            {formData.additionalDetails?.maritalStatus === 'Married' && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Spouse Name</label>
+                <Input
+                  value={formData.additionalDetails?.spouseName || ''}
+                  onChange={(e) => handleAdditionalDetailsChange('spouseName', e.target.value)}
+                  placeholder="Enter spouse name"
+                />
+              </div>
+            )}
           </div>
-          {formData.additionalDetails?.maritalStatus === 'Married' && (
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Spouse Name</label>
-              <Input
-                value={formData.additionalDetails?.spouseName || ''}
-                onChange={(e) => handleAdditionalDetailsChange('spouseName', e.target.value)}
-              />
-            </div>
-          )}
         </TabsContent>
 
-        {/* Step 3: Co-Applicant */}
-        <TabsContent value="step3" className="space-y-4 pt-4">
+        {/* Co-Applicant */}
+        <TabsContent value="coapplicant" className="space-y-4 pt-4">
           <div className="flex items-center justify-between">
             <h4 className="font-medium">Co-Applicant Information</h4>
             <Button
@@ -383,48 +461,68 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
           {formData.additionalDetails?.coApplicant && (
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Name</label>
+                <label className="text-sm font-medium">Full Name *</label>
                 <Input
                   value={formData.additionalDetails.coApplicant.name}
                   onChange={(e) => handleCoApplicantChange('name', e.target.value)}
+                  placeholder="Enter co-applicant name"
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Phone</label>
+                <label className="text-sm font-medium">Phone Number * (10 digits)</label>
                 <Input
                   value={formData.additionalDetails.coApplicant.phone}
                   onChange={(e) => handleCoApplicantChange('phone', e.target.value)}
+                  placeholder="Enter 10-digit phone number"
+                  maxLength={10}
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Relation</label>
-                <Input
-                  value={formData.additionalDetails.coApplicant.relation}
-                  onChange={(e) => handleCoApplicantChange('relation', e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Email</label>
-                <Input
-                  type="email"
-                  value={formData.additionalDetails.coApplicant.email || ''}
-                  onChange={(e) => handleCoApplicantChange('email', e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Age</label>
+                <label className="text-sm font-medium">Age *</label>
                 <Input
                   type="number"
                   value={formData.additionalDetails.coApplicant.age || ''}
                   onChange={(e) => handleCoApplicantChange('age', e.target.value)}
+                  placeholder="Enter age"
                 />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Email *</label>
+                <Input
+                  type="email"
+                  value={formData.additionalDetails.coApplicant.email || ''}
+                  onChange={(e) => handleCoApplicantChange('email', e.target.value)}
+                  placeholder="Enter email address"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Relationship</label>
+                <Select
+                  value={formData.additionalDetails.coApplicant.relation}
+                  onValueChange={(value) => handleCoApplicantChange('relation', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select relationship" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Spouse">Spouse</SelectItem>
+                    <SelectItem value="Father">Father</SelectItem>
+                    <SelectItem value="Mother">Mother</SelectItem>
+                    <SelectItem value="Brother">Brother</SelectItem>
+                    <SelectItem value="Sister">Sister</SelectItem>
+                    <SelectItem value="Son">Son</SelectItem>
+                    <SelectItem value="Daughter">Daughter</SelectItem>
+                    <SelectItem value="Friend">Friend</SelectItem>
+                    <SelectItem value="Business Partner">Business Partner</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           )}
         </TabsContent>
 
-        {/* Step 4: Addresses */}
-        <TabsContent value="step4" className="space-y-4 pt-4">
+        {/* Addresses */}
+        <TabsContent value="addresses" className="space-y-4 pt-4">
           {/* Primary Address */}
           <Card>
             <CardHeader>
@@ -433,24 +531,27 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Street</label>
+                  <label className="text-sm font-medium">Address Type</label>
+                  <Select
+                    value={formData.address?.type || 'Residence'}
+                    onValueChange={(value) => handleAddressChange('type', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Residence">Residence</SelectItem>
+                      <SelectItem value="Office">Office</SelectItem>
+                      <SelectItem value="Property">Property</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Street Address</label>
                   <Input
                     value={formData.address?.street || ''}
                     onChange={(e) => handleAddressChange('street', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">City</label>
-                  <Input
-                    value={formData.address?.city || ''}
-                    onChange={(e) => handleAddressChange('city', e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">District</label>
-                  <Input
-                    value={formData.address?.district || ''}
-                    onChange={(e) => handleAddressChange('district', e.target.value)}
+                    placeholder="Enter street address"
                   />
                 </div>
                 <div className="space-y-2">
@@ -458,6 +559,23 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
                   <Input
                     value={formData.address?.state || ''}
                     onChange={(e) => handleAddressChange('state', e.target.value)}
+                    placeholder="Enter state"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">District</label>
+                  <Input
+                    value={formData.address?.district || ''}
+                    onChange={(e) => handleAddressChange('district', e.target.value)}
+                    placeholder="Enter district"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">City</label>
+                  <Input
+                    value={formData.address?.city || ''}
+                    onChange={(e) => handleAddressChange('city', e.target.value)}
+                    placeholder="Enter city"
                   />
                 </div>
                 <div className="space-y-2">
@@ -465,6 +583,7 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
                   <Input
                     value={formData.address?.pincode || ''}
                     onChange={(e) => handleAddressChange('pincode', e.target.value)}
+                    placeholder="Enter pincode"
                   />
                 </div>
               </div>
@@ -498,7 +617,7 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Type</label>
+                      <label className="text-sm font-medium">Address Type</label>
                       <Select
                         value={addr.type}
                         onValueChange={(value) => handleAddressFieldChange(index, 'type', value)}
@@ -514,24 +633,11 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Street</label>
+                      <label className="text-sm font-medium">Street Address</label>
                       <Input
                         value={addr.street}
                         onChange={(e) => handleAddressFieldChange(index, 'street', e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">City</label>
-                      <Input
-                        value={addr.city}
-                        onChange={(e) => handleAddressFieldChange(index, 'city', e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">District</label>
-                      <Input
-                        value={addr.district}
-                        onChange={(e) => handleAddressFieldChange(index, 'district', e.target.value)}
+                        placeholder="Enter street address"
                       />
                     </div>
                     <div className="space-y-2">
@@ -539,6 +645,23 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
                       <Input
                         value={addr.state}
                         onChange={(e) => handleAddressFieldChange(index, 'state', e.target.value)}
+                        placeholder="Enter state"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">District</label>
+                      <Input
+                        value={addr.district}
+                        onChange={(e) => handleAddressFieldChange(index, 'district', e.target.value)}
+                        placeholder="Enter district"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">City</label>
+                      <Input
+                        value={addr.city}
+                        onChange={(e) => handleAddressFieldChange(index, 'city', e.target.value)}
+                        placeholder="Enter city"
                       />
                     </div>
                     <div className="space-y-2">
@@ -546,6 +669,7 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
                       <Input
                         value={addr.pincode}
                         onChange={(e) => handleAddressFieldChange(index, 'pincode', e.target.value)}
+                        placeholder="Enter pincode"
                       />
                     </div>
                   </div>
@@ -555,14 +679,15 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
           </Card>
         </TabsContent>
 
-        {/* Step 5: Professional Details */}
-        <TabsContent value="step5" className="space-y-4 pt-4">
+        {/* Professional Details */}
+        <TabsContent value="professional" className="space-y-4 pt-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Company</label>
+              <label className="text-sm font-medium">Company Name</label>
               <Input
                 value={formData.additionalDetails?.company || ''}
                 onChange={(e) => handleAdditionalDetailsChange('company', e.target.value)}
+                placeholder="Enter company name"
               />
             </div>
             <div className="space-y-2">
@@ -570,58 +695,127 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
               <Input
                 value={formData.additionalDetails?.designation || ''}
                 onChange={(e) => handleAdditionalDetailsChange('designation', e.target.value)}
+                placeholder="Enter designation"
               />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Employment Type</label>
-              <Select
-                value={formData.additionalDetails?.employmentType || ''}
-                onValueChange={(value) => handleAdditionalDetailsChange('employmentType', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Salaried">Salaried</SelectItem>
-                  <SelectItem value="Self Employed">Self Employed</SelectItem>
-                  <SelectItem value="Business">Business</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Work Experience</label>
               <Input
                 value={formData.additionalDetails?.workExperience || ''}
                 onChange={(e) => handleAdditionalDetailsChange('workExperience', e.target.value)}
+                placeholder="e.g., 5 years"
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Current Job Duration</label>
-              <Input
-                value={formData.additionalDetails?.currentJobDuration || ''}
-                onChange={(e) => handleAdditionalDetailsChange('currentJobDuration', e.target.value)}
-              />
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* Step 6: Financial Details */}
-        <TabsContent value="step6" className="space-y-4 pt-4">
-          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Monthly Income</label>
               <Input
                 type="number"
                 value={formData.additionalDetails?.monthlyIncome || ''}
                 onChange={(e) => handleAdditionalDetailsChange('monthlyIncome', e.target.value)}
+                placeholder="Enter monthly income"
               />
             </div>
+          </div>
+        </TabsContent>
+
+        {/* Property Details */}
+        <TabsContent value="property" className="space-y-4 pt-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Property Type</label>
+              <Select
+                value={formData.additionalDetails?.propertyType || ''}
+                onValueChange={(value) => handleAdditionalDetailsChange('propertyType', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select property type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Apartment">Apartment</SelectItem>
+                  <SelectItem value="Villa">Villa</SelectItem>
+                  <SelectItem value="Independent House">Independent House</SelectItem>
+                  <SelectItem value="Plot">Plot</SelectItem>
+                  <SelectItem value="Commercial">Commercial</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Ownership Status</label>
+              <Select
+                value={formData.additionalDetails?.ownershipStatus || ''}
+                onValueChange={(value) => handleAdditionalDetailsChange('ownershipStatus', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select ownership status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Owned">Owned</SelectItem>
+                  <SelectItem value="Rented">Rented</SelectItem>
+                  <SelectItem value="Family Owned">Family Owned</SelectItem>
+                  <SelectItem value="Company Provided">Company Provided</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Property Age</label>
+              <Input
+                value={formData.additionalDetails?.propertyAge || ''}
+                onChange={(e) => handleAdditionalDetailsChange('propertyAge', e.target.value)}
+                placeholder="e.g., 5 years"
+              />
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* Vehicle Details */}
+        <TabsContent value="vehicle" className="space-y-4 pt-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Vehicle Type</label>
+              <Select
+                value={formData.additionalDetails?.vehicleType || formData.additionalDetails?.loanType || ''}
+                onValueChange={(value) => handleAdditionalDetailsChange('vehicleType', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select vehicle type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Car">Car</SelectItem>
+                  <SelectItem value="Bike">Bike</SelectItem>
+                  <SelectItem value="Commercial Vehicle">Commercial Vehicle</SelectItem>
+                  <SelectItem value="Two Wheeler">Two Wheeler</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Vehicle Brand</label>
+              <Input
+                value={formData.additionalDetails?.vehicleBrandName || ''}
+                onChange={(e) => handleAdditionalDetailsChange('vehicleBrandName', e.target.value)}
+                placeholder="e.g., Maruti, Honda, Toyota"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Vehicle Model</label>
+              <Input
+                value={formData.additionalDetails?.vehicleModelName || ''}
+                onChange={(e) => handleAdditionalDetailsChange('vehicleModelName', e.target.value)}
+                placeholder="e.g., Swift, City, Innova"
+              />
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* Financial Information */}
+        <TabsContent value="financial" className="space-y-4 pt-4">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Annual Income</label>
               <Input
                 type="number"
                 value={formData.additionalDetails?.annualIncome || ''}
                 onChange={(e) => handleAdditionalDetailsChange('annualIncome', e.target.value)}
+                placeholder="Enter annual income"
               />
             </div>
             <div className="space-y-2">
@@ -630,6 +824,7 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
                 type="number"
                 value={formData.additionalDetails?.otherIncome || ''}
                 onChange={(e) => handleAdditionalDetailsChange('otherIncome', e.target.value)}
+                placeholder="Enter other income sources"
               />
             </div>
             <div className="space-y-2">
@@ -638,84 +833,75 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
                 type="number"
                 value={formData.additionalDetails?.loanAmount || ''}
                 onChange={(e) => handleAdditionalDetailsChange('loanAmount', e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Property Type</label>
-              <Input
-                value={formData.additionalDetails?.propertyType || ''}
-                onChange={(e) => handleAdditionalDetailsChange('propertyType', e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Ownership Status</label>
-              <Input
-                value={formData.additionalDetails?.ownershipStatus || ''}
-                onChange={(e) => handleAdditionalDetailsChange('ownershipStatus', e.target.value)}
+                placeholder="Enter requested loan amount"
               />
             </div>
           </div>
         </TabsContent>
 
-        {/* Step 7: Vehicle Details */}
-        <TabsContent value="step7" className="space-y-4 pt-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Vehicle Brand</label>
-              <Input
-                value={formData.additionalDetails?.vehicleBrandName || ''}
-                onChange={(e) => handleAdditionalDetailsChange('vehicleBrandName', e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Vehicle Model</label>
-              <Input
-                value={formData.additionalDetails?.vehicleModelName || ''}
-                onChange={(e) => handleAdditionalDetailsChange('vehicleModelName', e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Vehicle Variant</label>
-              <Input
-                value={formData.additionalDetails?.vehicleVariant || ''}
-                onChange={(e) => handleAdditionalDetailsChange('vehicleVariant', e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Vehicle Type</label>
-              <Input
-                value={formData.additionalDetails?.vehicleType || ''}
-                onChange={(e) => handleAdditionalDetailsChange('vehicleType', e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Vehicle Price</label>
-              <Input
-                type="number"
-                value={formData.additionalDetails?.vehiclePrice || ''}
-                onChange={(e) => handleAdditionalDetailsChange('vehiclePrice', e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Down Payment</label>
-              <Input
-                type="number"
-                value={formData.additionalDetails?.downPayment || ''}
-                onChange={(e) => handleAdditionalDetailsChange('downPayment', e.target.value)}
-              />
-            </div>
-          </div>
+        {/* References */}
+        <TabsContent value="references" className="space-y-4 pt-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base">References</CardTitle>
+                <Button type="button" variant="outline" size="sm" onClick={addReference}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add Reference
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {formData.additionalDetails?.references?.map((ref: any, index: number) => (
+                <div key={index} className="border p-4 rounded-lg">
+                  <div className="flex items-center justify-between mb-4">
+                    <h5 className="font-medium">Reference {index + 1}</h5>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => removeReference(index)}
+                    >
+                      <Minus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Name</label>
+                      <Input
+                        value={ref.name}
+                        onChange={(e) => handleReferenceChange(index, 'name', e.target.value)}
+                        placeholder="Enter reference name"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Phone</label>
+                      <Input
+                        value={ref.phone}
+                        onChange={(e) => handleReferenceChange(index, 'phone', e.target.value)}
+                        placeholder="Enter phone number"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Relationship</label>
+                      <Input
+                        value={ref.relationship}
+                        onChange={(e) => handleReferenceChange(index, 'relationship', e.target.value)}
+                        placeholder="e.g., Friend, Colleague"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {(!formData.additionalDetails?.references || formData.additionalDetails.references.length === 0) && (
+                <p className="text-center text-muted-foreground py-8">No references added yet. Click "Add Reference" to add references.</p>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
-        {/* Step 8: Documents */}
-        <TabsContent value="step8" className="space-y-4 pt-4">
-          <div className="text-center p-8 border-2 border-dashed border-gray-300 rounded-lg">
-            <p className="text-gray-500">Document management functionality will be available in a future update</p>
-          </div>
-        </TabsContent>
-
-        {/* Step 9: Instructions */}
-        <TabsContent value="step9" className="space-y-4 pt-4">
+        {/* Assignment & Instructions */}
+        <TabsContent value="assignment" className="space-y-4 pt-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Status</label>
@@ -750,6 +936,22 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Assigned Agent</label>
+              <Select 
+                value={formData.assignedTo || ''}
+                onValueChange={(value) => handleInputChange('assignedTo', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select agent" />
+                </SelectTrigger>
+                <SelectContent>
+                  {agents.map((agent) => (
+                    <SelectItem key={agent.id} value={agent.id}>{agent.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           
           <div className="space-y-2">
@@ -758,8 +960,23 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
               value={formData.instructions || ''}
               onChange={(e) => handleInputChange('instructions', e.target.value)}
               rows={4}
-              placeholder="Enter any special instructions for this lead..."
+              placeholder="Enter any special instructions for this lead verification..."
             />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Documents Required</label>
+            <div className="p-4 bg-muted rounded-lg">
+              <p className="text-sm text-muted-foreground mb-2">The following documents are required for verification:</p>
+              <ul className="text-sm space-y-1">
+                <li>• Aadhaar Card</li>
+                <li>• PAN Card</li>
+                <li>• Salary Slip</li>
+                <li>• Bank Statement</li>
+                <li>• Property Documents (if applicable)</li>
+                <li>• Income Tax Returns</li>
+              </ul>
+            </div>
           </div>
         </TabsContent>
       </Tabs>

@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, MapPin, Building, Phone, Mail, Calendar, User, FileText } from 'lucide-react';
+import { ArrowLeft, MapPin, Building, Phone, Mail, Calendar, User, FileText, Briefcase, Car, DollarSign, Users, ClipboardList } from 'lucide-react';
 import { Lead, User as UserType } from '@/utils/mockData';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
@@ -148,7 +148,7 @@ const LeadDetail = () => {
         />
         
         <main className="flex-1 p-4 md:p-6">
-          <div className="max-w-6xl mx-auto space-y-6">
+          <div className="max-w-7xl mx-auto space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
@@ -170,123 +170,343 @@ const LeadDetail = () => {
               </Badge>
             </div>
 
-            {/* Main Content */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Personal Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="h-5 w-5" />
-                    Personal Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
+            {/* Bank Selection & Product Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building className="h-5 w-5" />
+                  Bank Selection & Product Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Bank Name</label>
+                    <p className="text-base">{lead.additionalDetails?.bankName || lead.bank || 'Not specified'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Bank Product</label>
+                    <p className="text-base">{lead.additionalDetails?.bankProduct || 'Not specified'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Initiated Under Branch</label>
+                    <p className="text-base">{lead.additionalDetails?.initiatedBranch || 'Not specified'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Build Under Branch</label>
+                    <p className="text-base">{lead.additionalDetails?.buildBranch || lead.additionalDetails?.bankBranch || 'Not specified'}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Applicant Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  Applicant Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Full Name</label>
                     <p className="text-base">{lead.name}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Phone Number</label>
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <span>{lead.additionalDetails?.phoneNumber || 'Not provided'}</span>
+                    </div>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Age</label>
                     <p className="text-base">{lead.age} years</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">Occupation</label>
-                    <p className="text-base">{lead.job || 'Not specified'}</p>
-                  </div>
-                  {lead.additionalDetails?.designation && (
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Designation</label>
-                      <p className="text-base">{lead.additionalDetails.designation}</p>
-                    </div>
-                  )}
-                  {lead.additionalDetails?.company && (
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Company</label>
-                      <p className="text-base">{lead.additionalDetails.company}</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Contact Information */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Phone className="h-5 w-5" />
-                    Contact Information
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {lead.additionalDetails?.phoneNumber && (
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
-                      <span>{lead.additionalDetails.phoneNumber}</span>
-                    </div>
-                  )}
-                  {lead.additionalDetails?.email && (
+                    <label className="text-sm font-medium text-muted-foreground">Email</label>
                     <div className="flex items-center gap-2">
                       <Mail className="h-4 w-4 text-muted-foreground" />
-                      <span>{lead.additionalDetails.email}</span>
+                      <span>{lead.additionalDetails?.email || 'Not provided'}</span>
                     </div>
-                  )}
-                  <Separator />
+                  </div>
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">Address</label>
-                    <div className="flex items-start gap-2 mt-1">
-                      <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
-                      <div>
-                        <p className="text-sm">{lead.address.street}</p>
-                        <p className="text-sm">{lead.address.city}, {lead.address.district}</p>
-                        <p className="text-sm">{lead.address.state} - {lead.address.pincode}</p>
+                    <label className="text-sm font-medium text-muted-foreground">Father's Name</label>
+                    <p className="text-base">{lead.additionalDetails?.fatherName || 'Not specified'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Mother's Name</label>
+                    <p className="text-base">{lead.additionalDetails?.motherName || 'Not specified'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Date of Birth</label>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span>{lead.additionalDetails?.dateOfBirth ? new Date(lead.additionalDetails.dateOfBirth).toLocaleDateString() : 'Not specified'}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Gender</label>
+                    <p className="text-base">{lead.additionalDetails?.gender || 'Not specified'}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Co-Applicant Information */}
+            {lead.additionalDetails?.coApplicant && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Co-Applicant Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Full Name</label>
+                      <p className="text-base">{lead.additionalDetails.coApplicant.name}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Phone Number</label>
+                      <div className="flex items-center gap-2">
+                        <Phone className="h-4 w-4 text-muted-foreground" />
+                        <span>{lead.additionalDetails.coApplicant.phone}</span>
                       </div>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Age</label>
+                      <p className="text-base">{lead.additionalDetails.coApplicant.age || 'Not specified'}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Email</label>
+                      <div className="flex items-center gap-2">
+                        <Mail className="h-4 w-4 text-muted-foreground" />
+                        <span>{lead.additionalDetails.coApplicant.email || 'Not provided'}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Relationship</label>
+                      <p className="text-base">{lead.additionalDetails.coApplicant.relation}</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
+            )}
 
-              {/* Financial Information */}
+            {/* Address Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  Address Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Primary Address */}
+                <div>
+                  <h4 className="font-medium mb-3">Primary Address ({lead.address.type})</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Street Address</label>
+                      <p className="text-sm">{lead.address.street}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">State</label>
+                      <p className="text-sm">{lead.address.state}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">District</label>
+                      <p className="text-sm">{lead.address.district}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">City</label>
+                      <p className="text-sm">{lead.address.city}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Pincode</label>
+                      <p className="text-sm">{lead.address.pincode}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Additional Addresses */}
+                {lead.additionalDetails?.addresses && lead.additionalDetails.addresses.length > 0 && (
+                  <>
+                    <Separator />
+                    <div>
+                      <h4 className="font-medium mb-3">Additional Addresses</h4>
+                      <div className="space-y-4">
+                        {lead.additionalDetails.addresses.map((addr, index) => (
+                          <div key={index} className="border rounded-lg p-4">
+                            <h5 className="font-medium mb-2">{addr.type} Address</h5>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                              <div>
+                                <label className="text-sm font-medium text-muted-foreground">Street Address</label>
+                                <p className="text-sm">{addr.street}</p>
+                              </div>
+                              <div>
+                                <label className="text-sm font-medium text-muted-foreground">State</label>
+                                <p className="text-sm">{addr.state}</p>
+                              </div>
+                              <div>
+                                <label className="text-sm font-medium text-muted-foreground">District</label>
+                                <p className="text-sm">{addr.district}</p>
+                              </div>
+                              <div>
+                                <label className="text-sm font-medium text-muted-foreground">City</label>
+                                <p className="text-sm">{addr.city}</p>
+                              </div>
+                              <div>
+                                <label className="text-sm font-medium text-muted-foreground">Pincode</label>
+                                <p className="text-sm">{addr.pincode}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Professional Details */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Briefcase className="h-5 w-5" />
+                  Professional Details
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Company Name</label>
+                    <p className="text-base">{lead.additionalDetails?.company || 'Not specified'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Designation</label>
+                    <p className="text-base">{lead.additionalDetails?.designation || lead.job || 'Not specified'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Work Experience</label>
+                    <p className="text-base">{lead.additionalDetails?.workExperience || 'Not specified'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Monthly Income</label>
+                    <p className="text-base">₹{lead.additionalDetails?.monthlyIncome || 'Not specified'}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Property Details */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building className="h-5 w-5" />
+                  Property Details
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Property Type</label>
+                    <p className="text-base">{lead.additionalDetails?.propertyType || 'Not specified'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Ownership Status</label>
+                    <p className="text-base">{lead.additionalDetails?.ownershipStatus || 'Not specified'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Property Age</label>
+                    <p className="text-base">{lead.additionalDetails?.propertyAge || 'Not specified'}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Vehicle Details */}
+            {(lead.additionalDetails?.vehicleBrandName || lead.additionalDetails?.vehicleModelName || lead.additionalDetails?.vehicleType) && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Building className="h-5 w-5" />
-                    Financial Information
+                    <Car className="h-5 w-5" />
+                    Vehicle Details
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  {lead.additionalDetails?.monthlyIncome && (
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">Monthly Income</label>
-                      <p className="text-base">₹{lead.additionalDetails.monthlyIncome}</p>
+                      <label className="text-sm font-medium text-muted-foreground">Vehicle Type</label>
+                      <p className="text-base">{lead.additionalDetails?.vehicleType || lead.additionalDetails?.loanType || 'Not specified'}</p>
                     </div>
-                  )}
-                  {lead.additionalDetails?.annualIncome && (
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">Annual Income</label>
-                      <p className="text-base">₹{lead.additionalDetails.annualIncome}</p>
+                      <label className="text-sm font-medium text-muted-foreground">Vehicle Brand</label>
+                      <p className="text-base">{lead.additionalDetails?.vehicleBrandName || 'Not specified'}</p>
                     </div>
-                  )}
-                  {lead.additionalDetails?.loanAmount && (
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">Loan Amount</label>
-                      <p className="text-base">₹{lead.additionalDetails.loanAmount}</p>
+                      <label className="text-sm font-medium text-muted-foreground">Vehicle Model</label>
+                      <p className="text-base">{lead.additionalDetails?.vehicleModelName || 'Not specified'}</p>
                     </div>
-                  )}
-                  {lead.bank && (
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">Bank</label>
-                      <p className="text-base">{lead.bank}</p>
-                    </div>
-                  )}
+                  </div>
                 </CardContent>
               </Card>
-            </div>
+            )}
 
-            {/* Additional Details */}
+            {/* Financial Information */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="h-5 w-5" />
+                  Financial Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Annual Income</label>
+                    <p className="text-base">₹{lead.additionalDetails?.annualIncome || 'Not specified'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Other Income</label>
+                    <p className="text-base">₹{lead.additionalDetails?.otherIncome || 'Not specified'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Loan Amount</label>
+                    <p className="text-base">₹{lead.additionalDetails?.loanAmount || 'Not specified'}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Documents */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5" />
-                  Additional Details
+                  Documents
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center p-8 border-2 border-dashed border-gray-300 rounded-lg">
+                  <FileText className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                  <p className="text-gray-500">Document management functionality will be available in a future update</p>
+                  <p className="text-sm text-gray-400 mt-2">Required: Aadhaar Card, PAN Card, Salary Slip, Bank Statement, Property Documents, Income Tax Returns</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Assignment & Instructions */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ClipboardList className="h-5 w-5" />
+                  Assignment & Instructions
                 </CardTitle>
               </CardHeader>
               <CardContent>
