@@ -32,9 +32,15 @@ interface LocationData {
   }[];
 }
 
+interface CoApplicant {
+  name: string;
+  phone: string;
+  age: string;
+  email: string;
+}
+
 interface FormData {
-  // Step 1: Lead Type & Basic Information
-  leadType: string;
+  // Step 1: Bank Selection & Applicant Information
   bankName: string;
   bankProduct: string;
   initiatedUnderBranch: string;
@@ -43,6 +49,8 @@ interface FormData {
   phone: string;
   age: string;
   email: string;
+  hasCoApplicant: boolean;
+  coApplicant: CoApplicant;
   
   // Step 2: Address Information
   addresses: Array<{
@@ -116,7 +124,6 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({ onSubmit, l
 
   const [formData, setFormData] = useState<FormData>({
     // Step 1
-    leadType: '',
     bankName: '',
     bankProduct: '',
     initiatedUnderBranch: '',
@@ -125,6 +132,13 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({ onSubmit, l
     phone: '',
     age: '',
     email: '',
+    hasCoApplicant: false,
+    coApplicant: {
+      name: '',
+      phone: '',
+      age: '',
+      email: ''
+    },
     
     // Step 2
     addresses: [{
@@ -177,6 +191,19 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({ onSubmit, l
     addressAssignments: {}
   });
 
+  // Step titles
+  const stepTitles = {
+    1: "Bank Selection & Applicant Information",
+    2: "Address Information", 
+    3: "Professional Details",
+    4: "Property Details",
+    5: "Vehicle Details",
+    6: "Financial Information",
+    7: "Documents",
+    8: "References",
+    9: "Final Details & Assignment"
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       const [propertyTypesData, vehicleBrandsData, vehicleTypesData, vehicleModelsData] = await Promise.all([
@@ -223,6 +250,16 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({ onSubmit, l
     setFormData(prev => ({
       ...prev,
       [field]: value
+    }));
+  };
+
+  const handleCoApplicantChange = (field: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      coApplicant: {
+        ...prev.coApplicant,
+        [field]: value
+      }
     }));
   };
 
@@ -326,8 +363,12 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({ onSubmit, l
   const validateStep = (step: number): boolean => {
     switch (step) {
       case 1:
+        if (!formData.bankName || !formData.bankProduct || !formData.initiatedUnderBranch || !formData.buildUnderBranch) {
+          toast.error('Please select all bank details');
+          return false;
+        }
         if (!formData.name || !formData.phone || !formData.age || !formData.email) {
-          toast.error('Please fill all required fields');
+          toast.error('Please fill all required applicant fields');
           return false;
         }
         if (formData.phone.length !== 10 || !/^\d+$/.test(formData.phone)) {
@@ -342,26 +383,75 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({ onSubmit, l
           toast.error('Please enter a valid email address');
           return false;
         }
+        if (formData.hasCoApplicant) {
+          if (!formData.coApplicant.name || !formData.coApplicant.phone || !formData.coApplicant.age || !formData.coApplicant.email) {
+            toast.error('Please fill all required co-applicant fields');
+            return false;
+          }
+          if (formData.coApplicant.phone.length !== 10 || !/^\d+$/.test(formData.coApplicant.phone)) {
+            toast.error('Co-applicant phone number must be 10 digits');
+            return false;
+          }
+          if (!/^\d+$/.test(formData.coApplicant.age)) {
+            toast.error('Co-applicant age must be a number');
+            return false;
+          }
+          if (!/\S+@\S+\.\S+/.test(formData.coApplicant.email)) {
+            toast.error('Please enter a valid co-applicant email address');
+            return false;
+          }
+        }
         return true;
       case 2:
-        return formData.addresses.every(addr => 
+        const allAddressesValid = formData.addresses.every(addr => 
           addr.street && addr.city && addr.district && addr.state && addr.pincode
         );
+        if (!allAddressesValid) {
+          toast.error('Please fill all address fields');
+          return false;
+        }
+        return true;
       case 3:
-        return formData.company && formData.designation && formData.workExperience && formData.monthlyIncome;
+        if (!formData.company || !formData.designation || !formData.workExperience || !formData.monthlyIncome) {
+          toast.error('Please fill all professional details');
+          return false;
+        }
+        const officeAddressValid = formData.officeAddress.street && formData.officeAddress.city && 
+          formData.officeAddress.district && formData.officeAddress.state && formData.officeAddress.pincode;
+        if (!officeAddressValid) {
+          toast.error('Please fill all office address fields');
+          return false;
+        }
+        return true;
       case 4:
-        return formData.propertyType && formData.ownershipStatus && formData.propertyAge;
+        if (!formData.propertyType || !formData.ownershipStatus || !formData.propertyAge) {
+          toast.error('Please fill all property details');
+          return false;
+        }
+        return true;
       case 5:
         if (formData.bankProduct?.toLowerCase().includes('auto loan')) {
-          return formData.vehicleType && formData.vehicleBrand && formData.vehicleModel;
+          if (!formData.vehicleType || !formData.vehicleBrand || !formData.vehicleModel) {
+            toast.error('Please fill all vehicle details');
+            return false;
+          }
         }
         return true;
       case 6:
-        return formData.annualIncome;
+        if (!formData.annualIncome) {
+          toast.error('Please enter annual income');
+          return false;
+        }
+        return true;
       case 7:
         return true;
       case 8:
-        return formData.references.every(ref => ref.name && ref.phone && ref.relationship);
+        const allReferencesValid = formData.references.every(ref => ref.name && ref.phone && ref.relationship);
+        if (!allReferencesValid) {
+          toast.error('Please fill all reference details');
+          return false;
+        }
+        return true;
       default:
         return true;
     }
@@ -369,7 +459,7 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({ onSubmit, l
 
   const nextStep = () => {
     if (validateStep(currentStep)) {
-      if (currentStep === 5 && !formData.bankProduct?.toLowerCase().includes('auto loan')) {
+      if (currentStep === 4 && !formData.bankProduct?.toLowerCase().includes('auto loan')) {
         setCurrentStep(prev => prev + 2); // Skip vehicle details step
       } else {
         setCurrentStep(prev => prev + 1);
@@ -426,126 +516,194 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({ onSubmit, l
     switch (currentStep) {
       case 1:
         return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold mb-4">Lead Type & Basic Information</h3>
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold mb-4">Bank Selection & Applicant Information</h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="leadType">Lead Type</Label>
-                <Select value={formData.leadType} onValueChange={(value) => handleInputChange('leadType', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select lead type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {leadTypes.map(type => (
-                      <SelectItem key={type.id} value={type.id}>{type.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            {/* Bank Selection Section */}
+            <Card className="p-4">
+              <CardHeader>
+                <CardTitle className="text-md">Bank Selection</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="bankName">Bank Name *</Label>
+                    <Select value={formData.bankName} onValueChange={(value) => {
+                      handleInputChange('bankName', value);
+                      setSelectedBank(value);
+                    }}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select bank" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {banks.map(bank => (
+                          <SelectItem key={bank.id} value={bank.id}>{bank.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              <div>
-                <Label htmlFor="bankName">Bank Name</Label>
-                <Select value={formData.bankName} onValueChange={(value) => {
-                  handleInputChange('bankName', value);
-                  setSelectedBank(value);
-                }}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select bank" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {banks.map(bank => (
-                      <SelectItem key={bank.id} value={bank.id}>{bank.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  <div>
+                    <Label htmlFor="bankProduct">Bank Product *</Label>
+                    <Select value={formData.bankProduct} onValueChange={(value) => handleInputChange('bankProduct', value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select bank product" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {bankProducts.map(product => (
+                          <SelectItem key={product.id} value={product.name}>{product.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              <div>
-                <Label htmlFor="bankProduct">Bank Product</Label>
-                <Select value={formData.bankProduct} onValueChange={(value) => handleInputChange('bankProduct', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select bank product" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {bankProducts.map(product => (
-                      <SelectItem key={product.id} value={product.name}>{product.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  <div>
+                    <Label htmlFor="initiatedUnderBranch">Initiated Under Branch *</Label>
+                    <Select value={formData.initiatedUnderBranch} onValueChange={(value) => handleInputChange('initiatedUnderBranch', value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select branch" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {bankBranches.filter(branch => branch.bank === formData.bankName).map(branch => (
+                          <SelectItem key={branch.id} value={branch.id}>{branch.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              <div>
-                <Label htmlFor="initiatedUnderBranch">Initiated Under Branch</Label>
-                <Select value={formData.initiatedUnderBranch} onValueChange={(value) => handleInputChange('initiatedUnderBranch', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select branch" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {bankBranches.filter(branch => branch.bank === formData.bankName).map(branch => (
-                      <SelectItem key={branch.id} value={branch.id}>{branch.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  <div>
+                    <Label htmlFor="buildUnderBranch">Build Under Branch *</Label>
+                    <Select value={formData.buildUnderBranch} onValueChange={(value) => handleInputChange('buildUnderBranch', value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select branch" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {bankBranches.filter(branch => branch.bank === formData.bankName).map(branch => (
+                          <SelectItem key={branch.id} value={branch.id}>{branch.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-              <div>
-                <Label htmlFor="buildUnderBranch">Build Under Branch</Label>
-                <Select value={formData.buildUnderBranch} onValueChange={(value) => handleInputChange('buildUnderBranch', value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select branch" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {bankBranches.filter(branch => branch.bank === formData.bankName).map(branch => (
-                      <SelectItem key={branch.id} value={branch.id}>{branch.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            {/* Applicant Information Section */}
+            <Card className="p-4">
+              <CardHeader>
+                <CardTitle className="text-md">Applicant Information</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="name">Full Name *</Label>
+                    <Input
+                      id="name"
+                      value={formData.name}
+                      onChange={(e) => handleInputChange('name', e.target.value)}
+                      placeholder="Enter full name"
+                    />
+                  </div>
 
-              <div>
-                <Label htmlFor="name">Full Name *</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
-                  placeholder="Enter full name"
-                />
-              </div>
+                  <div>
+                    <Label htmlFor="phone">Phone Number * (10 digits)</Label>
+                    <Input
+                      id="phone"
+                      value={formData.phone}
+                      onChange={(e) => handleInputChange('phone', e.target.value)}
+                      placeholder="Enter 10-digit phone number"
+                      maxLength={10}
+                    />
+                  </div>
 
-              <div>
-                <Label htmlFor="phone">Phone Number * (10 digits)</Label>
-                <Input
-                  id="phone"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
-                  placeholder="Enter 10-digit phone number"
-                  maxLength={10}
-                />
-              </div>
+                  <div>
+                    <Label htmlFor="age">Age *</Label>
+                    <Input
+                      id="age"
+                      value={formData.age}
+                      onChange={(e) => handleInputChange('age', e.target.value)}
+                      placeholder="Enter age"
+                      type="number"
+                    />
+                  </div>
 
-              <div>
-                <Label htmlFor="age">Age *</Label>
-                <Input
-                  id="age"
-                  value={formData.age}
-                  onChange={(e) => handleInputChange('age', e.target.value)}
-                  placeholder="Enter age"
-                  type="number"
-                />
-              </div>
+                  <div>
+                    <Label htmlFor="email">Email *</Label>
+                    <Input
+                      id="email"
+                      value={formData.email}
+                      onChange={(e) => handleInputChange('email', e.target.value)}
+                      placeholder="Enter email address"
+                      type="email"
+                    />
+                  </div>
+                </div>
 
-              <div>
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  placeholder="Enter email address"
-                  type="email"
-                />
-              </div>
-            </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="hasCoApplicant"
+                    checked={formData.hasCoApplicant}
+                    onCheckedChange={(checked) => handleInputChange('hasCoApplicant', Boolean(checked))}
+                  />
+                  <Label htmlFor="hasCoApplicant">Add Co-Applicant</Label>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Co-Applicant Information Section */}
+            {formData.hasCoApplicant && (
+              <Card className="p-4">
+                <CardHeader>
+                  <CardTitle className="text-md">Co-Applicant Information</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="coApplicantName">Full Name *</Label>
+                      <Input
+                        id="coApplicantName"
+                        value={formData.coApplicant.name}
+                        onChange={(e) => handleCoApplicantChange('name', e.target.value)}
+                        placeholder="Enter co-applicant full name"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="coApplicantPhone">Phone Number * (10 digits)</Label>
+                      <Input
+                        id="coApplicantPhone"
+                        value={formData.coApplicant.phone}
+                        onChange={(e) => handleCoApplicantChange('phone', e.target.value)}
+                        placeholder="Enter 10-digit phone number"
+                        maxLength={10}
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="coApplicantAge">Age *</Label>
+                      <Input
+                        id="coApplicantAge"
+                        value={formData.coApplicant.age}
+                        onChange={(e) => handleCoApplicantChange('age', e.target.value)}
+                        placeholder="Enter age"
+                        type="number"
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="coApplicantEmail">Email *</Label>
+                      <Input
+                        id="coApplicantEmail"
+                        value={formData.coApplicant.email}
+                        onChange={(e) => handleCoApplicantChange('email', e.target.value)}
+                        placeholder="Enter email address"
+                        type="email"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         );
 
@@ -588,8 +746,8 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({ onSubmit, l
                       <Label>State</Label>
                       <Select value={address.state} onValueChange={(value) => {
                         handleAddressChange(index, 'state', value);
-                        handleAddressChange(index, 'district', ''); // Reset district when state changes
-                        handleAddressChange(index, 'city', ''); // Reset city when state changes
+                        handleAddressChange(index, 'district', '');
+                        handleAddressChange(index, 'city', '');
                       }}>
                         <SelectTrigger>
                           <SelectValue placeholder="Select state" />
@@ -608,7 +766,7 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({ onSubmit, l
                         value={address.district} 
                         onValueChange={(value) => {
                           handleAddressChange(index, 'district', value);
-                          handleAddressChange(index, 'city', ''); // Reset city when district changes
+                          handleAddressChange(index, 'city', '');
                         }}
                         disabled={!address.state}
                       >
@@ -1168,6 +1326,9 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({ onSubmit, l
         <div className="flex justify-between items-center mb-2">
           <h2 className="text-2xl font-bold">Add New Lead</h2>
           <span className="text-sm text-gray-500">Step {currentStep} of {totalSteps}</span>
+        </div>
+        <div className="mb-2">
+          <h3 className="text-lg font-medium text-gray-700">{stepTitles[currentStep as keyof typeof stepTitles]}</h3>
         </div>
         <Progress value={progress} className="w-full" />
       </div>
