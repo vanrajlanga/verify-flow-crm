@@ -6,7 +6,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { User, Lead } from '@/utils/mockData';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
@@ -371,11 +370,9 @@ const AdminLeads = () => {
                               </Button>
 
                               <Select onValueChange={(agentId) => handleAssignAgent(lead.id, agentId)}>
-                                <SelectTrigger asChild>
-                                  <Button variant="outline" size="sm">
-                                    <UserPlus className="h-4 w-4 mr-1" />
-                                    Assign Agent
-                                  </Button>
+                                <SelectTrigger className="w-[140px]">
+                                  <UserPlus className="h-4 w-4 mr-1" />
+                                  <SelectValue placeholder="Assign Agent" />
                                 </SelectTrigger>
                                 <SelectContent>
                                   {agents.map((agent) => (
