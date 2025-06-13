@@ -12,10 +12,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { banks, bankBranches, leadTypes, agents } from '@/utils/mockData';
+import { agents } from '@/utils/mockData';
 import { Address } from '@/utils/mockData';
 import { getPropertyTypes } from '@/lib/property-operations';
 import { getVehicleBrands, getVehicleTypes, getVehicleModels } from '@/lib/vehicle-operations';
+import { getBanks, getBankProducts, getBankBranches } from '@/lib/bank-product-operations';
+import { Bank, BankProduct, BankBranch } from '@/types/bank-product';
 
 interface LocationData {
   states: {
@@ -118,8 +120,14 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({ onSubmit, l
   const [vehicleBrands, setVehicleBrands] = useState<Array<{ id: string; name: string }>>([]);
   const [vehicleTypes, setVehicleTypes] = useState<Array<{ id: string; name: string }>>([]);
   const [vehicleModels, setVehicleModels] = useState<Array<{ id: string; name: string }>>([]);
-  const [bankProducts, setBankProducts] = useState<Array<{ id: string; name: string }>>([]);
+  
+  // Bank & Product Module data
+  const [banks, setBanks] = useState<Bank[]>([]);
+  const [bankProducts, setBankProducts] = useState<BankProduct[]>([]);
+  const [bankBranches, setBankBranches] = useState<BankBranch[]>([]);
   const [selectedBank, setSelectedBank] = useState('');
+  const [loading, setLoading] = useState(true);
+  
   const [documentPreviews, setDocumentPreviews] = useState<{ [key: string]: string }>({});
 
   const [formData, setFormData] = useState<FormData>({
@@ -205,45 +213,55 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({ onSubmit, l
   };
 
   useEffect(() => {
-    const fetchData = async () => {
-      const [propertyTypesData, vehicleBrandsData, vehicleTypesData, vehicleModelsData] = await Promise.all([
-        getPropertyTypes(),
-        getVehicleBrands(),
-        getVehicleTypes(),
-        getVehicleModels()
-      ]);
-      
-      setPropertyTypes(propertyTypesData);
-      setVehicleBrands(vehicleBrandsData);
-      setVehicleTypes(vehicleTypesData);
-      setVehicleModels(vehicleModelsData);
+    const fetchAllData = async () => {
+      setLoading(true);
+      try {
+        const [
+          propertyTypesData, 
+          vehicleBrandsData, 
+          vehicleTypesData, 
+          vehicleModelsData,
+          banksData,
+          bankProductsData,
+          bankBranchesData
+        ] = await Promise.all([
+          getPropertyTypes(),
+          getVehicleBrands(),
+          getVehicleTypes(),
+          getVehicleModels(),
+          getBanks(),
+          getBankProducts(),
+          getBankBranches()
+        ]);
+        
+        setPropertyTypes(propertyTypesData);
+        setVehicleBrands(vehicleBrandsData);
+        setVehicleTypes(vehicleTypesData);
+        setVehicleModels(vehicleModelsData);
+        setBanks(banksData);
+        setBankProducts(bankProductsData);
+        setBankBranches(bankBranchesData);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        toast.error('Failed to load form data');
+      } finally {
+        setLoading(false);
+      }
     };
     
-    fetchData();
+    fetchAllData();
   }, []);
 
-  useEffect(() => {
-    if (selectedBank) {
-      fetchBankProducts(selectedBank);
-    }
-  }, [selectedBank]);
+  // Filter bank products based on selected bank
+  const getFilteredBankProducts = () => {
+    if (!selectedBank) return [];
+    return bankProducts.filter(product => product.bank_id === selectedBank);
+  };
 
-  const fetchBankProducts = async (bankId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('bank_products')
-        .select('*')
-        .eq('bank_id', bankId);
-
-      if (error) {
-        console.error('Error fetching bank products:', error);
-        return;
-      }
-
-      setBankProducts(data || []);
-    } catch (error) {
-      console.error('Error in fetchBankProducts:', error);
-    }
+  // Filter bank branches based on selected bank
+  const getFilteredBankBranches = () => {
+    if (!selectedBank) return [];
+    return bankBranches.filter(branch => branch.bank_id === selectedBank);
   };
 
   const handleInputChange = (field: string, value: any) => {
@@ -512,6 +530,10 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({ onSubmit, l
     return district ? district.cities : [];
   };
 
+  if (loading) {
+    return <div className="flex items-center justify-center h-screen">Loading form data...</div>;
+  }
+
   const renderStep = () => {
     switch (currentStep) {
       case 1:
@@ -531,6 +553,10 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({ onSubmit, l
                     <Select value={formData.bankName} onValueChange={(value) => {
                       handleInputChange('bankName', value);
                       setSelectedBank(value);
+                      // Clear dependent fields when bank changes
+                      handleInputChange('bankProduct', '');
+                      handleInputChange('initiatedUnderBranch', '');
+                      handleInputChange('buildUnderBranch', '');
                     }}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select bank" />
@@ -545,12 +571,16 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({ onSubmit, l
 
                   <div>
                     <Label htmlFor="bankProduct">Bank Product *</Label>
-                    <Select value={formData.bankProduct} onValueChange={(value) => handleInputChange('bankProduct', value)}>
+                    <Select 
+                      value={formData.bankProduct} 
+                      onValueChange={(value) => handleInputChange('bankProduct', value)}
+                      disabled={!selectedBank}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select bank product" />
                       </SelectTrigger>
                       <SelectContent>
-                        {bankProducts.map(product => (
+                        {getFilteredBankProducts().map(product => (
                           <SelectItem key={product.id} value={product.name}>{product.name}</SelectItem>
                         ))}
                       </SelectContent>
@@ -559,12 +589,16 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({ onSubmit, l
 
                   <div>
                     <Label htmlFor="initiatedUnderBranch">Initiated Under Branch *</Label>
-                    <Select value={formData.initiatedUnderBranch} onValueChange={(value) => handleInputChange('initiatedUnderBranch', value)}>
+                    <Select 
+                      value={formData.initiatedUnderBranch} 
+                      onValueChange={(value) => handleInputChange('initiatedUnderBranch', value)}
+                      disabled={!selectedBank}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select branch" />
                       </SelectTrigger>
                       <SelectContent>
-                        {bankBranches.filter(branch => branch.bank === formData.bankName).map(branch => (
+                        {getFilteredBankBranches().map(branch => (
                           <SelectItem key={branch.id} value={branch.id}>{branch.name}</SelectItem>
                         ))}
                       </SelectContent>
@@ -573,12 +607,16 @@ const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({ onSubmit, l
 
                   <div>
                     <Label htmlFor="buildUnderBranch">Build Under Branch *</Label>
-                    <Select value={formData.buildUnderBranch} onValueChange={(value) => handleInputChange('buildUnderBranch', value)}>
+                    <Select 
+                      value={formData.buildUnderBranch} 
+                      onValueChange={(value) => handleInputChange('buildUnderBranch', value)}
+                      disabled={!selectedBank}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select branch" />
                       </SelectTrigger>
                       <SelectContent>
-                        {bankBranches.filter(branch => branch.bank === formData.bankName).map(branch => (
+                        {getFilteredBankBranches().map(branch => (
                           <SelectItem key={branch.id} value={branch.id}>{branch.name}</SelectItem>
                         ))}
                       </SelectContent>
