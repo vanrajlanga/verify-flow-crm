@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,9 +18,13 @@ import {
   Building,
   Calendar,
   UserPlus,
-  Phone
+  Phone,
+  Download,
+  Upload,
+  FileDown
 } from 'lucide-react';
-import { getLeadsFromDatabase, updateLeadInDatabase } from '@/lib/lead-operations';
+import { getLeadsFromDatabase, updateLeadInDatabase, saveLeadToDatabase } from '@/lib/lead-operations';
+import { exportLeadsToCSV, parseCSVToLeads, generateSampleCSV, downloadFile } from '@/lib/csv-operations';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
 
@@ -35,6 +39,9 @@ const AdminLeads = () => {
   const [bankFilter, setBankFilter] = useState('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isImporting, setIsImporting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -123,6 +130,137 @@ const AdminLeads = () => {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // CSV Export functionality
+  const handleExportCSV = async () => {
+    setIsExporting(true);
+    try {
+      console.log('Starting CSV export...');
+      const csvContent = exportLeadsToCSV(leads);
+      const timestamp = new Date().toISOString().split('T')[0];
+      const filename = `leads-export-${timestamp}.csv`;
+      
+      downloadFile(csvContent, filename);
+      
+      toast({
+        title: "Export Successful",
+        description: `${leads.length} leads exported to ${filename}`,
+      });
+    } catch (error) {
+      console.error('Error exporting CSV:', error);
+      toast({
+        title: "Export Failed",
+        description: "Failed to export leads to CSV. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // CSV Import functionality
+  const handleImportCSV = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.endsWith('.csv')) {
+      toast({
+        title: "Invalid File",
+        description: "Please select a CSV file.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      console.log('Starting CSV import...');
+      const fileContent = await file.text();
+      const parsedLeads = parseCSVToLeads(fileContent);
+      
+      console.log(`Parsed ${parsedLeads.length} leads from CSV`);
+      
+      let successCount = 0;
+      let errorCount = 0;
+      
+      for (const leadData of parsedLeads) {
+        try {
+          // Convert partial lead to full lead with required fields
+          const fullLead: Lead = {
+            id: leadData.id || `LEAD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            name: leadData.name || 'Unknown',
+            age: leadData.age || 0,
+            job: leadData.job || '',
+            address: leadData.address || {
+              type: 'Residence',
+              street: '',
+              city: '',
+              district: '',
+              state: '',
+              pincode: ''
+            },
+            additionalDetails: leadData.additionalDetails,
+            status: leadData.status || 'Pending',
+            bank: leadData.bank || '',
+            visitType: leadData.visitType || 'Residence',
+            assignedTo: leadData.assignedTo || '',
+            createdAt: leadData.createdAt || new Date(),
+            verificationDate: leadData.verificationDate,
+            documents: [],
+            instructions: leadData.instructions || ''
+          };
+          
+          await saveLeadToDatabase(fullLead);
+          successCount++;
+        } catch (error) {
+          console.error(`Error saving lead ${leadData.id}:`, error);
+          errorCount++;
+        }
+      }
+      
+      // Refresh data after import
+      await loadAllData();
+      
+      toast({
+        title: "Import Completed",
+        description: `Successfully imported ${successCount} leads. ${errorCount > 0 ? `${errorCount} leads failed to import.` : ''}`,
+      });
+      
+    } catch (error) {
+      console.error('Error importing CSV:', error);
+      toast({
+        title: "Import Failed",
+        description: `Failed to import CSV: ${error}`,
+        variant: "destructive",
+      });
+    } finally {
+      setIsImporting(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  // Download sample CSV
+  const handleDownloadSample = () => {
+    try {
+      const sampleContent = generateSampleCSV();
+      downloadFile(sampleContent, 'sample-leads-template.csv');
+      
+      toast({
+        title: "Sample Downloaded",
+        description: "Sample CSV template downloaded successfully.",
+      });
+    } catch (error) {
+      console.error('Error generating sample CSV:', error);
+      toast({
+        title: "Download Failed",
+        description: "Failed to download sample CSV template.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -255,6 +393,61 @@ const AdminLeads = () => {
                 </Button>
               </div>
             </div>
+
+            {/* CSV Import/Export Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle>CSV Import/Export Operations</CardTitle>
+                <CardDescription>
+                  Import leads from CSV or export all leads with comprehensive field mapping
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-4">
+                  <Button 
+                    onClick={handleExportCSV}
+                    disabled={isExporting || leads.length === 0}
+                    className="flex items-center gap-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    {isExporting ? 'Exporting...' : `Export All Leads (${leads.length})`}
+                  </Button>
+                  
+                  <Button 
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isImporting}
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    <Upload className="h-4 w-4" />
+                    {isImporting ? 'Importing...' : 'Import CSV'}
+                  </Button>
+                  
+                  <Button 
+                    onClick={handleDownloadSample}
+                    variant="secondary"
+                    className="flex items-center gap-2"
+                  >
+                    <FileDown className="h-4 w-4" />
+                    Download Sample CSV
+                  </Button>
+                  
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv"
+                    onChange={handleImportCSV}
+                    className="hidden"
+                  />
+                </div>
+                
+                <div className="mt-4 text-sm text-muted-foreground">
+                  <p><strong>Export:</strong> Downloads all {leads.length} leads with complete field mapping including addresses, additional details, and verification data.</p>
+                  <p><strong>Import:</strong> Upload CSV file with proper column headers. Use sample template for correct format.</p>
+                  <p><strong>Sample CSV:</strong> Download template with sample data and proper column structure for import.</p>
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Filters */}
             <Card>
