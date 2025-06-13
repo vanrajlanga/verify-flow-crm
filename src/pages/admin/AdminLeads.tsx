@@ -21,7 +21,8 @@ import {
   Phone,
   Download,
   Upload,
-  FileDown
+  FileDown,
+  Edit
 } from 'lucide-react';
 import { getLeadsFromDatabase, updateLeadInDatabase, saveLeadToDatabase } from '@/lib/lead-operations';
 import { exportLeadsToCSV, parseCSVToLeads, generateSampleCSV, downloadFile } from '@/lib/csv-operations';

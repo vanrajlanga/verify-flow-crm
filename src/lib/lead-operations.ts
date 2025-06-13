@@ -410,18 +410,121 @@ export const getLeadsFromDatabase = async (forceRefresh = false) => {
 // Update lead status in database
 export const updateLeadInDatabase = async (leadId: string, updates: Partial<Lead>) => {
   try {
-    const { error } = await supabase
+    console.log('Updating lead in database:', leadId, updates);
+    
+    // Prepare the main lead update data
+    const leadUpdateData: any = {};
+    
+    if (updates.name !== undefined) leadUpdateData.name = updates.name;
+    if (updates.age !== undefined) leadUpdateData.age = updates.age;
+    if (updates.job !== undefined) leadUpdateData.job = updates.job;
+    if (updates.status !== undefined) leadUpdateData.status = updates.status;
+    if (updates.visitType !== undefined) leadUpdateData.visit_type = updates.visitType;
+    if (updates.assignedTo !== undefined) leadUpdateData.assigned_to = updates.assignedTo;
+    if (updates.instructions !== undefined) leadUpdateData.instructions = updates.instructions;
+    if (updates.bank !== undefined) {
+      // Map bank name to bank ID
+      const getBankId = (bankName: string): string => {
+        const bankMapping: { [key: string]: string } = {
+          'HDFC': 'hdfc',
+          'ICICI': 'icici', 
+          'AXIS': 'axis',
+          'SBI': 'sbi',
+          'Kotak Mahindra Bank': 'kotak',
+          'Punjab National Bank': 'pnb',
+          'Bank of Baroda': 'bob',
+          'Canara Bank': 'canara',
+          'Union Bank of India': 'union',
+          'Indian Bank': 'indian'
+        };
+        return bankMapping[bankName] || bankName.toLowerCase().replace(/\s+/g, '_');
+      };
+      leadUpdateData.bank_id = getBankId(updates.bank);
+    }
+    
+    leadUpdateData.updated_at = new Date().toISOString();
+
+    // Update the main lead record
+    const { error: leadError } = await supabase
       .from('leads')
-      .update({
-        status: updates.status,
-        assigned_to: updates.assignedTo,
-        updated_at: new Date().toISOString()
-      })
+      .update(leadUpdateData)
       .eq('id', leadId);
 
-    if (error) {
-      console.error('Error updating lead in database:', error);
-      throw error;
+    if (leadError) {
+      console.error('Error updating lead:', leadError);
+      throw leadError;
+    }
+
+    // Update address if provided
+    if (updates.address) {
+      const { error: addressError } = await supabase
+        .from('addresses')
+        .update({
+          type: updates.address.type || 'Residence',
+          street: updates.address.street || '',
+          city: updates.address.city || '',
+          district: updates.address.district || '',
+          state: updates.address.state || '',
+          pincode: updates.address.pincode || ''
+        })
+        .in('id', 
+          supabase
+            .from('leads')
+            .select('address_id')
+            .eq('id', leadId)
+        );
+
+      if (addressError) {
+        console.error('Error updating address:', addressError);
+        // Don't throw here, just log the error
+      }
+    }
+
+    // Update additional details if provided
+    if (updates.additionalDetails) {
+      const additionalDetailsData = {
+        company: updates.additionalDetails.company || null,
+        designation: updates.additionalDetails.designation || null,
+        phone_number: updates.additionalDetails.phoneNumber || null,
+        email: updates.additionalDetails.email || null,
+        monthly_income: updates.additionalDetails.monthlyIncome || null,
+        annual_income: updates.additionalDetails.annualIncome || null,
+        loan_amount: updates.additionalDetails.loanAmount || null,
+        loan_type: updates.additionalDetails.loanType || null,
+        vehicle_brand_name: updates.additionalDetails.vehicleBrandName || null,
+        vehicle_model_name: updates.additionalDetails.vehicleModelName || null
+      };
+
+      // Check if additional details record exists
+      const { data: existingDetails } = await supabase
+        .from('additional_details')
+        .select('id')
+        .eq('lead_id', leadId)
+        .single();
+
+      if (existingDetails) {
+        // Update existing record
+        const { error: detailsError } = await supabase
+          .from('additional_details')
+          .update(additionalDetailsData)
+          .eq('lead_id', leadId);
+
+        if (detailsError) {
+          console.error('Error updating additional details:', detailsError);
+        }
+      } else {
+        // Create new record
+        const { error: detailsError } = await supabase
+          .from('additional_details')
+          .insert({
+            lead_id: leadId,
+            ...additionalDetailsData
+          });
+
+        if (detailsError) {
+          console.error('Error creating additional details:', detailsError);
+        }
+      }
     }
 
     console.log('Lead updated successfully in database');
