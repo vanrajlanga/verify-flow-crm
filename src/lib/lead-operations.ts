@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Lead, Address, AdditionalDetails } from '@/utils/mockData';
 
@@ -116,7 +117,7 @@ export const saveLeadToDatabase = async (leadData: Lead) => {
           .insert({
             lead_id: leadData.id,
             name: leadData.additionalDetails.coApplicant.name,
-            age: leadData.additionalDetails.coApplicant.age || null,
+            age: leadData.additionalDetails.coApplicant.age ? Number(leadData.additionalDetails.coApplicant.age) : null,
             phone_number: leadData.additionalDetails.coApplicant.phone,
             email: leadData.additionalDetails.coApplicant.email || null,
             relationship: leadData.additionalDetails.coApplicant.relation,

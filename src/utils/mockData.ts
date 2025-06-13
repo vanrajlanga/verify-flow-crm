@@ -82,13 +82,7 @@ export interface AdditionalDetails {
   gender?: string;
   
   // Co-applicant information
-  coApplicant?: {
-    name: string;
-    phone: string;
-    age?: string;
-    email?: string;
-    relation: string;
-  };
+  coApplicant?: CoApplicant;
 }
 
 export interface Verification {
