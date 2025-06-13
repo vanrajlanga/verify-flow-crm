@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -11,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "@/components/ui/use-toast";
-import { Attachment } from 'lucide-react';
+import { Paperclip } from 'lucide-react';
 import { saveLeadToDatabase } from '@/lib/lead-operations';
 import { Lead } from '@/utils/mockData';
 
@@ -69,6 +70,9 @@ const formSchema = z.object({
   agencyFileNo: z.string().optional(),
   applicationId: z.string().optional(),
   caseId: z.string().optional(),
+  propertyType: z.string().optional(),
+  propertyOwnership: z.string().optional(),
+  propertyAge: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -868,7 +872,7 @@ const AddLeadFormMultiStep = () => {
                     />
                     <Button asChild variant="outline" onClick={() => document.getElementById('upload')?.click()}>
                       <label htmlFor="upload" className="cursor-pointer">
-                        <Attachment className="h-4 w-4 mr-2" />
+                        <Paperclip className="h-4 w-4 mr-2" />
                         Upload Documents
                       </label>
                     </Button>

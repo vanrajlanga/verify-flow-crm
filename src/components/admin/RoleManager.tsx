@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,14 +9,14 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from '@/components/ui/use-toast';
 import { Plus, Shield, Users, Settings, Eye, Edit, Trash } from 'lucide-react';
 
-interface Permission {
+export interface Permission {
   id: string;
   name: string;
   description: string;
   category: string;
 }
 
-interface Role {
+export interface Role {
   id: string;
   name: string;
   description: string;
