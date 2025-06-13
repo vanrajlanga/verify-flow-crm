@@ -276,6 +276,14 @@ export const getLeadsFromDatabase = async (forceRefresh = false) => {
         addresses: []
       };
 
+      // Safely cast visitType with fallback
+      const getValidVisitType = (visitType: string | null): Lead['visitType'] => {
+        if (visitType === 'Office' || visitType === 'Both') {
+          return visitType;
+        }
+        return 'Residence'; // Default fallback
+      };
+
       return {
         id: lead.id,
         name: lead.name,
@@ -292,7 +300,7 @@ export const getLeadsFromDatabase = async (forceRefresh = false) => {
         additionalDetails,
         status: lead.status as Lead['status'],
         bank: lead.banks?.name || lead.bank_id || '',
-        visitType: lead.visit_type || 'Residence',
+        visitType: getValidVisitType(lead.visit_type),
         assignedTo: lead.assigned_to || '',
         createdAt: new Date(lead.created_at),
         verificationDate: lead.verification_date ? new Date(lead.verification_date) : undefined,
@@ -422,6 +430,14 @@ export const getLeadByIdFromDatabase = async (leadId: string) => {
       addresses: []
     };
 
+    // Safely cast visitType with fallback
+    const getValidVisitType = (visitType: string | null): Lead['visitType'] => {
+      if (visitType === 'Office' || visitType === 'Both') {
+        return visitType;
+      }
+      return 'Residence'; // Default fallback
+    };
+
     const transformedLead: Lead = {
       id: lead.id,
       name: lead.name,
@@ -438,7 +454,7 @@ export const getLeadByIdFromDatabase = async (leadId: string) => {
       additionalDetails,
       status: lead.status as Lead['status'],
       bank: lead.banks?.name || lead.bank_id || '',
-      visitType: lead.visit_type || 'Residence',
+      visitType: getValidVisitType(lead.visit_type),
       assignedTo: lead.assigned_to || '',
       createdAt: new Date(lead.created_at),
       verificationDate: lead.verification_date ? new Date(lead.verification_date) : undefined,
