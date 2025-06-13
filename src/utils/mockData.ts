@@ -41,15 +41,16 @@ export interface CoApplicant {
 }
 
 export interface AdditionalDetails {
-  company: string;
-  designation: string;
-  workExperience: string;
-  propertyType: string;
-  ownershipStatus: string;
-  propertyAge: string;
-  monthlyIncome: string;
-  annualIncome: string;
-  otherIncome: string;
+  company?: string;
+  designation?: string;
+  workExperience?: string;
+  propertyType?: string;
+  ownershipStatus?: string;
+  propertyAge?: string;
+  monthlyIncome?: string;
+  annualIncome?: string;
+  otherIncome?: string;
+  addresses?: Address[];
   phoneNumber?: string;
   email?: string;
   dateOfBirth?: string;
@@ -67,8 +68,27 @@ export interface AdditionalDetails {
   vehicleBrandId?: string;
   vehicleModelName?: string;
   vehicleModelId?: string;
-  coApplicant?: CoApplicant;
-  addresses?: Address[];
+  vehicleType?: string;
+  
+  // Bank Selection fields
+  bankName?: string;
+  bankProduct?: string;
+  initiatedBranch?: string;
+  buildBranch?: string;
+  
+  // Personal Information fields
+  fatherName?: string;
+  motherName?: string;
+  gender?: string;
+  
+  // Co-applicant information
+  coApplicant?: {
+    name: string;
+    phone: string;
+    age?: string;
+    email?: string;
+    relation: string;
+  };
 }
 
 export interface Verification {
