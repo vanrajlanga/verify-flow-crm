@@ -25,8 +25,8 @@ import { User, Lead, Bank } from '@/utils/mockData';
 
 interface LeadListProps {
   leads: Lead[];
-  banks: Bank[];
-  agents: User[];
+  banks?: Bank[];
+  agents?: User[];
   currentUser: User;
   onLeadUpdate?: (updatedLead: Lead) => void;
   onViewLead?: (leadId: string) => void;
@@ -34,8 +34,8 @@ interface LeadListProps {
 
 const LeadList: React.FC<LeadListProps> = ({ 
   leads, 
-  banks, 
-  agents, 
+  banks = [], 
+  agents = [], 
   currentUser, 
   onLeadUpdate,
   onViewLead 

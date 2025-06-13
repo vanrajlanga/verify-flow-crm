@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -108,7 +109,7 @@ const AdminLeads = () => {
             email: agent.email,
             phone: agent.phone || '',
             district: agent.district || '',
-            status: agent.status || 'Active',
+            status: agent.status || 'active',
             state: agent.state,
             city: agent.city,
             baseLocation: agent.base_location,
@@ -474,6 +475,7 @@ const AdminLeads = () => {
               age: 30,
               job: values[3] || 'Not specified',
               address: {
+                type: 'Residence',
                 street: values[5] || '',
                 city: 'Not specified',
                 district: 'Not specified',
