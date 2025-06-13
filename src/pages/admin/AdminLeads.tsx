@@ -298,6 +298,46 @@ const AdminLeads = () => {
     navigate(`/admin/leads/${leadId}`);
   };
 
+  const handleEditLead = (leadId: string) => {
+    const leadToEdit = leads.find(lead => lead.id === leadId);
+    if (leadToEdit) {
+      setEditingLead(leadToEdit);
+      setIsEditDialogOpen(true);
+    }
+  };
+
+  const handleSaveLead = async (leadId: string, updates: Partial<Lead>, assignedAgents: string[]) => {
+    try {
+      console.log(`AdminLeads: Saving lead ${leadId} with updates:`, updates);
+      
+      // Update the main assignedTo field with the first agent (for backward compatibility)
+      const updatesWithAssignment = {
+        ...updates,
+        assignedTo: assignedAgents.length > 0 ? assignedAgents[0] : ''
+      };
+      
+      await updateLeadInDatabase(leadId, updatesWithAssignment);
+      
+      // Force refresh from database after save
+      await loadAllData();
+      
+      setIsEditDialogOpen(false);
+      setEditingLead(null);
+      
+      toast({
+        title: "Lead Updated",
+        description: `Lead ${updates.name || leadId} has been updated successfully.`,
+      });
+    } catch (error) {
+      console.error('AdminLeads: Error saving lead:', error);
+      toast({
+        title: "Save Failed",
+        description: "Failed to save lead changes to database.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleAssignAgent = async (leadId: string, agentId: string) => {
     try {
       console.log(`AdminLeads: Assigning agent ${agentId} to lead ${leadId} in database...`);
