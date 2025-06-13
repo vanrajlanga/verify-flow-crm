@@ -247,7 +247,7 @@ export const mockLeads: Lead[] = [
       state: 'Maharashtra',
       pincode: '400002'
     },
-    status: 'In Progress',
+    status: 'Pending',
     bank: 'ICICI Bank',
     visitType: 'Both',
     assignedTo: 'Mike TVT',
@@ -257,11 +257,11 @@ export const mockLeads: Lead[] = [
     verification: {
       id: 'verification-2',
       leadId: 'lead-2',
-      status: 'In Progress',
+      status: 'Not Started',
       agentId: 'tvt-1',
       photos: [],
       documents: [],
-      notes: 'Started verification process'
+      notes: ''
     }
   },
   {
@@ -310,7 +310,7 @@ export const mockLeads: Lead[] = [
     status: 'Completed',
     bank: 'Axis Bank',
     visitType: 'Residence',
-    assignedTo: 'Rajesh Kumar',
+    assignedTo: 'Mike TVT',
     createdAt: new Date(),
     documents: [],
     instructions: 'Standard residence verification',
@@ -318,10 +318,40 @@ export const mockLeads: Lead[] = [
       id: 'verification-4',
       leadId: 'lead-4',
       status: 'Completed',
-      agentId: 'agent-1',
+      agentId: 'tvt-1',
       photos: [],
       documents: [],
       notes: 'Verification completed successfully'
+    }
+  },
+  {
+    id: 'lead-5',
+    name: 'Amit Kumar',
+    age: 29,
+    job: 'Software Developer',
+    address: {
+      type: 'Residence',
+      street: '567 Tech Park',
+      city: 'Mumbai',
+      district: 'Mumbai',
+      state: 'Maharashtra',
+      pincode: '400005'
+    },
+    status: 'Pending',
+    bank: 'Kotak Bank',
+    visitType: 'Residence',
+    assignedTo: 'Mike TVT',
+    createdAt: new Date(),
+    documents: [],
+    instructions: 'Verify residence and employment',
+    verification: {
+      id: 'verification-5',
+      leadId: 'lead-5',
+      status: 'Not Started',
+      agentId: 'tvt-1',
+      photos: [],
+      documents: [],
+      notes: ''
     }
   }
 ];

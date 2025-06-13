@@ -86,17 +86,9 @@ const LeadList: React.FC<LeadListProps> = ({
     }
   };
 
-  // Filter leads based on user role
+  // Filter leads based on user role - FIXED: removed role-based filtering here since it's handled in parent
   const visibleLeads = useMemo(() => {
-    let filtered = leads;
-    
-    // Role-based filtering
-    if (currentUser.role === 'agent') {
-      filtered = leads.filter(lead => lead.assignedTo === currentUser.name);
-    } else if (currentUser.role === 'tvtteam') {
-      filtered = leads.filter(lead => lead.assignedTo === currentUser.name);
-    }
-    // Admin sees all leads
+    let filtered = leads; // Use all passed leads without additional filtering
     
     // Apply search filter
     if (searchTerm) {
@@ -119,7 +111,7 @@ const LeadList: React.FC<LeadListProps> = ({
     }
     
     return filtered;
-  }, [leads, currentUser, searchTerm, statusFilter, bankFilter]);
+  }, [leads, searchTerm, statusFilter, bankFilter]);
 
   // Pagination
   const totalPages = Math.ceil(visibleLeads.length / itemsPerPage);
