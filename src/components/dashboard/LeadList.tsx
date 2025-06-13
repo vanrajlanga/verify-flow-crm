@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,11 +17,13 @@ import {
   Mail,
   ChevronLeft,
   ChevronRight,
-  MoreHorizontal
+  MoreHorizontal,
+  RefreshCw
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from '@/components/ui/use-toast';
 import { User, Lead, Bank } from '@/utils/mockData';
+import { getLeadsFromDatabase } from '@/lib/lead-operations';
 
 interface LeadListProps {
   leads: Lead[];
@@ -30,6 +32,7 @@ interface LeadListProps {
   currentUser: User;
   onLeadUpdate?: (updatedLead: Lead) => void;
   onViewLead?: (leadId: string) => void;
+  onRefresh?: () => void;
 }
 
 const LeadList: React.FC<LeadListProps> = ({ 
@@ -38,13 +41,50 @@ const LeadList: React.FC<LeadListProps> = ({
   agents = [], 
   currentUser, 
   onLeadUpdate,
-  onViewLead 
+  onViewLead,
+  onRefresh 
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [bankFilter, setBankFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Auto-refresh leads every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (onRefresh) {
+        console.log('Auto-refreshing leads...');
+        onRefresh();
+      }
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [onRefresh]);
+
+  // Manual refresh function
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      if (onRefresh) {
+        await onRefresh();
+      }
+      toast({
+        title: "Refreshed",
+        description: "Lead data has been refreshed successfully.",
+      });
+    } catch (error) {
+      console.error('Error refreshing leads:', error);
+      toast({
+        title: "Refresh failed",
+        description: "Failed to refresh lead data. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   // Filter leads based on user role
   const visibleLeads = useMemo(() => {
@@ -124,6 +164,15 @@ const LeadList: React.FC<LeadListProps> = ({
             {visibleLeads.length} total leads
           </p>
         </div>
+        <Button 
+          onClick={handleManualRefresh} 
+          variant="outline" 
+          disabled={isRefreshing}
+          className="flex items-center gap-2"
+        >
+          <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+          Refresh Data
+        </Button>
       </div>
 
       {/* Filters */}
@@ -177,6 +226,15 @@ const LeadList: React.FC<LeadListProps> = ({
             <CardContent className="pt-6">
               <div className="text-center py-8">
                 <p className="text-muted-foreground">No leads found matching your criteria.</p>
+                <Button 
+                  onClick={handleManualRefresh} 
+                  variant="outline" 
+                  className="mt-4"
+                  disabled={isRefreshing}
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  Refresh to check for new leads
+                </Button>
               </div>
             </CardContent>
           </Card>

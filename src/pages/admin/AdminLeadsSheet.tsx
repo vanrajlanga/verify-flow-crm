@@ -11,7 +11,7 @@ import { User, Lead, mockBanks } from '@/utils/mockData';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
 import { toast } from '@/components/ui/use-toast';
-import { Save, Edit, Download, Upload, FileDown, FileUp } from 'lucide-react';
+import { Save, Edit, Download, Upload, FileDown, FileUp, RefreshCw } from 'lucide-react';
 import { getLeadsFromDatabase, updateLeadInDatabase } from '@/lib/lead-operations';
 
 const AdminLeadsSheet = () => {
@@ -21,6 +21,7 @@ const AdminLeadsSheet = () => {
   const [agents, setAgents] = useState<User[]>([]);
   const [editingCell, setEditingCell] = useState<{leadId: string, field: string} | null>(null);
   const [editValue, setEditValue] = useState<string>('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -40,36 +41,50 @@ const AdminLeadsSheet = () => {
     loadData();
   }, [navigate]);
 
-  // Add refresh function that can be called when returning to this page
+  // Enhanced auto-refresh for sheet page
   useEffect(() => {
+    const handleFocus = () => {
+      console.log('Sheet page focused, refreshing data...');
+      loadData();
+    };
+
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        // Page became visible, refresh data
-        console.log('Page became visible, refreshing leads sheet...');
+        console.log('Sheet page became visible, refreshing data...');
         loadData();
       }
     };
 
+    // Listen for focus and visibility change events
+    window.addEventListener('focus', handleFocus);
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+
+    // Set up aggressive refresh every 5 seconds for sheet view
+    const interval = setInterval(() => {
+      if (!document.hidden) {
+        console.log('Sheet auto-refresh: Loading data...');
+        loadData();
+      }
+    }, 5000);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(interval);
+    };
   }, []);
 
   const loadData = async () => {
     try {
       console.log('Loading data for leads sheet...');
       
-      // Load leads from database
+      // Always prioritize database data
       const dbLeads = await getLeadsFromDatabase();
       console.log('Database leads loaded for sheet:', dbLeads.length);
       
-      if (dbLeads.length > 0) {
+      if (dbLeads && dbLeads.length >= 0) {
         setLeads(dbLeads);
-      } else {
-        // Fall back to localStorage
-        const storedLeads = localStorage.getItem('mockLeads');
-        if (storedLeads) {
-          setLeads(JSON.parse(storedLeads));
-        }
+        console.log('Sheet updated with database leads:', dbLeads.length);
       }
 
       // Load agents
@@ -79,7 +94,33 @@ const AdminLeadsSheet = () => {
         setAgents(users.filter((user: User) => user.role === 'agent'));
       }
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error('Error loading data for sheet:', error);
+      toast({
+        title: "Data Loading Error",
+        description: "Failed to load latest data for the sheet.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Manual refresh with loading state
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await loadData();
+      toast({
+        title: "Sheet Refreshed",
+        description: "Lead sheet data has been refreshed successfully.",
+      });
+    } catch (error) {
+      console.error('Error refreshing sheet:', error);
+      toast({
+        title: "Refresh Failed",
+        description: "Failed to refresh sheet data. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -191,6 +232,9 @@ const AdminLeadsSheet = () => {
 
       setEditingCell(null);
       setEditValue('');
+      
+      // Refresh data to ensure consistency
+      loadData();
     } catch (error) {
       console.error('Error updating cell:', error);
       toast({
@@ -304,15 +348,21 @@ const AdminLeadsSheet = () => {
               <div>
                 <h1 className="text-2xl font-bold tracking-tight">Lead Management Sheet</h1>
                 <p className="text-muted-foreground">
-                  Spreadsheet-like interface for bulk lead editing and management - {leads.length} leads loaded
+                  Spreadsheet-like interface for bulk lead editing - {leads.length} leads loaded (Real-time updates)
                 </p>
               </div>
               <div className="flex gap-2">
+                <Button 
+                  onClick={handleManualRefresh} 
+                  variant="outline" 
+                  disabled={isRefreshing}
+                  className="flex items-center gap-2"
+                >
+                  <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  Refresh Sheet
+                </Button>
                 <Button variant="outline" onClick={() => navigate('/admin/leads')}>
                   Back to Lead List
-                </Button>
-                <Button onClick={() => loadData()}>
-                  Refresh Data
                 </Button>
               </div>
             </div>
@@ -321,7 +371,7 @@ const AdminLeadsSheet = () => {
               <CardHeader>
                 <CardTitle>Interactive Lead Data Sheet</CardTitle>
                 <CardDescription>
-                  Click on any cell to edit. Press Enter to save or Escape to cancel.
+                  Click on any cell to edit. Press Enter to save or Escape to cancel. Data auto-refreshes every 5 seconds.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -350,46 +400,64 @@ const AdminLeadsSheet = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {leads.map((lead) => (
-                        <TableRow key={lead.id} className="group">
-                          <TableCell className="font-mono text-xs">{lead.id}</TableCell>
-                          <TableCell>{renderEditableCell(lead, 'name', lead.name)}</TableCell>
-                          <TableCell>{renderEditableCell(lead, 'age', lead.age?.toString() || '')}</TableCell>
-                          <TableCell>{renderEditableCell(lead, 'designation', lead.additionalDetails?.designation || lead.job || '')}</TableCell>
-                          <TableCell>{renderEditableCell(lead, 'phoneNumber', lead.additionalDetails?.phoneNumber || '')}</TableCell>
-                          <TableCell>{renderEditableCell(lead, 'email', lead.additionalDetails?.email || '')}</TableCell>
-                          <TableCell>{renderEditableCell(lead, 'company', lead.additionalDetails?.company || '')}</TableCell>
-                          <TableCell>
-                            {editingCell?.leadId === lead.id && editingCell?.field === 'status' ? (
-                              renderEditableCell(lead, 'status', lead.status, 'select', ['Pending', 'In Progress', 'Completed', 'Rejected'])
-                            ) : (
-                              <div onClick={() => handleCellEdit(lead.id, 'status', lead.status)}>
-                                <Badge className={getStatusColor(lead.status)}>{lead.status}</Badge>
-                              </div>
-                            )}
+                      {leads.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={18} className="text-center py-8">
+                            <div className="flex flex-col items-center gap-4">
+                              <p className="text-muted-foreground">No leads found in the database.</p>
+                              <Button 
+                                onClick={handleManualRefresh} 
+                                variant="outline"
+                                disabled={isRefreshing}
+                              >
+                                <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                                Refresh to check for leads
+                              </Button>
+                            </div>
                           </TableCell>
-                          <TableCell>
-                            {renderEditableCell(lead, 'visitType', lead.visitType, 'select', ['Residence', 'Office', 'Both'])}
-                          </TableCell>
-                          <TableCell>
-                            {editingCell?.leadId === lead.id && editingCell?.field === 'assignedTo' ? (
-                              renderEditableCell(lead, 'assignedTo', lead.assignedTo || '', 'select', ['', ...agents.map(a => a.id)])
-                            ) : (
-                              <div onClick={() => handleCellEdit(lead.id, 'assignedTo', lead.assignedTo || '')}>
-                                <Badge variant="outline">{getAgentName(lead.assignedTo || '')}</Badge>
-                              </div>
-                            )}
-                          </TableCell>
-                          <TableCell>{renderEditableCell(lead, 'street', lead.address.street)}</TableCell>
-                          <TableCell>{renderEditableCell(lead, 'city', lead.address.city)}</TableCell>
-                          <TableCell>{renderEditableCell(lead, 'state', lead.address.state)}</TableCell>
-                          <TableCell>{renderEditableCell(lead, 'pincode', lead.address.pincode)}</TableCell>
-                          <TableCell>{renderEditableCell(lead, 'loanAmount', lead.additionalDetails?.loanAmount || '')}</TableCell>
-                          <TableCell>{renderEditableCell(lead, 'monthlyIncome', lead.additionalDetails?.monthlyIncome || '')}</TableCell>
-                          <TableCell>{renderEditableCell(lead, 'annualIncome', lead.additionalDetails?.annualIncome || '')}</TableCell>
-                          <TableCell>{renderEditableCell(lead, 'instructions', lead.instructions || '')}</TableCell>
                         </TableRow>
-                      ))}
+                      ) : (
+                        leads.map((lead) => (
+                          <TableRow key={lead.id} className="group">
+                            <TableCell className="font-mono text-xs">{lead.id}</TableCell>
+                            <TableCell>{renderEditableCell(lead, 'name', lead.name)}</TableCell>
+                            <TableCell>{renderEditableCell(lead, 'age', lead.age?.toString() || '')}</TableCell>
+                            <TableCell>{renderEditableCell(lead, 'designation', lead.additionalDetails?.designation || lead.job || '')}</TableCell>
+                            <TableCell>{renderEditableCell(lead, 'phoneNumber', lead.additionalDetails?.phoneNumber || '')}</TableCell>
+                            <TableCell>{renderEditableCell(lead, 'email', lead.additionalDetails?.email || '')}</TableCell>
+                            <TableCell>{renderEditableCell(lead, 'company', lead.additionalDetails?.company || '')}</TableCell>
+                            <TableCell>
+                              {editingCell?.leadId === lead.id && editingCell?.field === 'status' ? (
+                                renderEditableCell(lead, 'status', lead.status, 'select', ['Pending', 'In Progress', 'Completed', 'Rejected'])
+                              ) : (
+                                <div onClick={() => handleCellEdit(lead.id, 'status', lead.status)}>
+                                  <Badge className={getStatusColor(lead.status)}>{lead.status}</Badge>
+                                </div>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {renderEditableCell(lead, 'visitType', lead.visitType, 'select', ['Residence', 'Office', 'Both'])}
+                            </TableCell>
+                            <TableCell>
+                              {editingCell?.leadId === lead.id && editingCell?.field === 'assignedTo' ? (
+                                renderEditableCell(lead, 'assignedTo', lead.assignedTo || '', 'select', ['', ...agents.map(a => a.id)])
+                              ) : (
+                                <div onClick={() => handleCellEdit(lead.id, 'assignedTo', lead.assignedTo || '')}>
+                                  <Badge variant="outline">{getAgentName(lead.assignedTo || '')}</Badge>
+                                </div>
+                              )}
+                            </TableCell>
+                            <TableCell>{renderEditableCell(lead, 'street', lead.address.street)}</TableCell>
+                            <TableCell>{renderEditableCell(lead, 'city', lead.address.city)}</TableCell>
+                            <TableCell>{renderEditableCell(lead, 'state', lead.address.state)}</TableCell>
+                            <TableCell>{renderEditableCell(lead, 'pincode', lead.address.pincode)}</TableCell>
+                            <TableCell>{renderEditableCell(lead, 'loanAmount', lead.additionalDetails?.loanAmount || '')}</TableCell>
+                            <TableCell>{renderEditableCell(lead, 'monthlyIncome', lead.additionalDetails?.monthlyIncome || '')}</TableCell>
+                            <TableCell>{renderEditableCell(lead, 'annualIncome', lead.additionalDetails?.annualIncome || '')}</TableCell>
+                            <TableCell>{renderEditableCell(lead, 'instructions', lead.instructions || '')}</TableCell>
+                          </TableRow>
+                        ))
+                      )}
                     </TableBody>
                   </Table>
                 </div>

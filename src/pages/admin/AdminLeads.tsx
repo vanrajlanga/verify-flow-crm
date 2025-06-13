@@ -48,6 +48,7 @@ const AdminLeads = () => {
     states: []
   });
   const [editingLead, setEditingLead] = useState<Lead | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -69,48 +70,53 @@ const AdminLeads = () => {
     loadLocationData();
   }, [navigate]);
 
-  // Add refresh function that can be called when returning from add lead page
+  // Enhanced refresh function for immediate data loading
   useEffect(() => {
+    const handleFocus = () => {
+      console.log('Window focused, refreshing leads data...');
+      loadLeadsAndAgents();
+    };
+
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        // Page became visible, refresh data
-        console.log('Page became visible, refreshing leads...');
+        console.log('Page became visible, refreshing leads data...');
         loadLeadsAndAgents();
       }
     };
 
+    // Listen for focus and visibility change events
+    window.addEventListener('focus', handleFocus);
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+
+    // Set up periodic refresh every 10 seconds when page is active
+    const interval = setInterval(() => {
+      if (!document.hidden) {
+        console.log('Periodic refresh: Loading leads...');
+        loadLeadsAndAgents();
+      }
+    }, 10000);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(interval);
+    };
   }, []);
 
   const loadLeadsAndAgents = async () => {
+    if (isLoading) return; // Prevent multiple simultaneous calls
+    
+    setIsLoading(true);
     try {
-      console.log('Loading leads and agents...');
+      console.log('Starting fresh data load...');
       
-      // Load leads from database
+      // Always try to load from database first
       const dbLeads = await getLeadsFromDatabase();
-      console.log('Database leads loaded:', dbLeads.length);
+      console.log('Fresh database leads loaded:', dbLeads.length);
       
-      if (dbLeads.length > 0) {
-        console.log('Setting leads from database:', dbLeads.length);
+      if (dbLeads && dbLeads.length >= 0) {
         setLeads(dbLeads);
-      } else {
-        console.log('No database leads, checking localStorage...');
-        // Fall back to localStorage if no database leads
-        const storedLeads = localStorage.getItem('mockLeads');
-        if (storedLeads) {
-          try {
-            const parsedLeads = JSON.parse(storedLeads);
-            console.log('Loaded leads from localStorage:', parsedLeads.length);
-            setLeads(parsedLeads);
-          } catch (error) {
-            console.error("Error parsing stored leads:", error);
-            setLeads([]);
-          }
-        } else {
-          console.log('No localStorage leads found');
-          setLeads([]);
-        }
+        console.log('Updated leads state with database data:', dbLeads.length);
       }
 
       // Load agents from database
@@ -175,6 +181,13 @@ const AdminLeads = () => {
       }
     } catch (error) {
       console.error('Error in loadLeadsAndAgents:', error);
+      toast({
+        title: "Data Loading Error",
+        description: "Failed to load latest data. Please refresh manually.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -235,6 +248,16 @@ const AdminLeads = () => {
   const handleLogout = () => {
     localStorage.removeItem('kycUser');
     navigate('/');
+  };
+
+  // Force refresh function for manual calls
+  const handleForceRefresh = async () => {
+    console.log('Force refresh requested...');
+    await loadLeadsAndAgents();
+    toast({
+      title: "Data Refreshed",
+      description: "Lead data has been refreshed successfully.",
+    });
   };
 
   const handleUpdateLead = async (leadId: string, newStatus: Lead['status']) => {
@@ -757,7 +780,7 @@ const AdminLeads = () => {
               <div>
                 <h1 className="text-2xl font-bold tracking-tight">Leads Management</h1>
                 <p className="text-muted-foreground">
-                  Manage and track all verification leads
+                  Manage and track all verification leads - Real-time updates enabled
                 </p>
               </div>
               <div className="flex gap-2 flex-wrap">
@@ -793,7 +816,7 @@ const AdminLeads = () => {
               <CardHeader>
                 <CardTitle>Leads List ({leads.length})</CardTitle>
                 <CardDescription>
-                  A comprehensive list of all leads in the system with enhanced import/export
+                  A comprehensive list of all leads in the system with real-time updates and enhanced import/export
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -808,6 +831,7 @@ const AdminLeads = () => {
                     }
                   }}
                   onViewLead={(leadId) => navigate(`/lead/${leadId}`)}
+                  onRefresh={handleForceRefresh}
                 />
               </CardContent>
             </Card>
