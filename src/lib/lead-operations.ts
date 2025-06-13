@@ -457,26 +457,32 @@ export const updateLeadInDatabase = async (leadId: string, updates: Partial<Lead
 
     // Update address if provided
     if (updates.address) {
-      const { error: addressError } = await supabase
-        .from('addresses')
-        .update({
-          type: updates.address.type || 'Residence',
-          street: updates.address.street || '',
-          city: updates.address.city || '',
-          district: updates.address.district || '',
-          state: updates.address.state || '',
-          pincode: updates.address.pincode || ''
-        })
-        .in('id', 
-          supabase
-            .from('leads')
-            .select('address_id')
-            .eq('id', leadId)
-        );
+      // First get the address_id for this lead
+      const { data: leadData, error: leadFetchError } = await supabase
+        .from('leads')
+        .select('address_id')
+        .eq('id', leadId)
+        .single();
 
-      if (addressError) {
-        console.error('Error updating address:', addressError);
-        // Don't throw here, just log the error
+      if (leadFetchError) {
+        console.error('Error fetching lead address_id:', leadFetchError);
+      } else if (leadData?.address_id) {
+        const { error: addressError } = await supabase
+          .from('addresses')
+          .update({
+            type: updates.address.type || 'Residence',
+            street: updates.address.street || '',
+            city: updates.address.city || '',
+            district: updates.address.district || '',
+            state: updates.address.state || '',
+            pincode: updates.address.pincode || ''
+          })
+          .eq('id', leadData.address_id);
+
+        if (addressError) {
+          console.error('Error updating address:', addressError);
+          // Don't throw here, just log the error
+        }
       }
     }
 
