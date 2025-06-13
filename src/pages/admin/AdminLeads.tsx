@@ -370,6 +370,121 @@ const AdminLeads = () => {
     }
   };
 
+  // Bulk operations functions
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedLeads(filteredLeads.map(lead => lead.id));
+    } else {
+      setSelectedLeads([]);
+    }
+  };
+
+  const handleSelectLead = (leadId: string) => {
+    setSelectedLeads(prev => {
+      if (prev.includes(leadId)) {
+        return prev.filter(id => id !== leadId);
+      } else {
+        return [...prev, leadId];
+      }
+    });
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedLeads.length === 0) {
+      toast({
+        title: "No Selection",
+        description: "Please select leads to delete.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to delete ${selectedLeads.length} selected leads? This action cannot be undone.`)) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const leadId of selectedLeads) {
+        try {
+          await deleteLeadFromDatabase(leadId);
+          successCount++;
+        } catch (error) {
+          console.error(`Error deleting lead ${leadId}:`, error);
+          errorCount++;
+        }
+      }
+
+      await loadAllData();
+      setSelectedLeads([]);
+
+      toast({
+        title: "Bulk Delete Completed",
+        description: `Successfully deleted ${successCount} leads. ${errorCount > 0 ? `${errorCount} leads failed to delete.` : ''}`,
+      });
+    } catch (error) {
+      console.error('Error during bulk delete:', error);
+      toast({
+        title: "Bulk Delete Failed",
+        description: "Failed to delete selected leads.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleBulkAssignTVT = async (agentId: string) => {
+    if (selectedLeads.length === 0) {
+      toast({
+        title: "No Selection",
+        description: "Please select leads to assign.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsAssigning(true);
+    try {
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const leadId of selectedLeads) {
+        try {
+          await updateLeadInDatabase(leadId, { 
+            assignedTo: agentId,
+            status: 'Pending' as Lead['status']
+          });
+          successCount++;
+        } catch (error) {
+          console.error(`Error assigning lead ${leadId}:`, error);
+          errorCount++;
+        }
+      }
+
+      await loadAllData();
+      setSelectedLeads([]);
+
+      const agent = agents.find(a => a.id === agentId);
+      toast({
+        title: "Bulk Assignment Completed",
+        description: `Successfully assigned ${successCount} leads to ${agent?.name}. ${errorCount > 0 ? `${errorCount} leads failed to assign.` : ''}`,
+      });
+    } catch (error) {
+      console.error('Error during bulk assignment:', error);
+      toast({
+        title: "Bulk Assignment Failed",
+        description: "Failed to assign selected leads.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Pending': return 'bg-yellow-100 text-yellow-800';
