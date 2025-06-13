@@ -11,12 +11,12 @@ export const saveLeadToDatabase = async (leadData: Lead) => {
     const { data: addressData, error: addressError } = await supabase
       .from('addresses')
       .insert({
-        type: 'Residence',
-        street: leadData.address.street,
-        city: leadData.address.city,
-        district: leadData.address.district,
-        state: leadData.address.state,
-        pincode: leadData.address.pincode
+        type: leadData.address.type || 'Residence',
+        street: leadData.address.street || '',
+        city: leadData.address.city || '',
+        district: leadData.address.district || '',
+        state: leadData.address.state || '',
+        pincode: leadData.address.pincode || ''
       })
       .select()
       .single();
@@ -25,6 +25,8 @@ export const saveLeadToDatabase = async (leadData: Lead) => {
       console.error('Error saving address:', addressError);
       throw addressError;
     }
+
+    console.log('Address saved successfully:', addressData);
 
     // Map bank name to bank ID - handle both old and new format
     const getBankId = (bankName: string): string => {
@@ -42,27 +44,31 @@ export const saveLeadToDatabase = async (leadData: Lead) => {
       };
       
       // Return mapped bank ID or use the bank name as-is if not found
-      return bankMapping[bankName] || bankName.toLowerCase();
+      return bankMapping[bankName] || bankName.toLowerCase().replace(/\s+/g, '_');
     };
 
-    // Save the lead
+    // Save the lead with proper null handling
+    const leadInsertData = {
+      id: leadData.id,
+      name: leadData.name || '',
+      age: leadData.age || null,
+      job: leadData.job || '',
+      address_id: addressData.id,
+      status: leadData.status || 'Pending',
+      bank_id: getBankId(leadData.bank || ''),
+      visit_type: leadData.visitType || 'Residence',
+      assigned_to: leadData.assignedTo || null,
+      verification_date: leadData.verificationDate?.toISOString() || null,
+      instructions: leadData.instructions || null,
+      has_co_applicant: leadData.additionalDetails?.coApplicant ? true : false,
+      co_applicant_name: leadData.additionalDetails?.coApplicant?.name || null
+    };
+
+    console.log('Inserting lead data:', leadInsertData);
+
     const { data: lead, error: leadError } = await supabase
       .from('leads')
-      .insert({
-        id: leadData.id,
-        name: leadData.name,
-        age: leadData.age,
-        job: leadData.job,
-        address_id: addressData.id,
-        status: leadData.status,
-        bank_id: getBankId(leadData.bank),
-        visit_type: leadData.visitType,
-        assigned_to: leadData.assignedTo || null,
-        verification_date: leadData.verificationDate?.toISOString(),
-        instructions: leadData.instructions,
-        has_co_applicant: leadData.additionalDetails?.coApplicant ? true : false,
-        co_applicant_name: leadData.additionalDetails?.coApplicant?.name || null
-      })
+      .insert(leadInsertData)
       .select()
       .single();
 
@@ -71,62 +77,77 @@ export const saveLeadToDatabase = async (leadData: Lead) => {
       throw leadError;
     }
 
-    // Save additional details
+    console.log('Lead saved successfully:', lead);
+
+    // Save additional details if they exist
     if (leadData.additionalDetails) {
+      const additionalDetailsData = {
+        lead_id: leadData.id,
+        company: leadData.additionalDetails.company || null,
+        designation: leadData.additionalDetails.designation || null,
+        work_experience: leadData.additionalDetails.workExperience || null,
+        property_type: leadData.additionalDetails.propertyType || null,
+        ownership_status: leadData.additionalDetails.ownershipStatus || null,
+        property_age: leadData.additionalDetails.propertyAge || null,
+        monthly_income: leadData.additionalDetails.monthlyIncome || null,
+        annual_income: leadData.additionalDetails.annualIncome || null,
+        other_income: leadData.additionalDetails.otherIncome || null,
+        phone_number: leadData.additionalDetails.phoneNumber || null,
+        email: leadData.additionalDetails.email || null,
+        date_of_birth: leadData.additionalDetails.dateOfBirth || null,
+        agency_file_no: leadData.additionalDetails.agencyFileNo || null,
+        application_barcode: leadData.additionalDetails.applicationBarcode || null,
+        case_id: leadData.additionalDetails.caseId || null,
+        scheme_desc: leadData.additionalDetails.schemeDesc || null,
+        bank_branch: leadData.additionalDetails.bankBranch || null,
+        additional_comments: leadData.additionalDetails.additionalComments || null,
+        lead_type: leadData.additionalDetails.leadType || null,
+        lead_type_id: leadData.additionalDetails.leadTypeId || null,
+        loan_amount: leadData.additionalDetails.loanAmount || null,
+        loan_type: leadData.additionalDetails.loanType || null,
+        vehicle_brand_name: leadData.additionalDetails.vehicleBrandName || null,
+        vehicle_brand_id: leadData.additionalDetails.vehicleBrandId || null,
+        vehicle_model_name: leadData.additionalDetails.vehicleModelName || null,
+        vehicle_model_id: leadData.additionalDetails.vehicleModelId || null
+      };
+
+      console.log('Inserting additional details:', additionalDetailsData);
+
       const { error: detailsError } = await supabase
         .from('additional_details')
-        .insert({
-          lead_id: leadData.id,
-          company: leadData.additionalDetails.company,
-          designation: leadData.additionalDetails.designation,
-          work_experience: leadData.additionalDetails.workExperience,
-          property_type: leadData.additionalDetails.propertyType,
-          ownership_status: leadData.additionalDetails.ownershipStatus,
-          property_age: leadData.additionalDetails.propertyAge,
-          monthly_income: leadData.additionalDetails.monthlyIncome,
-          annual_income: leadData.additionalDetails.annualIncome,
-          other_income: leadData.additionalDetails.otherIncome,
-          phone_number: leadData.additionalDetails.phoneNumber,
-          email: leadData.additionalDetails.email,
-          date_of_birth: leadData.additionalDetails.dateOfBirth,
-          agency_file_no: leadData.additionalDetails.agencyFileNo,
-          application_barcode: leadData.additionalDetails.applicationBarcode,
-          case_id: leadData.additionalDetails.caseId,
-          scheme_desc: leadData.additionalDetails.schemeDesc,
-          bank_branch: leadData.additionalDetails.bankBranch,
-          additional_comments: leadData.additionalDetails.additionalComments,
-          lead_type: leadData.additionalDetails.leadType,
-          lead_type_id: leadData.additionalDetails.leadTypeId,
-          loan_amount: leadData.additionalDetails.loanAmount,
-          loan_type: leadData.additionalDetails.loanType,
-          vehicle_brand_name: leadData.additionalDetails.vehicleBrandName,
-          vehicle_brand_id: leadData.additionalDetails.vehicleBrandId,
-          vehicle_model_name: leadData.additionalDetails.vehicleModelName,
-          vehicle_model_id: leadData.additionalDetails.vehicleModelId
-        });
+        .insert(additionalDetailsData);
 
       if (detailsError) {
         console.error('Error saving additional details:', detailsError);
         throw detailsError;
       }
 
+      console.log('Additional details saved successfully');
+
       // Save co-applicant if exists
       if (leadData.additionalDetails.coApplicant) {
+        const coApplicantData = {
+          lead_id: leadData.id,
+          name: leadData.additionalDetails.coApplicant.name || '',
+          age: leadData.additionalDetails.coApplicant.age ? Number(leadData.additionalDetails.coApplicant.age) : null,
+          phone_number: leadData.additionalDetails.coApplicant.phone || null,
+          email: leadData.additionalDetails.coApplicant.email || null,
+          relationship: leadData.additionalDetails.coApplicant.relation || null,
+          occupation: leadData.additionalDetails.coApplicant.occupation || null,
+          monthly_income: leadData.additionalDetails.coApplicant.monthlyIncome || null
+        };
+
+        console.log('Inserting co-applicant:', coApplicantData);
+
         const { error: coApplicantError } = await supabase
           .from('co_applicants')
-          .insert({
-            lead_id: leadData.id,
-            name: leadData.additionalDetails.coApplicant.name,
-            age: leadData.additionalDetails.coApplicant.age ? Number(leadData.additionalDetails.coApplicant.age) : null,
-            phone_number: leadData.additionalDetails.coApplicant.phone,
-            email: leadData.additionalDetails.coApplicant.email || null,
-            relationship: leadData.additionalDetails.coApplicant.relation,
-            occupation: leadData.additionalDetails.coApplicant.occupation || null,
-            monthly_income: leadData.additionalDetails.coApplicant.monthlyIncome || null
-          });
+          .insert(coApplicantData);
 
         if (coApplicantError) {
           console.error('Error saving co-applicant:', coApplicantError);
+          // Don't throw here, just log the error as co-applicant is optional
+        } else {
+          console.log('Co-applicant saved successfully');
         }
       }
 
@@ -136,12 +157,12 @@ export const saveLeadToDatabase = async (leadData: Lead) => {
           const { data: additionalAddress, error: addrError } = await supabase
             .from('addresses')
             .insert({
-              type: addr.type,
-              street: addr.street,
-              city: addr.city,
-              district: addr.district,
-              state: addr.state,
-              pincode: addr.pincode
+              type: addr.type || 'Residence',
+              street: addr.street || '',
+              city: addr.city || '',
+              district: addr.district || '',
+              state: addr.state || '',
+              pincode: addr.pincode || ''
             })
             .select()
             .single();
@@ -167,38 +188,51 @@ export const saveLeadToDatabase = async (leadData: Lead) => {
 
       // Save vehicle details if exists
       if (leadData.additionalDetails.vehicleBrandName || leadData.additionalDetails.vehicleModelName) {
+        const vehicleData = {
+          lead_id: leadData.id,
+          vehicle_brand_name: leadData.additionalDetails.vehicleBrandName || null,
+          vehicle_brand_id: leadData.additionalDetails.vehicleBrandId || null,
+          vehicle_model_name: leadData.additionalDetails.vehicleModelName || null,
+          vehicle_model_id: leadData.additionalDetails.vehicleModelId || null,
+          vehicle_type: leadData.additionalDetails.loanType || null,
+          vehicle_price: leadData.additionalDetails.loanAmount || null
+        };
+
+        console.log('Inserting vehicle details:', vehicleData);
+
         const { error: vehicleError } = await supabase
           .from('vehicle_details')
-          .insert({
-            lead_id: leadData.id,
-            vehicle_brand_name: leadData.additionalDetails.vehicleBrandName,
-            vehicle_brand_id: leadData.additionalDetails.vehicleBrandId,
-            vehicle_model_name: leadData.additionalDetails.vehicleModelName,
-            vehicle_model_id: leadData.additionalDetails.vehicleModelId,
-            vehicle_type: leadData.additionalDetails.loanType,
-            vehicle_price: leadData.additionalDetails.loanAmount
-          });
+          .insert(vehicleData);
 
         if (vehicleError) {
           console.error('Error saving vehicle details:', vehicleError);
+          // Don't throw here, just log the error as vehicle details are optional
+        } else {
+          console.log('Vehicle details saved successfully');
         }
       }
     }
 
-    // Create verification record
+    // Create verification record if verification data exists
     if (leadData.verification) {
+      const verificationData = {
+        lead_id: leadData.id,
+        status: leadData.verification.status || 'Not Started',
+        agent_id: leadData.verification.agentId || null,
+        notes: leadData.verification.notes || null
+      };
+
+      console.log('Inserting verification:', verificationData);
+
       const { error: verificationError } = await supabase
         .from('verifications')
-        .insert({
-          lead_id: leadData.id,
-          status: leadData.verification.status,
-          agent_id: leadData.verification.agentId,
-          notes: leadData.verification.notes
-        });
+        .insert(verificationData);
 
       if (verificationError) {
         console.error('Error saving verification:', verificationError);
-        throw verificationError;
+        // Don't throw here, just log the error as verification is optional initially
+      } else {
+        console.log('Verification saved successfully');
       }
     }
 
