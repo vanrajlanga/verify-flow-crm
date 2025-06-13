@@ -22,7 +22,7 @@ const LeadList = ({ leads, currentUser, showActions = true }: LeadListProps) => 
       navigate(`/admin/leads/${leadId}`);
     } else if (currentUser.role === 'agent') {
       navigate(`/agent/leads/${leadId}`);
-    } else if (currentUser.role === 'tvt') {
+    } else if (currentUser.role === 'tvtteam') {
       navigate(`/tvt/leads/${leadId}`);
     }
   };

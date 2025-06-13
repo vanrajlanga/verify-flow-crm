@@ -309,7 +309,7 @@ const VerificationProcess = ({
                                 />
                               )}
                             </div>
-                            <p className="text-xs mt-2 break-words font-medium">{doc.type}</p>
+                            <p className="text-xs mt-2 break-words font-medium">{(doc as any).type || 'Document'}</p>
                             <p className="text-xs text-muted-foreground">{doc.name}</p>
                           </div>
                         ))
