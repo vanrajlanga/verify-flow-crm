@@ -1,37 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/use-toast';
-import { ArrowLeft, ArrowRight, Upload, X, ChevronLeft, ChevronRight } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-
-interface BankProduct {
-  id: string;
-  name: string;
-  description?: string;
-  bank_id: string;
-}
-
-interface BankBranch {
-  id: string;
-  name: string;
-  location: string;
-  bank_id: string;
-}
-
-interface Bank {
-  id: string;
-  name: string;
-}
+import { User, ChevronRight, ChevronLeft, Building, FileText, MapPin, Plus, X } from 'lucide-react';
 
 interface LocationData {
   states: {
@@ -48,1508 +25,834 @@ interface LocationData {
   }[];
 }
 
+interface FormData {
+  // Step 1: Lead Type & Basic Information
+  bankName: string;
+  bankProduct: string;
+  initiatedBranch: string;
+  buildBranch: string;
+  
+  // Step 2: Applicant Information
+  applicantName: string;
+  applicantPhone: string;
+  applicantAge: string;
+  applicantEmail: string;
+  hasCoApplicant: boolean;
+  coApplicantName: string;
+  coApplicantPhone: string;
+  coApplicantAge: string;
+  coApplicantEmail: string;
+  
+  // Step 3: Address Information
+  addresses: Array<{
+    type: string;
+    street: string;
+    city: string;
+    district: string;
+    state: string;
+    pincode: string;
+    requiresVerification: boolean;
+  }>;
+  
+  // Step 4: Additional Details
+  monthlyIncome: string;
+  annualIncome: string;
+  company: string;
+  designation: string;
+  workExperience: string;
+  propertyType: string;
+  ownershipStatus: string;
+  
+  // Step 5: Documents & Instructions
+  documents: File[];
+  instructions: string;
+}
+
 interface AddLeadFormMultiStepProps {
-  onSubmit: (data: any) => void;
+  onSubmit: (leadData: any) => void;
   locationData: LocationData;
 }
 
-// Define step names
-const STEP_NAMES = [
-  'Bank Details',
-  'Applicant Info',
-  'Co-Applicant',
-  'Addresses',
-  'Additional Details',
-  'Documents & Instructions'
-];
-
-const bankDetailsSchema = z.object({
-  bankName: z.string().min(1, "Bank name is required"),
-  bankProduct: z.string().min(1, "Bank product is required"),
-  initiatedBranch: z.string().min(1, "Initiated branch is required"),
-  buildBranch: z.string().min(1, "Build branch is required"),
-  agencyFileNo: z.string().min(1, "Agency file number is required"),
-  applicationBarcode: z.string().optional(),
-  caseId: z.string().optional(),
-  schemeDesc: z.string().optional(),
-  leadType: z.string().min(1, "Lead type is required"),
-  loanAmount: z.string().min(1, "Loan amount is required"),
-  loanType: z.string().optional(),
-  vehicleBrandName: z.string().optional(),
-  vehicleModelName: z.string().optional(),
-  vehicleVariant: z.string().optional(),
-});
-
-const applicantInfoSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  phoneNumber: z.string().min(1, "Phone number is required"),
-  email: z.string().email("Invalid email").optional().or(z.literal("")),
-  dateOfBirth: z.string().optional(),
-  age: z.string().min(1, "Age is required"),
-  gender: z.string().min(1, "Gender is required"),
-  fatherName: z.string().optional(),
-  motherName: z.string().optional(),
-  maritalStatus: z.string().min(1, "Marital status is required"),
-  spouseName: z.string().optional(),
-});
-
-const coApplicantSchema = z.object({
-  hasCoApplicant: z.boolean(),
-  coApplicantName: z.string().optional(),
-  coApplicantPhone: z.string().optional(),
-  coApplicantRelation: z.string().optional(),
-  coApplicantEmail: z.string().optional(),
-  coApplicantAge: z.string().optional(),
-});
-
-const addressesSchema = z.object({
-  residenceStreet: z.string().min(1, "Residence street is required"),
-  residenceCity: z.string().min(1, "Residence city is required"),
-  residenceDistrict: z.string().min(1, "Residence district is required"),
-  residenceState: z.string().min(1, "Residence state is required"),
-  residencePincode: z.string().min(1, "Residence pincode is required"),
-  officeStreet: z.string().optional(),
-  officeCity: z.string().optional(),
-  officeDistrict: z.string().optional(),
-  officeState: z.string().optional(),
-  officePincode: z.string().optional(),
-});
-
-const additionalDetailsSchema = z.object({
-  company: z.string().optional(),
-  designation: z.string().optional(),
-  workExperience: z.string().optional(),
-  currentJobDuration: z.string().optional(),
-  employmentType: z.string().optional(),
-  monthlyIncome: z.string().optional(),
-  annualIncome: z.string().optional(),
-  otherIncome: z.string().optional(),
-  propertyType: z.string().optional(),
-  ownershipStatus: z.string().optional(),
-  propertyAge: z.string().optional(),
-});
-
-const documentsInstructionsSchema = z.object({
-  visitType: z.string().min(1, "Visit type is required"),
-  verificationDate: z.string().min(1, "Verification date is required"),
-  instructions: z.string().optional(),
-  documents: z.array(z.any()).optional(),
-});
-
-const AddLeadFormMultiStep: React.FC<AddLeadFormMultiStepProps> = ({ onSubmit, locationData }) => {
-  const [currentStep, setCurrentStep] = useState(0);
-  const [banks, setBanks] = useState<Bank[]>([]);
-  const [bankProducts, setBankProducts] = useState<BankProduct[]>([]);
-  const [bankBranches, setBankBranches] = useState<BankBranch[]>([]);
-  const [filteredProducts, setFilteredProducts] = useState<BankProduct[]>([]);
-  const [filteredBranches, setFilteredBranches] = useState<BankBranch[]>([]);
-  const [uploadedDocuments, setUploadedDocuments] = useState<File[]>([]);
-
-  const bankDetailsForm = useForm({
-    resolver: zodResolver(bankDetailsSchema),
-    defaultValues: {
-      bankName: '',
-      bankProduct: '',
-      initiatedBranch: '',
-      buildBranch: '',
-      agencyFileNo: '',
-      applicationBarcode: '',
-      caseId: '',
-      schemeDesc: '',
-      leadType: '',
-      loanAmount: '',
-      loanType: '',
-      vehicleBrandName: '',
-      vehicleModelName: '',
-      vehicleVariant: '',
-    }
+const AddLeadFormMultiStep = ({ onSubmit, locationData }: AddLeadFormMultiStepProps) => {
+  const [currentStep, setCurrentStep] = useState(1);
+  const [formData, setFormData] = useState<FormData>({
+    // Step 1: Lead Type & Basic Information
+    bankName: '',
+    bankProduct: '',
+    initiatedBranch: '',
+    buildBranch: '',
+    
+    // Step 2: Applicant Information
+    applicantName: '',
+    applicantPhone: '',
+    applicantAge: '',
+    applicantEmail: '',
+    hasCoApplicant: false,
+    coApplicantName: '',
+    coApplicantPhone: '',
+    coApplicantAge: '',
+    coApplicantEmail: '',
+    
+    // Step 3: Address Information
+    addresses: [{
+      type: 'Residence',
+      street: '',
+      city: '',
+      district: '',
+      state: '',
+      pincode: '',
+      requiresVerification: true
+    }],
+    
+    // Step 4: Additional Details
+    monthlyIncome: '',
+    annualIncome: '',
+    company: '',
+    designation: '',
+    workExperience: '',
+    propertyType: '',
+    ownershipStatus: '',
+    
+    // Step 5: Documents & Instructions
+    documents: [],
+    instructions: ''
   });
 
-  const applicantInfoForm = useForm({
-    resolver: zodResolver(applicantInfoSchema),
-    defaultValues: {
-      name: '',
-      phoneNumber: '',
-      email: '',
-      dateOfBirth: '',
-      age: '',
-      gender: '',
-      fatherName: '',
-      motherName: '',
-      maritalStatus: '',
-      spouseName: '',
-    }
-  });
-
-  const coApplicantForm = useForm({
-    resolver: zodResolver(coApplicantSchema),
-    defaultValues: {
-      hasCoApplicant: false,
-      coApplicantName: '',
-      coApplicantPhone: '',
-      coApplicantRelation: '',
-      coApplicantEmail: '',
-      coApplicantAge: '',
-    }
-  });
-
-  const addressesForm = useForm({
-    resolver: zodResolver(addressesSchema),
-    defaultValues: {
-      residenceStreet: '',
-      residenceCity: '',
-      residenceDistrict: '',
-      residenceState: '',
-      residencePincode: '',
-      officeStreet: '',
-      officeCity: '',
-      officeDistrict: '',
-      officeState: '',
-      officePincode: '',
-    }
-  });
-
-  const additionalDetailsForm = useForm({
-    resolver: zodResolver(additionalDetailsSchema),
-    defaultValues: {
-      company: '',
-      designation: '',
-      workExperience: '',
-      currentJobDuration: '',
-      employmentType: '',
-      monthlyIncome: '',
-      annualIncome: '',
-      otherIncome: '',
-      propertyType: '',
-      ownershipStatus: '',
-      propertyAge: '',
-    }
-  });
-
-  const documentsInstructionsForm = useForm({
-    resolver: zodResolver(documentsInstructionsSchema),
-    defaultValues: {
-      visitType: '',
-      verificationDate: '',
-      instructions: '',
-      documents: [],
-    }
-  });
+  // Get bank and product data from localStorage
+  const [banks, setBanks] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  const [branches, setBranches] = useState<any[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
+  const [filteredBranches, setFilteredBranches] = useState<any[]>([]);
 
   useEffect(() => {
-    fetchBanks();
-    fetchBankProducts();
-    fetchBankBranches();
+    loadBankData();
   }, []);
 
-  const fetchBanks = async () => {
+  const loadBankData = () => {
     try {
-      const { data, error } = await supabase
-        .from('banks')
-        .select('*')
-        .order('name');
+      const storedBanks = localStorage.getItem('banks');
+      const storedProducts = localStorage.getItem('bankProducts');
+      const storedBranches = localStorage.getItem('bankBranches');
       
-      if (error) throw error;
-      setBanks(data || []);
+      if (storedBanks) setBanks(JSON.parse(storedBanks));
+      if (storedProducts) setProducts(JSON.parse(storedProducts));
+      if (storedBranches) setBranches(JSON.parse(storedBranches));
     } catch (error) {
-      console.error('Error fetching banks:', error);
+      console.error('Error loading bank data:', error);
     }
   };
 
-  const fetchBankProducts = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('bank_products')
-        .select('*')
-        .order('name');
+  // Filter products and branches based on selected bank
+  useEffect(() => {
+    if (formData.bankName) {
+      const bankProducts = products.filter(product => product.bankId === formData.bankName);
+      setFilteredProducts(bankProducts);
       
-      if (error) throw error;
-      setBankProducts(data || []);
-    } catch (error) {
-      console.error('Error fetching bank products:', error);
+      const bankBranches = branches.filter(branch => branch.bankId === formData.bankName);
+      setFilteredBranches(bankBranches);
+    } else {
+      setFilteredProducts([]);
+      setFilteredBranches([]);
+    }
+  }, [formData.bankName, products, branches]);
+
+  const steps = [
+    { id: 1, title: 'Lead Type & Basic Information', icon: Building },
+    { id: 2, title: 'Applicant Information', icon: User },
+    { id: 3, title: 'Address Information', icon: MapPin },
+    { id: 4, title: 'Additional Details', icon: FileText },
+    { id: 5, title: 'Documents & Instructions', icon: FileText }
+  ];
+
+  const validateStep = (step: number): boolean => {
+    switch (step) {
+      case 1:
+        return !!(formData.bankName && formData.bankProduct && formData.initiatedBranch && formData.buildBranch);
+      case 2:
+        const basicValid = !!(formData.applicantName && formData.applicantPhone && formData.applicantAge && formData.applicantEmail);
+        if (!formData.hasCoApplicant) return basicValid;
+        return basicValid && !!(formData.coApplicantName && formData.coApplicantPhone && formData.coApplicantAge && formData.coApplicantEmail);
+      case 3:
+        return formData.addresses.every(addr => 
+          addr.street && addr.city && addr.district && addr.state && addr.pincode
+        );
+      case 4:
+        return !!(formData.monthlyIncome && formData.company && formData.designation);
+      case 5:
+        return true; // Optional step
+      default:
+        return false;
     }
   };
 
-  const fetchBankBranches = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('bank_branches')
-        .select('*')
-        .order('name');
-      
-      if (error) throw error;
-      setBankBranches(data || []);
-    } catch (error) {
-      console.error('Error fetching bank branches:', error);
+  const handleNext = () => {
+    if (validateStep(currentStep)) {
+      setCurrentStep(prev => Math.min(prev + 1, steps.length));
+    } else {
+      toast({
+        title: "Missing Required Fields",
+        description: "Please fill in all required fields before proceeding.",
+        variant: "destructive",
+      });
     }
   };
 
-  const handleBankChange = (bankId: string) => {
-    const filtered = bankProducts.filter(product => product.bank_id === bankId);
-    setFilteredProducts(filtered);
-    
-    const filteredBranches = bankBranches.filter(branch => branch.bank_id === bankId);
-    setFilteredBranches(filteredBranches);
-    
-    bankDetailsForm.setValue('bankProduct', '');
-    bankDetailsForm.setValue('initiatedBranch', '');
-    bankDetailsForm.setValue('buildBranch', '');
+  const handlePrevious = () => {
+    setCurrentStep(prev => Math.max(prev - 1, 1));
   };
 
-  const handleDocumentUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-    setUploadedDocuments(prev => [...prev, ...files]);
-  };
-
-  const removeDocument = (index: number) => {
-    setUploadedDocuments(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const validateCurrentStep = async () => {
-    try {
-      switch (currentStep) {
-        case 0:
-          await bankDetailsForm.trigger();
-          return bankDetailsForm.formState.isValid;
-        case 1:
-          await applicantInfoForm.trigger();
-          return applicantInfoForm.formState.isValid;
-        case 2:
-          await coApplicantForm.trigger();
-          return coApplicantForm.formState.isValid;
-        case 3:
-          await addressesForm.trigger();
-          return addressesForm.formState.isValid;
-        case 4:
-          await additionalDetailsForm.trigger();
-          return additionalDetailsForm.formState.isValid;
-        case 5:
-          await documentsInstructionsForm.trigger();
-          return documentsInstructionsForm.formState.isValid;
-        default:
-          return true;
-      }
-    } catch (error) {
-      return false;
-    }
-  };
-
-  const handleStepClick = async (stepIndex: number) => {
-    if (stepIndex < currentStep) {
-      // Allow going back to previous steps
-      setCurrentStep(stepIndex);
-    } else if (stepIndex === currentStep + 1) {
+  const handleStepClick = (stepId: number) => {
+    // Allow going to previous steps without validation
+    if (stepId < currentStep) {
+      setCurrentStep(stepId);
+    } else if (stepId === currentStep + 1) {
       // Validate current step before going to next
-      const isValid = await validateCurrentStep();
-      if (isValid) {
-        setCurrentStep(stepIndex);
+      if (validateStep(currentStep)) {
+        setCurrentStep(stepId);
       } else {
         toast({
-          title: "Validation Error",
-          description: "Please fill in all required fields before proceeding to the next step.",
-          variant: "destructive"
+          title: "Missing Required Fields",
+          description: "Please fill in all required fields before proceeding.",
+          variant: "destructive",
         });
       }
-    } else if (stepIndex > currentStep + 1) {
-      toast({
-        title: "Complete Previous Steps",
-        description: "Please complete the previous steps in order.",
-        variant: "destructive"
-      });
     } else {
-      setCurrentStep(stepIndex);
+      // For steps further ahead, validate all previous steps
+      let canProceed = true;
+      for (let i = currentStep; i < stepId; i++) {
+        if (!validateStep(i)) {
+          canProceed = false;
+          break;
+        }
+      }
+      if (canProceed) {
+        setCurrentStep(stepId);
+      } else {
+        toast({
+          title: "Missing Required Fields",
+          description: "Please complete all previous steps before proceeding.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
-  const nextStep = async () => {
-    const isValid = await validateCurrentStep();
-    if (isValid && currentStep < STEP_NAMES.length - 1) {
-      setCurrentStep(currentStep + 1);
-    } else if (!isValid) {
+  const updateFormData = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const addAddress = () => {
+    setFormData(prev => ({
+      ...prev,
+      addresses: [...prev.addresses, {
+        type: 'Office',
+        street: '',
+        city: '',
+        district: '',
+        state: '',
+        pincode: '',
+        requiresVerification: false
+      }]
+    }));
+  };
+
+  const removeAddress = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      addresses: prev.addresses.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateAddress = (index: number, field: string, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      addresses: prev.addresses.map((addr, i) => 
+        i === index ? { ...addr, [field]: value } : addr
+      )
+    }));
+  };
+
+  const handleSubmit = () => {
+    if (!validateStep(5)) {
       toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields before proceeding.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const prevStep = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
-  const handleFormSubmit = async () => {
-    const isValid = await validateCurrentStep();
-    if (!isValid) {
-      toast({
-        title: "Validation Error",
-        description: "Please fill in all required fields.",
-        variant: "destructive"
+        title: "Form Incomplete",
+        description: "Please complete all required fields.",
+        variant: "destructive",
       });
       return;
     }
 
-    const bankDetailsData = bankDetailsForm.getValues();
-    const applicantInfoData = applicantInfoForm.getValues();
-    const coApplicantData = coApplicantForm.getValues();
-    const addressesData = addressesForm.getValues();
-    const additionalDetailsData = additionalDetailsForm.getValues();
-    const documentsInstructionsData = documentsInstructionsForm.getValues();
-
-    const formData = {
+    const leadData = {
       id: `lead-${Date.now()}`,
-      name: applicantInfoData.name,
-      age: parseInt(applicantInfoData.age),
-      job: additionalDetailsData.designation || '',
-      address: {
-        street: addressesData.residenceStreet,
-        city: addressesData.residenceCity,
-        district: addressesData.residenceDistrict,
-        state: addressesData.residenceState,
-        pincode: addressesData.residencePincode
-      },
+      name: formData.applicantName,
+      age: parseInt(formData.applicantAge) || 0,
+      job: formData.designation || 'Not specified',
+      address: formData.addresses[0] || {},
       additionalDetails: {
-        ...bankDetailsData,
-        ...applicantInfoData,
-        ...additionalDetailsData,
-        hasCoApplicant: coApplicantData.hasCoApplicant,
-        coApplicant: coApplicantData.hasCoApplicant ? {
-          name: coApplicantData.coApplicantName || '',
-          phone: coApplicantData.coApplicantPhone || '',
-          relation: coApplicantData.coApplicantRelation || '',
-          email: coApplicantData.coApplicantEmail || '',
-          age: coApplicantData.coApplicantAge || ''
-        } : undefined,
-        addresses: [
-          {
-            type: 'Residence',
-            street: addressesData.residenceStreet,
-            city: addressesData.residenceCity,
-            district: addressesData.residenceDistrict,
-            state: addressesData.residenceState,
-            pincode: addressesData.residencePincode
-          },
-          ...(addressesData.officeStreet ? [{
-            type: 'Office',
-            street: addressesData.officeStreet,
-            city: addressesData.officeCity,
-            district: addressesData.officeDistrict,
-            state: addressesData.officeState,
-            pincode: addressesData.officePincode
-          }] : [])
-        ]
+        phoneNumber: formData.applicantPhone,
+        email: formData.applicantEmail,
+        company: formData.company,
+        designation: formData.designation,
+        workExperience: formData.workExperience,
+        propertyType: formData.propertyType,
+        ownershipStatus: formData.ownershipStatus,
+        monthlyIncome: formData.monthlyIncome,
+        annualIncome: formData.annualIncome,
+        bankName: formData.bankName,
+        bankProduct: formData.bankProduct,
+        initiatedBranch: formData.initiatedBranch,
+        buildBranch: formData.buildBranch,
+        hasCoApplicant: formData.hasCoApplicant,
+        coApplicant: formData.hasCoApplicant ? {
+          name: formData.coApplicantName,
+          phone: formData.coApplicantPhone,
+          age: formData.coApplicantAge,
+          email: formData.coApplicantEmail
+        } : null,
+        addresses: formData.addresses
       },
-      status: 'Pending',
-      bank: bankDetailsData.bankName,
-      visitType: documentsInstructionsData.visitType,
-      verificationDate: new Date(documentsInstructionsData.verificationDate),
-      instructions: documentsInstructionsData.instructions,
-      documents: uploadedDocuments.map(file => ({
-        id: `doc-${Date.now()}-${Math.random()}`,
+      status: 'Pending' as const,
+      bank: formData.bankName,
+      visitType: 'Residence' as const,
+      assignedTo: '',
+      createdAt: new Date(),
+      documents: formData.documents.map((file, index) => ({
+        id: `doc-${Date.now()}-${index}`,
         name: file.name,
         type: 'Document',
-        uploadedBy: 'bank',
+        url: URL.createObjectURL(file),
+        uploadedBy: 'admin',
         uploadDate: new Date(),
         size: file.size
       })),
-      createdAt: new Date()
+      instructions: formData.instructions
     };
 
-    onSubmit(formData);
+    onSubmit(leadData);
+  };
+
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="bankName">Bank Name *</Label>
+                <Select value={formData.bankName} onValueChange={(value) => updateFormData('bankName', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Bank" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {banks.map((bank) => (
+                      <SelectItem key={bank.id} value={bank.id}>{bank.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="bankProduct">Bank Product *</Label>
+                <Select 
+                  value={formData.bankProduct} 
+                  onValueChange={(value) => updateFormData('bankProduct', value)}
+                  disabled={!formData.bankName}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Product" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredProducts.map((product) => (
+                      <SelectItem key={product.id} value={product.id}>{product.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="initiatedBranch">Initiated Branch *</Label>
+                <Select 
+                  value={formData.initiatedBranch} 
+                  onValueChange={(value) => updateFormData('initiatedBranch', value)}
+                  disabled={!formData.bankName}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Initiated Branch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredBranches.map((branch) => (
+                      <SelectItem key={branch.id} value={branch.id}>{branch.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="buildBranch">Build Branch *</Label>
+                <Select 
+                  value={formData.buildBranch} 
+                  onValueChange={(value) => updateFormData('buildBranch', value)}
+                  disabled={!formData.bankName}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Build Branch" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {filteredBranches.map((branch) => (
+                      <SelectItem key={branch.id} value={branch.id}>{branch.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 2:
+        return (
+          <div className="space-y-6">
+            <div className="border rounded-lg p-4 space-y-4">
+              <h3 className="font-semibold text-lg">Applicant Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="applicantName">Full Name *</Label>
+                  <Input
+                    id="applicantName"
+                    value={formData.applicantName}
+                    onChange={(e) => updateFormData('applicantName', e.target.value)}
+                    placeholder="Enter full name"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="applicantPhone">Phone Number * (10 digits)</Label>
+                  <Input
+                    id="applicantPhone"
+                    value={formData.applicantPhone}
+                    onChange={(e) => updateFormData('applicantPhone', e.target.value)}
+                    placeholder="Enter 10-digit phone number"
+                    maxLength={10}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="applicantAge">Age *</Label>
+                  <Input
+                    id="applicantAge"
+                    type="number"
+                    value={formData.applicantAge}
+                    onChange={(e) => updateFormData('applicantAge', e.target.value)}
+                    placeholder="Enter age"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="applicantEmail">Email *</Label>
+                  <Input
+                    id="applicantEmail"
+                    type="email"
+                    value={formData.applicantEmail}
+                    onChange={(e) => updateFormData('applicantEmail', e.target.value)}
+                    placeholder="Enter email address"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="hasCoApplicant"
+                checked={formData.hasCoApplicant}
+                onCheckedChange={(checked) => updateFormData('hasCoApplicant', !!checked)}
+              />
+              <Label htmlFor="hasCoApplicant">Add Co-Applicant</Label>
+            </div>
+
+            {formData.hasCoApplicant && (
+              <div className="border rounded-lg p-4 space-y-4">
+                <h3 className="font-semibold text-lg">Co-Applicant Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="coApplicantName">Full Name *</Label>
+                    <Input
+                      id="coApplicantName"
+                      value={formData.coApplicantName}
+                      onChange={(e) => updateFormData('coApplicantName', e.target.value)}
+                      placeholder="Enter co-applicant full name"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="coApplicantPhone">Phone Number * (10 digits)</Label>
+                    <Input
+                      id="coApplicantPhone"
+                      value={formData.coApplicantPhone}
+                      onChange={(e) => updateFormData('coApplicantPhone', e.target.value)}
+                      placeholder="Enter 10-digit phone number"
+                      maxLength={10}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="coApplicantAge">Age *</Label>
+                    <Input
+                      id="coApplicantAge"
+                      type="number"
+                      value={formData.coApplicantAge}
+                      onChange={(e) => updateFormData('coApplicantAge', e.target.value)}
+                      placeholder="Enter age"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="coApplicantEmail">Email *</Label>
+                    <Input
+                      id="coApplicantEmail"
+                      type="email"
+                      value={formData.coApplicantEmail}
+                      onChange={(e) => updateFormData('coApplicantEmail', e.target.value)}
+                      placeholder="Enter email address"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+
+      case 3:
+        return (
+          <div className="space-y-6">
+            {formData.addresses.map((address, index) => (
+              <div key={index} className="border rounded-lg p-4 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-lg">
+                    {address.type} Address {index > 0 && `#${index + 1}`}
+                  </h3>
+                  {index > 0 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => removeAddress(index)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Address Type</Label>
+                    <Select 
+                      value={address.type} 
+                      onValueChange={(value) => updateAddress(index, 'type', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Residence">Residence</SelectItem>
+                        <SelectItem value="Office">Office</SelectItem>
+                        <SelectItem value="Permanent">Permanent</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Street Address *</Label>
+                    <Input
+                      value={address.street}
+                      onChange={(e) => updateAddress(index, 'street', e.target.value)}
+                      placeholder="Enter street address"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>State *</Label>
+                    <Select 
+                      value={address.state} 
+                      onValueChange={(value) => updateAddress(index, 'state', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select State" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {locationData.states.map((state) => (
+                          <SelectItem key={state.id} value={state.name}>{state.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>District *</Label>
+                    <Select 
+                      value={address.district} 
+                      onValueChange={(value) => updateAddress(index, 'district', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select District" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {locationData.states
+                          .find(s => s.name === address.state)?.districts
+                          .map((district) => (
+                            <SelectItem key={district.id} value={district.name}>{district.name}</SelectItem>
+                          )) || []}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>City *</Label>
+                    <Select 
+                      value={address.city} 
+                      onValueChange={(value) => updateAddress(index, 'city', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select City" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {locationData.states
+                          .find(s => s.name === address.state)?.districts
+                          .find(d => d.name === address.district)?.cities
+                          .map((city) => (
+                            <SelectItem key={city.id} value={city.name}>{city.name}</SelectItem>
+                          )) || []}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Pincode *</Label>
+                    <Input
+                      value={address.pincode}
+                      onChange={(e) => updateAddress(index, 'pincode', e.target.value)}
+                      placeholder="Enter pincode"
+                      maxLength={6}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`verification-${index}`}
+                    checked={address.requiresVerification}
+                    onCheckedChange={(checked) => updateAddress(index, 'requiresVerification', !!checked)}
+                  />
+                  <Label htmlFor={`verification-${index}`}>Requires Verification</Label>
+                </div>
+              </div>
+            ))}
+
+            <Button type="button" variant="outline" onClick={addAddress} className="w-full">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Another Address
+            </Button>
+          </div>
+        );
+
+      case 4:
+        return (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="monthlyIncome">Monthly Income *</Label>
+                <Input
+                  id="monthlyIncome"
+                  value={formData.monthlyIncome}
+                  onChange={(e) => updateFormData('monthlyIncome', e.target.value)}
+                  placeholder="Enter monthly income"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="annualIncome">Annual Income</Label>
+                <Input
+                  id="annualIncome"
+                  value={formData.annualIncome}
+                  onChange={(e) => updateFormData('annualIncome', e.target.value)}
+                  placeholder="Enter annual income"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="company">Company *</Label>
+                <Input
+                  id="company"
+                  value={formData.company}
+                  onChange={(e) => updateFormData('company', e.target.value)}
+                  placeholder="Enter company name"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="designation">Designation *</Label>
+                <Input
+                  id="designation"
+                  value={formData.designation}
+                  onChange={(e) => updateFormData('designation', e.target.value)}
+                  placeholder="Enter designation"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="workExperience">Work Experience</Label>
+                <Input
+                  id="workExperience"
+                  value={formData.workExperience}
+                  onChange={(e) => updateFormData('workExperience', e.target.value)}
+                  placeholder="Enter work experience"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="propertyType">Property Type</Label>
+                <Select value={formData.propertyType} onValueChange={(value) => updateFormData('propertyType', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select Property Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Owned">Owned</SelectItem>
+                    <SelectItem value="Rented">Rented</SelectItem>
+                    <SelectItem value="Family Owned">Family Owned</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="ownershipStatus">Ownership Status</Label>
+                <Input
+                  id="ownershipStatus"
+                  value={formData.ownershipStatus}
+                  onChange={(e) => updateFormData('ownershipStatus', e.target.value)}
+                  placeholder="Enter ownership status"
+                />
+              </div>
+            </div>
+          </div>
+        );
+
+      case 5:
+        return (
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="documents">Upload Documents</Label>
+              <Input
+                id="documents"
+                type="file"
+                multiple
+                onChange={(e) => {
+                  const files = Array.from(e.target.files || []);
+                  updateFormData('documents', files);
+                }}
+                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+              />
+              {formData.documents.length > 0 && (
+                <div className="text-sm text-muted-foreground">
+                  {formData.documents.length} file(s) selected
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="instructions">Special Instructions</Label>
+              <Textarea
+                id="instructions"
+                value={formData.instructions}
+                onChange={(e) => updateFormData('instructions', e.target.value)}
+                placeholder="Enter any special instructions for verification"
+                rows={4}
+              />
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-4xl mx-auto p-6 space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>Add New Lead</CardTitle>
-          <CardDescription>Fill in the lead information step by step</CardDescription>
-          
-          {/* Step Navigation */}
-          <div className="flex flex-wrap gap-2 mt-4 p-4 bg-muted/30 rounded-lg">
-            {STEP_NAMES.map((stepName, index) => (
-              <button
-                key={index}
-                onClick={() => handleStepClick(index)}
-                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                  currentStep === index
-                    ? 'bg-primary text-primary-foreground'
-                    : currentStep > index
-                    ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                {stepName}
-              </button>
-            ))}
-          </div>
         </CardHeader>
-
         <CardContent>
-          {/* Step 1: Bank Details */}
-          {currentStep === 0 && (
-            <Form {...bankDetailsForm}>
-              <div className="space-y-6">
-                <h3 className="text-lg font-semibold">Bank Details</h3>
+          {/* Step Navigation */}
+          <div className="mb-8">
+            <div className="flex flex-wrap gap-2 mb-4">
+              {steps.map((step, index) => {
+                const Icon = step.icon;
+                const isCompleted = step.id < currentStep || (step.id === currentStep && validateStep(step.id));
+                const isCurrent = step.id === currentStep;
+                const isAccessible = step.id <= currentStep || (step.id === currentStep + 1 && validateStep(currentStep));
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={bankDetailsForm.control}
-                    name="bankName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Bank Name *</FormLabel>
-                        <Select
-                          onValueChange={(value) => {
-                            field.onChange(value);
-                            handleBankChange(value);
-                          }}
-                          value={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select bank" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {banks.map((bank) => (
-                              <SelectItem key={bank.id} value={bank.id}>
-                                {bank.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                return (
+                  <button
+                    key={step.id}
+                    onClick={() => handleStepClick(step.id)}
+                    disabled={!isAccessible && step.id > currentStep}
+                    className={`
+                      flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors
+                      ${isCurrent 
+                        ? 'bg-primary text-primary-foreground' 
+                        : isCompleted 
+                          ? 'bg-green-100 text-green-800 hover:bg-green-200' 
+                          : isAccessible 
+                            ? 'bg-muted text-muted-foreground hover:bg-muted/80' 
+                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      }
+                    `}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span className="hidden sm:block">{step.title}</span>
+                    <span className="sm:hidden">{step.id}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
-                  <FormField
-                    control={bankDetailsForm.control}
-                    name="bankProduct"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Bank Product *</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select product" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {filteredProducts.map((product) => (
-                              <SelectItem key={product.id} value={product.id}>
-                                {product.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={bankDetailsForm.control}
-                    name="initiatedBranch"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Initiated Branch *</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select branch" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {filteredBranches.map((branch) => (
-                              <SelectItem key={branch.id} value={branch.id}>
-                                {branch.name} - {branch.location}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={bankDetailsForm.control}
-                    name="buildBranch"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Build Branch *</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select branch" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {filteredBranches.map((branch) => (
-                              <SelectItem key={branch.id} value={branch.id}>
-                                {branch.name} - {branch.location}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={bankDetailsForm.control}
-                    name="agencyFileNo"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Agency File No. *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter agency file number" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={bankDetailsForm.control}
-                    name="applicationBarcode"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Application Barcode</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter application barcode" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={bankDetailsForm.control}
-                    name="caseId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Case ID</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter case ID" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={bankDetailsForm.control}
-                    name="schemeDesc"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Scheme Description</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter scheme description" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={bankDetailsForm.control}
-                    name="leadType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Lead Type *</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select lead type" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="Home Loan">Home Loan</SelectItem>
-                            <SelectItem value="Personal Loan">Personal Loan</SelectItem>
-                            <SelectItem value="Auto Loan">Auto Loan</SelectItem>
-                            <SelectItem value="Business Loan">Business Loan</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={bankDetailsForm.control}
-                    name="loanAmount"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Loan Amount *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter loan amount" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={bankDetailsForm.control}
-                    name="loanType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Loan Type</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter loan type" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={bankDetailsForm.control}
-                    name="vehicleBrandName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Vehicle Brand Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter vehicle brand" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={bankDetailsForm.control}
-                    name="vehicleModelName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Vehicle Model Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter vehicle model" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={bankDetailsForm.control}
-                    name="vehicleVariant"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Vehicle Variant</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter vehicle variant" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
-            </Form>
-          )}
-
-          {/* Step 2: Applicant Info */}
-          {currentStep === 1 && (
-            <Form {...applicantInfoForm}>
-              <div className="space-y-6">
-                <h3 className="text-lg font-semibold">Applicant Information</h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={applicantInfoForm.control}
-                    name="name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Full Name *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter full name" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={applicantInfoForm.control}
-                    name="phoneNumber"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Phone Number *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter phone number" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={applicantInfoForm.control}
-                    name="email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter email address" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={applicantInfoForm.control}
-                    name="dateOfBirth"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Date of Birth</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={applicantInfoForm.control}
-                    name="age"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Age *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter age" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={applicantInfoForm.control}
-                    name="gender"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Gender *</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select gender" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="Male">Male</SelectItem>
-                            <SelectItem value="Female">Female</SelectItem>
-                            <SelectItem value="Other">Other</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={applicantInfoForm.control}
-                    name="fatherName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Father's Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter father's name" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={applicantInfoForm.control}
-                    name="motherName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Mother's Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter mother's name" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={applicantInfoForm.control}
-                    name="maritalStatus"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Marital Status *</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select marital status" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="Single">Single</SelectItem>
-                            <SelectItem value="Married">Married</SelectItem>
-                            <SelectItem value="Divorced">Divorced</SelectItem>
-                            <SelectItem value="Widowed">Widowed</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={applicantInfoForm.control}
-                    name="spouseName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Spouse Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter spouse name" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </div>
-            </Form>
-          )}
-
-          {/* Step 3: Co-Applicant */}
-          {currentStep === 2 && (
-            <Form {...coApplicantForm}>
-              <div className="space-y-6">
-                <h3 className="text-lg font-semibold">Co-Applicant Information</h3>
-                
-                <FormField
-                  control={coApplicantForm.control}
-                  name="hasCoApplicant"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                      <FormControl>
-                        <Checkbox
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel>Has Co-Applicant</FormLabel>
-                      </div>
-                    </FormItem>
-                  )}
-                />
-
-                {coApplicantForm.watch('hasCoApplicant') && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={coApplicantForm.control}
-                      name="coApplicantName"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Co-Applicant Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter co-applicant name" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={coApplicantForm.control}
-                      name="coApplicantPhone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Co-Applicant Phone</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter co-applicant phone" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={coApplicantForm.control}
-                      name="coApplicantRelation"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Relationship</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select relationship" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="Spouse">Spouse</SelectItem>
-                              <SelectItem value="Father">Father</SelectItem>
-                              <SelectItem value="Mother">Mother</SelectItem>
-                              <SelectItem value="Brother">Brother</SelectItem>
-                              <SelectItem value="Sister">Sister</SelectItem>
-                              <SelectItem value="Friend">Friend</SelectItem>
-                              <SelectItem value="Business Partner">Business Partner</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={coApplicantForm.control}
-                      name="coApplicantEmail"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Co-Applicant Email</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter co-applicant email" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={coApplicantForm.control}
-                      name="coApplicantAge"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Co-Applicant Age</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter co-applicant age" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                )}
-              </div>
-            </Form>
-          )}
-
-          {/* Step 4: Addresses */}
-          {currentStep === 3 && (
-            <Form {...addressesForm}>
-              <div className="space-y-6">
-                <h3 className="text-lg font-semibold">Address Information</h3>
-                
-                <div className="space-y-6">
-                  <div>
-                    <h4 className="text-md font-medium mb-4">Residence Address</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={addressesForm.control}
-                        name="residenceStreet"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Street Address *</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Enter street address" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={addressesForm.control}
-                        name="residenceCity"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>City *</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Enter city" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={addressesForm.control}
-                        name="residenceDistrict"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>District *</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Enter district" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={addressesForm.control}
-                        name="residenceState"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>State *</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Enter state" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={addressesForm.control}
-                        name="residencePincode"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Pincode *</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Enter pincode" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <h4 className="text-md font-medium mb-4">Office Address (Optional)</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={addressesForm.control}
-                        name="officeStreet"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Street Address</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Enter office street address" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={addressesForm.control}
-                        name="officeCity"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>City</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Enter office city" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={addressesForm.control}
-                        name="officeDistrict"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>District</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Enter office district" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={addressesForm.control}
-                        name="officeState"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>State</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Enter office state" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={addressesForm.control}
-                        name="officePincode"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Pincode</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Enter office pincode" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Form>
-          )}
-
-          {/* Step 5: Additional Details */}
-          {currentStep === 4 && (
-            <Form {...additionalDetailsForm}>
-              <div className="space-y-6">
-                <h3 className="text-lg font-semibold">Additional Details</h3>
-                
-                <div className="space-y-6">
-                  <div>
-                    <h4 className="text-md font-medium mb-4">Professional Information</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={additionalDetailsForm.control}
-                        name="company"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Company</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Enter company name" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={additionalDetailsForm.control}
-                        name="designation"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Designation</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Enter designation" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={additionalDetailsForm.control}
-                        name="workExperience"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Work Experience</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Enter work experience" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={additionalDetailsForm.control}
-                        name="currentJobDuration"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Current Job Duration</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Enter current job duration" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={additionalDetailsForm.control}
-                        name="employmentType"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Employment Type</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select employment type" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="Salaried">Salaried</SelectItem>
-                                <SelectItem value="Self Employed">Self Employed</SelectItem>
-                                <SelectItem value="Business">Business</SelectItem>
-                                <SelectItem value="Professional">Professional</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <h4 className="text-md font-medium mb-4">Financial Information</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={additionalDetailsForm.control}
-                        name="monthlyIncome"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Monthly Income</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Enter monthly income" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={additionalDetailsForm.control}
-                        name="annualIncome"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Annual Income</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Enter annual income" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={additionalDetailsForm.control}
-                        name="otherIncome"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Other Income</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Enter other income" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <h4 className="text-md font-medium mb-4">Property Information</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={additionalDetailsForm.control}
-                        name="propertyType"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Property Type</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select property type" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="Apartment">Apartment</SelectItem>
-                                <SelectItem value="House">House</SelectItem>
-                                <SelectItem value="Villa">Villa</SelectItem>
-                                <SelectItem value="Plot">Plot</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={additionalDetailsForm.control}
-                        name="ownershipStatus"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Ownership Status</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select ownership status" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="Owned">Owned</SelectItem>
-                                <SelectItem value="Rented">Rented</SelectItem>
-                                <SelectItem value="Family Owned">Family Owned</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={additionalDetailsForm.control}
-                        name="propertyAge"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Property Age</FormLabel>
-                            <FormControl>
-                              <Input placeholder="Enter property age in years" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </Form>
-          )}
-
-          {/* Step 6: Documents & Instructions */}
-          {currentStep === 5 && (
-            <Form {...documentsInstructionsForm}>
-              <div className="space-y-6">
-                <h3 className="text-lg font-semibold">Documents & Instructions</h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={documentsInstructionsForm.control}
-                    name="visitType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Visit Type *</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select visit type" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="Residence">Residence</SelectItem>
-                            <SelectItem value="Office">Office</SelectItem>
-                            <SelectItem value="Both">Both</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={documentsInstructionsForm.control}
-                    name="verificationDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Verification Date *</FormLabel>
-                        <FormControl>
-                          <Input type="date" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={documentsInstructionsForm.control}
-                  name="instructions"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Special Instructions</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="Enter any special instructions for the verification"
-                          className="min-h-[100px]"
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div>
-                  <FormLabel>Upload Documents</FormLabel>
-                  <div className="mt-2 border-2 border-dashed border-gray-300 rounded-lg p-6">
-                    <div className="text-center">
-                      <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                      <div className="mt-4">
-                        <label htmlFor="file-upload" className="cursor-pointer">
-                          <span className="mt-2 block text-sm font-medium text-gray-900">
-                            Click to upload documents
-                          </span>
-                          <input
-                            id="file-upload"
-                            name="file-upload"
-                            type="file"
-                            multiple
-                            className="sr-only"
-                            onChange={handleDocumentUpload}
-                          />
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {uploadedDocuments.length > 0 && (
-                    <div className="mt-4 space-y-2">
-                      <h4 className="text-sm font-medium">Uploaded Documents:</h4>
-                      {uploadedDocuments.map((file, index) => (
-                        <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                          <span className="text-sm">{file.name}</span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeDocument(index)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </Form>
-          )}
+          {/* Step Content */}
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold mb-4">
+              Step {currentStep}: {steps[currentStep - 1]?.title}
+            </h2>
+            {renderStepContent()}
+          </div>
 
           {/* Navigation Buttons */}
-          <div className="flex justify-between pt-6">
+          <div className="flex justify-between">
             <Button
               type="button"
               variant="outline"
-              onClick={prevStep}
-              disabled={currentStep === 0}
-              className="flex items-center gap-2"
+              onClick={handlePrevious}
+              disabled={currentStep === 1}
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-4 w-4 mr-2" />
               Previous
             </Button>
 
-            {currentStep < STEP_NAMES.length - 1 ? (
+            {currentStep < steps.length ? (
               <Button
                 type="button"
-                onClick={nextStep}
-                className="flex items-center gap-2"
+                onClick={handleNext}
+                disabled={!validateStep(currentStep)}
               >
                 Next
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-4 w-4 ml-2" />
               </Button>
             ) : (
               <Button
                 type="button"
-                onClick={handleFormSubmit}
-                className="flex items-center gap-2"
+                onClick={handleSubmit}
+                className="bg-green-600 hover:bg-green-700"
               >
-                Submit Lead
-                <ArrowRight className="h-4 w-4" />
+                Create Lead
               </Button>
             )}
           </div>

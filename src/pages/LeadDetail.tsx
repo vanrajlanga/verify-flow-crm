@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { FileText, Download, ArrowLeft, MapPin, User, Building, Phone, Calendar, Clock, Home, Briefcase, DollarSign, Eye } from 'lucide-react';
+import { FileText, Download, ArrowLeft, MapPin, User, Building, Phone, Calendar, Clock, Home, Briefcase, DollarSign, Eye, Mail, Users } from 'lucide-react';
 import { mockLeads } from '@/utils/mockData';
 import { getLeadById, getUserById, getBankById } from '@/lib/supabase-queries';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
+// Helper functions
 const getBadgeColor = (status: string) => {
   switch (status) {
     case 'Pending': return 'bg-yellow-100 text-yellow-800';
@@ -47,6 +48,7 @@ const getStatusBadge = (status: string) => {
   }
 };
 
+// LeadDetail component
 const LeadDetail = () => {
   const { leadId } = useParams<{ leadId: string }>();
   const navigate = useNavigate();
@@ -56,8 +58,10 @@ const LeadDetail = () => {
   const [bank, setBank] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedDocument, setSelectedDocument] = useState<any>(null);
+  const [bankData, setBankData] = useState<any>({});
   
   useEffect(() => {
+    // Check if user is logged in
     const storedUser = localStorage.getItem('kycUser');
     if (!storedUser) {
       navigate('/');
@@ -69,6 +73,7 @@ const LeadDetail = () => {
     
     const fetchLeadData = async () => {
       try {
+        // Get leads from localStorage or use mockLeads if not available
         const storedLeads = localStorage.getItem('mockLeads');
         let allLeads = [];
         
@@ -83,11 +88,14 @@ const LeadDetail = () => {
           allLeads = mockLeads;
         }
         
+        // Try finding the lead directly using ID - await the Promise
         let foundLead = await getLeadById(leadId || '');
         
+        // If not found with getLeadById, search manually in all leads
         if (!foundLead && allLeads && allLeads.length > 0) {
           foundLead = allLeads.find((l: any) => l.id === leadId);
           
+          // If still not found, try partial match if the ID might be stored differently
           if (!foundLead) {
             foundLead = allLeads.find((l: any) => 
               leadId?.includes(l.id) || 
@@ -102,6 +110,7 @@ const LeadDetail = () => {
         if (foundLead) {
           setLead(foundLead);
           
+          // Fetch agent and bank data asynchronously
           if (foundLead.assignedTo) {
             const agentData = await getUserById(foundLead.assignedTo);
             setAgent(agentData);
@@ -111,6 +120,9 @@ const LeadDetail = () => {
             const bankData = await getBankById(foundLead.bank);
             setBank(bankData);
           }
+
+          // Load bank details for the lead
+          loadBankDetails(foundLead);
         }
         
         setLoading(false);
@@ -123,6 +135,35 @@ const LeadDetail = () => {
     fetchLeadData();
   }, [navigate, leadId]);
 
+  const loadBankDetails = (lead: any) => {
+    try {
+      const storedBanks = localStorage.getItem('banks');
+      const storedProducts = localStorage.getItem('bankProducts');
+      const storedBranches = localStorage.getItem('bankBranches');
+      
+      if (storedBanks && storedProducts && storedBranches) {
+        const banks = JSON.parse(storedBanks);
+        const products = JSON.parse(storedProducts);
+        const branches = JSON.parse(storedBranches);
+        
+        const bankInfo = banks.find((b: any) => b.id === lead.additionalDetails?.bankName);
+        const productInfo = products.find((p: any) => p.id === lead.additionalDetails?.bankProduct);
+        const initiatedBranchInfo = branches.find((b: any) => b.id === lead.additionalDetails?.initiatedBranch);
+        const buildBranchInfo = branches.find((b: any) => b.id === lead.additionalDetails?.buildBranch);
+        
+        setBankData({
+          bank: bankInfo,
+          product: productInfo,
+          initiatedBranch: initiatedBranchInfo,
+          buildBranch: buildBranchInfo
+        });
+      }
+    } catch (error) {
+      console.error('Error loading bank details:', error);
+    }
+  };
+
+  // Function to update lead data in localStorage
   const updateLeadInStorage = (updatedLead: any) => {
     const storedLeads = localStorage.getItem('mockLeads');
     if (storedLeads) {
@@ -139,6 +180,35 @@ const LeadDetail = () => {
     setLead({...updatedLead});
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!lead) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen p-6">
+        <div className="text-red-500 mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="15" y1="9" x2="9" y2="15"></line>
+            <line x1="9" y1="9" x2="15" y2="15"></line>
+          </svg>
+        </div>
+        <h1 className="text-2xl font-bold mb-2">Lead Not Found</h1>
+        <p className="text-muted-foreground mb-6">The lead you're looking for doesn't exist or has been removed.</p>
+        <Button onClick={() => navigate(-1)}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Go Back
+        </Button>
+      </div>
+    );
+  }
+
+  // Handle verification actions for agents
   const handleStartVerification = () => {
     if (!lead.verification) {
       lead.verification = {
@@ -181,9 +251,10 @@ const LeadDetail = () => {
       lead.verification.photos = [];
     }
     
+    // Convert FileList to array and create photo objects
     Array.from(files).forEach((file, index) => {
       const photoId = `photo-${new Date().getTime()}-${index}`;
-      const photoUrl = URL.createObjectURL(file);
+      const photoUrl = URL.createObjectURL(file); // Create preview URL
       lead.verification.photos.push({
         id: photoId,
         name: file.name,
@@ -208,9 +279,10 @@ const LeadDetail = () => {
       lead.verification.documents = [];
     }
     
+    // Convert FileList to array and create document objects
     Array.from(files).forEach((file, index) => {
       const docId = `doc-${new Date().getTime()}-${index}`;
-      const docUrl = URL.createObjectURL(file);
+      const docUrl = URL.createObjectURL(file); // Create preview URL
       lead.verification.documents.push({
         id: docId,
         name: file.name,
@@ -256,6 +328,7 @@ const LeadDetail = () => {
     });
   };
 
+  // Handle review actions for admins
   const handleApproveVerification = (remarks: string) => {
     if (lead.verification) {
       lead.verification.adminRemarks = remarks;
@@ -288,40 +361,14 @@ const LeadDetail = () => {
   };
 
   const handleForwardToBank = () => {
+    // Implementation would forward the verification to the bank
     toast({
       title: "Forwarded to Bank",
       description: `The verification has been forwarded to ${bank?.name || 'the bank'}.`,
     });
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  if (!lead) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen p-6">
-        <div className="text-red-500 mb-4">
-          <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="15" y1="9" x2="9" y2="15"></line>
-            <line x1="9" y1="9" x2="15" y2="15"></line>
-          </svg>
-        </div>
-        <h1 className="text-2xl font-bold mb-2">Lead Not Found</h1>
-        <p className="text-muted-foreground mb-6">The lead you're looking for doesn't exist or has been removed.</p>
-        <Button onClick={() => navigate(-1)}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Go Back
-        </Button>
-      </div>
-    );
-  }
-
+  // Convert documents to proper format for DocumentViewer
   const formattedDocuments = lead.documents?.map((doc: any) => {
     if (typeof doc === 'string') {
       return {
@@ -337,6 +384,8 @@ const LeadDetail = () => {
   }) || [];
 
   const isAdmin = currentUser?.role === 'admin';
+
+  // Format addresses from additionalDetails if available
   const additionalAddresses = lead.additionalDetails?.addresses || [];
   const homeAddress = additionalAddresses.find((a: any) => a?.type === 'Residence');
   const officeAddress = additionalAddresses.find((a: any) => a?.type === 'Office');
@@ -359,497 +408,353 @@ const LeadDetail = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Lead Summary - Left Column */}
-          <div className="lg:col-span-1 space-y-6">
+        <Tabs defaultValue="basic-info" className="w-full">
+          <TabsList className="w-full justify-start mb-6">
+            <TabsTrigger value="basic-info">Lead Type & Basic Information</TabsTrigger>
+            <TabsTrigger value="applicant-info">Applicant Information</TabsTrigger>
+            <TabsTrigger value="address-info">Address Information</TabsTrigger>
+            <TabsTrigger value="additional-details">Additional Details</TabsTrigger>
+            <TabsTrigger value="documents">Documents & Instructions</TabsTrigger>
+            <TabsTrigger value="verification">Verification</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="basic-info" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Lead Summary</CardTitle>
-                <CardDescription>Quick overview of the lead</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center space-x-3">
-                  <div className="bg-primary/10 p-2 rounded-full">
-                    <User className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Customer Name</p>
-                    <p className="font-medium">{lead.name}</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-3">
-                  <div className="bg-primary/10 p-2 rounded-full">
-                    <Phone className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Phone Number</p>
-                    <p className="font-medium">{lead.additionalDetails?.phoneNumber || "Not provided"}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-3">
-                  <div className="bg-primary/10 p-2 rounded-full">
-                    <Building className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Bank</p>
-                    <p className="font-medium">{lead.additionalDetails?.bankName || 'Not Assigned'}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-3">
-                  <div className="bg-primary/10 p-2 rounded-full">
-                    <DollarSign className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Loan Amount</p>
-                    <p className="font-medium">₹{Number(lead.additionalDetails?.loanAmount || 0).toLocaleString()}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-3">
-                  <div className="bg-primary/10 p-2 rounded-full">
-                    <Calendar className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Created On</p>
-                    <p className="font-medium">
-                      {lead.createdAt ? format(new Date(lead.createdAt), 'MMM d, yyyy') : 'Not Available'}
-                    </p>
-                  </div>
-                </div>
-
-                {lead.verificationDate && (
-                  <div className="flex items-center space-x-3">
-                    <div className="bg-primary/10 p-2 rounded-full">
-                      <Calendar className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Verification Date</p>
-                      <p className="font-medium">
-                        {format(new Date(lead.verificationDate), 'MMM d, yyyy')}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Documents Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Documents</CardTitle>
-                <CardDescription>Uploaded documents</CardDescription>
+                <CardTitle className="flex items-center gap-2">
+                  <Building className="h-5 w-5" />
+                  Lead Type & Basic Information
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                {formattedDocuments.length > 0 ? (
-                  <div className="space-y-3">
-                    {formattedDocuments.map((doc: any, index: number) => (
-                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex items-center space-x-3">
-                          <FileText className="h-5 w-5 text-blue-600" />
-                          <div>
-                            <p className="font-medium text-sm">{doc.name || doc.type}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {doc.type} • {doc.uploadDate ? format(new Date(doc.uploadDate), 'MMM d, yyyy') : 'Unknown date'}
-                            </p>
-                          </div>
-                        </div>
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button variant="outline" size="sm" onClick={() => setSelectedDocument(doc)}>
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                            <DialogHeader>
-                              <DialogTitle>{doc.name || doc.type}</DialogTitle>
-                              <DialogDescription>
-                                Document uploaded on {doc.uploadDate ? format(new Date(doc.uploadDate), 'MMM d, yyyy') : 'Unknown date'}
-                              </DialogDescription>
-                            </DialogHeader>
-                            <div className="mt-4">
-                              {doc.url && (
-                                <img 
-                                  src={doc.url} 
-                                  alt={doc.name || doc.type}
-                                  className="max-w-full h-auto rounded-lg"
-                                  onError={(e) => {
-                                    e.currentTarget.style.display = 'none';
-                                    const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
-                                    if (nextElement) {
-                                      nextElement.style.display = 'block';
-                                    }
-                                  }}
-                                />
-                              )}
-                              <div className="hidden text-center p-8 border-2 border-dashed border-gray-300 rounded-lg">
-                                <FileText className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                                <p className="text-gray-500">Document preview not available</p>
-                              </div>
-                            </div>
-                          </DialogContent>
-                        </Dialog>
-                      </div>
-                    ))}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Bank Name</p>
+                      <p className="font-medium">{bankData.bank?.name || 'Not specified'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Bank Product</p>
+                      <p className="font-medium">{bankData.product?.name || 'Not specified'}</p>
+                    </div>
                   </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">No documents uploaded</p>
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Initiated Branch</p>
+                      <p className="font-medium">{bankData.initiatedBranch?.name || 'Not specified'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Build Branch</p>
+                      <p className="font-medium">{bankData.buildBranch?.name || 'Not specified'}</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="applicant-info" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  Applicant Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="bg-primary/10 p-2 rounded-full">
+                        <User className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Full Name</p>
+                        <p className="font-medium">{lead.name}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center space-x-3">
+                      <div className="bg-primary/10 p-2 rounded-full">
+                        <Phone className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Phone Number</p>
+                        <p className="font-medium">{lead.additionalDetails?.phoneNumber || "Not provided"}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="bg-primary/10 p-2 rounded-full">
+                        <Calendar className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Age</p>
+                        <p className="font-medium">{lead.age || 'Not provided'}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-3">
+                      <div className="bg-primary/10 p-2 rounded-full">
+                        <Mail className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Email</p>
+                        <p className="font-medium">{lead.additionalDetails?.email || "Not provided"}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {lead.additionalDetails?.hasCoApplicant && lead.additionalDetails?.coApplicant && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    Co-Applicant Information
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Full Name</p>
+                        <p className="font-medium">{lead.additionalDetails.coApplicant.name}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Phone Number</p>
+                        <p className="font-medium">{lead.additionalDetails.coApplicant.phone}</p>
+                      </div>
+                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Age</p>
+                        <p className="font-medium">{lead.additionalDetails.coApplicant.age}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Email</p>
+                        <p className="font-medium">{lead.additionalDetails.coApplicant.email}</p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="address-info" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  Address Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {lead.additionalDetails?.addresses?.map((address: any, index: number) => (
+                  <div key={index} className="border rounded-lg p-4 mb-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="font-semibold text-lg">{address.type} Address</h3>
+                      {address.requiresVerification && (
+                        <Badge variant="outline" className="bg-blue-100 text-blue-800">
+                          Requires Verification
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Street Address</p>
+                        <p className="font-medium">{address.street || 'Not provided'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">City</p>
+                        <p className="font-medium">{address.city || 'Not provided'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">District</p>
+                        <p className="font-medium">{address.district || 'Not provided'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">State</p>
+                        <p className="font-medium">{address.state || 'Not provided'}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Pincode</p>
+                        <p className="font-medium">{address.pincode || 'Not provided'}</p>
+                      </div>
+                    </div>
+                  </div>
+                )) || (
+                  <p className="text-muted-foreground">No address information available</p>
                 )}
               </CardContent>
             </Card>
-          </div>
+          </TabsContent>
 
-          {/* Main Content - Right Column */}
-          <div className="lg:col-span-2 space-y-6">
-            <Tabs defaultValue="bank-details" className="w-full">
-              <TabsList className="w-full justify-start">
-                <TabsTrigger value="bank-details">Bank Details</TabsTrigger>
-                <TabsTrigger value="applicant-info">Applicant Info</TabsTrigger>
-                <TabsTrigger value="addresses">Addresses</TabsTrigger>
-                <TabsTrigger value="additional">Additional Details</TabsTrigger>
-                <TabsTrigger value="verification">Verification</TabsTrigger>
-              </TabsList>
-              
-              {/* Bank Details Tab */}
-              <TabsContent value="bank-details" className="pt-4 space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Bank & Product Information</CardTitle>
-                    <CardDescription>Banking and loan details</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-4">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Bank Name</p>
-                          <p className="font-medium">{lead.additionalDetails?.bankName || 'Not specified'}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Bank Product</p>
-                          <p className="font-medium">{lead.additionalDetails?.bankProduct || 'Not specified'}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Initiated Branch</p>
-                          <p className="font-medium">{lead.additionalDetails?.initiatedBranch || 'Not specified'}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Build Branch</p>
-                          <p className="font-medium">{lead.additionalDetails?.buildBranch || 'Not specified'}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Agency File No.</p>
-                          <p className="font-medium">{lead.additionalDetails?.agencyFileNo || 'Not specified'}</p>
-                        </div>
-                      </div>
-                      <div className="space-y-4">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Lead Type</p>
-                          <p className="font-medium">{lead.additionalDetails?.leadType || 'Not specified'}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Loan Amount</p>
-                          <p className="font-medium">₹{Number(lead.additionalDetails?.loanAmount || 0).toLocaleString()}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Loan Type</p>
-                          <p className="font-medium">{lead.additionalDetails?.loanType || 'Not specified'}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Application Barcode</p>
-                          <p className="font-medium">{lead.additionalDetails?.applicationBarcode || 'Not specified'}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Case ID</p>
-                          <p className="font-medium">{lead.additionalDetails?.caseId || 'Not specified'}</p>
-                        </div>
-                      </div>
+          <TabsContent value="additional-details" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Additional Details
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Monthly Income</p>
+                      <p className="font-medium">{lead.additionalDetails?.monthlyIncome ? `₹${Number(lead.additionalDetails.monthlyIncome).toLocaleString()}` : 'Not specified'}</p>
                     </div>
-                  </CardContent>
-                </Card>
-
-                {/* Vehicle Details (if applicable) */}
-                {lead.additionalDetails?.leadType === 'Auto Loan' && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Vehicle Details</CardTitle>
-                      <CardDescription>Vehicle information for auto loan</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Vehicle Brand</p>
-                          <p className="font-medium">{lead.additionalDetails?.vehicleBrandName || 'Not specified'}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Vehicle Model</p>
-                          <p className="font-medium">{lead.additionalDetails?.vehicleModelName || 'Not specified'}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Vehicle Variant</p>
-                          <p className="font-medium">{lead.additionalDetails?.vehicleVariant || 'Not specified'}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-              </TabsContent>
-
-              {/* Applicant Info Tab */}
-              <TabsContent value="applicant-info" className="pt-4 space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Personal Information</CardTitle>
-                    <CardDescription>Customer personal details</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-4">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Full Name</p>
-                          <p className="font-medium">{lead.name}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Phone Number</p>
-                          <p className="font-medium">{lead.additionalDetails?.phoneNumber || 'Not provided'}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Email</p>
-                          <p className="font-medium">{lead.additionalDetails?.email || 'Not provided'}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Date of Birth</p>
-                          <p className="font-medium">{lead.additionalDetails?.dateOfBirth ? format(new Date(lead.additionalDetails.dateOfBirth), 'MMM d, yyyy') : 'Not provided'}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Age</p>
-                          <p className="font-medium">{lead.age} years</p>
-                        </div>
-                      </div>
-                      <div className="space-y-4">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Gender</p>
-                          <p className="font-medium">{lead.additionalDetails?.gender || 'Not specified'}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Father's Name</p>
-                          <p className="font-medium">{lead.additionalDetails?.fatherName || 'Not provided'}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Mother's Name</p>
-                          <p className="font-medium">{lead.additionalDetails?.motherName || 'Not provided'}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Marital Status</p>
-                          <p className="font-medium">{lead.additionalDetails?.maritalStatus || 'Not specified'}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Spouse Name</p>
-                          <p className="font-medium">{lead.additionalDetails?.spouseName || 'Not applicable'}</p>
-                        </div>
-                      </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Annual Income</p>
+                      <p className="font-medium">{lead.additionalDetails?.annualIncome ? `₹${Number(lead.additionalDetails.annualIncome).toLocaleString()}` : 'Not specified'}</p>
                     </div>
-                  </CardContent>
-                </Card>
-
-                {/* Co-Applicant Details */}
-                {lead.additionalDetails?.hasCoApplicant && lead.additionalDetails?.coApplicant && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Co-Applicant Details</CardTitle>
-                      <CardDescription>Co-applicant information</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Name</p>
-                          <p className="font-medium">{lead.additionalDetails.coApplicant.name}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Phone</p>
-                          <p className="font-medium">{lead.additionalDetails.coApplicant.phone}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Relation</p>
-                          <p className="font-medium">{lead.additionalDetails.coApplicant.relation}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Email</p>
-                          <p className="font-medium">{lead.additionalDetails.coApplicant.email || 'Not provided'}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Age</p>
-                          <p className="font-medium">{lead.additionalDetails.coApplicant.age || 'Not provided'}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-              </TabsContent>
-
-              {/* Addresses Tab */}
-              <TabsContent value="addresses" className="pt-4 space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Residence Address</CardTitle>
-                    <CardDescription>Primary residential address</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      <p className="font-medium">{lead.address?.street}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {lead.address?.city}, {lead.address?.district}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {lead.address?.state} - {lead.address?.pincode}
+                    <div>
+                      <p className="text-sm text-muted-foreground">Company</p>
+                      <p className="font-medium">{lead.additionalDetails?.company || 'Not specified'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Designation</p>
+                      <p className="font-medium">{lead.additionalDetails?.designation || 'Not specified'}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Work Experience</p>
+                      <p className="font-medium">{lead.additionalDetails?.workExperience || 'Not specified'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Property Type</p>
+                      <p className="font-medium">{lead.additionalDetails?.propertyType || 'Not specified'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Ownership Status</p>
+                      <p className="font-medium">{lead.additionalDetails?.ownershipStatus || 'Not specified'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Created On</p>
+                      <p className="font-medium">
+                        {lead.createdAt ? format(new Date(lead.createdAt), 'MMM d, yyyy') : 'Not Available'}
                       </p>
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-                {officeAddress && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Office Address</CardTitle>
-                      <CardDescription>Work place address</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        <p className="font-medium">{officeAddress.street}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {officeAddress.city}, {officeAddress.district}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {officeAddress.state} - {officeAddress.pincode}
-                        </p>
+          <TabsContent value="documents" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Documents & Instructions
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="font-semibold mb-4">Uploaded Documents</h3>
+                    {lead.documents && lead.documents.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {lead.documents.map((doc: any, index: number) => (
+                          <div key={index} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center space-x-2">
+                                <FileText className="h-5 w-5 text-blue-600" />
+                                <span className="font-medium text-sm truncate">{doc.name || `Document ${index + 1}`}</span>
+                              </div>
+                              <Dialog>
+                                <DialogTrigger asChild>
+                                  <Button variant="outline" size="sm">
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                </DialogTrigger>
+                                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                                  <DialogHeader>
+                                    <DialogTitle>{doc.name || `Document ${index + 1}`}</DialogTitle>
+                                    <DialogDescription>
+                                      Uploaded on {doc.uploadDate ? format(new Date(doc.uploadDate), 'MMM d, yyyy') : 'Unknown date'}
+                                    </DialogDescription>
+                                  </DialogHeader>
+                                  <div className="mt-4">
+                                    {doc.url && (
+                                      <img 
+                                        src={doc.url} 
+                                        alt={doc.name || `Document ${index + 1}`}
+                                        className="max-w-full h-auto rounded-lg"
+                                        onError={(e) => {
+                                          e.currentTarget.style.display = 'none';
+                                          const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
+                                          if (nextElement) {
+                                            nextElement.style.display = 'block';
+                                          }
+                                        }}
+                                      />
+                                    )}
+                                    <div className="hidden text-center p-8 border-2 border-dashed border-gray-300 rounded-lg">
+                                      <FileText className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                                      <p className="text-gray-500">Document preview not available</p>
+                                    </div>
+                                  </div>
+                                </DialogContent>
+                              </Dialog>
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {doc.type || 'Document'} • {doc.uploadDate ? format(new Date(doc.uploadDate), 'MMM d, yyyy') : 'Unknown date'}
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    </CardContent>
-                  </Card>
-                )}
-              </TabsContent>
+                    ) : (
+                      <p className="text-muted-foreground">No documents uploaded</p>
+                    )}
+                  </div>
 
-              {/* Additional Details Tab */}
-              <TabsContent value="additional" className="pt-4 space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Professional Details</CardTitle>
-                    <CardDescription>Employment and business information</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-4">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Company</p>
-                          <p className="font-medium">{lead.additionalDetails?.company || 'Not specified'}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Designation</p>
-                          <p className="font-medium">{lead.additionalDetails?.designation || 'Not specified'}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Work Experience</p>
-                          <p className="font-medium">{lead.additionalDetails?.workExperience || 'Not specified'}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Current Job Duration</p>
-                          <p className="font-medium">{lead.additionalDetails?.currentJobDuration || 'Not specified'}</p>
-                        </div>
-                      </div>
-                      <div className="space-y-4">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Employment Type</p>
-                          <p className="font-medium">{lead.additionalDetails?.employmentType || 'Not specified'}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Monthly Income</p>
-                          <p className="font-medium">{lead.additionalDetails?.monthlyIncome ? `₹${Number(lead.additionalDetails.monthlyIncome).toLocaleString()}` : 'Not specified'}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Annual Income</p>
-                          <p className="font-medium">{lead.additionalDetails?.annualIncome ? `₹${Number(lead.additionalDetails.annualIncome).toLocaleString()}` : 'Not specified'}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Other Income</p>
-                          <p className="font-medium">{lead.additionalDetails?.otherIncome ? `₹${Number(lead.additionalDetails.otherIncome).toLocaleString()}` : 'Not specified'}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                  <Separator />
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Property Details</CardTitle>
-                    <CardDescription>Property information</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Property Type</p>
-                        <p className="font-medium">{lead.additionalDetails?.propertyType || 'Not specified'}</p>
+                  <div>
+                    <h3 className="font-semibold mb-4">Special Instructions</h3>
+                    {lead.instructions ? (
+                      <div className="bg-muted/50 rounded-lg p-4">
+                        <p className="text-sm">{lead.instructions}</p>
                       </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Ownership Status</p>
-                        <p className="font-medium">{lead.additionalDetails?.ownershipStatus || 'Not specified'}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Property Age</p>
-                        <p className="font-medium">{lead.additionalDetails?.propertyAge ? `${lead.additionalDetails.propertyAge} years` : 'Not specified'}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    ) : (
+                      <p className="text-muted-foreground">No special instructions provided</p>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Instructions & Additional Information</CardTitle>
-                    <CardDescription>Special instructions and other details</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Visit Type</p>
-                        <p className="font-medium">{lead.visitType || 'Not specified'}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Special Instructions</p>
-                        <p className="font-medium">{lead.instructions || 'None'}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-muted-foreground">Application ID</p>
-                        <p className="font-medium">{lead.id}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              {/* Verification Tab */}
-              <TabsContent value="verification" className="pt-4">
-                {isAdmin ? (
-                  <LeadReview
-                    lead={lead}
-                    currentUser={currentUser}
-                    onApprove={handleApproveVerification}
-                    onReject={handleRejectVerification}
-                    onForwardToBank={handleForwardToBank}
-                  />
-                ) : (
-                  <VerificationProcess
-                    lead={lead}
-                    onStartVerification={handleStartVerification}
-                    onMarkArrival={handleMarkArrival}
-                    onUploadPhoto={handleUploadPhoto}
-                    onUploadDocument={handleUploadDocument}
-                    onAddNotes={handleAddNotes}
-                    onCompleteVerification={handleCompleteVerification}
-                  />
-                )}
-              </TabsContent>
-            </Tabs>
-          </div>
-        </div>
+          <TabsContent value="verification" className="space-y-6">
+            {isAdmin ? (
+              <LeadReview
+                lead={lead}
+                currentUser={currentUser}
+                onApprove={handleApproveVerification}
+                onReject={handleRejectVerification}
+                onForwardToBank={handleForwardToBank}
+              />
+            ) : (
+              <VerificationProcess
+                lead={lead}
+                onStartVerification={handleStartVerification}
+                onMarkArrival={handleMarkArrival}
+                onUploadPhoto={handleUploadPhoto}
+                onUploadDocument={handleUploadDocument}
+                onAddNotes={handleAddNotes}
+                onCompleteVerification={handleCompleteVerification}
+              />
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
