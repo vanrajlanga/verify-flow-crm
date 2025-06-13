@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User } from '@/utils/mockData';
@@ -109,6 +110,48 @@ const AddNewLead = () => {
     navigate('/');
   };
 
+  const handleAddLead = async (newLead: any) => {
+    try {
+      console.log('Adding new lead:', newLead);
+      
+      // Save to database
+      await saveLeadToDatabase(newLead);
+
+      toast({
+        title: "Lead added",
+        description: `New lead ${newLead.name} has been created successfully and saved to database.`,
+      });
+
+      // Navigate back to leads list
+      navigate('/admin/leads');
+    } catch (error) {
+      console.error('Error saving lead to database:', error);
+      
+      // Fall back to localStorage if database save fails
+      const storedLeads = localStorage.getItem('mockLeads');
+      let currentLeads = [];
+      if (storedLeads) {
+        try {
+          currentLeads = JSON.parse(storedLeads);
+        } catch (parseError) {
+          console.error("Error parsing stored leads:", parseError);
+          currentLeads = [];
+        }
+      }
+
+      const updatedLeads = [...currentLeads, newLead];
+      localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+
+      toast({
+        title: "Lead added",
+        description: `New lead ${newLead.name} has been created successfully (saved locally).`,
+        variant: "destructive"
+      });
+
+      navigate('/admin/leads');
+    }
+  };
+
   if (!currentUser) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
   }
@@ -126,7 +169,10 @@ const AddNewLead = () => {
         
         <main className="flex-1 p-4 md:p-6">
           <div className="max-w-7xl mx-auto">
-            <AddLeadFormMultiStep />
+            <AddLeadFormMultiStep 
+              onSubmit={handleAddLead}
+              locationData={locationData}
+            />
           </div>
         </main>
       </div>
