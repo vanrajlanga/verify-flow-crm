@@ -1,3 +1,4 @@
+
 import { LucideIcon } from 'lucide-react';
 
 export interface User {
@@ -74,6 +75,7 @@ export interface AdditionalDetails {
   vehicleModelName?: string;
   vehicleModelId?: string;
   addresses: Address[];
+  coApplicantAddresses?: Address[]; // Add this missing property
   coApplicant?: {
     name: string;
     age?: number;
