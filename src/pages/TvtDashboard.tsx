@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, Lead, mockLeads, banks } from '@/utils/mockData';
+import { User, Lead, mockLeads } from '@/utils/mockData';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
 import LeadList from '@/components/dashboard/LeadList';
@@ -18,7 +18,7 @@ const TvtDashboard = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if user is logged in and has TVTTEAM role
+    // Check if user is logged in and has TVT role
     const storedUser = localStorage.getItem('kycUser');
     if (!storedUser) {
       navigate('/');
@@ -28,7 +28,7 @@ const TvtDashboard = () => {
     const parsedUser = JSON.parse(storedUser);
     console.log('Current user in TVT Dashboard:', parsedUser);
     
-    if (parsedUser.role !== 'tvtteam') {
+    if (parsedUser.role !== 'tvt') {
       console.log('User is not TVT team member, redirecting...');
       navigate('/');
       return;
@@ -82,7 +82,6 @@ const TvtDashboard = () => {
       console.log('Looking for leads assigned to:', user.name);
 
       // Filter leads assigned to current TVT member
-      // FIXED: More comprehensive filtering logic
       const assignedLeads = allLeads.filter(lead => {
         const isAssigned = lead.assignedTo === user.name || 
                           lead.assignedTo === user.id ||
@@ -130,16 +129,6 @@ const TvtDashboard = () => {
   const handleLogout = () => {
     localStorage.removeItem('kycUser');
     navigate('/');
-  };
-
-  const handleViewLead = (leadId: string) => {
-    navigate(`/tvt/leads/${leadId}`);
-  };
-
-  const handleRefresh = async () => {
-    if (currentUser) {
-      await loadAssignedLeads(currentUser);
-    }
   };
 
   if (!currentUser) {
@@ -218,7 +207,7 @@ const TvtDashboard = () => {
               <CardHeader>
                 <CardTitle>My Assigned Leads</CardTitle>
                 <CardDescription>
-                  Leads assigned to you for verification. Click "View" to verify and update lead status.
+                  Leads assigned to you for verification. Click "View Details" to verify and update lead status.
                 </CardDescription>
               </CardHeader>
               <CardContent>

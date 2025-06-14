@@ -58,12 +58,16 @@ const App = () => (
           <Route path="/admin/add-lead" element={<AddNewLead />} />
           <Route path="/admin/bank-products" element={<BankProductModule />} />
           
+          {/* Agent routes */}
+          <Route path="/agent" element={<Navigate to="/agent/leads" replace />} />
           <Route path="/agent/dashboard" element={<AgentDashboard />} />
           <Route path="/agent/leads" element={<AgentLeads />} />
           <Route path="/agent/leads/:leadId" element={<AgentLeadDetail />} />
           <Route path="/agent/profile" element={<AgentProfile />} />
           <Route path="/agent/history" element={<AgentHistory />} />
           
+          {/* TVT routes */}
+          <Route path="/tvt" element={<Navigate to="/tvt/dashboard" replace />} />
           <Route path="/tvt/dashboard" element={<TvtDashboard />} />
           <Route path="/tvt/leads/:leadId" element={<TvtLeadDetail />} />
           

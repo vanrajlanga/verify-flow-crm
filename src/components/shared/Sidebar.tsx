@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { User } from '@/utils/mockData';
@@ -51,8 +52,8 @@ const Sidebar: React.FC<SidebarProps> = ({ user, isOpen }) => {
   ];
 
   const tvtNavItems = [
-    { icon: Home, label: 'Dashboard', path: '/tvt' },
-    { icon: Verified, label: 'Assigned Leads', path: '/tvt' },
+    { icon: Home, label: 'Dashboard', path: '/tvt/dashboard' },
+    { icon: Verified, label: 'Assigned Leads', path: '/tvt/dashboard' },
   ];
 
   const getNavItems = () => {
