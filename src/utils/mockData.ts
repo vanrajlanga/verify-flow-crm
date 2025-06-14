@@ -1,13 +1,22 @@
+
 export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'agent' | 'manager' | 'tvtteam'; // Fix: Change 'tvt' to 'tvtteam'
+  role: 'admin' | 'agent' | 'manager' | 'tvtteam';
   phone?: string;
   address?: string;
   joiningDate?: string;
   status?: 'Active' | 'Inactive';
   profilePicture?: string;
+  state?: string;
+  district?: string;
+  city?: string;
+  baseLocation?: string;
+  maxTravelDistance?: number;
+  extraChargePerKm?: number;
+  password?: string;
+  branch?: string;
 }
 
 export interface Address {
@@ -16,6 +25,7 @@ export interface Address {
   state: string;
   pincode: string;
   district: string;
+  type?: 'Residence' | 'Office' | 'Permanent' | 'Temporary' | 'Current';
 }
 
 export interface Lead {
@@ -32,6 +42,7 @@ export interface Lead {
   visitType: 'Physical' | 'Virtual';
   bank?: string;
   instructions?: string;
+  documents?: any[];
   additionalDetails?: {
     fatherName?: string;
     motherName?: string;
@@ -46,6 +57,37 @@ export interface Lead {
     bankProduct?: string;
     initiatedUnderBranch?: string;
     bankBranch?: string;
+    annualIncome?: string;
+    otherIncome?: string;
+    loanAmount?: string;
+    loanType?: string;
+    vehicleBrandName?: string;
+    vehicleModelName?: string;
+    agencyFileNo?: string;
+    applicationBarcode?: string;
+    caseId?: string;
+    schemeDesc?: string;
+    additionalComments?: string;
+    leadType?: string;
+    propertyType?: string;
+    ownershipStatus?: string;
+    propertyAge?: string;
+    addresses?: {
+      type: 'Residence' | 'Office' | 'Permanent';
+      street: string;
+      city: string;
+      district: string;
+      state: string;
+      pincode: string;
+    }[];
+    coApplicantAddresses?: {
+      type: 'Residence' | 'Office' | 'Permanent';
+      street: string;
+      city: string;
+      district: string;
+      state: string;
+      pincode: string;
+    }[];
   };
   carDetails?: {
     make: string;
@@ -58,6 +100,99 @@ export interface Lead {
   };
 }
 
+export interface Bank {
+  id: string;
+  name: string;
+  totalApplications?: number;
+}
+
+export interface BankBranch {
+  id: string;
+  bank: string;
+  name: string;
+  location: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+}
+
+export interface LeadType {
+  id: string;
+  name: string;
+}
+
+export const banks: Bank[] = [
+  { id: '1', name: 'State Bank of India', totalApplications: 150 },
+  { id: '2', name: 'HDFC Bank', totalApplications: 120 },
+  { id: '3', name: 'ICICI Bank', totalApplications: 100 },
+  { id: '4', name: 'Axis Bank', totalApplications: 80 },
+  { id: '5', name: 'Kotak Mahindra Bank', totalApplications: 60 },
+  { id: '6', name: 'Punjab National Bank', totalApplications: 90 },
+  { id: '7', name: 'Bank of Baroda', totalApplications: 70 },
+  { id: '8', name: 'Canara Bank', totalApplications: 85 },
+  { id: '9', name: 'Union Bank of India', totalApplications: 65 },
+  { id: '10', name: 'Indian Bank', totalApplications: 55 }
+];
+
+export const bankBranches: BankBranch[] = [
+  { id: '1', bank: 'State Bank of India', name: 'Mumbai Main Branch', location: 'Mumbai' },
+  { id: '2', bank: 'State Bank of India', name: 'Delhi Branch', location: 'Delhi' },
+  { id: '3', bank: 'HDFC Bank', name: 'Bangalore Branch', location: 'Bangalore' },
+  { id: '4', bank: 'HDFC Bank', name: 'Chennai Branch', location: 'Chennai' },
+  { id: '5', bank: 'ICICI Bank', name: 'Pune Branch', location: 'Pune' },
+  { id: '6', bank: 'ICICI Bank', name: 'Hyderabad Branch', location: 'Hyderabad' },
+  { id: '7', bank: 'Axis Bank', name: 'Kolkata Branch', location: 'Kolkata' },
+  { id: '8', bank: 'Axis Bank', name: 'Ahmedabad Branch', location: 'Ahmedabad' }
+];
+
+export const leadTypes: LeadType[] = [
+  { id: '1', name: 'Home Loan' },
+  { id: '2', name: 'Personal Loan' },
+  { id: '3', name: 'Car Loan' },
+  { id: '4', name: 'Business Loan' },
+  { id: '5', name: 'Education Loan' },
+  { id: '6', name: 'Credit Card' },
+  { id: '7', name: 'Gold Loan' },
+  { id: '8', name: 'Loan Against Property' }
+];
+
+export const agents: User[] = [
+  {
+    id: '2',
+    name: 'Rajesh Kumar',
+    email: 'rajesh@kycverification.com',
+    role: 'agent',
+    phone: '+91 9876543211',
+    address: 'Delhi, India',
+    joiningDate: '2023-02-20',
+    status: 'Active',
+    state: 'Delhi',
+    district: 'Central Delhi',
+    city: 'New Delhi',
+    branch: 'Delhi Branch',
+    baseLocation: 'Connaught Place, New Delhi',
+    maxTravelDistance: 15,
+    extraChargePerKm: 5
+  },
+  {
+    id: '5',
+    name: 'Priya Sharma',
+    email: 'priya@kycverification.com',
+    role: 'agent',
+    phone: '+91 9876543214',
+    address: 'Mumbai, Maharashtra',
+    joiningDate: '2023-03-15',
+    status: 'Active',
+    state: 'Maharashtra',
+    district: 'Mumbai',
+    city: 'Mumbai',
+    branch: 'Mumbai Main Branch',
+    baseLocation: 'Andheri East, Mumbai',
+    maxTravelDistance: 20,
+    extraChargePerKm: 6
+  }
+];
+
 export const mockUsers: User[] = [
   {
     id: '1',
@@ -67,7 +202,8 @@ export const mockUsers: User[] = [
     phone: '+91 9876543210',
     address: 'Mumbai, Maharashtra',
     joiningDate: '2023-01-15',
-    status: 'Active'
+    status: 'Active',
+    password: 'password'
   },
   {
     id: '2',
@@ -77,7 +213,14 @@ export const mockUsers: User[] = [
     phone: '+91 9876543211',
     address: 'Delhi, India',
     joiningDate: '2023-02-20',
-    status: 'Active'
+    status: 'Active',
+    state: 'Delhi',
+    district: 'Central Delhi',
+    city: 'New Delhi',
+    baseLocation: 'Connaught Place, New Delhi',
+    maxTravelDistance: 15,
+    extraChargePerKm: 5,
+    password: 'password'
   },
   {
     id: '3',
@@ -87,17 +230,19 @@ export const mockUsers: User[] = [
     phone: '+91 9876543212',
     address: 'Bangalore, Karnataka',
     joiningDate: '2023-01-10',
-    status: 'Active'
+    status: 'Active',
+    password: 'password'
   },
   {
     id: '4',
     name: 'Mike TVT',
     email: 'mike.tvt@example.com',
-    role: 'tvtteam', // Fix: Change from 'tvt' to 'tvtteam'
+    role: 'tvtteam',
     phone: '+91 9876543213',
     address: 'Chennai, Tamil Nadu',
     joiningDate: '2023-03-01',
-    status: 'Active'
+    status: 'Active',
+    password: 'password'
   }
 ];
 
@@ -135,7 +280,12 @@ export const mockLeads: Lead[] = [
       email: 'john.doe@techsolutions.com',
       bankProduct: 'Personal Loan',
       initiatedUnderBranch: 'Midtown Branch',
-      bankBranch: 'Manhattan Branch'
+      bankBranch: 'Manhattan Branch',
+      annualIncome: '108000',
+      loanAmount: '50000',
+      loanType: 'Personal Loan',
+      vehicleBrandName: 'Toyota',
+      vehicleModelName: 'Camry'
     },
     carDetails: {
       make: 'Toyota',
@@ -180,7 +330,12 @@ export const mockLeads: Lead[] = [
       email: 'alice.smith@globalmarketing.com',
       bankProduct: 'Credit Card',
       initiatedUnderBranch: 'LA Main Branch',
-      bankBranch: 'Hollywood Branch'
+      bankBranch: 'Hollywood Branch',
+      annualIncome: '90000',
+      loanAmount: '25000',
+      loanType: 'Credit Card',
+      vehicleBrandName: 'Honda',
+      vehicleModelName: 'Civic'
     },
     carDetails: {
       make: 'Honda',
@@ -225,7 +380,12 @@ export const mockLeads: Lead[] = [
       email: 'bob.johnson@cps.edu',
       bankProduct: 'Home Loan',
       initiatedUnderBranch: 'Chicago Downtown',
-      bankBranch: 'Lincoln Park Branch'
+      bankBranch: 'Lincoln Park Branch',
+      annualIncome: '72000',
+      loanAmount: '200000',
+      loanType: 'Home Loan',
+      vehicleBrandName: 'Ford',
+      vehicleModelName: 'Explorer'
     },
     carDetails: {
       make: 'Ford',
@@ -270,7 +430,12 @@ export const mockLeads: Lead[] = [
       email: 'emily.white@accountingsolutions.com',
       bankProduct: 'Business Loan',
       initiatedUnderBranch: 'Houston Galleria',
-      bankBranch: 'Uptown Branch'
+      bankBranch: 'Uptown Branch',
+      annualIncome: '96000',
+      loanAmount: '75000',
+      loanType: 'Business Loan',
+      vehicleBrandName: 'Nissan',
+      vehicleModelName: 'Altima'
     },
     carDetails: {
       make: 'Nissan',
@@ -315,7 +480,12 @@ export const mockLeads: Lead[] = [
       email: 'mike.tvt.lead@tvtsolutions.com',
       bankProduct: 'Student Loan',
       initiatedUnderBranch: 'Downtown Branch',
-      bankBranch: 'Wall Street Branch'
+      bankBranch: 'Wall Street Branch',
+      annualIncome: '48000',
+      loanAmount: '15000',
+      loanType: 'Student Loan',
+      vehicleBrandName: 'BMW',
+      vehicleModelName: 'X5'
     },
     carDetails: {
       make: 'BMW',
