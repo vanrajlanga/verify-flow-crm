@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Lead, User, Bank } from '@/utils/mockData';
 import { Button } from "@/components/ui/button";
@@ -15,6 +14,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Minus } from 'lucide-react';
+import AddressAgentAssignment from './AddressAgentAssignment';
 
 interface EditLeadFormProps {
   lead: Lead;
@@ -51,6 +51,7 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
       
       // Addresses
       addresses: [],
+      coApplicantAddresses: [],
       
       // Professional
       company: '',
@@ -81,6 +82,14 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
       // References
       references: [],
       
+      // Agent Assignments
+      addressAssignments: {
+        primaryAddress: null,
+        additionalAddresses: [],
+        coApplicantAddresses: [],
+        tvtAgent: null
+      },
+      
       ...lead.additionalDetails
     }
   });
@@ -101,6 +110,7 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
         spouseName: '',
         coApplicant: null,
         addresses: [],
+        coApplicantAddresses: [],
         company: '',
         designation: '',
         employmentType: '',
@@ -121,6 +131,12 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
         leadType: '',
         phoneNumber: '',
         email: '',
+        addressAssignments: {
+          primaryAddress: null,
+          additionalAddresses: [],
+          coApplicantAddresses: [],
+          tvtAgent: null
+        },
         ...lead.additionalDetails
       }
     });
@@ -207,6 +223,47 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
     }));
   };
 
+  const addCoApplicantAddress = () => {
+    const newAddress = {
+      type: 'Residence',
+      street: '',
+      city: '',
+      district: '',
+      state: '',
+      pincode: ''
+    };
+    
+    setFormData((prev: any) => ({
+      ...prev,
+      additionalDetails: {
+        ...prev.additionalDetails,
+        coApplicantAddresses: [...(prev.additionalDetails.coApplicantAddresses || []), newAddress]
+      }
+    }));
+  };
+
+  const removeCoApplicantAddress = (index: number) => {
+    setFormData((prev: any) => ({
+      ...prev,
+      additionalDetails: {
+        ...prev.additionalDetails,
+        coApplicantAddresses: prev.additionalDetails.coApplicantAddresses.filter((_: any, i: number) => i !== index)
+      }
+    }));
+  };
+
+  const handleCoApplicantAddressChange = (index: number, field: string, value: string) => {
+    setFormData((prev: any) => ({
+      ...prev,
+      additionalDetails: {
+        ...prev.additionalDetails,
+        coApplicantAddresses: prev.additionalDetails.coApplicantAddresses.map((addr: any, i: number) => 
+          i === index ? { ...addr, [field]: value } : addr
+        )
+      }
+    }));
+  };
+
   const addReference = () => {
     const newReference = {
       name: '',
@@ -245,6 +302,22 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
     }));
   };
 
+  const handleAddressAssignmentChange = (assignments: any) => {
+    setFormData((prev: any) => ({
+      ...prev,
+      additionalDetails: {
+        ...prev.additionalDetails,
+        addressAssignments: assignments
+      }
+    }));
+  };
+
+  const hasMultipleAddresses = () => {
+    const additionalAddresses = formData.additionalDetails?.addresses || [];
+    const coApplicantAddresses = formData.additionalDetails?.coApplicantAddresses || [];
+    return additionalAddresses.length > 0 || coApplicantAddresses.length > 0 || formData.additionalDetails?.coApplicant;
+  };
+
   const handleUpdate = () => {
     if (!formData.name.trim()) {
       toast({
@@ -266,7 +339,7 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
   return (
     <div className="space-y-6 max-h-[70vh] overflow-y-auto p-1">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-10 text-xs">
+        <TabsList className="grid w-full grid-cols-11 text-xs">
           <TabsTrigger value="bank" className="text-xs">Bank</TabsTrigger>
           <TabsTrigger value="applicant" className="text-xs">Applicant</TabsTrigger>
           <TabsTrigger value="coapplicant" className="text-xs">Co-Applicant</TabsTrigger>
@@ -277,6 +350,7 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
           <TabsTrigger value="financial" className="text-xs">Financial</TabsTrigger>
           <TabsTrigger value="references" className="text-xs">References</TabsTrigger>
           <TabsTrigger value="assignment" className="text-xs">Assignment</TabsTrigger>
+          <TabsTrigger value="agentassign" className="text-xs">Agent Assign</TabsTrigger>
         </TabsList>
         
         {/* Bank Details */}
@@ -459,64 +533,157 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
           </div>
           
           {formData.additionalDetails?.coApplicant && (
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Full Name *</label>
-                <Input
-                  value={formData.additionalDetails.coApplicant.name}
-                  onChange={(e) => handleCoApplicantChange('name', e.target.value)}
-                  placeholder="Enter co-applicant name"
-                />
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Full Name *</label>
+                  <Input
+                    value={formData.additionalDetails.coApplicant.name}
+                    onChange={(e) => handleCoApplicantChange('name', e.target.value)}
+                    placeholder="Enter co-applicant name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Phone Number * (10 digits)</label>
+                  <Input
+                    value={formData.additionalDetails.coApplicant.phone}
+                    onChange={(e) => handleCoApplicantChange('phone', e.target.value)}
+                    placeholder="Enter 10-digit phone number"
+                    maxLength={10}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Age *</label>
+                  <Input
+                    type="number"
+                    value={formData.additionalDetails.coApplicant.age || ''}
+                    onChange={(e) => handleCoApplicantChange('age', e.target.value)}
+                    placeholder="Enter age"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Email *</label>
+                  <Input
+                    type="email"
+                    value={formData.additionalDetails.coApplicant.email || ''}
+                    onChange={(e) => handleCoApplicantChange('email', e.target.value)}
+                    placeholder="Enter email address"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Relationship</label>
+                  <Select
+                    value={formData.additionalDetails.coApplicant.relation}
+                    onValueChange={(value) => handleCoApplicantChange('relation', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select relationship" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Spouse">Spouse</SelectItem>
+                      <SelectItem value="Father">Father</SelectItem>
+                      <SelectItem value="Mother">Mother</SelectItem>
+                      <SelectItem value="Brother">Brother</SelectItem>
+                      <SelectItem value="Sister">Sister</SelectItem>
+                      <SelectItem value="Son">Son</SelectItem>
+                      <SelectItem value="Daughter">Daughter</SelectItem>
+                      <SelectItem value="Friend">Friend</SelectItem>
+                      <SelectItem value="Business Partner">Business Partner</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Phone Number * (10 digits)</label>
-                <Input
-                  value={formData.additionalDetails.coApplicant.phone}
-                  onChange={(e) => handleCoApplicantChange('phone', e.target.value)}
-                  placeholder="Enter 10-digit phone number"
-                  maxLength={10}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Age *</label>
-                <Input
-                  type="number"
-                  value={formData.additionalDetails.coApplicant.age || ''}
-                  onChange={(e) => handleCoApplicantChange('age', e.target.value)}
-                  placeholder="Enter age"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Email *</label>
-                <Input
-                  type="email"
-                  value={formData.additionalDetails.coApplicant.email || ''}
-                  onChange={(e) => handleCoApplicantChange('email', e.target.value)}
-                  placeholder="Enter email address"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Relationship</label>
-                <Select
-                  value={formData.additionalDetails.coApplicant.relation}
-                  onValueChange={(value) => handleCoApplicantChange('relation', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select relationship" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Spouse">Spouse</SelectItem>
-                    <SelectItem value="Father">Father</SelectItem>
-                    <SelectItem value="Mother">Mother</SelectItem>
-                    <SelectItem value="Brother">Brother</SelectItem>
-                    <SelectItem value="Sister">Sister</SelectItem>
-                    <SelectItem value="Son">Son</SelectItem>
-                    <SelectItem value="Daughter">Daughter</SelectItem>
-                    <SelectItem value="Friend">Friend</SelectItem>
-                    <SelectItem value="Business Partner">Business Partner</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+
+              {/* Co-Applicant Addresses */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base">Co-Applicant Addresses</CardTitle>
+                    <Button type="button" variant="outline" size="sm" onClick={addCoApplicantAddress}>
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add Address
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {formData.additionalDetails?.coApplicantAddresses?.map((addr: any, index: number) => (
+                    <div key={index} className="border p-4 rounded-lg">
+                      <div className="flex items-center justify-between mb-4">
+                        <h5 className="font-medium">Co-Applicant Address {index + 1}</h5>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removeCoApplicantAddress(index)}
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Address Type</label>
+                          <Select
+                            value={addr.type}
+                            onValueChange={(value) => handleCoApplicantAddressChange(index, 'type', value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Residence">Residence</SelectItem>
+                              <SelectItem value="Office">Office</SelectItem>
+                              <SelectItem value="Permanent">Permanent</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Street Address</label>
+                          <Input
+                            value={addr.street}
+                            onChange={(e) => handleCoApplicantAddressChange(index, 'street', e.target.value)}
+                            placeholder="Enter street address"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">State</label>
+                          <Input
+                            value={addr.state}
+                            onChange={(e) => handleCoApplicantAddressChange(index, 'state', e.target.value)}
+                            placeholder="Enter state"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">District</label>
+                          <Input
+                            value={addr.district}
+                            onChange={(e) => handleCoApplicantAddressChange(index, 'district', e.target.value)}
+                            placeholder="Enter district"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">City</label>
+                          <Input
+                            value={addr.city}
+                            onChange={(e) => handleCoApplicantAddressChange(index, 'city', e.target.value)}
+                            placeholder="Enter city"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Pincode</label>
+                          <Input
+                            value={addr.pincode}
+                            onChange={(e) => handleCoApplicantAddressChange(index, 'pincode', e.target.value)}
+                            placeholder="Enter pincode"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {(!formData.additionalDetails?.coApplicantAddresses || formData.additionalDetails.coApplicantAddresses.length === 0) && (
+                    <p className="text-center text-muted-foreground py-8">No co-applicant addresses added yet. Click "Add Address" to add addresses.</p>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           )}
         </TabsContent>
@@ -978,6 +1145,40 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
               </ul>
             </div>
           </div>
+        </TabsContent>
+
+        {/* Agent Assignment Tab */}
+        <TabsContent value="agentassign" className="space-y-4 pt-4">
+          {hasMultipleAddresses() ? (
+            <AddressAgentAssignment
+              primaryAddress={{
+                type: formData.address?.type || 'Residence',
+                street: formData.address?.street || '',
+                city: formData.address?.city || '',
+                state: formData.address?.state || '',
+                district: formData.address?.district || '',
+                pincode: formData.address?.pincode || '',
+                assignedAgent: formData.additionalDetails?.addressAssignments?.primaryAddress?.assignedAgent
+              }}
+              additionalAddresses={formData.additionalDetails?.addresses || []}
+              coApplicantAddresses={formData.additionalDetails?.coApplicantAddresses || []}
+              agents={agents}
+              tvtAgent={formData.additionalDetails?.addressAssignments?.tvtAgent}
+              onAssignmentChange={handleAddressAssignmentChange}
+            />
+          ) : (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="text-center py-8">
+                  <p className="text-muted-foreground">No multiple addresses found.</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Address-based agent assignment is only available when there are multiple addresses 
+                    (additional addresses for applicant or co-applicant addresses).
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
       
