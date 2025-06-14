@@ -8,7 +8,7 @@ import { Lead, User } from '@/utils/mockData';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
 import EditLeadForm from '@/components/admin/EditLeadForm';
-import { getLeadFromDatabase } from '@/lib/lead-operations';
+import { getLeadByIdFromDatabase } from '@/lib/lead-operations';
 import { toast } from '@/components/ui/use-toast';
 
 const EditLead = () => {
@@ -48,7 +48,7 @@ const EditLead = () => {
     try {
       setLoading(true);
       console.log('Loading lead for editing:', leadId);
-      const leadData = await getLeadFromDatabase(leadId);
+      const leadData = await getLeadByIdFromDatabase(leadId);
       
       if (!leadData) {
         toast({
@@ -81,6 +81,14 @@ const EditLead = () => {
   };
 
   const handleBack = () => {
+    navigate('/admin/leads');
+  };
+
+  const handleSave = () => {
+    toast({
+      title: "Lead updated",
+      description: "Lead has been successfully updated.",
+    });
     navigate('/admin/leads');
   };
 
@@ -128,13 +136,7 @@ const EditLead = () => {
             ) : lead ? (
               <EditLeadForm 
                 lead={lead} 
-                onSave={() => {
-                  toast({
-                    title: "Lead updated",
-                    description: "Lead has been successfully updated.",
-                  });
-                  navigate('/admin/leads');
-                }}
+                onSuccess={handleSave}
                 onCancel={handleBack}
               />
             ) : (
