@@ -1,5 +1,4 @@
-
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Index from '@/pages/Index';
 import AdminDashboard from '@/pages/AdminDashboard';
 import TvtDashboard from '@/pages/TvtDashboard';
@@ -31,6 +30,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/dashboard" element={<Navigate to="/admin" replace />} />
           <Route path="/admin/leads" element={<AdminLeads />} />
           <Route path="/admin/leads-sheet" element={<AdminLeadsSheet />} />
           <Route path="/admin/leads/:leadId" element={<LeadDetail />} />
