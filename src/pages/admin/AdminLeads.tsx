@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -84,6 +83,10 @@ const AdminLeads = () => {
     });
   };
 
+  const handleViewLead = (leadId: string) => {
+    navigate(`/admin/leads/${leadId}`);
+  };
+
   if (!currentUser) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
   }
@@ -145,6 +148,9 @@ const AdminLeads = () => {
                 ) : (
                   <LeadsTable 
                     leads={leads} 
+                    onViewLead={handleViewLead}
+                    onEditLead={handleEditLead}
+                    onDeleteLead={handleDeleteLead}
                     showActions={currentUser.role === 'admin'} // Only admins can edit/delete
                   />
                 )}

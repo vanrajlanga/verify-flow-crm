@@ -163,14 +163,15 @@ export type MainNavItem = NavItemWithOptionalChildren
 export type SidebarNavItem = NavItemWithChildren
 
 // Mock data exports for backward compatibility
-export const users: User[] = [
+export const mockUsers: User[] = [
   {
     id: 'admin-1',
     name: 'Admin User',
     email: 'admin@example.com',
     role: 'admin',
     password: 'admin123',
-    status: 'active'
+    status: 'active',
+    documents: []
   },
   {
     id: 'agent-1',
@@ -202,7 +203,8 @@ export const users: User[] = [
     state: 'Maharashtra',
     city: 'Mumbai',
     status: 'active',
-    managedBankId: 'axis' // Manager for Axis Bank
+    managedBankId: 'axis',
+    documents: []
   },
   {
     id: 'manager-2',
@@ -215,7 +217,8 @@ export const users: User[] = [
     state: 'Karnataka',
     city: 'Bangalore',
     status: 'active',
-    managedBankId: 'hdfc' // Manager for HDFC Bank
+    managedBankId: 'hdfc',
+    documents: []
   },
   {
     id: 'tvt-1',
@@ -223,9 +226,12 @@ export const users: User[] = [
     email: 'tvt@example.com',
     role: 'tvt',
     password: 'tvt123',
-    status: 'active'
+    status: 'active',
+    documents: []
   }
 ];
+
+export const users: User[] = mockUsers;
 
 export const mockLeads: Lead[] = [
   {

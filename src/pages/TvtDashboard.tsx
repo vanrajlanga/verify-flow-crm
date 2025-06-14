@@ -47,7 +47,7 @@ const TvtDashboard = () => {
       let allLeads: Lead[] = [];
       
       try {
-        const dbLeads = await getLeadsFromDatabase();
+        const dbLeads = await getAllLeadsFromDatabase();
         if (dbLeads && dbLeads.length > 0) {
           console.log('Loaded leads from database:', dbLeads.length);
           allLeads = dbLeads;
