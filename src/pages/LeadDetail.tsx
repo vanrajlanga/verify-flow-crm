@@ -182,7 +182,7 @@ const LeadDetail = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Bank Name</label>
-                    <p className="text-base">{lead.additionalDetails?.bankName || lead.bank || 'Not specified'}</p>
+                    <p className="text-base">{lead.bank || 'Not specified'}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Bank Product</label>
@@ -190,11 +190,11 @@ const LeadDetail = () => {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Initiated Under Branch</label>
-                    <p className="text-base">{lead.additionalDetails?.initiatedBranch || 'Not specified'}</p>
+                    <p className="text-base">{lead.additionalDetails?.initiatedUnderBranch || 'Not specified'}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">Build Under Branch</label>
-                    <p className="text-base">{lead.additionalDetails?.buildBranch || lead.additionalDetails?.bankBranch || 'Not specified'}</p>
+                    <label className="text-sm font-medium text-muted-foreground">Bank Branch</label>
+                    <p className="text-base">{lead.additionalDetails?.bankBranch || 'Not specified'}</p>
                   </div>
                 </div>
               </CardContent>
@@ -431,7 +431,7 @@ const LeadDetail = () => {
             </Card>
 
             {/* Vehicle Details */}
-            {(lead.additionalDetails?.vehicleBrandName || lead.additionalDetails?.vehicleModelName || lead.additionalDetails?.vehicleType) && (
+            {(lead.additionalDetails?.vehicleBrandName || lead.additionalDetails?.vehicleModelName || lead.additionalDetails?.loanType) && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -443,7 +443,7 @@ const LeadDetail = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div>
                       <label className="text-sm font-medium text-muted-foreground">Vehicle Type</label>
-                      <p className="text-base">{lead.additionalDetails?.vehicleType || lead.additionalDetails?.loanType || 'Not specified'}</p>
+                      <p className="text-base">{lead.additionalDetails?.loanType || 'Not specified'}</p>
                     </div>
                     <div>
                       <label className="text-sm font-medium text-muted-foreground">Vehicle Brand</label>
@@ -455,7 +455,7 @@ const LeadDetail = () => {
                     </div>
                   </div>
                 </CardContent>
-              </Card>
+            </Card>
             )}
 
             {/* Financial Information */}
