@@ -26,6 +26,7 @@ interface LeadsTableProps {
   enableBulkSelect?: boolean;
   selectedLeads?: string[];
   onSelectLeads?: (leadIds: string[]) => void;
+  visibleColumns?: string[];
 }
 
 const LeadsTable: React.FC<LeadsTableProps> = ({
@@ -40,7 +41,8 @@ const LeadsTable: React.FC<LeadsTableProps> = ({
   enableInlineEdit = false,
   enableBulkSelect = false,
   selectedLeads = [],
-  onSelectLeads
+  onSelectLeads,
+  visibleColumns
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isExporting, setIsExporting] = useState(false);
@@ -239,6 +241,24 @@ const LeadsTable: React.FC<LeadsTableProps> = ({
     { value: 'Both', label: 'Both' }
   ];
 
+  // Define all available columns
+  const allColumns = [
+    'leadId', 'name', 'age', 'job', 'status', 'bank', 'visitType', 'city', 'state', 
+    'phone', 'email', 'company', 'loanType', 'loanAmount', 'bankProduct', 
+    'initiatedBranch', 'coApplicant', 'assignedTo', 'createdDate'
+  ];
+
+  // Use provided visible columns or show all columns
+  const columnsToShow = visibleColumns || allColumns;
+
+  // Helper function to check if column should be visible
+  const isColumnVisible = (columnName: string) => {
+    return columnsToShow.includes(columnName);
+  };
+
+  // Calculate total columns for empty state
+  const totalColumns = (enableBulkSelect ? 1 : 0) + columnsToShow.length + (showActions ? 1 : 0);
+
   return (
     <Card>
       <CardHeader>
@@ -252,7 +272,7 @@ const LeadsTable: React.FC<LeadsTableProps> = ({
             </CardDescription>
           </div>
           
-          {showActions && (
+          {showActions && !visibleColumns && (
             <div className="flex gap-2 flex-wrap">
               <Button 
                 onClick={handleExportCSV}
@@ -301,32 +321,32 @@ const LeadsTable: React.FC<LeadsTableProps> = ({
                     />
                   </TableHead>
                 )}
-                <TableHead>Lead ID</TableHead>
-                <TableHead>Name</TableHead>
-                <TableHead>Age</TableHead>
-                <TableHead>Job</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Bank</TableHead>
-                <TableHead>Visit Type</TableHead>
-                <TableHead>City</TableHead>
-                <TableHead>State</TableHead>
-                <TableHead>Phone</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Company</TableHead>
-                <TableHead>Loan Type</TableHead>
-                <TableHead>Loan Amount</TableHead>
-                <TableHead>Bank Product</TableHead>
-                <TableHead>Initiated Branch</TableHead>
-                <TableHead>Co-Applicant</TableHead>
-                <TableHead>Assigned To</TableHead>
-                <TableHead>Created Date</TableHead>
+                {isColumnVisible('leadId') && <TableHead>Lead ID</TableHead>}
+                {isColumnVisible('name') && <TableHead>Name</TableHead>}
+                {isColumnVisible('age') && <TableHead>Age</TableHead>}
+                {isColumnVisible('job') && <TableHead>Job</TableHead>}
+                {isColumnVisible('status') && <TableHead>Status</TableHead>}
+                {isColumnVisible('bank') && <TableHead>Bank</TableHead>}
+                {isColumnVisible('visitType') && <TableHead>Visit Type</TableHead>}
+                {isColumnVisible('city') && <TableHead>City</TableHead>}
+                {isColumnVisible('state') && <TableHead>State</TableHead>}
+                {isColumnVisible('phone') && <TableHead>Phone</TableHead>}
+                {isColumnVisible('email') && <TableHead>Email</TableHead>}
+                {isColumnVisible('company') && <TableHead>Company</TableHead>}
+                {isColumnVisible('loanType') && <TableHead>Loan Type</TableHead>}
+                {isColumnVisible('loanAmount') && <TableHead>Loan Amount</TableHead>}
+                {isColumnVisible('bankProduct') && <TableHead>Bank Product</TableHead>}
+                {isColumnVisible('initiatedBranch') && <TableHead>Initiated Branch</TableHead>}
+                {isColumnVisible('coApplicant') && <TableHead>Co-Applicant</TableHead>}
+                {isColumnVisible('assignedTo') && <TableHead>Assigned To</TableHead>}
+                {isColumnVisible('createdDate') && <TableHead>Created Date</TableHead>}
                 {showActions && <TableHead>Actions</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredLeads.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={enableBulkSelect ? (showActions ? 21 : 20) : (showActions ? 20 : 19)} className="text-center py-8">
+                  <TableCell colSpan={totalColumns} className="text-center py-8">
                     <div className="text-muted-foreground">
                       {searchTerm ? 'No leads found matching your search criteria.' : 'No leads available in database.'}
                     </div>
@@ -343,188 +363,226 @@ const LeadsTable: React.FC<LeadsTableProps> = ({
                         />
                       </TableCell>
                     )}
-                    <TableCell className="font-medium">{lead.id}</TableCell>
-                    <TableCell>
-                      {enableInlineEdit ? (
-                        <EditableCell
-                          value={lead.name}
-                          onSave={(value) => handleCellUpdate(lead.id, 'name', value)}
-                          placeholder="Enter name"
-                        />
-                      ) : (
-                        <span className="font-semibold">{lead.name}</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {enableInlineEdit ? (
-                        <EditableCell
-                          value={lead.age}
-                          onSave={(value) => handleCellUpdate(lead.id, 'age', value)}
-                          type="number"
-                        />
-                      ) : (
-                        lead.age
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {enableInlineEdit ? (
-                        <EditableCell
-                          value={lead.job}
-                          onSave={(value) => handleCellUpdate(lead.id, 'job', value)}
-                          placeholder="Enter job"
-                        />
-                      ) : (
-                        lead.job
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {enableInlineEdit ? (
-                        <EditableCell
-                          value={lead.status}
-                          onSave={(value) => handleCellUpdate(lead.id, 'status', value)}
-                          type="select"
-                          options={statusOptions}
-                        />
-                      ) : (
-                        <Badge className={getStatusColor(lead.status)}>
-                          {lead.status}
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {enableInlineEdit ? (
-                        <EditableCell
-                          value={lead.bank}
-                          onSave={(value) => handleCellUpdate(lead.id, 'bank', value)}
-                          placeholder="Enter bank"
-                        />
-                      ) : (
-                        lead.bank
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {enableInlineEdit ? (
-                        <EditableCell
-                          value={lead.visitType}
-                          onSave={(value) => handleCellUpdate(lead.id, 'visitType', value)}
-                          type="select"
-                          options={visitTypeOptions}
-                        />
-                      ) : (
-                        lead.visitType
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {enableInlineEdit ? (
-                        <EditableCell
-                          value={lead.address.city}
-                          onSave={(value) => handleCellUpdate(lead.id, 'city', value)}
-                          placeholder="Enter city"
-                        />
-                      ) : (
-                        lead.address.city
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {enableInlineEdit ? (
-                        <EditableCell
-                          value={lead.address.state}
-                          onSave={(value) => handleCellUpdate(lead.id, 'state', value)}
-                          placeholder="Enter state"
-                        />
-                      ) : (
-                        lead.address.state
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {enableInlineEdit ? (
-                        <EditableCell
-                          value={lead.additionalDetails?.phoneNumber || ''}
-                          onSave={(value) => handleCellUpdate(lead.id, 'phoneNumber', value)}
-                          placeholder="Enter phone"
-                        />
-                      ) : (
-                        lead.additionalDetails?.phoneNumber || '-'
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {enableInlineEdit ? (
-                        <EditableCell
-                          value={lead.additionalDetails?.email || ''}
-                          onSave={(value) => handleCellUpdate(lead.id, 'email', value)}
-                          placeholder="Enter email"
-                        />
-                      ) : (
-                        lead.additionalDetails?.email || '-'
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {enableInlineEdit ? (
-                        <EditableCell
-                          value={lead.additionalDetails?.company || ''}
-                          onSave={(value) => handleCellUpdate(lead.id, 'company', value)}
-                          placeholder="Enter company"
-                        />
-                      ) : (
-                        lead.additionalDetails?.company || '-'
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {enableInlineEdit ? (
-                        <EditableCell
-                          value={lead.additionalDetails?.loanType || ''}
-                          onSave={(value) => handleCellUpdate(lead.id, 'loanType', value)}
-                          placeholder="Enter loan type"
-                        />
-                      ) : (
-                        lead.additionalDetails?.loanType || '-'
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {enableInlineEdit ? (
-                        <EditableCell
-                          value={lead.additionalDetails?.loanAmount || ''}
-                          onSave={(value) => handleCellUpdate(lead.id, 'loanAmount', value)}
-                          placeholder="Enter amount"
-                        />
-                      ) : (
-                        lead.additionalDetails?.loanAmount || '-'
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {enableInlineEdit ? (
-                        <EditableCell
-                          value={lead.additionalDetails?.bankProduct || ''}
-                          onSave={(value) => handleCellUpdate(lead.id, 'bankProduct', value)}
-                          placeholder="Enter bank product"
-                        />
-                      ) : (
-                        lead.additionalDetails?.bankProduct || '-'
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {enableInlineEdit ? (
-                        <EditableCell
-                          value={lead.additionalDetails?.initiatedUnderBranch || ''}
-                          onSave={(value) => handleCellUpdate(lead.id, 'initiatedUnderBranch', value)}
-                          placeholder="Enter branch"
-                        />
-                      ) : (
-                        lead.additionalDetails?.initiatedUnderBranch || '-'
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {lead.additionalDetails?.coApplicant ? (
-                        <span className="text-sm">
-                          {lead.additionalDetails.coApplicant.name}
-                          {lead.additionalDetails.coApplicant.relation && ` (${lead.additionalDetails.coApplicant.relation})`}
-                        </span>
-                      ) : (
-                        '-'
-                      )}
-                    </TableCell>
-                    <TableCell>{lead.assignedTo || 'Unassigned'}</TableCell>
-                    <TableCell>{new Date(lead.createdAt).toLocaleDateString()}</TableCell>
+                    {isColumnVisible('leadId') && (
+                      <TableCell className="font-medium">{lead.id}</TableCell>
+                    )}
+                    {isColumnVisible('name') && (
+                      <TableCell>
+                        {enableInlineEdit ? (
+                          <EditableCell
+                            value={lead.name}
+                            onSave={(value) => handleCellUpdate(lead.id, 'name', value)}
+                            placeholder="Enter name"
+                          />
+                        ) : (
+                          <span className="font-semibold">{lead.name}</span>
+                        )}
+                      </TableCell>
+                    )}
+                    {isColumnVisible('age') && (
+                      <TableCell>
+                        {enableInlineEdit ? (
+                          <EditableCell
+                            value={lead.age}
+                            onSave={(value) => handleCellUpdate(lead.id, 'age', value)}
+                            type="number"
+                          />
+                        ) : (
+                          lead.age
+                        )}
+                      </TableCell>
+                    )}
+                    {isColumnVisible('job') && (
+                      <TableCell>
+                        {enableInlineEdit ? (
+                          <EditableCell
+                            value={lead.job}
+                            onSave={(value) => handleCellUpdate(lead.id, 'job', value)}
+                            placeholder="Enter job"
+                          />
+                        ) : (
+                          lead.job
+                        )}
+                      </TableCell>
+                    )}
+                    {isColumnVisible('status') && (
+                      <TableCell>
+                        {enableInlineEdit ? (
+                          <EditableCell
+                            value={lead.status}
+                            onSave={(value) => handleCellUpdate(lead.id, 'status', value)}
+                            type="select"
+                            options={statusOptions}
+                          />
+                        ) : (
+                          <Badge className={getStatusColor(lead.status)}>
+                            {lead.status}
+                          </Badge>
+                        )}
+                      </TableCell>
+                    )}
+                    {isColumnVisible('bank') && (
+                      <TableCell>
+                        {enableInlineEdit ? (
+                          <EditableCell
+                            value={lead.bank}
+                            onSave={(value) => handleCellUpdate(lead.id, 'bank', value)}
+                            placeholder="Enter bank"
+                          />
+                        ) : (
+                          lead.bank
+                        )}
+                      </TableCell>
+                    )}
+                    {isColumnVisible('visitType') && (
+                      <TableCell>
+                        {enableInlineEdit ? (
+                          <EditableCell
+                            value={lead.visitType}
+                            onSave={(value) => handleCellUpdate(lead.id, 'visitType', value)}
+                            type="select"
+                            options={visitTypeOptions}
+                          />
+                        ) : (
+                          lead.visitType
+                        )}
+                      </TableCell>
+                    )}
+                    {isColumnVisible('city') && (
+                      <TableCell>
+                        {enableInlineEdit ? (
+                          <EditableCell
+                            value={lead.address.city}
+                            onSave={(value) => handleCellUpdate(lead.id, 'city', value)}
+                            placeholder="Enter city"
+                          />
+                        ) : (
+                          lead.address.city
+                        )}
+                      </TableCell>
+                    )}
+                    {isColumnVisible('state') && (
+                      <TableCell>
+                        {enableInlineEdit ? (
+                          <EditableCell
+                            value={lead.address.state}
+                            onSave={(value) => handleCellUpdate(lead.id, 'state', value)}
+                            placeholder="Enter state"
+                          />
+                        ) : (
+                          lead.address.state
+                        )}
+                      </TableCell>
+                    )}
+                    {isColumnVisible('phone') && (
+                      <TableCell>
+                        {enableInlineEdit ? (
+                          <EditableCell
+                            value={lead.additionalDetails?.phoneNumber || ''}
+                            onSave={(value) => handleCellUpdate(lead.id, 'phoneNumber', value)}
+                            placeholder="Enter phone"
+                          />
+                        ) : (
+                          lead.additionalDetails?.phoneNumber || '-'
+                        )}
+                      </TableCell>
+                    )}
+                    {isColumnVisible('email') && (
+                      <TableCell>
+                        {enableInlineEdit ? (
+                          <EditableCell
+                            value={lead.additionalDetails?.email || ''}
+                            onSave={(value) => handleCellUpdate(lead.id, 'email', value)}
+                            placeholder="Enter email"
+                          />
+                        ) : (
+                          lead.additionalDetails?.email || '-'
+                        )}
+                      </TableCell>
+                    )}
+                    {isColumnVisible('company') && (
+                      <TableCell>
+                        {enableInlineEdit ? (
+                          <EditableCell
+                            value={lead.additionalDetails?.company || ''}
+                            onSave={(value) => handleCellUpdate(lead.id, 'company', value)}
+                            placeholder="Enter company"
+                          />
+                        ) : (
+                          lead.additionalDetails?.company || '-'
+                        )}
+                      </TableCell>
+                    )}
+                    {isColumnVisible('loanType') && (
+                      <TableCell>
+                        {enableInlineEdit ? (
+                          <EditableCell
+                            value={lead.additionalDetails?.loanType || ''}
+                            onSave={(value) => handleCellUpdate(lead.id, 'loanType', value)}
+                            placeholder="Enter loan type"
+                          />
+                        ) : (
+                          lead.additionalDetails?.loanType || '-'
+                        )}
+                      </TableCell>
+                    )}
+                    {isColumnVisible('loanAmount') && (
+                      <TableCell>
+                        {enableInlineEdit ? (
+                          <EditableCell
+                            value={lead.additionalDetails?.loanAmount || ''}
+                            onSave={(value) => handleCellUpdate(lead.id, 'loanAmount', value)}
+                            placeholder="Enter amount"
+                          />
+                        ) : (
+                          lead.additionalDetails?.loanAmount || '-'
+                        )}
+                      </TableCell>
+                    )}
+                    {isColumnVisible('bankProduct') && (
+                      <TableCell>
+                        {enableInlineEdit ? (
+                          <EditableCell
+                            value={lead.additionalDetails?.bankProduct || ''}
+                            onSave={(value) => handleCellUpdate(lead.id, 'bankProduct', value)}
+                            placeholder="Enter bank product"
+                          />
+                        ) : (
+                          lead.additionalDetails?.bankProduct || '-'
+                        )}
+                      </TableCell>
+                    )}
+                    {isColumnVisible('initiatedBranch') && (
+                      <TableCell>
+                        {enableInlineEdit ? (
+                          <EditableCell
+                            value={lead.additionalDetails?.initiatedUnderBranch || ''}
+                            onSave={(value) => handleCellUpdate(lead.id, 'initiatedUnderBranch', value)}
+                            placeholder="Enter branch"
+                          />
+                        ) : (
+                          lead.additionalDetails?.initiatedUnderBranch || '-'
+                        )}
+                      </TableCell>
+                    )}
+                    {isColumnVisible('coApplicant') && (
+                      <TableCell>
+                        {lead.additionalDetails?.coApplicant ? (
+                          <span className="text-sm">
+                            {lead.additionalDetails.coApplicant.name}
+                            {lead.additionalDetails.coApplicant.relation && ` (${lead.additionalDetails.coApplicant.relation})`}
+                          </span>
+                        ) : (
+                          '-'
+                        )}
+                      </TableCell>
+                    )}
+                    {isColumnVisible('assignedTo') && (
+                      <TableCell>{lead.assignedTo || 'Unassigned'}</TableCell>
+                    )}
+                    {isColumnVisible('createdDate') && (
+                      <TableCell>{new Date(lead.createdAt).toLocaleDateString()}</TableCell>
+                    )}
                     {showActions && (
                       <TableCell>
                         <div className="flex items-center gap-2">

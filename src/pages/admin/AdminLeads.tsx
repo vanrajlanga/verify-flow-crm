@@ -148,6 +148,20 @@ const AdminLeads = () => {
                     description="View and manage individual leads with basic actions"
                     enableInlineEdit={false}
                     enableBulkSelect={false}
+                    visibleColumns={[
+                      'leadId',
+                      'name', 
+                      'bank',
+                      'visitType',
+                      'city',
+                      'phone',
+                      'company',
+                      'bankProduct',
+                      'initiatedBranch',
+                      'assignedTo',
+                      'createdDate',
+                      'actions'
+                    ]}
                   />
                 )}
               </CardContent>
