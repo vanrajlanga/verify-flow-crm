@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -161,8 +160,8 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
         documents: uploadedDocuments
       };
 
-      // Update in database
-      await updateLeadInDatabase(updatedLead);
+      // Update in database - providing both required arguments
+      await updateLeadInDatabase(updatedLead.id, updatedLead);
       
       onUpdate(updatedLead);
       
