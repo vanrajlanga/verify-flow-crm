@@ -100,12 +100,12 @@ const AdminLeads = () => {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <h1 className="text-2xl font-bold tracking-tight">
-                  {currentUser.role === 'manager' ? 'Bank Leads Management' : 'Leads Management'}
+                  Database-Driven Leads Management
                 </h1>
                 <p className="text-muted-foreground">
                   {currentUser.role === 'manager' 
                     ? `Manage leads for your bank (${currentUser.managedBankId?.toUpperCase() || 'Unknown Bank'})`
-                    : 'Manage and track all verification leads'
+                    : 'Standard leads management interface for viewing and managing verification leads'
                   }
                 </p>
               </div>
@@ -126,7 +126,7 @@ const AdminLeads = () => {
                 <CardDescription>
                   {loading 
                     ? 'Loading leads...' 
-                    : `Total leads: ${leads.length}`
+                    : `Total leads: ${leads.length} | Standard management view with view/edit actions`
                   }
                 </CardDescription>
               </CardHeader>
@@ -144,6 +144,10 @@ const AdminLeads = () => {
                     onViewLead={handleViewLead}
                     onEditLead={handleEditLead}
                     showActions={currentUser.role === 'admin'} // Only admins can edit/delete
+                    title="Standard Leads View"
+                    description="View and manage individual leads with basic actions"
+                    enableInlineEdit={false}
+                    enableBulkSelect={false}
                   />
                 )}
               </CardContent>
