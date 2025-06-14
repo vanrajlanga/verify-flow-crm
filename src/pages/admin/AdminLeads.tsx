@@ -73,10 +73,12 @@ const AdminLeads = () => {
   };
 
   const handleEditLead = (leadId: string) => {
-    navigate(`/admin/leads/${leadId}`);
+    // Navigate to edit form, not just view
+    navigate(`/admin/leads/edit/${leadId}`);
   };
 
   const handleViewLead = (leadId: string) => {
+    // Navigate to view/details page
     navigate(`/admin/leads/${leadId}`);
   };
 
@@ -119,7 +121,7 @@ const AdminLeads = () => {
             </div>
 
             <Card>
-              <CardHeader>
+              <CardHeader className="sticky top-0 bg-white z-10 border-b">
                 <CardTitle>
                   {currentUser.role === 'manager' ? 'Your Bank Leads' : 'All Leads'}
                 </CardTitle>
@@ -130,39 +132,41 @@ const AdminLeads = () => {
                   }
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-0">
                 {loading ? (
-                  <div className="flex items-center justify-center h-32">
+                  <div className="flex items-center justify-center h-32 p-6">
                     <div className="text-center">
                       <h3 className="text-lg font-semibold">Loading leads...</h3>
                       <p className="text-muted-foreground">Please wait while we fetch the leads.</p>
                     </div>
                   </div>
                 ) : (
-                  <LeadsTable 
-                    leads={leads} 
-                    onViewLead={handleViewLead}
-                    onEditLead={handleEditLead}
-                    showActions={true}
-                    title="Standard Leads View"
-                    description="View and manage individual leads with basic actions"
-                    enableInlineEdit={false}
-                    enableBulkSelect={false}
-                    visibleColumns={[
-                      'leadId',
-                      'name', 
-                      'bank',
-                      'visitType',
-                      'city',
-                      'phone',
-                      'company',
-                      'bankProduct',
-                      'initiatedBranch',
-                      'assignedTo',
-                      'createdDate',
-                      'actions'
-                    ]}
-                  />
+                  <div className="overflow-x-auto">
+                    <LeadsTable 
+                      leads={leads} 
+                      onViewLead={handleViewLead}
+                      onEditLead={handleEditLead}
+                      showActions={true}
+                      title="Standard Leads View"
+                      description="View and manage individual leads with basic actions"
+                      enableInlineEdit={false}
+                      enableBulkSelect={false}
+                      visibleColumns={[
+                        'leadId',
+                        'name', 
+                        'bank',
+                        'visitType',
+                        'city',
+                        'phone',
+                        'company',
+                        'bankProduct',
+                        'initiatedBranch',
+                        'assignedTo',
+                        'createdDate',
+                        'actions'
+                      ]}
+                    />
+                  </div>
                 )}
               </CardContent>
             </Card>
