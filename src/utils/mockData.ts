@@ -1,129 +1,21 @@
-
-import { LucideIcon } from 'lucide-react';
-
 export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'agent' | 'manager' | 'tvt';
-  password: string;
+  role: 'admin' | 'agent' | 'manager' | 'tvtteam'; // Fix: Change 'tvt' to 'tvtteam'
   phone?: string;
-  district?: string;
-  state?: string;
-  city?: string;
-  branch?: string;
-  baseLocation?: string;
+  address?: string;
+  joiningDate?: string;
+  status?: 'Active' | 'Inactive';
   profilePicture?: string;
-  totalVerifications?: number;
-  completionRate?: number;
-  maxTravelDistance?: number;
-  extraChargePerKm?: number;
-  status?: 'active' | 'inactive';
-  managedBankId?: string; // New field for manager role
-  documents?: Document[]; // Add documents property for agents
 }
 
 export interface Address {
-  type: string;
   street: string;
   city: string;
-  district: string;
   state: string;
   pincode: string;
-}
-
-export interface CoApplicant {
-  name: string;
-  age?: number;
-  phone: string;
-  email?: string;
-  relation: string;
-  occupation?: string;
-  monthlyIncome?: string;
-}
-
-export interface AdditionalDetails {
-  company: string;
-  designation: string;
-  workExperience: string;
-  propertyType: string;
-  ownershipStatus: string;
-  propertyAge: string;
-  monthlyIncome: string;
-  annualIncome: string;
-  otherIncome: string;
-  phoneNumber?: string;
-  email?: string;
-  dateOfBirth?: string;
-  fatherName?: string;
-  motherName?: string;
-  gender?: string;
-  agencyFileNo?: string;
-  applicationBarcode?: string;
-  caseId?: string;
-  schemeDesc?: string;
-  bankBranch?: string;
-  bankProduct?: string;
-  initiatedUnderBranch?: string;
-  additionalComments?: string;
-  leadType?: string;
-  leadTypeId?: string;
-  loanAmount?: string;
-  loanType?: string;
-  vehicleBrandName?: string;
-  vehicleBrandId?: string;
-  vehicleModelName?: string;
-  vehicleModelId?: string;
-  addresses: Address[];
-  coApplicantAddresses?: Address[]; // Add this missing property
-  coApplicant?: {
-    name: string;
-    age?: number;
-    phone: string;
-    email: string;
-    relation: string;
-    occupation: string;
-    monthlyIncome: string;
-  };
-}
-
-export interface Verification {
-  id: string;
-  leadId: string;
-  status: "Not Started" | "In Progress" | "Completed" | "Rejected";
-  agentId: string;
-  photos: { id: string; name: string; url: string; uploadDate: Date; }[];
-  documents: { id: string; name: string; url: string; uploadDate: Date; }[];
-  notes: string;
-  startTime?: Date;
-  endTime?: Date;
-  completionTime?: Date;
-  arrivalTime?: Date;
-  reviewedAt?: Date;
-  reviewedBy?: string;
-  adminRemarks?: string;
-  location?: {
-    latitude: number;
-    longitude: number;
-    address: string;
-  };
-}
-
-export interface Document {
-  id: string;
-  name: string;
-  url: string;
-  uploadDate: Date;
-  type: string;
-}
-
-export interface Bank {
-  id: string;
-  name: string;
-  code?: string;
-  logo?: string;
-  products?: string[];
-  totalApplications?: number;
+  district: string;
 }
 
 export interface Lead {
@@ -132,309 +24,307 @@ export interface Lead {
   age: number;
   job: string;
   address: Address;
-  additionalDetails?: AdditionalDetails;
+  phone: string;
+  email: string;
   status: 'Pending' | 'In Progress' | 'Completed' | 'Rejected';
-  bank: string;
-  visitType: 'Residence' | 'Office' | 'Both';
   assignedTo: string;
   createdAt: Date;
-  verificationDate?: Date;
-  documents: Document[];
-  instructions: string;
-  verification?: Verification;
+  visitType: 'Physical' | 'Virtual';
+  bank?: string;
+  instructions?: string;
+  additionalDetails?: {
+    fatherName?: string;
+    motherName?: string;
+    dateOfBirth?: Date;
+    gender?: string;
+    company?: string;
+    designation?: string;
+    workExperience?: string;
+    monthlyIncome?: number;
+    phoneNumber?: string;
+    email?: string;
+    bankProduct?: string;
+    initiatedUnderBranch?: string;
+    bankBranch?: string;
+  };
+  carDetails?: {
+    make: string;
+    model: string;
+    year: number;
+  };
+  incomeDetails?: {
+    salary: number;
+    otherIncome: number;
+  };
 }
 
-export interface NavItem {
-  title: string;
-  href: string;
-  icon?: LucideIcon;
-  disabled?: boolean;
-  external?: boolean;
-}
-
-export interface NavItemWithChildren extends NavItem {
-  items: NavItemWithChildren[];
-}
-
-export interface NavItemWithOptionalChildren extends NavItem {
-  items?: NavItemWithChildren[];
-}
-
-export type MainNavItem = NavItemWithOptionalChildren
-
-export type SidebarNavItem = NavItemWithChildren
-
-// Mock data exports for backward compatibility
 export const mockUsers: User[] = [
   {
-    id: 'admin-1',
+    id: '1',
     name: 'Admin User',
-    email: 'admin@example.com',
+    email: 'admin@kycverification.com',
     role: 'admin',
-    password: 'admin123',
-    status: 'active',
-    documents: []
-  },
-  {
-    id: 'agent-1',
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    role: 'agent',
-    password: 'agent123',
     phone: '+91 9876543210',
-    district: 'Mumbai',
-    state: 'Maharashtra',
-    city: 'Mumbai',
-    branch: 'Mumbai Central',
-    baseLocation: 'Mumbai Central',
-    totalVerifications: 145,
-    completionRate: 92,
-    maxTravelDistance: 50,
-    extraChargePerKm: 15,
-    status: 'active',
-    documents: []
+    address: 'Mumbai, Maharashtra',
+    joiningDate: '2023-01-15',
+    status: 'Active'
   },
   {
-    id: 'manager-1',
-    name: 'Chintan Shah',
-    email: 'chintan@example.com',
-    role: 'manager',
-    password: 'manager123',
+    id: '2',
+    name: 'Rajesh Kumar',
+    email: 'rajesh@kycverification.com',
+    role: 'agent',
     phone: '+91 9876543211',
-    district: 'Mumbai',
-    state: 'Maharashtra',
-    city: 'Mumbai',
-    status: 'active',
-    managedBankId: 'axis',
-    documents: []
+    address: 'Delhi, India',
+    joiningDate: '2023-02-20',
+    status: 'Active'
   },
   {
-    id: 'manager-2',
-    name: 'Priya Sharma',
-    email: 'priya@example.com',
+    id: '3',
+    name: 'Manager User',
+    email: 'manager@kycverification.com',
     role: 'manager',
-    password: 'manager123',
     phone: '+91 9876543212',
-    district: 'Bangalore',
-    state: 'Karnataka',
-    city: 'Bangalore',
-    status: 'active',
-    managedBankId: 'hdfc',
-    documents: []
+    address: 'Bangalore, Karnataka',
+    joiningDate: '2023-01-10',
+    status: 'Active'
   },
   {
-    id: 'tvt-1',
-    name: 'TVT User',
-    email: 'tvt@example.com',
-    role: 'tvt',
-    password: 'tvt123',
-    status: 'active',
-    documents: []
+    id: '4',
+    name: 'Mike TVT',
+    email: 'mike.tvt@example.com',
+    role: 'tvtteam', // Fix: Change from 'tvt' to 'tvtteam'
+    phone: '+91 9876543213',
+    address: 'Chennai, Tamil Nadu',
+    joiningDate: '2023-03-01',
+    status: 'Active'
   }
 ];
 
-export const users: User[] = mockUsers;
-
 export const mockLeads: Lead[] = [
   {
-    id: 'lead-1',
+    id: '101',
     name: 'John Doe',
     age: 35,
     job: 'Software Engineer',
     address: {
-      type: 'Residence',
-      street: '123 Main Street',
-      city: 'Mumbai',
-      district: 'Mumbai',
-      state: 'Maharashtra',
-      pincode: '400001'
+      street: '123 Main St',
+      city: 'New York',
+      state: 'NY',
+      pincode: '10001',
+      district: 'Manhattan'
     },
+    phone: '+12125551234',
+    email: 'john.doe@example.com',
     status: 'Pending',
-    bank: 'HDFC Bank',
-    visitType: 'Residence',
     assignedTo: 'Mike TVT',
-    createdAt: new Date(),
-    documents: [],
-    instructions: 'Verify residence address and employment details',
-    verification: {
-      id: 'verification-1',
-      leadId: 'lead-1',
-      status: 'Not Started',
-      agentId: 'tvt-1',
-      photos: [],
-      documents: [],
-      notes: ''
+    createdAt: new Date('2024-01-20'),
+    visitType: 'Physical',
+    bank: 'Citibank',
+    instructions: 'Verify employment details and address.',
+    additionalDetails: {
+      fatherName: 'Robert Doe',
+      motherName: 'Jane Doe',
+      dateOfBirth: new Date('1989-05-15'),
+      gender: 'Male',
+      company: 'Tech Solutions Inc.',
+      designation: 'Senior Developer',
+      workExperience: '8 years',
+      monthlyIncome: 9000,
+      phoneNumber: '+13478889900',
+      email: 'john.doe@techsolutions.com',
+      bankProduct: 'Personal Loan',
+      initiatedUnderBranch: 'Midtown Branch',
+      bankBranch: 'Manhattan Branch'
+    },
+    carDetails: {
+      make: 'Toyota',
+      model: 'Camry',
+      year: 2020
+    },
+    incomeDetails: {
+      salary: 90000,
+      otherIncome: 10000
     }
   },
   {
-    id: 'lead-2',
-    name: 'Jane Smith',
+    id: '102',
+    name: 'Alice Smith',
     age: 28,
     job: 'Marketing Manager',
     address: {
-      type: 'Residence',
-      street: '456 Oak Avenue',
-      city: 'Mumbai',
-      district: 'Mumbai',
-      state: 'Maharashtra',
-      pincode: '400002'
+      street: '456 Oak Ave',
+      city: 'Los Angeles',
+      state: 'CA',
+      pincode: '90001',
+      district: 'Downtown'
     },
-    status: 'Pending',
-    bank: 'ICICI Bank',
-    visitType: 'Both',
-    assignedTo: 'Mike TVT',
-    createdAt: new Date(),
-    documents: [],
-    instructions: 'Verify both residence and office address',
-    verification: {
-      id: 'verification-2',
-      leadId: 'lead-2',
-      status: 'Not Started',
-      agentId: 'tvt-1',
-      photos: [],
-      documents: [],
-      notes: ''
+    phone: '+13105555678',
+    email: 'alice.smith@example.com',
+    status: 'In Progress',
+    assignedTo: 'Rajesh Kumar',
+    createdAt: new Date('2024-01-22'),
+    visitType: 'Virtual',
+    bank: 'Bank of America',
+    instructions: 'Check credit score and previous loan history.',
+    additionalDetails: {
+      fatherName: 'Michael Smith',
+      motherName: 'Linda Smith',
+      dateOfBirth: new Date('1996-02-28'),
+      gender: 'Female',
+      company: 'Global Marketing Ltd.',
+      designation: 'Team Lead',
+      workExperience: '5 years',
+      monthlyIncome: 7500,
+      phoneNumber: '+12137778899',
+      email: 'alice.smith@globalmarketing.com',
+      bankProduct: 'Credit Card',
+      initiatedUnderBranch: 'LA Main Branch',
+      bankBranch: 'Hollywood Branch'
+    },
+    carDetails: {
+      make: 'Honda',
+      model: 'Civic',
+      year: 2018
+    },
+    incomeDetails: {
+      salary: 75000,
+      otherIncome: 5000
     }
   },
   {
-    id: 'lead-3',
-    name: 'Rajesh Patel',
+    id: '103',
+    name: 'Bob Johnson',
     age: 42,
-    job: 'Business Owner',
-    address: {
-      type: 'Residence',
-      street: '789 Park Road',
-      city: 'Mumbai',
-      district: 'Mumbai',
-      state: 'Maharashtra',
-      pincode: '400003'
-    },
-    status: 'Pending',
-    bank: 'SBI Bank',
-    visitType: 'Office',
-    assignedTo: 'Mike TVT',
-    createdAt: new Date(),
-    documents: [],
-    instructions: 'Verify business address and income documents',
-    verification: {
-      id: 'verification-3',
-      leadId: 'lead-3',
-      status: 'Not Started',
-      agentId: 'tvt-1',
-      photos: [],
-      documents: [],
-      notes: ''
-    }
-  },
-  {
-    id: 'lead-4',
-    name: 'Priya Sharma',
-    age: 31,
     job: 'Teacher',
     address: {
-      type: 'Residence',
-      street: '321 School Lane',
-      city: 'Mumbai',
-      district: 'Mumbai',
-      state: 'Maharashtra',
-      pincode: '400004'
+      street: '789 Pine Ln',
+      city: 'Chicago',
+      state: 'IL',
+      pincode: '60601',
+      district: 'Loop'
     },
+    phone: '+13125559012',
+    email: 'bob.johnson@example.com',
     status: 'Completed',
-    bank: 'Axis Bank',
-    visitType: 'Residence',
-    assignedTo: 'Mike TVT',
-    createdAt: new Date(),
-    documents: [],
-    instructions: 'Standard residence verification',
-    verification: {
-      id: 'verification-4',
-      leadId: 'lead-4',
-      status: 'Completed',
-      agentId: 'tvt-1',
-      photos: [],
-      documents: [],
-      notes: 'Verification completed successfully'
+    assignedTo: 'Admin User',
+    createdAt: new Date('2024-01-25'),
+    visitType: 'Physical',
+    bank: 'Chase Bank',
+    instructions: 'Confirm employment and salary details.',
+    additionalDetails: {
+      fatherName: 'William Johnson',
+      motherName: 'Mary Johnson',
+      dateOfBirth: new Date('1982-09-10'),
+      gender: 'Male',
+      company: 'Chicago Public Schools',
+      designation: 'Senior Teacher',
+      workExperience: '15 years',
+      monthlyIncome: 6000,
+      phoneNumber: '+17734445566',
+      email: 'bob.johnson@cps.edu',
+      bankProduct: 'Home Loan',
+      initiatedUnderBranch: 'Chicago Downtown',
+      bankBranch: 'Lincoln Park Branch'
+    },
+    carDetails: {
+      make: 'Ford',
+      model: 'Explorer',
+      year: 2015
+    },
+    incomeDetails: {
+      salary: 60000,
+      otherIncome: 2000
     }
   },
   {
-    id: 'lead-5',
-    name: 'Amit Kumar',
-    age: 29,
-    job: 'Software Developer',
+    id: '104',
+    name: 'Emily White',
+    age: 31,
+    job: 'Accountant',
     address: {
-      type: 'Residence',
-      street: '567 Tech Park',
-      city: 'Mumbai',
-      district: 'Mumbai',
-      state: 'Maharashtra',
-      pincode: '400005'
+      street: '101 Elm St',
+      city: 'Houston',
+      state: 'TX',
+      pincode: '77001',
+      district: 'Downtown'
     },
-    status: 'Pending',
-    bank: 'Kotak Bank',
-    visitType: 'Residence',
-    assignedTo: 'Mike TVT',
-    createdAt: new Date(),
-    documents: [],
-    instructions: 'Verify residence and employment',
-    verification: {
-      id: 'verification-5',
-      leadId: 'lead-5',
-      status: 'Not Started',
-      agentId: 'tvt-1',
-      photos: [],
-      documents: [],
-      notes: ''
+    phone: '+17135553456',
+    email: 'emily.white@example.com',
+    status: 'Rejected',
+    assignedTo: 'Manager User',
+    createdAt: new Date('2024-01-28'),
+    visitType: 'Virtual',
+    bank: 'Wells Fargo',
+    instructions: 'Verify financial statements and tax returns.',
+    additionalDetails: {
+      fatherName: 'David White',
+      motherName: 'Susan White',
+      dateOfBirth: new Date('1993-07-04'),
+      gender: 'Female',
+      company: 'Accounting Solutions Inc.',
+      designation: 'Senior Accountant',
+      workExperience: '7 years',
+      monthlyIncome: 8000,
+      phoneNumber: '+18329990011',
+      email: 'emily.white@accountingsolutions.com',
+      bankProduct: 'Business Loan',
+      initiatedUnderBranch: 'Houston Galleria',
+      bankBranch: 'Uptown Branch'
+    },
+    carDetails: {
+      make: 'Nissan',
+      model: 'Altima',
+      year: 2019
+    },
+    incomeDetails: {
+      salary: 80000,
+      otherIncome: 8000
     }
-  }
-];
-
-export const mockBanks: Bank[] = [];
-export const banks: Bank[] = [
-  { id: 'hdfc', name: 'HDFC Bank' },
-  { id: 'icici', name: 'ICICI Bank' },
-  { id: 'sbi', name: 'State Bank of India' },
-  { id: 'axis', name: 'Axis Bank' },
-  { id: 'kotak', name: 'Kotak Mahindra Bank' }
-];
-export const bankBranches: any[] = [
-  { id: '1', name: 'Mumbai Central', bank: 'HDFC Bank' },
-  { id: '2', name: 'Delhi Main', bank: 'ICICI Bank' },
-  { id: '3', name: 'Bangalore Tech', bank: 'State Bank of India' },
-  { id: '4', name: 'Chennai South', bank: 'Axis Bank' },
-  { id: '5', name: 'Pune West', bank: 'Kotak Mahindra Bank' }
-];
-export const leadTypes: any[] = [
-  { id: '1', name: 'Home Loan' },
-  { id: '2', name: 'Personal Loan' },
-  { id: '3', name: 'Vehicle Loan' },
-  { id: '4', name: 'Business Loan' }
-];
-export const agents: User[] = [
-  { 
-    id: 'agent1', 
-    name: 'John Agent', 
-    email: 'john@example.com', 
-    role: 'agent', 
-    branch: 'Mumbai Central',
-    password: 'password123',
-    status: 'active'
   },
-  { 
-    id: 'tvt1', 
-    name: 'Sarah TVT', 
-    email: 'sarah@example.com', 
-    role: 'tvt', 
-    branch: 'Delhi Main',
-    password: 'password123',
-    status: 'active'
+  {
+    id: '105',
+    name: 'Mike TVT Lead',
+    age: 25,
+    job: 'TVT Member',
+    address: {
+      street: 'Park Avenue',
+      city: 'New York',
+      state: 'NY',
+      pincode: '10002',
+      district: 'Manhattan'
+    },
+    phone: '+12125557890',
+    email: 'mike.tvt.lead@example.com',
+    status: 'Pending',
+    assignedTo: 'Mike TVT',
+    createdAt: new Date('2024-02-01'),
+    visitType: 'Physical',
+    bank: 'Citibank',
+    instructions: 'Verify address and contact details.',
+    additionalDetails: {
+      fatherName: 'Tom TVT',
+      motherName: 'Alice TVT',
+      dateOfBirth: new Date('1999-03-10'),
+      gender: 'Male',
+      company: 'TVT Solutions',
+      designation: 'Junior TVT',
+      workExperience: '2 years',
+      monthlyIncome: 4000,
+      phoneNumber: '+16461112233',
+      email: 'mike.tvt.lead@tvtsolutions.com',
+      bankProduct: 'Student Loan',
+      initiatedUnderBranch: 'Downtown Branch',
+      bankBranch: 'Wall Street Branch'
+    },
+    carDetails: {
+      make: 'BMW',
+      model: 'X5',
+      year: 2022
+    },
+    incomeDetails: {
+      salary: 40000,
+      otherIncome: 1000
+    }
   },
-  { 
-    id: 'tvt-1', 
-    name: 'Mike TVT', 
-    email: 'mike.tvt@example.com', 
-    role: 'tvt', 
-    branch: 'Mumbai Central',
-    password: 'password',
-    status: 'active'
-  }
 ];
