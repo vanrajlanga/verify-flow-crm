@@ -75,6 +75,7 @@ export interface AdditionalDetails {
   bankName?: string;
   bankProduct?: string;
   initiatedBranch?: string;
+  initiatedUnderBranch?: string;
   buildBranch?: string;
   
   // Personal Information fields
