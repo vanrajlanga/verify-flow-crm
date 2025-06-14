@@ -292,6 +292,12 @@ const AgentLeadDetail = () => {
     }
   };
 
+  const formatDate = (date: string | Date | undefined) => {
+    if (!date) return 'Not provided';
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    return dateObj.toLocaleDateString();
+  };
+
   if (!currentUser) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
   }
@@ -463,7 +469,7 @@ const AgentLeadDetail = () => {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Date of Birth</label>
-                    <p className="text-base">{lead.additionalDetails?.dateOfBirth || 'Not provided'}</p>
+                    <p className="text-base">{formatDate(lead.additionalDetails?.dateOfBirth)}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Father's Name</label>

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -38,7 +37,7 @@ const VerificationProcess = ({
   onCompleteVerification
 }: VerificationProcessProps) => {
   const [notes, setNotes] = useState(lead.verification?.notes || '');
-  const [selectedDocumentType, setSelectedDocumentType] = useState<Document['type']>('Other');
+  const [selectedDocumentType, setSelectedDocumentType] = useState<string>('Other');
   const [location, setLocation] = useState<{latitude: number, longitude: number} | null>(
     lead.verification?.location || null
   );
@@ -320,7 +319,7 @@ const VerificationProcess = ({
                     <div className="space-y-3">
                       <div>
                         <label className="text-sm font-medium mb-2 block">Select Document Type:</label>
-                        <Select value={selectedDocumentType} onValueChange={(value) => setSelectedDocumentType(value as Document['type'])}>
+                        <Select value={selectedDocumentType} onValueChange={(value) => setSelectedDocumentType(value)}>
                           <SelectTrigger>
                             <SelectValue placeholder="Select document type" />
                           </SelectTrigger>
