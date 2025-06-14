@@ -28,7 +28,8 @@ const TvtDashboard = () => {
     const parsedUser = JSON.parse(storedUser);
     console.log('Current user in TVT Dashboard:', parsedUser);
     
-    if (parsedUser.role !== 'tvt') {
+    // Fix: Check for 'tvtteam' role instead of 'tvt'
+    if (parsedUser.role !== 'tvtteam') {
       console.log('User is not TVT team member, redirecting...');
       navigate('/');
       return;

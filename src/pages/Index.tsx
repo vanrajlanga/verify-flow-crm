@@ -27,7 +27,7 @@ const Index = () => {
         navigate('/admin/dashboard');
       } else if (parsedUser.role === 'agent') {
         navigate('/agent/dashboard');
-      } else if (parsedUser.role === 'tvtteam') {
+      } else if (parsedUser.role === 'tvtteam') { // Fix: Use 'tvtteam' instead of 'tvt'
         navigate('/tvt/dashboard');
       }
     }
@@ -57,7 +57,7 @@ const Index = () => {
         } else if (user.role === 'agent') {
           console.log('Redirecting agent to /agent/dashboard');
           navigate('/agent/dashboard');
-        } else if (user.role === 'tvtteam') {
+        } else if (user.role === 'tvtteam') { // Fix: Use 'tvtteam' instead of 'tvt'
           console.log('Redirecting TVT user to /tvt/dashboard');
           navigate('/tvt/dashboard');
         } else {

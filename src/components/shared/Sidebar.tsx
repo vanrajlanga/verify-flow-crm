@@ -62,7 +62,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, isOpen }) => {
         return adminNavItems;
       case 'agent':
         return agentNavItems;
-      case 'tvt':
+      case 'tvtteam': // Fix: Use 'tvtteam' instead of 'tvt'
         return tvtNavItems;
       case 'manager':
         return adminNavItems; // Managers use same nav as admin but with restricted access
@@ -85,7 +85,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, isOpen }) => {
         )}>
           {user.role === 'admin' ? 'Admin Panel' : 
            user.role === 'agent' ? 'Agent Panel' : 
-           user.role === 'tvt' ? 'TVT Panel' :
+           user.role === 'tvtteam' ? 'TVT Panel' : // Fix: Use 'tvtteam' instead of 'tvt'
            user.role === 'manager' ? 'Manager Panel' : 'Dashboard'}
         </h2>
       </div>

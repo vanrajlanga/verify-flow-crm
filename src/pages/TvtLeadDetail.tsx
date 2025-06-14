@@ -28,7 +28,8 @@ const TvtLeadDetail = () => {
     }
 
     const parsedUser = JSON.parse(storedUser);
-    if (parsedUser.role !== 'tvt') {
+    // Fix: Check for 'tvtteam' role instead of 'tvt'
+    if (parsedUser.role !== 'tvtteam') {
       navigate('/');
       return;
     }
