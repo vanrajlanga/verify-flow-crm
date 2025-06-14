@@ -1,4 +1,3 @@
-
 import { Lead, Address, AdditionalDetails } from '@/utils/mockData';
 
 // Define all possible CSV headers for comprehensive export/import
@@ -399,4 +398,88 @@ export const downloadFile = (content: string, filename: string, contentType: str
   link.click();
   document.body.removeChild(link);
   window.URL.revokeObjectURL(url);
+};
+
+export const transformLeadsFromCSV = (data: any[]): Lead[] => {
+  return data.map((row, index) => {
+    // Helper function to safely parse numbers
+    const parseNumber = (value: any): number => {
+      const parsed = parseInt(value);
+      return isNaN(parsed) ? 0 : parsed;
+    };
+
+    // Helper function to safely parse dates
+    const parseDate = (value: any): Date => {
+      if (!value) return new Date();
+      const parsed = new Date(value);
+      return isNaN(parsed.getTime()) ? new Date() : parsed;
+    };
+
+    // Validate address type
+    const validateAddressType = (type: string): 'Residence' | 'Office' | 'Permanent' | 'Temporary' | 'Current' => {
+      const validTypes: ('Residence' | 'Office' | 'Permanent' | 'Temporary' | 'Current')[] = 
+        ['Residence', 'Office', 'Permanent', 'Temporary', 'Current'];
+      return validTypes.includes(type as any) ? type as any : 'Residence';
+    };
+
+    // Validate visit type
+    const validateVisitType = (type: string): 'Physical' | 'Virtual' => {
+      return type === 'Virtual' ? 'Virtual' : 'Physical';
+    };
+
+    return {
+      id: row.id || `csv-lead-${index}`,
+      name: row.name || '',
+      age: parseNumber(row.age),
+      job: row.job || '',
+      phone: row.phone || '',
+      email: row.email || '',
+      address: {
+        type: validateAddressType(row.addressType || 'Residence'),
+        street: row.street || '',
+        city: row.city || '',
+        district: row.district || '',
+        state: row.state || '',
+        pincode: row.pincode || ''
+      },
+      additionalDetails: {
+        company: row.company || '',
+        designation: row.designation || '',
+        workExperience: row.workExperience || '',
+        propertyType: row.propertyType || '',
+        ownershipStatus: row.ownershipStatus || '',
+        propertyAge: row.propertyAge || '',
+        monthlyIncome: row.monthlyIncome || '',
+        annualIncome: row.annualIncome || '',
+        otherIncome: row.otherIncome || '',
+        loanAmount: row.loanAmount || '',
+        addresses: [],
+        phoneNumber: row.phone || '',
+        email: row.email || '',
+        dateOfBirth: parseDate(row.dateOfBirth),
+        fatherName: row.fatherName || '',
+        motherName: row.motherName || '',
+        gender: row.gender || '',
+        agencyFileNo: row.agencyFileNo || '',
+        applicationBarcode: row.applicationBarcode || '',
+        caseId: row.caseId || '',
+        schemeDesc: row.schemeDesc || '',
+        bankProduct: row.bankProduct || '',
+        initiatedUnderBranch: row.initiatedUnderBranch || '',
+        bankBranch: row.bankBranch || '',
+        additionalComments: row.additionalComments || '',
+        leadType: row.leadType || '',
+        loanType: row.loanType || '',
+        vehicleBrandName: row.vehicleBrandName || '',
+        vehicleModelName: row.vehicleModelName || ''
+      },
+      status: row.status || 'Pending',
+      bank: row.bank || '',
+      visitType: validateVisitType(row.visitType || 'Physical'),
+      assignedTo: row.assignedTo || '',
+      createdAt: parseDate(row.createdAt),
+      documents: [],
+      instructions: row.instructions || ''
+    };
+  });
 };
