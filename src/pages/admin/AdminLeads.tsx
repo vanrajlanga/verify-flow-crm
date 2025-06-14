@@ -143,7 +143,7 @@ const AdminLeads = () => {
                     leads={leads} 
                     onViewLead={handleViewLead}
                     onEditLead={handleEditLead}
-                    showActions={currentUser.role === 'admin'} // Only admins can edit/delete
+                    showActions={true}
                     title="Standard Leads View"
                     description="View and manage individual leads with basic actions"
                     enableInlineEdit={false}
