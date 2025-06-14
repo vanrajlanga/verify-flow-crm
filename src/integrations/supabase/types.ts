@@ -16,12 +16,15 @@ export type Database = {
           annual_income: string | null
           application_barcode: string | null
           bank_branch: string | null
+          bank_product: string | null
           case_id: string | null
           company: string | null
           created_at: string
           date_of_birth: string | null
           designation: string | null
           email: string | null
+          father_name: string | null
+          gender: string | null
           id: string
           lead_id: string | null
           lead_type: string | null
@@ -29,6 +32,7 @@ export type Database = {
           loan_amount: string | null
           loan_type: string | null
           monthly_income: string | null
+          mother_name: string | null
           other_income: string | null
           ownership_status: string | null
           phone_number: string | null
@@ -47,12 +51,15 @@ export type Database = {
           annual_income?: string | null
           application_barcode?: string | null
           bank_branch?: string | null
+          bank_product?: string | null
           case_id?: string | null
           company?: string | null
           created_at?: string
           date_of_birth?: string | null
           designation?: string | null
           email?: string | null
+          father_name?: string | null
+          gender?: string | null
           id?: string
           lead_id?: string | null
           lead_type?: string | null
@@ -60,6 +67,7 @@ export type Database = {
           loan_amount?: string | null
           loan_type?: string | null
           monthly_income?: string | null
+          mother_name?: string | null
           other_income?: string | null
           ownership_status?: string | null
           phone_number?: string | null
@@ -78,12 +86,15 @@ export type Database = {
           annual_income?: string | null
           application_barcode?: string | null
           bank_branch?: string | null
+          bank_product?: string | null
           case_id?: string | null
           company?: string | null
           created_at?: string
           date_of_birth?: string | null
           designation?: string | null
           email?: string | null
+          father_name?: string | null
+          gender?: string | null
           id?: string
           lead_id?: string | null
           lead_type?: string | null
@@ -91,6 +102,7 @@ export type Database = {
           loan_amount?: string | null
           loan_type?: string | null
           monthly_income?: string | null
+          mother_name?: string | null
           other_income?: string | null
           ownership_status?: string | null
           phone_number?: string | null

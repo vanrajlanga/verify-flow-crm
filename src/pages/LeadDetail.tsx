@@ -455,7 +455,7 @@ const LeadDetail = () => {
                     </div>
                   </div>
                 </CardContent>
-            </Card>
+              </Card>
             )}
 
             {/* Financial Information */}

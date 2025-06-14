@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Lead, Address, AdditionalDetails } from '@/utils/mockData';
 
@@ -109,11 +108,15 @@ export const saveLeadToDatabase = async (leadData: Lead) => {
         phone_number: leadData.additionalDetails.phoneNumber || null,
         email: leadData.additionalDetails.email || null,
         date_of_birth: leadData.additionalDetails.dateOfBirth || null,
+        father_name: leadData.additionalDetails.fatherName || null,
+        mother_name: leadData.additionalDetails.motherName || null,
+        gender: leadData.additionalDetails.gender || null,
         agency_file_no: leadData.additionalDetails.agencyFileNo || null,
         application_barcode: leadData.additionalDetails.applicationBarcode || null,
         case_id: leadData.additionalDetails.caseId || null,
         scheme_desc: leadData.additionalDetails.schemeDesc || null,
         bank_branch: leadData.additionalDetails.initiatedUnderBranch || null,
+        bank_product: leadData.additionalDetails.bankProduct || null,
         additional_comments: leadData.additionalDetails.additionalComments || null,
         lead_type: leadData.additionalDetails.leadType || null,
         lead_type_id: leadData.additionalDetails.leadTypeId || null,
@@ -422,6 +425,32 @@ export const getLeadsFromDatabase = async (forceRefresh = false) => {
     console.error('Error in getLeadsFromDatabase:', error);
     throw error;
   }
+
+  // Helper functions for transformation
+  function getValidVisitType(visitType: string | null): Lead['visitType'] {
+    if (visitType === 'Office' || visitType === 'Both') {
+      return visitType;
+    }
+    return 'Residence';
+  }
+
+  function getBankName(bankId: string): string {
+    const bankMapping: { [key: string]: string } = {
+      'hdfc': 'HDFC',
+      'icici': 'ICICI',
+      'axis': 'AXIS',
+      'axis-bank': 'Axis Bank',
+      'sbi': 'SBI',
+      'kotak': 'Kotak Mahindra Bank',
+      'pnb': 'Punjab National Bank',
+      'bob': 'Bank of Baroda',
+      'canara': 'Canara Bank',
+      'union': 'Union Bank of India',
+      'indian': 'Indian Bank'
+    };
+    
+    return bankMapping[bankId] || bankId.toUpperCase();
+  }
 };
 
 // Update lead status in database
@@ -601,11 +630,16 @@ export const getLeadByIdFromDatabase = async (leadId: string) => {
       phoneNumber: lead.additional_details[0].phone_number,
       email: lead.additional_details[0].email,
       dateOfBirth: lead.additional_details[0].date_of_birth,
+      fatherName: lead.additional_details[0].father_name,
+      motherName: lead.additional_details[0].mother_name,
+      gender: lead.additional_details[0].gender,
       agencyFileNo: lead.additional_details[0].agency_file_no,
       applicationBarcode: lead.additional_details[0].application_barcode,
       caseId: lead.additional_details[0].case_id,
       schemeDesc: lead.additional_details[0].scheme_desc,
       bankBranch: lead.additional_details[0].bank_branch,
+      bankProduct: lead.additional_details[0].bank_product,
+      initiatedUnderBranch: lead.additional_details[0].bank_branch,
       additionalComments: lead.additional_details[0].additional_comments,
       leadType: lead.additional_details[0].lead_type,
       leadTypeId: lead.additional_details[0].lead_type_id,
