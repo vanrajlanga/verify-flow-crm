@@ -1,10 +1,9 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { User, Lead } from '@/utils/mockData';
-import { getLeadsFromDatabase } from '@/lib/lead-operations';
+import { getAllLeadsFromDatabase } from '@/lib/lead-operations';
 import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
@@ -44,7 +43,7 @@ const AgentLeads = () => {
   const fetchAgentLeads = async (agentId: string) => {
     try {
       // Try to get leads from database first
-      const allLeads = await getLeadsFromDatabase();
+      const allLeads = await getAllLeadsFromDatabase();
       const agentLeads = allLeads.filter(lead => lead.assignedTo === agentId);
       
       if (agentLeads.length > 0) {

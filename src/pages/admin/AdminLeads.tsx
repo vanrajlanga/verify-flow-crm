@@ -145,8 +145,6 @@ const AdminLeads = () => {
                 ) : (
                   <LeadsTable 
                     leads={leads} 
-                    onEdit={handleEditLead}
-                    onDelete={handleDeleteLead}
                     showActions={currentUser.role === 'admin'} // Only admins can edit/delete
                   />
                 )}

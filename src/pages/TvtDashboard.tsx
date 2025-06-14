@@ -7,7 +7,7 @@ import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
 import LeadList from '@/components/dashboard/LeadList';
 import { 
-  getLeadsFromDatabase
+  getAllLeadsFromDatabase
 } from '@/lib/lead-operations';
 
 const TvtDashboard = () => {

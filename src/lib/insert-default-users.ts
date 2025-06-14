@@ -39,7 +39,8 @@ export const insertDefaultUsers = async () => {
           profilePicture: null,
           totalVerifications: 0,
           completionRate: 100,
-          password: 'password'
+          password: 'password',
+          documents: []
         },
         {
           id: 'agent-1',
@@ -57,12 +58,13 @@ export const insertDefaultUsers = async () => {
           profilePicture: null,
           totalVerifications: 25,
           completionRate: 95,
-          password: 'password'
+          password: 'password',
+          documents: []
         },
         {
           id: 'tvt-1',
           name: 'Atul Sharma',
-          role: 'tvtteam',
+          role: 'tvt',
           email: 'atul@gmail.com',
           phone: '+91-9876543212',
           district: 'Delhi',
@@ -75,7 +77,8 @@ export const insertDefaultUsers = async () => {
           profilePicture: null,
           totalVerifications: 15,
           completionRate: 98,
-          password: '123456'
+          password: '123456',
+          documents: []
         }
       ];
 
@@ -118,7 +121,7 @@ export const insertDefaultUsers = async () => {
         const atulUser = {
           id: 'tvt-1',
           name: 'Atul Sharma',
-          role: 'tvtteam',
+          role: 'tvt',
           email: 'atul@gmail.com',
           phone: '+91-9876543212',
           district: 'Delhi',
@@ -162,7 +165,8 @@ export const insertDefaultUsers = async () => {
         profilePicture: user.profile_picture,
         totalVerifications: user.total_verifications || 0,
         completionRate: user.completion_rate || 0,
-        password: user.password
+        password: user.password,
+        documents: []
       }));
       localStorage.setItem('mockUsers', JSON.stringify(transformedUsers));
     }
@@ -191,7 +195,8 @@ const setupLocalStorageUsers = () => {
       profilePicture: null,
       totalVerifications: 0,
       completionRate: 100,
-      password: 'password'
+      password: 'password',
+      documents: []
     },
     {
       id: 'agent-1',
@@ -209,12 +214,13 @@ const setupLocalStorageUsers = () => {
       profilePicture: null,
       totalVerifications: 25,
       completionRate: 95,
-      password: 'password'
+      password: 'password',
+      documents: []
     },
     {
       id: 'tvt-1',
       name: 'Atul Sharma',
-      role: 'tvtteam',
+      role: 'tvt',
       email: 'atul@gmail.com',
       phone: '+91-9876543212',
       district: 'Delhi',
@@ -227,7 +233,8 @@ const setupLocalStorageUsers = () => {
       profilePicture: null,
       totalVerifications: 15,
       completionRate: 98,
-      password: '123456'
+      password: '123456',
+      documents: []
     }
   ];
 

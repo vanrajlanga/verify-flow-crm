@@ -8,7 +8,7 @@ const transformDatabaseUser = (dbUser: any): User => {
     id: dbUser.id,
     name: dbUser.name,
     email: dbUser.email,
-    role: dbUser.role as 'admin' | 'agent' | 'tvtteam',
+    role: dbUser.role as 'admin' | 'agent' | 'manager' | 'tvt',
     district: dbUser.district,
     phone: dbUser.phone,
     city: dbUser.city,
@@ -21,7 +21,8 @@ const transformDatabaseUser = (dbUser: any): User => {
     totalVerifications: dbUser.total_verifications,
     completionRate: dbUser.completion_rate,
     status: dbUser.status as 'active' | 'inactive',
-    password: dbUser.password
+    password: dbUser.password,
+    documents: []
   };
 };
 

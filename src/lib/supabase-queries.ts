@@ -6,7 +6,7 @@ import {
 } from './data-transformers';
 
 // Fallback to mock data when database is not available
-import { mockUsers, mockBanks } from '@/utils/mockData';
+import { users as mockUsers, mockBanks } from '@/utils/mockData';
 
 // User queries
 export const loginUser = async (email: string, password: string) => {

@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Lead, Address } from '@/utils/mockData';
 
@@ -584,6 +583,27 @@ export const updateLeadInDatabase = async (leadId: string, updates: Partial<Lead
     console.log('Lead updated successfully in database');
   } catch (error) {
     console.error('Error in updateLeadInDatabase:', error);
+    throw error;
+  }
+};
+
+// Add the missing export function
+export const getLeadsFromDatabase = getAllLeadsFromDatabase;
+
+// Add the missing delete function
+export const deleteLeadFromDatabase = async (leadId: string): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('leads')
+      .delete()
+      .eq('id', leadId);
+
+    if (error) {
+      console.error('Error deleting lead from database:', error);
+      throw error;
+    }
+  } catch (error) {
+    console.error('Error in deleteLeadFromDatabase:', error);
     throw error;
   }
 };
