@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Lead, Document } from '@/utils/mockData';
+import { Lead } from '@/utils/mockData';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Camera, Clock, MapPin, Upload, FileText } from 'lucide-react';
 import { format } from 'date-fns';
@@ -13,7 +13,7 @@ interface VerificationProcessProps {
   onStartVerification: () => void;
   onMarkArrival: () => void;
   onUploadPhoto: (files: FileList) => void;
-  onUploadDocument: (files: FileList, type: Document['type']) => void;
+  onUploadDocument: (files: FileList, type: string) => void;
   onAddNotes: (notes: string) => void;
   onCompleteVerification: () => void;
 }

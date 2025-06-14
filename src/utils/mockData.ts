@@ -36,14 +36,38 @@ export interface Document {
   type: string;
   url: string;
   uploadedAt: Date;
+  name?: string;
 }
 
 export interface Verification {
   status: 'Not Started' | 'In Progress' | 'Completed' | 'Rejected';
   startTime?: Date;
   endTime?: Date;
+  arrivalTime?: Date;
+  completionTime?: Date;
   notes?: string;
   agentId?: string;
+  reviewedAt?: Date;
+  reviewedBy?: string;
+  adminRemarks?: string;
+  location?: {
+    latitude: number;
+    longitude: number;
+    address?: string;
+  };
+  photos?: {
+    id: string;
+    url: string;
+    name: string;
+    uploadedAt: Date;
+  }[];
+  documents?: {
+    id: string;
+    type: string;
+    url: string;
+    name: string;
+    uploadedAt: Date;
+  }[];
 }
 
 export interface AdditionalDetails {
@@ -82,6 +106,10 @@ export interface AdditionalDetails {
     name?: string;
     email?: string;
     phone?: string;
+    relation?: string;
+    age?: number;
+    occupation?: string;
+    monthlyIncome?: string;
   };
   addresses?: {
     type: 'Residence' | 'Office' | 'Permanent';

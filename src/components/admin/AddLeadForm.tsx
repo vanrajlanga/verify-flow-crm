@@ -238,7 +238,7 @@ const AddLeadForm: React.FC<AddLeadFormProps> = ({ agents: propAgents, banks: pr
     const newLead: Lead = {
       id: `lead-${Date.now()}`,
       name: formData.name,
-      age: 30,
+      age: parseInt(formData.income) > 0 ? 30 : 25, // Convert string to number properly
       job: formData.occupation,
       address: {
         type: 'Residence',
@@ -248,6 +248,8 @@ const AddLeadForm: React.FC<AddLeadFormProps> = ({ agents: propAgents, banks: pr
         state: addresses[0]?.state || '',
         pincode: addresses[0]?.pincode || ''
       },
+      phone: formData.phone,
+      email: formData.email,
       additionalDetails: {
         company: '',
         designation: '',
@@ -255,7 +257,7 @@ const AddLeadForm: React.FC<AddLeadFormProps> = ({ agents: propAgents, banks: pr
         propertyType: '',
         ownershipStatus: '',
         propertyAge: '',
-        monthlyIncome: formData.income,
+        monthlyIncome: parseInt(formData.income) || 0, // Convert string to number
         annualIncome: '',
         otherIncome: '',
         addresses: addresses.map(addr => ({
@@ -268,7 +270,7 @@ const AddLeadForm: React.FC<AddLeadFormProps> = ({ agents: propAgents, banks: pr
         })),
         phoneNumber: formData.phone,
         email: formData.email,
-        dateOfBirth: formData.dateOfBirth,
+        dateOfBirth: formData.dateOfBirth ? new Date(formData.dateOfBirth) : undefined, // Convert string to Date
         agencyFileNo: formData.agencyFileNo,
         applicationBarcode: formData.applicationBarcode,
         caseId: formData.caseId,
@@ -279,7 +281,7 @@ const AddLeadForm: React.FC<AddLeadFormProps> = ({ agents: propAgents, banks: pr
       },
       status: 'Pending',
       bank: formData.bank,
-      visitType: visitTypes.length > 0 ? 'Both' as 'Residence' | 'Office' | 'Both' : 'Residence',
+      visitType: 'Physical', // Use correct visitType enum value
       assignedTo: selectedAgent,
       createdAt: new Date(),
       documents: [],
