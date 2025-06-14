@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,19 +12,11 @@ import { User, Document } from '@/utils/mockData';
 
 interface AgentDocumentsProps {
   user: User;
-  setUser: React.Dispatch<React.SetStateAction<User>>;
+  onUpdate: (updatedAgent: User) => void;
 }
 
-const AgentDocuments = () => {
-  const [user, setUser] = useState<User | null>(null);
+const AgentDocuments = ({ user, onUpdate }: AgentDocumentsProps) => {
   const [selectedDocumentType, setSelectedDocumentType] = useState('');
-
-  useEffect(() => {
-    const storedUser = localStorage.getItem('kycUser');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-  }, []);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -42,7 +35,7 @@ const AgentDocuments = () => {
         documents: [...(user.documents || []), newDocument]
       };
 
-      setUser(updatedUser);
+      onUpdate(updatedUser);
       localStorage.setItem('kycUser', JSON.stringify(updatedUser));
 
       toast({
@@ -54,11 +47,6 @@ const AgentDocuments = () => {
       setSelectedDocumentType('');
       event.target.value = '';
     }
-  };
-
-  const getUserFromStorage = (): User | null => {
-    const storedUser = localStorage.getItem('kycUser');
-    return storedUser ? JSON.parse(storedUser) : null;
   };
 
   return (

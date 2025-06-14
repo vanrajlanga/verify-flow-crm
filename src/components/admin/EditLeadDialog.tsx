@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -36,10 +35,10 @@ const EditLeadDialog: React.FC<EditLeadDialogProps> = ({
     job: '',
     bank: '',
     status: 'Pending' as Lead['status'],
-    visitType: 'Residence' as Lead['visitType'],
+    visitType: 'Physical' as Lead['visitType'],
     instructions: '',
     // Address fields
-    addressType: 'Residence',
+    addressType: 'Residence' as Address['type'],
     street: '',
     city: '',
     district: '',
@@ -68,7 +67,7 @@ const EditLeadDialog: React.FC<EditLeadDialogProps> = ({
         job: lead.job || '',
         bank: lead.bank || '',
         status: lead.status || 'Pending',
-        visitType: lead.visitType || 'Residence',
+        visitType: lead.visitType || 'Physical',
         instructions: lead.instructions || '',
         // Address
         addressType: lead.address?.type || 'Residence',
@@ -82,7 +81,7 @@ const EditLeadDialog: React.FC<EditLeadDialogProps> = ({
         designation: lead.additionalDetails?.designation || '',
         phoneNumber: lead.additionalDetails?.phoneNumber || '',
         email: lead.additionalDetails?.email || '',
-        monthlyIncome: lead.additionalDetails?.monthlyIncome || '',
+        monthlyIncome: lead.additionalDetails?.monthlyIncome?.toString() || '',
         annualIncome: lead.additionalDetails?.annualIncome || '',
         loanAmount: lead.additionalDetails?.loanAmount || '',
         loanType: lead.additionalDetails?.loanType || '',
@@ -132,7 +131,7 @@ const EditLeadDialog: React.FC<EditLeadDialogProps> = ({
         designation: formData.designation,
         phoneNumber: formData.phoneNumber,
         email: formData.email,
-        monthlyIncome: formData.monthlyIncome,
+        monthlyIncome: formData.monthlyIncome ? parseFloat(formData.monthlyIncome) : 0,
         annualIncome: formData.annualIncome,
         loanAmount: formData.loanAmount,
         loanType: formData.loanType,
@@ -224,9 +223,8 @@ const EditLeadDialog: React.FC<EditLeadDialogProps> = ({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Residence">Residence</SelectItem>
-                    <SelectItem value="Office">Office</SelectItem>
-                    <SelectItem value="Both">Both</SelectItem>
+                    <SelectItem value="Physical">Physical</SelectItem>
+                    <SelectItem value="Virtual">Virtual</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

@@ -1,4 +1,3 @@
-
 import { User, Lead, Bank, Address, AdditionalDetails, Verification } from '@/utils/mockData';
 
 export const transformSupabaseUser = (supabaseUser: any): User => {
@@ -68,7 +67,6 @@ export const transformSupabaseAdditionalDetails = (details: any): AdditionalDeta
 export const transformSupabaseVerification = (verification: any): Verification => {
   return {
     id: verification.id,
-    leadId: verification.lead_id,
     status: verification.status,
     agentId: verification.agent_id,
     photos: [], // Will be populated from verification_photos join
@@ -90,7 +88,14 @@ export const transformSupabaseVerification = (verification: any): Verification =
 };
 
 export const transformSupabaseLead = (supabaseLead: any): Lead => {
-  const address = supabaseLead.addresses ? transformSupabaseAddress(supabaseLead.addresses) : {
+  const address: Address = supabaseLead.addresses ? {
+    type: supabaseLead.addresses.type as Address['type'],
+    street: supabaseLead.addresses.street,
+    city: supabaseLead.addresses.city,
+    district: supabaseLead.addresses.district,
+    state: supabaseLead.addresses.state,
+    pincode: supabaseLead.addresses.pincode
+  } : {
     type: 'Residence',
     street: '',
     city: '',
@@ -99,8 +104,13 @@ export const transformSupabaseLead = (supabaseLead: any): Lead => {
     pincode: ''
   };
 
-  const additionalDetails = supabaseLead.additional_details?.[0] 
-    ? transformSupabaseAdditionalDetails(supabaseLead.additional_details[0])
+  const additionalDetails: AdditionalDetails = supabaseLead.additional_details?.[0] 
+    ? {
+        ...transformSupabaseAdditionalDetails(supabaseLead.additional_details[0]),
+        monthlyIncome: supabaseLead.additional_details[0].monthly_income 
+          ? parseFloat(supabaseLead.additional_details[0].monthly_income) 
+          : 0
+      }
     : {
         company: '',
         designation: '',
@@ -108,7 +118,7 @@ export const transformSupabaseLead = (supabaseLead: any): Lead => {
         propertyType: '',
         ownershipStatus: '',
         propertyAge: '',
-        monthlyIncome: '',
+        monthlyIncome: 0,
         annualIncome: '',
         otherIncome: '',
         addresses: []

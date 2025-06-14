@@ -8,7 +8,7 @@ const transformDatabaseUser = (dbUser: any): User => {
     id: dbUser.id,
     name: dbUser.name,
     email: dbUser.email,
-    role: dbUser.role as 'admin' | 'agent' | 'manager' | 'tvt',
+    role: dbUser.role as 'admin' | 'agent' | 'manager' | 'tvtteam', // Fixed: changed 'tvt' to 'tvtteam'
     district: dbUser.district,
     phone: dbUser.phone,
     city: dbUser.city,
@@ -20,7 +20,7 @@ const transformDatabaseUser = (dbUser: any): User => {
     extraChargePerKm: dbUser.extra_charge_per_km,
     totalVerifications: dbUser.total_verifications,
     completionRate: dbUser.completion_rate,
-    status: dbUser.status as 'active' | 'inactive',
+    status: dbUser.status === 'active' ? 'Active' : 'Inactive', // Fixed: convert to proper enum
     password: dbUser.password,
     documents: []
   };
@@ -43,7 +43,7 @@ const transformUserToDatabase = (user: User) => {
     extra_charge_per_km: user.extraChargePerKm || null,
     total_verifications: user.totalVerifications || 0,
     completion_rate: user.completionRate || 0,
-    status: user.status || 'active',
+    status: user.status === 'Active' ? 'active' : 'inactive', // Fixed: convert to database format
     password: user.password || ''
   };
 };

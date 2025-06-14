@@ -19,7 +19,7 @@ const LeadReview = ({ lead, onApprove, onReject }: LeadReviewProps) => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Completed':
-        return 'success';
+        return 'default';
       case 'In Progress':
         return 'secondary';
       case 'Rejected':
