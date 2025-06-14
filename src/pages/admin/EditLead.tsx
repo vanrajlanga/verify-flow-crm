@@ -84,7 +84,8 @@ const EditLead = () => {
     navigate('/admin/leads');
   };
 
-  const handleSave = () => {
+  const handleUpdate = (updatedLead: Lead) => {
+    console.log('Lead updated:', updatedLead);
     toast({
       title: "Lead updated",
       description: "Lead has been successfully updated.",
@@ -92,9 +93,31 @@ const EditLead = () => {
     navigate('/admin/leads');
   };
 
+  const handleClose = () => {
+    navigate('/admin/leads');
+  };
+
   if (!currentUser) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
   }
+
+  // Mock data for agents, banks, and location - in a real app these would come from APIs
+  const mockAgents: User[] = [
+    { id: '1', name: 'John Agent', role: 'agent', city: 'Mumbai' },
+    { id: '2', name: 'Jane Agent', role: 'agent', city: 'Delhi' },
+    { id: '3', name: 'TVT Agent 1', role: 'tvt', city: 'Bangalore' },
+  ];
+
+  const mockBanks = [
+    { id: 'hdfc', name: 'HDFC Bank' },
+    { id: 'icici', name: 'ICICI Bank' },
+    { id: 'sbi', name: 'State Bank of India' },
+  ];
+
+  const mockLocationData = {
+    states: ['Maharashtra', 'Delhi', 'Karnataka'],
+    cities: ['Mumbai', 'Delhi', 'Bangalore'],
+  };
 
   return (
     <div className="flex min-h-screen bg-muted/30">
@@ -136,8 +159,11 @@ const EditLead = () => {
             ) : lead ? (
               <EditLeadForm 
                 lead={lead} 
-                onSuccess={handleSave}
-                onCancel={handleBack}
+                agents={mockAgents}
+                banks={mockBanks}
+                onUpdate={handleUpdate}
+                onClose={handleClose}
+                locationData={mockLocationData}
               />
             ) : (
               <Card>
