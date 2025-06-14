@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -400,7 +399,6 @@ const AgentLeadDetail = () => {
               onCompleteVerification={handleCompleteVerification}
             />
 
-            {/* Rest of lead details cards from LeadDetail.tsx */}
             {/* Bank Selection & Product Information */}
             <Card>
               <CardHeader>
@@ -413,7 +411,7 @@ const AgentLeadDetail = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Bank Name</label>
-                    <p className="text-base">{lead.additionalDetails?.bankName || lead.bank || 'Not specified'}</p>
+                    <p className="text-base">{lead.bank || 'Not specified'}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Bank Product</label>
@@ -421,11 +419,11 @@ const AgentLeadDetail = () => {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-muted-foreground">Initiated Under Branch</label>
-                    <p className="text-base">{lead.additionalDetails?.initiatedBranch || 'Not specified'}</p>
+                    <p className="text-base">{lead.additionalDetails?.initiatedUnderBranch || lead.additionalDetails?.bankBranch || 'Not specified'}</p>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">Build Under Branch</label>
-                    <p className="text-base">{lead.additionalDetails?.buildBranch || lead.additionalDetails?.bankBranch || 'Not specified'}</p>
+                    <label className="text-sm font-medium text-muted-foreground">Loan Amount</label>
+                    <p className="text-base">₹{lead.additionalDetails?.loanAmount || 'Not specified'}</p>
                   </div>
                 </div>
               </CardContent>
@@ -463,7 +461,66 @@ const AgentLeadDetail = () => {
                       <span>{lead.additionalDetails?.email || 'Not provided'}</span>
                     </div>
                   </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Date of Birth</label>
+                    <p className="text-base">{lead.additionalDetails?.dateOfBirth || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Father's Name</label>
+                    <p className="text-base">{lead.additionalDetails?.fatherName || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Mother's Name</label>
+                    <p className="text-base">{lead.additionalDetails?.motherName || 'Not provided'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Gender</label>
+                    <p className="text-base">{lead.additionalDetails?.gender || 'Not provided'}</p>
+                  </div>
                 </div>
+                
+                {/* Co-Applicant Information */}
+                {lead.additionalDetails?.coApplicant && (
+                  <>
+                    <Separator className="my-6" />
+                    <div>
+                      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <Users className="h-5 w-5" />
+                        Co-Applicant Information
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">Name</label>
+                          <p className="text-base">{lead.additionalDetails.coApplicant.name}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">Age</label>
+                          <p className="text-base">{lead.additionalDetails.coApplicant.age || 'Not provided'} years</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">Phone</label>
+                          <p className="text-base">{lead.additionalDetails.coApplicant.phone}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">Email</label>
+                          <p className="text-base">{lead.additionalDetails.coApplicant.email}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">Relationship</label>
+                          <p className="text-base">{lead.additionalDetails.coApplicant.relation}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">Occupation</label>
+                          <p className="text-base">{lead.additionalDetails.coApplicant.occupation || 'Not provided'}</p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">Monthly Income</label>
+                          <p className="text-base">₹{lead.additionalDetails.coApplicant.monthlyIncome || 'Not provided'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
 

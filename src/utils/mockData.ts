@@ -1,4 +1,3 @@
-
 import { LucideIcon } from 'lucide-react';
 
 export interface User {
@@ -42,24 +41,28 @@ export interface CoApplicant {
 }
 
 export interface AdditionalDetails {
-  company?: string;
-  designation?: string;
-  workExperience?: string;
-  propertyType?: string;
-  ownershipStatus?: string;
-  propertyAge?: string;
-  monthlyIncome?: string;
-  annualIncome?: string;
-  otherIncome?: string;
-  addresses?: Address[];
+  company: string;
+  designation: string;
+  workExperience: string;
+  propertyType: string;
+  ownershipStatus: string;
+  propertyAge: string;
+  monthlyIncome: string;
+  annualIncome: string;
+  otherIncome: string;
   phoneNumber?: string;
   email?: string;
   dateOfBirth?: string;
+  fatherName?: string;
+  motherName?: string;
+  gender?: string;
   agencyFileNo?: string;
   applicationBarcode?: string;
   caseId?: string;
   schemeDesc?: string;
   bankBranch?: string;
+  bankProduct?: string;
+  initiatedUnderBranch?: string;
   additionalComments?: string;
   leadType?: string;
   leadTypeId?: string;
@@ -69,22 +72,16 @@ export interface AdditionalDetails {
   vehicleBrandId?: string;
   vehicleModelName?: string;
   vehicleModelId?: string;
-  vehicleType?: string;
-  
-  // Bank Selection fields
-  bankName?: string;
-  bankProduct?: string;
-  initiatedBranch?: string;
-  initiatedUnderBranch?: string;
-  buildBranch?: string;
-  
-  // Personal Information fields
-  fatherName?: string;
-  motherName?: string;
-  gender?: string;
-  
-  // Co-applicant information
-  coApplicant?: CoApplicant;
+  addresses: Address[];
+  coApplicant?: {
+    name: string;
+    age?: number;
+    phone: string;
+    email: string;
+    relation: string;
+    occupation: string;
+    monthlyIncome: string;
+  };
 }
 
 export interface Verification {

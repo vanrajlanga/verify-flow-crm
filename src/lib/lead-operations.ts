@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Lead, Address, AdditionalDetails } from '@/utils/mockData';
 
@@ -41,7 +42,8 @@ export const saveLeadToDatabase = async (leadData: Lead) => {
       const bankMapping: { [key: string]: string } = {
         'HDFC': 'hdfc',
         'ICICI': 'icici', 
-        'AXIS': 'axis',
+        'AXIS': 'axis-bank',
+        'Axis Bank': 'axis-bank',
         'SBI': 'sbi',
         'Kotak Mahindra Bank': 'kotak',
         'Punjab National Bank': 'pnb',
@@ -49,7 +51,7 @@ export const saveLeadToDatabase = async (leadData: Lead) => {
         'Canara Bank': 'canara',
         'Union Bank of India': 'union',
         'Indian Bank': 'indian',
-        'axis': 'axis', // Handle lowercase
+        'axis': 'axis-bank', // Handle lowercase
         'hdfc': 'hdfc',
         'icici': 'icici',
         'sbi': 'sbi'
@@ -111,7 +113,7 @@ export const saveLeadToDatabase = async (leadData: Lead) => {
         application_barcode: leadData.additionalDetails.applicationBarcode || null,
         case_id: leadData.additionalDetails.caseId || null,
         scheme_desc: leadData.additionalDetails.schemeDesc || null,
-        bank_branch: leadData.additionalDetails.bankBranch || null,
+        bank_branch: leadData.additionalDetails.initiatedUnderBranch || null,
         additional_comments: leadData.additionalDetails.additionalComments || null,
         lead_type: leadData.additionalDetails.leadType || null,
         lead_type_id: leadData.additionalDetails.leadTypeId || null,
@@ -270,6 +272,7 @@ export const getLeadsFromDatabase = async (forceRefresh = false) => {
         users!leads_assigned_to_fkey(*),
         additional_details(*),
         verifications(*),
+        co_applicants(*),
         lead_addresses(
           addresses(*)
         )
@@ -303,11 +306,16 @@ export const getLeadsFromDatabase = async (forceRefresh = false) => {
         phoneNumber: lead.additional_details[0].phone_number,
         email: lead.additional_details[0].email,
         dateOfBirth: lead.additional_details[0].date_of_birth,
+        fatherName: lead.additional_details[0].father_name,
+        motherName: lead.additional_details[0].mother_name,
+        gender: lead.additional_details[0].gender,
         agencyFileNo: lead.additional_details[0].agency_file_no,
         applicationBarcode: lead.additional_details[0].application_barcode,
         caseId: lead.additional_details[0].case_id,
         schemeDesc: lead.additional_details[0].scheme_desc,
         bankBranch: lead.additional_details[0].bank_branch,
+        bankProduct: lead.additional_details[0].bank_product,
+        initiatedUnderBranch: lead.additional_details[0].bank_branch,
         additionalComments: lead.additional_details[0].additional_comments,
         leadType: lead.additional_details[0].lead_type,
         leadTypeId: lead.additional_details[0].lead_type_id,
@@ -324,7 +332,16 @@ export const getLeadsFromDatabase = async (forceRefresh = false) => {
           district: la.addresses.district,
           state: la.addresses.state,
           pincode: la.addresses.pincode
-        })) || []
+        })) || [],
+        coApplicant: lead.co_applicants?.[0] ? {
+          name: lead.co_applicants[0].name || '',
+          age: lead.co_applicants[0].age || undefined,
+          phone: lead.co_applicants[0].phone_number || '',
+          email: lead.co_applicants[0].email || '',
+          relation: lead.co_applicants[0].relationship || '',
+          occupation: lead.co_applicants[0].occupation || '',
+          monthlyIncome: lead.co_applicants[0].monthly_income || ''
+        } : undefined
       } : {
         company: '',
         designation: '',
@@ -352,6 +369,7 @@ export const getLeadsFromDatabase = async (forceRefresh = false) => {
           'hdfc': 'HDFC',
           'icici': 'ICICI',
           'axis': 'AXIS',
+          'axis-bank': 'Axis Bank',
           'sbi': 'SBI',
           'kotak': 'Kotak Mahindra Bank',
           'pnb': 'Punjab National Bank',
