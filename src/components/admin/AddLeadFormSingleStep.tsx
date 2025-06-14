@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,6 +37,12 @@ interface Address {
   pincode: string;
 }
 
+interface PhoneNumber {
+  type: 'Mobile' | 'Landline' | 'Work' | 'Home';
+  number: string;
+  isPrimary: boolean;
+}
+
 interface CoApplicantAddress {
   type: 'Residence' | 'Office' | 'Permanent';
   addressLine1: string;
@@ -55,7 +60,7 @@ interface FormData {
   
   // Applicant Information
   name: string;
-  phoneNumber: string;
+  phoneNumbers: PhoneNumber[];
   addresses: Address[];
   
   // Co-Applicant Information
@@ -121,7 +126,11 @@ const AddLeadFormSingleStep: React.FC<AddLeadFormSingleStepProps> = ({ onSubmit,
     bankProduct: '',
     initiatedUnderBranch: '',
     name: '',
-    phoneNumber: '',
+    phoneNumbers: [{
+      type: 'Mobile',
+      number: '',
+      isPrimary: true
+    }],
     addresses: [{
       type: 'Residence',
       addressLine1: '',
@@ -241,6 +250,46 @@ const AddLeadFormSingleStep: React.FC<AddLeadFormSingleStepProps> = ({ onSubmit,
     }));
   };
 
+  // Phone number handlers
+  const handlePhoneNumberChange = (index: number, field: string, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      phoneNumbers: prev.phoneNumbers.map((phone, i) => 
+        i === index ? { ...phone, [field]: value } : phone
+      )
+    }));
+  };
+
+  const addPhoneNumber = () => {
+    setFormData(prev => ({
+      ...prev,
+      phoneNumbers: [...prev.phoneNumbers, {
+        type: 'Mobile',
+        number: '',
+        isPrimary: false
+      }]
+    }));
+  };
+
+  const removePhoneNumber = (index: number) => {
+    if (formData.phoneNumbers.length > 1) {
+      setFormData(prev => ({
+        ...prev,
+        phoneNumbers: prev.phoneNumbers.filter((_, i) => i !== index)
+      }));
+    }
+  };
+
+  const setPrimaryPhone = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      phoneNumbers: prev.phoneNumbers.map((phone, i) => ({
+        ...phone,
+        isPrimary: i === index
+      }))
+    }));
+  };
+
   const handleAddressChange = (index: number, field: string, value: any) => {
     setFormData(prev => ({
       ...prev,
@@ -336,22 +385,35 @@ const AddLeadFormSingleStep: React.FC<AddLeadFormSingleStepProps> = ({ onSubmit,
       return false;
     }
 
-    if (!formData.name || !formData.phoneNumber) {
+    if (!formData.name) {
       toast({
         title: "Validation Error",
-        description: "Please fill in applicant name and phone number.",
+        description: "Please fill in applicant name.",
         variant: "destructive"
       });
       return false;
     }
 
-    if (formData.phoneNumber.length !== 10 || !/^\d+$/.test(formData.phoneNumber)) {
+    // Validate phone numbers
+    const validPhones = formData.phoneNumbers.filter(phone => phone.number.trim() !== '');
+    if (validPhones.length === 0) {
       toast({
         title: "Validation Error",
-        description: "Phone number must be exactly 10 digits.",
+        description: "Please add at least one phone number.",
         variant: "destructive"
       });
       return false;
+    }
+
+    for (const phone of validPhones) {
+      if (phone.number.length !== 10 || !/^\d+$/.test(phone.number)) {
+        toast({
+          title: "Validation Error",
+          description: "All phone numbers must be exactly 10 digits.",
+          variant: "destructive"
+        });
+        return false;
+      }
     }
 
     // Validate addresses
@@ -499,7 +561,7 @@ const AddLeadFormSingleStep: React.FC<AddLeadFormSingleStepProps> = ({ onSubmit,
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-4">
               <div>
                 <Label htmlFor="name">Full Name *</Label>
                 <Input
@@ -511,16 +573,78 @@ const AddLeadFormSingleStep: React.FC<AddLeadFormSingleStepProps> = ({ onSubmit,
                 />
               </div>
 
-              <div>
-                <Label htmlFor="phoneNumber">Phone Number * (10 digits)</Label>
-                <Input
-                  id="phoneNumber"
-                  value={formData.phoneNumber}
-                  onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-                  placeholder="Enter 10-digit phone number"
-                  maxLength={10}
-                  required
-                />
+              {/* Phone Numbers Section */}
+              <div className="space-y-4">
+                <Label>Phone Numbers *</Label>
+                {formData.phoneNumbers.map((phone, index) => (
+                  <Card key={index} className="p-4 border-l-4 border-l-blue-500">
+                    <div className="flex justify-between items-center mb-4">
+                      <h4 className="font-semibold">Phone Number {index + 1}</h4>
+                      <div className="flex items-center space-x-2">
+                        {!phone.isPrimary && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setPrimaryPhone(index)}
+                          >
+                            Set Primary
+                          </Button>
+                        )}
+                        {phone.isPrimary && (
+                          <span className="text-sm text-green-600 font-medium">Primary</span>
+                        )}
+                        {formData.phoneNumbers.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => removePhoneNumber(index)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label>Phone Type</Label>
+                        <Select 
+                          value={phone.type} 
+                          onValueChange={(value: 'Mobile' | 'Landline' | 'Work' | 'Home') => 
+                            handlePhoneNumberChange(index, 'type', value)
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select phone type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Mobile">Mobile</SelectItem>
+                            <SelectItem value="Landline">Landline</SelectItem>
+                            <SelectItem value="Work">Work</SelectItem>
+                            <SelectItem value="Home">Home</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label>Phone Number (10 digits)</Label>
+                        <Input
+                          value={phone.number}
+                          onChange={(e) => handlePhoneNumberChange(index, 'number', e.target.value)}
+                          placeholder="Enter 10-digit phone number"
+                          maxLength={10}
+                        />
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+
+                <Button type="button" variant="outline" onClick={addPhoneNumber} className="w-full">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Another Phone Number
+                </Button>
               </div>
             </div>
           </CardContent>

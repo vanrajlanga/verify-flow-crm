@@ -1,3 +1,4 @@
+
 import { Lead, Address, User } from '@/utils/mockData';
 
 // Transform form data from AddLeadFormSingleStep to Lead format
@@ -21,6 +22,10 @@ export const transformFormDataToLead = (formData: any): Lead => {
       }))
     : [];
 
+  // Get primary phone number or first available phone number
+  const primaryPhone = formData.phoneNumbers?.find((phone: any) => phone.isPrimary) 
+    || formData.phoneNumbers?.[0];
+
   // Create the lead object
   const lead: Lead = {
     id: `lead-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -36,18 +41,18 @@ export const transformFormDataToLead = (formData: any): Lead => {
       pincode: primaryAddress?.pincode || ''
     },
     additionalDetails: {
-      company: '',
-      designation: '',
-      workExperience: '',
-      propertyType: '',
-      ownershipStatus: '',
-      propertyAge: '',
-      monthlyIncome: '',
-      annualIncome: '',
-      otherIncome: '',
+      company: formData.company || '',
+      designation: formData.designation || '',
+      workExperience: formData.workExperience || '',
+      propertyType: formData.propertyType || '',
+      ownershipStatus: formData.ownershipStatus || '',
+      propertyAge: formData.propertyAge || '',
+      monthlyIncome: formData.monthlyIncome || '',
+      annualIncome: formData.annualIncome || '',
+      otherIncome: formData.otherIncome || '',
       loanAmount: formData.loanAmount || '',
       addresses: additionalAddresses,
-      phoneNumber: formData.phoneNumber || '',
+      phoneNumber: primaryPhone?.number || '',
       email: '',
       dateOfBirth: formData.dateOfBirth || '',
       fatherName: formData.fatherName || '',
@@ -63,13 +68,13 @@ export const transformFormDataToLead = (formData: any): Lead => {
       additionalComments: formData.additionalComments || '',
       leadType: formData.leadType || '',
       loanType: '',
-      vehicleBrandName: '',
-      vehicleModelName: ''
+      vehicleBrandName: formData.vehicleBrand || '',
+      vehicleModelName: formData.vehicleModel || ''
     },
     status: 'Pending',
-    bank: formData.bank || '',
+    bank: formData.bankName || '',
     visitType: formData.visitType || 'Residence',
-    assignedTo: '',
+    assignedTo: '', // No assignment on creation - will be assigned later
     createdAt: new Date(),
     documents: [],
     instructions: formData.instructions || ''
