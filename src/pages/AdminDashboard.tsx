@@ -1,262 +1,236 @@
+
 import { useState, useEffect } from 'react';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Plus, FileText, Users, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, mockLeads, mockUsers } from '@/utils/mockData';
-import Header from '@/components/shared/Header';
-import Sidebar from '@/components/shared/Sidebar';
-import { 
-  Users, 
-  FileText, 
-  Calendar, 
-  TrendingUp,
-  MapPin,
-  Building,
-  CheckCircle,
-  Clock,
-  AlertCircle,
-  UserCheck
-} from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { Lead, User } from '@/utils/mockData';
+import { toast } from '@/components/ui/use-toast';
 
 const AdminDashboard = () => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const navigate = useNavigate();
+  const { user: currentUser } = useAuth();
+  const [dashboardStats, setDashboardStats] = useState({
+    totalLeads: 0,
+    pendingLeads: 0,
+    inProgressLeads: 0,
+    completedLeads: 0,
+    totalAgents: 0,
+    activeAgents: 0
+  });
+  const [recentLeads, setRecentLeads] = useState<Lead[]>([]);
 
   useEffect(() => {
-    // Check if user is logged in and redirect properly
-    const storedUser = localStorage.getItem('kycUser');
-    if (!storedUser) {
-      navigate('/');
-      return;
+    loadDashboardData();
+  }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      // Load leads from localStorage
+      const storedLeads = localStorage.getItem('mockLeads');
+      const leads: Lead[] = storedLeads ? JSON.parse(storedLeads) : [];
+      
+      // Load users from localStorage
+      const storedUsers = localStorage.getItem('mockUsers');
+      const users: User[] = storedUsers ? JSON.parse(storedUsers) : [];
+      
+      // Calculate stats
+      const totalLeads = leads.length;
+      const pendingLeads = leads.filter(lead => lead.status === 'Pending').length;
+      const inProgressLeads = leads.filter(lead => lead.status === 'In Progress').length;
+      const completedLeads = leads.filter(lead => lead.status === 'Completed').length;
+      
+      const agents = users.filter(user => user.role === 'agent' || user.role === 'tvtteam');
+      const totalAgents = agents.length;
+      const activeAgents = agents.filter(agent => agent.status === 'Active').length;
+      
+      setDashboardStats({
+        totalLeads,
+        pendingLeads,
+        inProgressLeads,
+        completedLeads,
+        totalAgents,
+        activeAgents
+      });
+      
+      // Get recent leads (last 5)
+      const sortedLeads = leads
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 5);
+      setRecentLeads(sortedLeads);
+      
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load dashboard data",
+        variant: "destructive"
+      });
     }
-
-    const parsedUser = JSON.parse(storedUser);
-    
-    // Check if user is admin
-    if (parsedUser.role !== 'admin') {
-      navigate('/');
-      return;
-    }
-
-    setCurrentUser(parsedUser);
-  }, [navigate]);
-
-  const handleLogout = () => {
-    localStorage.removeItem('kycUser');
-    navigate('/');
   };
 
-  // Calculate dashboard statistics
-  const totalLeads = mockLeads.length;
-  const completedLeads = mockLeads.filter(lead => lead.status === 'Completed').length;
-  const pendingLeads = mockLeads.filter(lead => lead.status === 'Pending').length;
-  const inProgressLeads = mockLeads.filter(lead => lead.status === 'In Progress').length;
-  const totalAgents = mockUsers.filter(user => user.role === 'agent').length;
-  const activeTVTTeam = mockUsers.filter(user => user.role === 'tvt' && user.status === 'active').length;
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Pending': return 'bg-yellow-100 text-yellow-800';
+      case 'In Progress': return 'bg-blue-100 text-blue-800';
+      case 'Completed': return 'bg-green-100 text-green-800';
+      case 'Rejected': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
 
   if (!currentUser) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+    return <div>Loading...</div>;
   }
 
   return (
-    <div className="flex min-h-screen bg-muted/30">
-      <Sidebar user={currentUser} isOpen={sidebarOpen} />
-      
-      <div className="flex flex-col flex-1">
-        <Header 
-          user={currentUser} 
-          onLogout={handleLogout} 
-          toggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
-        />
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-semibold">Admin Dashboard</h1>
+          <p className="text-muted-foreground">Overview of KYC verification system</p>
+        </div>
+        <Button onClick={() => navigate('/admin/leads/add')} className="bg-blue-600 hover:bg-blue-700">
+          <Plus className="h-4 w-4 mr-2" />
+          Add New Lead
+        </Button>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Leads</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{dashboardStats.totalLeads}</div>
+            <p className="text-xs text-muted-foreground">All verification requests</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Pending</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{dashboardStats.pendingLeads}</div>
+            <p className="text-xs text-muted-foreground">Awaiting assignment</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">In Progress</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{dashboardStats.inProgressLeads}</div>
+            <p className="text-xs text-muted-foreground">Currently being verified</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Completed</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{dashboardStats.completedLeads}</div>
+            <p className="text-xs text-muted-foreground">Verification completed</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Agent Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Agents</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{dashboardStats.totalAgents}</div>
+            <p className="text-xs text-muted-foreground">Registered verification agents</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Active Agents</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{dashboardStats.activeAgents}</div>
+            <p className="text-xs text-muted-foreground">Available for assignments</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent Leads */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Leads</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {recentLeads.length === 0 ? (
+            <p className="text-muted-foreground">No leads found</p>
+          ) : (
+            <div className="space-y-3">
+              {recentLeads.map((lead) => (
+                <div key={lead.id} className="flex items-center justify-between p-3 border rounded">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-3">
+                      <h4 className="font-medium">{lead.name}</h4>
+                      <Badge className={getStatusColor(lead.status)}>
+                        {lead.status}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {lead.bank} • {lead.address.city}, {lead.address.state}
+                    </p>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {new Date(lead.createdAt).toLocaleDateString()}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Button 
+          variant="outline" 
+          className="h-20 flex flex-col items-center justify-center gap-2"
+          onClick={() => navigate('/admin/leads')}
+        >
+          <FileText className="h-6 w-6" />
+          <span>Manage Leads</span>
+        </Button>
         
-        <main className="flex-1 p-4 md:p-6">
-          <div className="max-w-7xl mx-auto space-y-6">
-            {/* Header */}
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-              <p className="text-muted-foreground">
-                Welcome back, {currentUser.name}! Here's your KYC management overview.
-              </p>
-            </div>
-
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Leads</CardTitle>
-                  <FileText className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{totalLeads}</div>
-                  <p className="text-xs text-muted-foreground">
-                    All verification requests
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Completed</CardTitle>
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-green-600">{completedLeads}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {totalLeads > 0 ? `${Math.round((completedLeads / totalLeads) * 100)}%` : '0%'} completion rate
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">In Progress</CardTitle>
-                  <Clock className="h-4 w-4 text-blue-600" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-blue-600">{inProgressLeads}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Currently being verified
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Pending</CardTitle>
-                  <AlertCircle className="h-4 w-4 text-yellow-600" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-yellow-600">{pendingLeads}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Awaiting assignment
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Active Agents</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{totalAgents}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Field verification agents
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">TVT Team</CardTitle>
-                  <UserCheck className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{activeTVTTeam}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Active verification team
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">This Month</CardTitle>
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{totalLeads}</div>
-                  <p className="text-xs text-muted-foreground">
-                    New verifications
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Growth</CardTitle>
-                  <TrendingUp className="h-4 w-4 text-green-600" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-green-600">+12%</div>
-                  <p className="text-xs text-muted-foreground">
-                    From last month
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Recent Activity */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Recent Leads</CardTitle>
-                  <CardDescription>Latest verification requests</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {mockLeads.slice(0, 5).map((lead) => (
-                      <div key={lead.id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="space-y-1">
-                          <p className="font-medium">{lead.name}</p>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Building className="h-3 w-3" />
-                            <span>{lead.bank}</span>
-                            <MapPin className="h-3 w-3 ml-2" />
-                            <span>{lead.address.city}</span>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                            lead.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                            lead.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
-                            'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {lead.status}
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {new Date(lead.createdAt).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Team Performance</CardTitle>
-                  <CardDescription>Top performing agents this month</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {mockUsers
-                      .filter(user => user.role === 'agent')
-                      .slice(0, 5)
-                      .map((agent) => (
-                        <div key={agent.id} className="flex items-center justify-between p-3 border rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                              <Users className="h-4 w-4 text-blue-600" />
-                            </div>
-                            <div>
-                              <p className="font-medium">{agent.name}</p>
-                              <p className="text-sm text-muted-foreground">{agent.district}</p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-sm font-medium">{agent.totalVerifications || 0}</div>
-                            <div className="text-xs text-muted-foreground">verifications</div>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </main>
+        <Button 
+          variant="outline" 
+          className="h-20 flex flex-col items-center justify-center gap-2"
+          onClick={() => navigate('/admin/agents')}
+        >
+          <Users className="h-6 w-6" />
+          <span>Manage Agents</span>
+        </Button>
+        
+        <Button 
+          variant="outline" 
+          className="h-20 flex flex-col items-center justify-center gap-2"
+          onClick={() => navigate('/admin/reports')}
+        >
+          <FileText className="h-6 w-6" />
+          <span>View Reports</span>
+        </Button>
       </div>
     </div>
   );

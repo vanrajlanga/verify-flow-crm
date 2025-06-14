@@ -103,9 +103,9 @@ export const exportLeadsToCSV = (leads: Lead[]): string => {
       `"${formatValue(lead.additionalDetails?.monthlyIncome)}"`,
       `"${formatValue(lead.additionalDetails?.annualIncome)}"`,
       `"${formatValue(lead.additionalDetails?.otherIncome)}"`,
-      `"${formatValue(lead.additionalDetails?.phoneNumber)}"`,
-      `"${formatValue(lead.additionalDetails?.email)}"`,
-      `"${formatValue(lead.additionalDetails?.dateOfBirth)}"`,
+      `"${formatValue(lead.phone)}"`,
+      `"${formatValue(lead.email)}"`,
+      lead.additionalDetails?.dateOfBirth ? (lead.additionalDetails.dateOfBirth instanceof Date ? lead.additionalDetails.dateOfBirth.toISOString() : formatValue(lead.additionalDetails.dateOfBirth)) : 'NA',
       `"${formatValue(lead.additionalDetails?.fatherName)}"`,
       `"${formatValue(lead.additionalDetails?.motherName)}"`,
       `"${formatValue(lead.additionalDetails?.gender)}"`,
@@ -217,8 +217,34 @@ const mapCSVRowToLead = (headers: string[], values: string[]): Partial<Lead> => 
     return value !== 'NA' ? new Date(value) : undefined;
   };
   
+  const getNumberValue = (headerName: string): number => {
+    const value = getValue(headerName);
+    return value !== 'NA' ? parseInt(value) || 0 : 0;
+  };
+  
+  // Map address type to correct values
+  const mapAddressType = (type: string): Address['type'] => {
+    switch (type.toLowerCase()) {
+      case 'residence': return 'Residence';
+      case 'office': return 'Office';
+      case 'permanent': return 'Permanent';
+      case 'temporary': return 'Temporary';
+      case 'current': return 'Current';
+      default: return 'Residence';
+    }
+  };
+  
+  // Map visit type to correct values
+  const mapVisitType = (type: string): Lead['visitType'] => {
+    switch (type.toLowerCase()) {
+      case 'physical': return 'Physical';
+      case 'virtual': return 'Virtual';
+      default: return 'Physical';
+    }
+  };
+  
   const address: Address = {
-    type: getValue('Address Type') as 'Residence' | 'Office' | 'Both' || 'Residence',
+    type: mapAddressType(getValue('Address Type')),
     street: getValue('Street'),
     city: getValue('City'),
     district: getValue('District'),
@@ -238,7 +264,7 @@ const mapCSVRowToLead = (headers: string[], values: string[]): Partial<Lead> => 
     otherIncome: getValue('Other Income'),
     phoneNumber: getValue('Phone Number'),
     email: getValue('Email'),
-    dateOfBirth: getValue('Date of Birth'),
+    dateOfBirth: getDateValue('Date of Birth'),
     fatherName: getValue('Father Name'),
     motherName: getValue('Mother Name'),
     gender: getValue('Gender'),
@@ -274,17 +300,18 @@ const mapCSVRowToLead = (headers: string[], values: string[]): Partial<Lead> => 
     };
   }
   
-  const ageValue = getValue('Age');
   const lead: Partial<Lead> = {
     id: getValue('Lead ID') || `LEAD-${Date.now()}`,
     name: getValue('Name'),
-    age: ageValue !== 'NA' ? parseInt(ageValue) || 0 : 0,
+    age: getNumberValue('Age'),
     job: getValue('Job'),
+    phone: getValue('Phone Number'),
+    email: getValue('Email'),
     address,
     additionalDetails,
     status: getValue('Status') as Lead['status'] || 'Pending',
     bank: getValue('Bank'),
-    visitType: getValue('Visit Type') as Lead['visitType'] || 'Residence',
+    visitType: mapVisitType(getValue('Visit Type')),
     assignedTo: getValue('Assigned To'),
     verificationDate: getDateValue('Verification Date'),
     instructions: getValue('Instructions'),
@@ -307,7 +334,7 @@ export const generateSampleCSV = (): string => {
       'Software Engineer',
       'Pending',
       'HDFC',
-      'Residence',
+      'Physical',
       'agent-1',
       '2025-06-20T10:00:00Z',
       'Sample home loan verification',
@@ -362,7 +389,6 @@ export const generateSampleCSV = (): string => {
   return csvRows.join('\n');
 };
 
-// Download file utility
 export const downloadFile = (content: string, filename: string, contentType: string = 'text/csv') => {
   const blob = new Blob([content], { type: contentType });
   const url = window.URL.createObjectURL(blob);

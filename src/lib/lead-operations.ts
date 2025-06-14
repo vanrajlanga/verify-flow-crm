@@ -58,12 +58,11 @@ export const saveLeadToDatabase = async (leadData: Lead): Promise<void> => {
 
     console.log('Lead saved successfully:', leadInsertResult);
 
-    // Save additional details if present
+    // Save additional details if present (remove lead_id as it doesn't exist in schema)
     if (leadData.additionalDetails) {
       const { error: additionalError } = await supabase
         .from('additional_details')
         .insert({
-          lead_id: leadData.id,
           company: leadData.additionalDetails.company || '',
           designation: leadData.additionalDetails.designation || '',
           work_experience: leadData.additionalDetails.workExperience || '',
@@ -226,8 +225,10 @@ export const getAllLeadsFromDatabase = async (): Promise<Lead[]> => {
         name: dbLead.name,
         age: dbLead.age || 0,
         job: dbLead.job || '',
+        phone: additionalDetails?.phone_number || '',
+        email: additionalDetails?.email || '',
         address: {
-          type: dbLead.addresses?.type || 'Residence',
+          type: dbLead.addresses?.type as Address['type'] || 'Residence',
           street: dbLead.addresses?.street || '',
           city: dbLead.addresses?.city || '',
           district: dbLead.addresses?.district || '',
@@ -246,7 +247,7 @@ export const getAllLeadsFromDatabase = async (): Promise<Lead[]> => {
           otherIncome: additionalDetails.other_income || '',
           loanAmount: additionalDetails.loan_amount || '',
           addresses: additionalAddresses.map((addr: any) => ({
-            type: addr.type || 'Residence',
+            type: addr.type as Address['type'] || 'Residence',
             street: addr.street || '',
             city: addr.city || '',
             district: addr.district || '',
@@ -255,7 +256,7 @@ export const getAllLeadsFromDatabase = async (): Promise<Lead[]> => {
           })),
           phoneNumber: additionalDetails.phone_number || '',
           email: additionalDetails.email || '',
-          dateOfBirth: additionalDetails.date_of_birth || '',
+          dateOfBirth: additionalDetails.date_of_birth ? new Date(additionalDetails.date_of_birth) : new Date(),
           fatherName: additionalDetails.father_name || '',
           motherName: additionalDetails.mother_name || '',
           gender: additionalDetails.gender || '',
@@ -283,7 +284,7 @@ export const getAllLeadsFromDatabase = async (): Promise<Lead[]> => {
         } : undefined,
         status: dbLead.status as 'Pending' | 'In Progress' | 'Completed' | 'Rejected',
         bank: dbLead.bank_id || '',
-        visitType: dbLead.visit_type as 'Residence' | 'Office' | 'Both',
+        visitType: dbLead.visit_type as 'Physical' | 'Virtual',
         assignedTo: dbLead.assigned_to || '',
         createdAt: new Date(dbLead.created_at),
         verificationDate: dbLead.verification_date ? new Date(dbLead.verification_date) : undefined,
@@ -361,8 +362,10 @@ export const getLeadsByBankFromDatabase = async (bankId: string): Promise<Lead[]
         name: dbLead.name,
         age: dbLead.age || 0,
         job: dbLead.job || '',
+        phone: additionalDetails?.phone_number || '',
+        email: additionalDetails?.email || '',
         address: {
-          type: dbLead.addresses?.type || 'Residence',
+          type: dbLead.addresses?.type as Address['type'] || 'Residence',
           street: dbLead.addresses?.street || '',
           city: dbLead.addresses?.city || '',
           district: dbLead.addresses?.district || '',
@@ -381,7 +384,7 @@ export const getLeadsByBankFromDatabase = async (bankId: string): Promise<Lead[]
           otherIncome: additionalDetails.other_income || '',
           loanAmount: additionalDetails.loan_amount || '',
           addresses: additionalAddresses.map((addr: any) => ({
-            type: addr.type || 'Residence',
+            type: addr.type as Address['type'] || 'Residence',
             street: addr.street || '',
             city: addr.city || '',
             district: addr.district || '',
@@ -390,7 +393,7 @@ export const getLeadsByBankFromDatabase = async (bankId: string): Promise<Lead[]
           })),
           phoneNumber: additionalDetails.phone_number || '',
           email: additionalDetails.email || '',
-          dateOfBirth: additionalDetails.date_of_birth || '',
+          dateOfBirth: additionalDetails.date_of_birth ? new Date(additionalDetails.date_of_birth) : new Date(),
           fatherName: additionalDetails.father_name || '',
           motherName: additionalDetails.mother_name || '',
           gender: additionalDetails.gender || '',
@@ -418,7 +421,7 @@ export const getLeadsByBankFromDatabase = async (bankId: string): Promise<Lead[]
         } : undefined,
         status: dbLead.status as 'Pending' | 'In Progress' | 'Completed' | 'Rejected',
         bank: dbLead.bank_id || '',
-        visitType: dbLead.visit_type as 'Residence' | 'Office' | 'Both',
+        visitType: dbLead.visit_type as 'Physical' | 'Virtual',
         assignedTo: dbLead.assigned_to || '',
         createdAt: new Date(dbLead.created_at),
         verificationDate: dbLead.verification_date ? new Date(dbLead.verification_date) : undefined,
@@ -495,8 +498,10 @@ export const getLeadByIdFromDatabase = async (leadId: string): Promise<Lead | nu
       name: leadData.name,
       age: leadData.age || 0,
       job: leadData.job || '',
+      phone: additionalDetails?.phone_number || '',
+      email: additionalDetails?.email || '',
       address: {
-        type: leadData.addresses?.type || 'Residence',
+        type: leadData.addresses?.type as Address['type'] || 'Residence',
         street: leadData.addresses?.street || '',
         city: leadData.addresses?.city || '',
         district: leadData.addresses?.district || '',
@@ -515,7 +520,7 @@ export const getLeadByIdFromDatabase = async (leadId: string): Promise<Lead | nu
         otherIncome: additionalDetails.other_income || '',
         loanAmount: additionalDetails.loan_amount || '',
         addresses: additionalAddresses.map((addr: any) => ({
-          type: addr.type || 'Residence',
+          type: addr.type as Address['type'] || 'Residence',
           street: addr.street || '',
           city: addr.city || '',
           district: addr.district || '',
@@ -524,7 +529,7 @@ export const getLeadByIdFromDatabase = async (leadId: string): Promise<Lead | nu
         })),
         phoneNumber: additionalDetails.phone_number || '',
         email: additionalDetails.email || '',
-        dateOfBirth: additionalDetails.date_of_birth || '',
+        dateOfBirth: additionalDetails.date_of_birth ? new Date(additionalDetails.date_of_birth) : new Date(),
         fatherName: additionalDetails.father_name || '',
         motherName: additionalDetails.mother_name || '',
         gender: additionalDetails.gender || '',
@@ -552,7 +557,7 @@ export const getLeadByIdFromDatabase = async (leadId: string): Promise<Lead | nu
       } : undefined,
       status: leadData.status as 'Pending' | 'In Progress' | 'Completed' | 'Rejected',
       bank: leadData.bank_id || '',
-      visitType: leadData.visit_type as 'Residence' | 'Office' | 'Both',
+      visitType: leadData.visit_type as 'Physical' | 'Virtual',
       assignedTo: leadData.assigned_to || '',
       createdAt: new Date(leadData.created_at),
       verificationDate: leadData.verification_date ? new Date(leadData.verification_date) : undefined,

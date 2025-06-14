@@ -13,7 +13,7 @@ export const transformFormDataToLead = (formData: any): Lead => {
   // Transform additional addresses (excluding the first one)
   const additionalAddresses = formData.addresses && formData.addresses.length > 1
     ? formData.addresses.slice(1).map((addr: any) => ({
-        type: addr.type as 'Residence' | 'Office' | 'Permanent',
+        type: addr.type as 'Residence' | 'Office' | 'Permanent' | 'Temporary' | 'Current',
         street: addr.addressLine1 || '',
         city: addr.city || '',
         district: addr.district || '',
@@ -32,6 +32,8 @@ export const transformFormDataToLead = (formData: any): Lead => {
     name: formData.name || '',
     age: 0, // Default age since it's not in the form
     job: '', // Default job since it's not in the form
+    phone: primaryPhone?.number || '',
+    email: formData.email || '',
     address: {
       type: 'Residence',
       street: primaryAddress?.addressLine1 || '',
@@ -53,8 +55,8 @@ export const transformFormDataToLead = (formData: any): Lead => {
       loanAmount: formData.loanAmount || '',
       addresses: additionalAddresses,
       phoneNumber: primaryPhone?.number || '',
-      email: '',
-      dateOfBirth: formData.dateOfBirth || '',
+      email: formData.email || '',
+      dateOfBirth: formData.dateOfBirth ? new Date(formData.dateOfBirth) : new Date(),
       fatherName: formData.fatherName || '',
       motherName: formData.motherName || '',
       gender: formData.gender || '',
@@ -82,7 +84,7 @@ export const transformFormDataToLead = (formData: any): Lead => {
     },
     status: 'Pending',
     bank: formData.bankName || '',
-    visitType: formData.visitType || 'Residence',
+    visitType: formData.visitType || 'Physical',
     assignedTo: '', // Leave empty - will be assigned later by admin
     createdAt: new Date(),
     documents: [],

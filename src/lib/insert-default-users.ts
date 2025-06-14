@@ -30,7 +30,7 @@ export const insertDefaultUsers = async () => {
           email: 'admin@kycverification.com',
           phone: '+91-9876543210',
           district: 'Bangalore Urban',
-          status: 'active',
+          status: 'Active',
           state: 'Karnataka',
           city: 'Bangalore',
           baseLocation: 'Bangalore',
@@ -40,7 +40,8 @@ export const insertDefaultUsers = async () => {
           totalVerifications: 0,
           completionRate: 100,
           password: 'password',
-          documents: []
+          documents: [],
+          managedBankId: ''
         },
         {
           id: 'agent-1',
@@ -49,7 +50,7 @@ export const insertDefaultUsers = async () => {
           email: 'rajesh@kycverification.com',
           phone: '+91-9876543211',
           district: 'Bangalore Urban',
-          status: 'active',
+          status: 'Active',
           state: 'Karnataka',
           city: 'Bangalore',
           baseLocation: 'Bangalore',
@@ -59,16 +60,17 @@ export const insertDefaultUsers = async () => {
           totalVerifications: 25,
           completionRate: 95,
           password: 'password',
-          documents: []
+          documents: [],
+          managedBankId: ''
         },
         {
           id: 'tvt-1',
           name: 'Atul Sharma',
-          role: 'tvt',
+          role: 'tvtteam',
           email: 'atul@gmail.com',
           phone: '+91-9876543212',
           district: 'Delhi',
-          status: 'active',
+          status: 'Active',
           state: 'Delhi',
           city: 'New Delhi',
           baseLocation: 'Delhi',
@@ -78,7 +80,8 @@ export const insertDefaultUsers = async () => {
           totalVerifications: 15,
           completionRate: 98,
           password: '123456',
-          documents: []
+          documents: [],
+          managedBankId: ''
         }
       ];
 
@@ -101,7 +104,8 @@ export const insertDefaultUsers = async () => {
           profile_picture: user.profilePicture,
           total_verifications: user.totalVerifications,
           completion_rate: user.completionRate,
-          password: user.password
+          password: user.password,
+          managed_bank_id: user.managedBankId
         })));
 
       if (insertError) {
@@ -121,11 +125,11 @@ export const insertDefaultUsers = async () => {
         const atulUser = {
           id: 'tvt-1',
           name: 'Atul Sharma',
-          role: 'tvt',
+          role: 'tvtteam',
           email: 'atul@gmail.com',
           phone: '+91-9876543212',
           district: 'Delhi',
-          status: 'active',
+          status: 'Active',
           state: 'Delhi',
           city: 'New Delhi',
           base_location: 'Delhi',
@@ -134,7 +138,8 @@ export const insertDefaultUsers = async () => {
           profile_picture: null,
           total_verifications: 15,
           completion_rate: 98,
-          password: '123456'
+          password: '123456',
+          managed_bank_id: ''
         };
 
         const { error } = await supabase
@@ -156,7 +161,7 @@ export const insertDefaultUsers = async () => {
         email: user.email,
         phone: user.phone || '',
         district: user.district || '',
-        status: user.status || 'active',
+        status: user.status || 'Active',
         state: user.state,
         city: user.city,
         baseLocation: user.base_location,
@@ -166,7 +171,8 @@ export const insertDefaultUsers = async () => {
         totalVerifications: user.total_verifications || 0,
         completionRate: user.completion_rate || 0,
         password: user.password,
-        documents: []
+        documents: [],
+        managedBankId: user.managed_bank_id || ''
       }));
       localStorage.setItem('mockUsers', JSON.stringify(transformedUsers));
     }
@@ -186,7 +192,7 @@ const setupLocalStorageUsers = () => {
       email: 'admin@kycverification.com',
       phone: '+91-9876543210',
       district: 'Bangalore Urban',
-      status: 'active',
+      status: 'Active',
       state: 'Karnataka',
       city: 'Bangalore',
       baseLocation: 'Bangalore',
@@ -196,7 +202,8 @@ const setupLocalStorageUsers = () => {
       totalVerifications: 0,
       completionRate: 100,
       password: 'password',
-      documents: []
+      documents: [],
+      managedBankId: ''
     },
     {
       id: 'agent-1',
@@ -205,7 +212,7 @@ const setupLocalStorageUsers = () => {
       email: 'rajesh@kycverification.com',
       phone: '+91-9876543211',
       district: 'Bangalore Urban',
-      status: 'active',
+      status: 'Active',
       state: 'Karnataka',
       city: 'Bangalore',
       baseLocation: 'Bangalore',
@@ -215,16 +222,17 @@ const setupLocalStorageUsers = () => {
       totalVerifications: 25,
       completionRate: 95,
       password: 'password',
-      documents: []
+      documents: [],
+      managedBankId: ''
     },
     {
       id: 'tvt-1',
       name: 'Atul Sharma',
-      role: 'tvt',
+      role: 'tvtteam',
       email: 'atul@gmail.com',
       phone: '+91-9876543212',
       district: 'Delhi',
-      status: 'active',
+      status: 'Active',
       state: 'Delhi',
       city: 'New Delhi',
       baseLocation: 'Delhi',
@@ -234,7 +242,8 @@ const setupLocalStorageUsers = () => {
       totalVerifications: 15,
       completionRate: 98,
       password: '123456',
-      documents: []
+      documents: [],
+      managedBankId: ''
     }
   ];
 
