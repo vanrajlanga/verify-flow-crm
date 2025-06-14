@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Lead, User, Bank } from '@/utils/mockData';
 import { Button } from "@/components/ui/button";
@@ -14,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Minus } from 'lucide-react';
+import AddressAgentAssignment from './AddressAgentAssignment';
 
 interface EditLeadFormProps {
   lead: Lead;
@@ -82,6 +82,14 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
       
       ...lead.additionalDetails
     }
+  });
+
+  // Address assignments state
+  const [addressAssignments, setAddressAssignments] = useState({
+    primaryAddress: { ...lead.address, assignedAgent: '', owner: 'applicant' as const },
+    additionalAddresses: (lead.additionalDetails?.addresses || []).map((addr: any) => ({ ...addr, assignedAgent: '', owner: 'applicant' as const })),
+    coApplicantAddresses: (lead.additionalDetails?.coApplicantAddresses || []).map((addr: any) => ({ ...addr, assignedAgent: '', owner: 'co-applicant' as const })),
+    tvtAgent: ''
   });
 
   useEffect(() => {
@@ -287,6 +295,10 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
     }));
   };
 
+  const handleAddressAssignmentChange = (assignments: any) => {
+    setAddressAssignments(assignments);
+  };
+
   const handleUpdate = () => {
     if (!formData.name.trim()) {
       toast({
@@ -297,7 +309,13 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
       return;
     }
 
-    onUpdate(formData);
+    // Include address assignments in the updated lead data
+    const updatedLead = {
+      ...formData,
+      addressAssignments: addressAssignments
+    };
+
+    onUpdate(updatedLead);
     toast({
       title: "Lead updated",
       description: `${formData.name} has been updated successfully.`,
@@ -1065,10 +1083,27 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
           </CardContent>
         </Card>
 
-        {/* Assignment & Instructions */}
+        {/* Address-Based Agent Assignment - NEW */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Assignment & Instructions</CardTitle>
+            <CardTitle className="text-lg">Address-Based Agent Assignment</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AddressAgentAssignment
+              primaryAddress={formData.address || { type: 'Residence', street: '', city: '', state: '', district: '', pincode: '' }}
+              additionalAddresses={formData.additionalDetails?.addresses || []}
+              coApplicantAddresses={formData.additionalDetails?.coApplicantAddresses || []}
+              agents={agents}
+              tvtAgent={addressAssignments.tvtAgent}
+              onAssignmentChange={handleAddressAssignmentChange}
+            />
+          </CardContent>
+        </Card>
+
+        {/* General Instructions */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">General Instructions & Status</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -1102,22 +1137,6 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
                     <SelectItem value="Residence">Residence</SelectItem>
                     <SelectItem value="Office">Office</SelectItem>
                     <SelectItem value="Both">Both</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Assigned Agent</label>
-                <Select 
-                  value={formData.assignedTo || ''}
-                  onValueChange={(value) => handleInputChange('assignedTo', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select agent" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {agents.map((agent) => (
-                      <SelectItem key={agent.id} value={agent.id}>{agent.name}</SelectItem>
-                    ))}
                   </SelectContent>
                 </Select>
               </div>
