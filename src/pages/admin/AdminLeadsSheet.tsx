@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -77,7 +78,7 @@ const AdminLeadsSheet = () => {
 
   const handleDeleteLead = async (leadId: string) => {
     try {
-      await deleteLeadFromDatabase();
+      await deleteLeadFromDatabase(leadId);
       
       // Also remove from local state
       setLeads(leads.filter(lead => lead.id !== leadId));
@@ -94,6 +95,10 @@ const AdminLeadsSheet = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleViewLead = (leadId: string) => {
+    navigate(`/admin/leads/${leadId}`);
   };
 
   if (!currentUser) {
@@ -157,6 +162,7 @@ const AdminLeadsSheet = () => {
                 ) : (
                   <LeadsTable 
                     leads={leads} 
+                    onViewLead={handleViewLead}
                     showActions={currentUser.role === 'admin'} // Only admins can edit/delete
                   />
                 )}

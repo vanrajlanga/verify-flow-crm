@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -60,7 +59,7 @@ const AdminDashboard = () => {
   const pendingLeads = mockLeads.filter(lead => lead.status === 'Pending').length;
   const inProgressLeads = mockLeads.filter(lead => lead.status === 'In Progress').length;
   const totalAgents = mockUsers.filter(user => user.role === 'agent').length;
-  const activeTVTTeam = mockUsers.filter(user => user.role === 'tvtteam' && user.status === 'active').length;
+  const activeTVTTeam = mockUsers.filter(user => user.role === 'tvt' && user.status === 'active').length;
 
   if (!currentUser) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;

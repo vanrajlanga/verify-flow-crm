@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -75,14 +76,6 @@ const AdminLeads = () => {
     navigate(`/admin/leads/${leadId}`);
   };
 
-  const handleDeleteLead = (leadId: string) => {
-    setLeads(leads.filter(lead => lead.id !== leadId));
-    toast({
-      title: "Lead deleted",
-      description: "Lead has been successfully deleted.",
-    });
-  };
-
   const handleViewLead = (leadId: string) => {
     navigate(`/admin/leads/${leadId}`);
   };
@@ -150,7 +143,6 @@ const AdminLeads = () => {
                     leads={leads} 
                     onViewLead={handleViewLead}
                     onEditLead={handleEditLead}
-                    onDeleteLead={handleDeleteLead}
                     showActions={currentUser.role === 'admin'} // Only admins can edit/delete
                   />
                 )}
