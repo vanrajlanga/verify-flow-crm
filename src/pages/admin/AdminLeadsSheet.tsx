@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -362,6 +361,24 @@ const AdminLeadsSheet = () => {
                     enableBulkSelect={true}
                     selectedLeads={selectedLeads}
                     onSelectLeads={setSelectedLeads}
+                    visibleColumns={[
+                      'leadId',
+                      'name', 
+                      'job',
+                      'status',
+                      'bank',
+                      'visitType',
+                      'city',
+                      'state',
+                      'phone',
+                      'company',
+                      'loanAmount',
+                      'bankProduct',
+                      'initiatedBranch',
+                      'coApplicant',
+                      'assignedTo',
+                      'createdDate'
+                    ]}
                   />
                 )}
               </CardContent>
