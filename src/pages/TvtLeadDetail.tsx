@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,12 +8,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { User, Lead, mockLeads } from '@/utils/mockData';
+import { User, Lead } from '@/utils/mockData';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
 import DocumentViewer from '@/components/shared/DocumentViewer';
 import { toast } from '@/components/ui/use-toast';
 import { Save, ArrowLeft, CheckCircle, XCircle, FileText } from 'lucide-react';
+import { getLeadByIdFromDatabase, updateLeadInDatabase } from '@/lib/lead-operations';
 
 interface VerificationField {
   fieldName: string;
@@ -30,6 +32,7 @@ const TvtLeadDetail = () => {
   const [lead, setLead] = useState<Lead | null>(null);
   const [verificationFields, setVerificationFields] = useState<VerificationField[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     // Check if user is logged in and has TVTTEAM role
@@ -52,36 +55,31 @@ const TvtLeadDetail = () => {
     loadLeadData();
   }, [leadId, navigate]);
 
-  const loadLeadData = () => {
+  const loadLeadData = async () => {
     setIsLoading(true);
     try {
       console.log('Loading lead data for leadId:', leadId);
       
-      // First try localStorage
-      const storedLeads = localStorage.getItem('mockLeads');
-      let allLeads = [];
-      
-      if (storedLeads) {
-        try {
-          allLeads = JSON.parse(storedLeads);
-          console.log('Found leads in localStorage:', allLeads.length);
-        } catch (error) {
-          console.error('Error parsing stored leads:', error);
-        }
+      if (!leadId) {
+        throw new Error('Lead ID is required');
       }
-      
-      // If no stored leads, use mockLeads
-      if (allLeads.length === 0) {
-        allLeads = mockLeads;
-        console.log('Using mock leads:', allLeads.length);
-      }
-      
-      const foundLead = allLeads.find((l: Lead) => l.id === leadId);
+
+      // Load lead from database
+      const foundLead = await getLeadByIdFromDatabase(leadId);
       console.log('Found lead:', foundLead);
       
       if (foundLead) {
         setLead(foundLead);
-        initializeVerificationFields(foundLead);
+        
+        // Check if verification already exists
+        const existingVerification = localStorage.getItem(`verification_${leadId}`);
+        if (existingVerification) {
+          console.log('Loading existing verification data');
+          const verificationData = JSON.parse(existingVerification);
+          setVerificationFields(verificationData.verificationFields || []);
+        } else {
+          initializeVerificationFields(foundLead);
+        }
       } else {
         console.error('Lead not found with ID:', leadId);
         toast({
@@ -98,6 +96,7 @@ const TvtLeadDetail = () => {
         description: "There was an error loading the lead data.",
         variant: "destructive"
       });
+      navigate('/tvt');
     } finally {
       setIsLoading(false);
     }
@@ -382,9 +381,29 @@ const TvtLeadDetail = () => {
     const updatedFields = [...verificationFields];
     updatedFields[index] = { ...updatedFields[index], [field]: value };
     setVerificationFields(updatedFields);
+
+    // Auto-save verification data to localStorage for persistence
+    const verificationData = {
+      leadId,
+      verificationFields: updatedFields,
+      lastUpdated: new Date().toISOString(),
+      updatedBy: currentUser?.id,
+      updatedByName: currentUser?.name
+    };
+    localStorage.setItem(`verification_${leadId}`, JSON.stringify(verificationData));
   };
 
   const handleSaveVerification = async () => {
+    if (!leadId || !currentUser) {
+      toast({
+        title: "Error",
+        description: "Missing lead ID or user information.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsSaving(true);
     try {
       console.log('Saving verification for lead:', leadId);
       console.log('Verification fields:', verificationFields);
@@ -406,27 +425,27 @@ const TvtLeadDetail = () => {
       filteredVerifications.push(verificationData);
       
       localStorage.setItem('leadVerifications', JSON.stringify(filteredVerifications));
+      localStorage.setItem(`verification_${leadId}`, JSON.stringify(verificationData));
 
-      // Update lead status to completed
-      const storedLeads = localStorage.getItem('mockLeads');
-      if (storedLeads) {
-        const leads = JSON.parse(storedLeads);
-        const updatedLeads = leads.map((l: Lead) => {
-          if (l.id === leadId) {
-            return { ...l, status: 'Completed' as const };
-          }
-          return l;
+      // Update lead status to completed in database
+      if (lead) {
+        await updateLeadInDatabase(leadId, { 
+          status: 'Completed' as const 
         });
-        localStorage.setItem('mockLeads', JSON.stringify(updatedLeads));
+        
+        // Update local lead state
+        setLead({ ...lead, status: 'Completed' });
       }
 
       toast({
         title: "Verification Saved",
-        description: "Lead verification data has been saved successfully.",
+        description: "Lead verification data has been saved successfully and lead status updated to Completed.",
       });
 
-      // Navigate back to dashboard
-      navigate('/tvt');
+      // Navigate back to dashboard after a short delay
+      setTimeout(() => {
+        navigate('/tvt');
+      }, 1500);
     } catch (error) {
       console.error('Error saving verification:', error);
       toast({
@@ -434,6 +453,8 @@ const TvtLeadDetail = () => {
         description: "There was an error saving the verification data.",
         variant: "destructive"
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -497,6 +518,10 @@ const TvtLeadDetail = () => {
     );
   }
 
+  // Check if verification is already completed
+  const verificationCompleted = lead.status === 'Completed';
+  const hasVerificationData = verificationFields.some(field => field.isCorrect !== null);
+
   return (
     <div className="flex min-h-screen bg-muted/30">
       <Sidebar user={currentUser} isOpen={sidebarOpen} />
@@ -527,10 +552,22 @@ const TvtLeadDetail = () => {
                   </p>
                 </div>
               </div>
-              <Button onClick={handleSaveVerification} className="flex items-center gap-2">
-                <Save className="h-4 w-4" />
-                Save Verification
-              </Button>
+              <div className="flex items-center gap-2">
+                {verificationCompleted ? (
+                  <Badge className="bg-green-100 text-green-800">
+                    Verification Completed
+                  </Badge>
+                ) : (
+                  <Button 
+                    onClick={handleSaveVerification} 
+                    disabled={isSaving}
+                    className="flex items-center gap-2"
+                  >
+                    <Save className="h-4 w-4" />
+                    {isSaving ? 'Saving...' : 'Save Verification'}
+                  </Button>
+                )}
+              </div>
             </div>
 
             {/* Lead Basic Info Card */}
@@ -617,7 +654,10 @@ const TvtLeadDetail = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="text-sm text-muted-foreground mb-4">
-                    Enter verified data and mark if each field is correct or incorrect
+                    {verificationCompleted ? 
+                      "Verification completed. Data is saved and lead status updated." :
+                      "Enter verified data and mark if each field is correct or incorrect"
+                    }
                   </div>
                   <div className="space-y-4 max-h-[800px] overflow-y-auto">
                     {verificationFields.map((field, index) => (
@@ -630,6 +670,7 @@ const TvtLeadDetail = () => {
                           placeholder="Enter verified value"
                           value={field.verifiedValue}
                           onChange={(e) => updateVerificationField(index, 'verifiedValue', e.target.value)}
+                          disabled={verificationCompleted}
                         />
                         
                         <div className="flex items-center gap-4">
@@ -640,6 +681,7 @@ const TvtLeadDetail = () => {
                               onCheckedChange={(checked) => 
                                 updateVerificationField(index, 'isCorrect', checked ? true : null)
                               }
+                              disabled={verificationCompleted}
                             />
                             <label htmlFor={`correct-${index}`} className="text-sm text-green-600">
                               Correct
@@ -653,6 +695,7 @@ const TvtLeadDetail = () => {
                               onCheckedChange={(checked) => 
                                 updateVerificationField(index, 'isCorrect', checked ? false : null)
                               }
+                              disabled={verificationCompleted}
                             />
                             <label htmlFor={`incorrect-${index}`} className="text-sm text-red-600">
                               Incorrect
@@ -666,6 +709,7 @@ const TvtLeadDetail = () => {
                           onChange={(e) => updateVerificationField(index, 'notes', e.target.value)}
                           className="text-sm"
                           rows={2}
+                          disabled={verificationCompleted}
                         />
                         
                         {field.isCorrect !== null && (

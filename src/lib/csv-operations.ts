@@ -52,6 +52,14 @@ export const CSV_HEADERS = [
   'Vehicle Model ID'
 ];
 
+// Helper function to format value with NA fallback
+const formatValue = (value: any): string => {
+  if (value === null || value === undefined || value === '' || value === 'undefined' || value === 'null') {
+    return 'NA';
+  }
+  return String(value);
+};
+
 // Export leads to CSV format
 export const exportLeadsToCSV = (leads: Lead[]): string => {
   console.log(`Exporting ${leads.length} leads to CSV...`);
@@ -60,53 +68,53 @@ export const exportLeadsToCSV = (leads: Lead[]): string => {
   
   leads.forEach(lead => {
     const row = [
-      lead.id,
-      `"${lead.name}"`,
-      lead.age,
-      `"${lead.job}"`,
-      lead.status,
-      `"${lead.bank}"`,
-      lead.visitType,
-      `"${lead.assignedTo || ''}"`,
-      lead.verificationDate ? lead.verificationDate.toISOString() : '',
-      `"${lead.instructions || ''}"`,
+      formatValue(lead.id),
+      `"${formatValue(lead.name)}"`,
+      formatValue(lead.age),
+      `"${formatValue(lead.job)}"`,
+      formatValue(lead.status),
+      `"${formatValue(lead.bank)}"`,
+      formatValue(lead.visitType),
+      `"${formatValue(lead.assignedTo)}"`,
+      lead.verificationDate ? lead.verificationDate.toISOString() : 'NA',
+      `"${formatValue(lead.instructions)}"`,
       lead.additionalDetails?.coApplicant ? 'true' : 'false',
-      `"${lead.additionalDetails?.coApplicant?.name || ''}"`,
+      `"${formatValue(lead.additionalDetails?.coApplicant?.name)}"`,
       lead.createdAt.toISOString(),
       // Address fields
-      `"${lead.address.type}"`,
-      `"${lead.address.street}"`,
-      `"${lead.address.city}"`,
-      `"${lead.address.district}"`,
-      `"${lead.address.state}"`,
-      `"${lead.address.pincode}"`,
+      `"${formatValue(lead.address?.type)}"`,
+      `"${formatValue(lead.address?.street)}"`,
+      `"${formatValue(lead.address?.city)}"`,
+      `"${formatValue(lead.address?.district)}"`,
+      `"${formatValue(lead.address?.state)}"`,
+      `"${formatValue(lead.address?.pincode)}"`,
       // Additional Details
-      `"${lead.additionalDetails?.company || ''}"`,
-      `"${lead.additionalDetails?.designation || ''}"`,
-      `"${lead.additionalDetails?.workExperience || ''}"`,
-      `"${lead.additionalDetails?.propertyType || ''}"`,
-      `"${lead.additionalDetails?.ownershipStatus || ''}"`,
-      `"${lead.additionalDetails?.propertyAge || ''}"`,
-      `"${lead.additionalDetails?.monthlyIncome || ''}"`,
-      `"${lead.additionalDetails?.annualIncome || ''}"`,
-      `"${lead.additionalDetails?.otherIncome || ''}"`,
-      `"${lead.additionalDetails?.phoneNumber || ''}"`,
-      `"${lead.additionalDetails?.email || ''}"`,
-      `"${lead.additionalDetails?.dateOfBirth || ''}"`,
-      `"${lead.additionalDetails?.agencyFileNo || ''}"`,
-      `"${lead.additionalDetails?.applicationBarcode || ''}"`,
-      `"${lead.additionalDetails?.caseId || ''}"`,
-      `"${lead.additionalDetails?.schemeDesc || ''}"`,
-      `"${lead.additionalDetails?.bankBranch || ''}"`,
-      `"${lead.additionalDetails?.additionalComments || ''}"`,
-      `"${lead.additionalDetails?.leadType || ''}"`,
-      `"${lead.additionalDetails?.leadTypeId || ''}"`,
-      `"${lead.additionalDetails?.loanAmount || ''}"`,
-      `"${lead.additionalDetails?.loanType || ''}"`,
-      `"${lead.additionalDetails?.vehicleBrandName || ''}"`,
-      `"${lead.additionalDetails?.vehicleBrandId || ''}"`,
-      `"${lead.additionalDetails?.vehicleModelName || ''}"`,
-      `"${lead.additionalDetails?.vehicleModelId || ''}"`,
+      `"${formatValue(lead.additionalDetails?.company)}"`,
+      `"${formatValue(lead.additionalDetails?.designation)}"`,
+      `"${formatValue(lead.additionalDetails?.workExperience)}"`,
+      `"${formatValue(lead.additionalDetails?.propertyType)}"`,
+      `"${formatValue(lead.additionalDetails?.ownershipStatus)}"`,
+      `"${formatValue(lead.additionalDetails?.propertyAge)}"`,
+      `"${formatValue(lead.additionalDetails?.monthlyIncome)}"`,
+      `"${formatValue(lead.additionalDetails?.annualIncome)}"`,
+      `"${formatValue(lead.additionalDetails?.otherIncome)}"`,
+      `"${formatValue(lead.additionalDetails?.phoneNumber)}"`,
+      `"${formatValue(lead.additionalDetails?.email)}"`,
+      `"${formatValue(lead.additionalDetails?.dateOfBirth)}"`,
+      `"${formatValue(lead.additionalDetails?.agencyFileNo)}"`,
+      `"${formatValue(lead.additionalDetails?.applicationBarcode)}"`,
+      `"${formatValue(lead.additionalDetails?.caseId)}"`,
+      `"${formatValue(lead.additionalDetails?.schemeDesc)}"`,
+      `"${formatValue(lead.additionalDetails?.bankBranch)}"`,
+      `"${formatValue(lead.additionalDetails?.additionalComments)}"`,
+      `"${formatValue(lead.additionalDetails?.leadType)}"`,
+      `"${formatValue(lead.additionalDetails?.leadTypeId)}"`,
+      `"${formatValue(lead.additionalDetails?.loanAmount)}"`,
+      `"${formatValue(lead.additionalDetails?.loanType)}"`,
+      `"${formatValue(lead.additionalDetails?.vehicleBrandName)}"`,
+      `"${formatValue(lead.additionalDetails?.vehicleBrandId)}"`,
+      `"${formatValue(lead.additionalDetails?.vehicleModelName)}"`,
+      `"${formatValue(lead.additionalDetails?.vehicleModelId)}"`,
     ];
     csvRows.push(row.join(','));
   });
@@ -169,11 +177,17 @@ const parseCSVLine = (line: string): string[] => {
   return values;
 };
 
+// Helper function to get value or NA for CSV import
+const getValueOrNA = (headerName: string, headers: string[], values: string[]): string => {
+  const index = headers.findIndex(h => h.toLowerCase().includes(headerName.toLowerCase()));
+  const value = index !== -1 ? values[index]?.replace(/"/g, '') || '' : '';
+  return value === '' || value === 'undefined' || value === 'null' ? 'NA' : value;
+};
+
 // Map CSV row to Lead object
 const mapCSVRowToLead = (headers: string[], values: string[]): Partial<Lead> => {
   const getValue = (headerName: string): string => {
-    const index = headers.findIndex(h => h.toLowerCase().includes(headerName.toLowerCase()));
-    return index !== -1 ? values[index]?.replace(/"/g, '') || '' : '';
+    return getValueOrNA(headerName, headers, values);
   };
   
   const getBooleanValue = (headerName: string): boolean => {
@@ -183,7 +197,7 @@ const mapCSVRowToLead = (headers: string[], values: string[]): Partial<Lead> => 
   
   const getDateValue = (headerName: string): Date | undefined => {
     const value = getValue(headerName);
-    return value ? new Date(value) : undefined;
+    return value !== 'NA' ? new Date(value) : undefined;
   };
   
   const address: Address = {
@@ -225,10 +239,11 @@ const mapCSVRowToLead = (headers: string[], values: string[]): Partial<Lead> => 
     addresses: []
   };
   
+  const ageValue = getValue('Age');
   const lead: Partial<Lead> = {
     id: getValue('Lead ID') || `LEAD-${Date.now()}`,
     name: getValue('Name'),
-    age: parseInt(getValue('Age')) || 0,
+    age: ageValue !== 'NA' ? parseInt(ageValue) || 0 : 0,
     job: getValue('Job'),
     address,
     additionalDetails,
@@ -262,7 +277,7 @@ export const generateSampleCSV = (): string => {
       '2025-06-20T10:00:00Z',
       'Sample home loan verification',
       'false',
-      '',
+      'NA',
       '2025-06-13T08:00:00Z',
       'Residence',
       '123 Sample Street',
@@ -292,10 +307,10 @@ export const generateSampleCSV = (): string => {
       'HL999',
       '3000000',
       'Home Loan',
-      '',
-      '',
-      '',
-      ''
+      'NA',
+      'NA',
+      'NA',
+      'NA'
     ]
   ];
   
