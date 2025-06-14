@@ -218,7 +218,8 @@ const mapCSVRowToLead = (headers: string[], values: string[]): Partial<Lead> => 
   
   const getNumberValue = (headerName: string): number => {
     const value = getValue(headerName);
-    return value !== 'NA' ? parseInt(value) || 0 : 0;
+    const parsed = parseInt(value);
+    return value !== 'NA' && !isNaN(parsed) ? parsed : 0;
   };
   
   // Map address type to correct values
