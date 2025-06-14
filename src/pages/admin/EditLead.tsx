@@ -103,9 +103,33 @@ const EditLead = () => {
 
   // Mock data for agents, banks, and location - in a real app these would come from APIs
   const mockAgents: User[] = [
-    { id: '1', name: 'John Agent', role: 'agent', city: 'Mumbai' },
-    { id: '2', name: 'Jane Agent', role: 'agent', city: 'Delhi' },
-    { id: '3', name: 'TVT Agent 1', role: 'tvt', city: 'Bangalore' },
+    { 
+      id: '1', 
+      name: 'John Agent', 
+      email: 'john.agent@example.com',
+      role: 'agent', 
+      password: 'password123',
+      city: 'Mumbai',
+      status: 'active'
+    },
+    { 
+      id: '2', 
+      name: 'Jane Agent', 
+      email: 'jane.agent@example.com',
+      role: 'agent', 
+      password: 'password123',
+      city: 'Delhi',
+      status: 'active'
+    },
+    { 
+      id: '3', 
+      name: 'TVT Agent 1', 
+      email: 'tvt.agent@example.com',
+      role: 'tvt', 
+      password: 'password123',
+      city: 'Bangalore',
+      status: 'active'
+    },
   ];
 
   const mockBanks = [
