@@ -1,3 +1,4 @@
+
 import { Lead, Address, AdditionalDetails } from '@/utils/mockData';
 
 // Define all possible CSV headers for comprehensive export/import
@@ -450,7 +451,7 @@ export const transformLeadsFromCSV = (data: any[]): Lead[] => {
         propertyType: row.propertyType || '',
         ownershipStatus: row.ownershipStatus || '',
         propertyAge: row.propertyAge || '',
-        monthlyIncome: row.monthlyIncome || '',
+        monthlyIncome: parseNumber(row.monthlyIncome) || 0,
         annualIncome: row.annualIncome || '',
         otherIncome: row.otherIncome || '',
         loanAmount: row.loanAmount || '',
