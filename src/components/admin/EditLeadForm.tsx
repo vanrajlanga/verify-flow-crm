@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Lead, User, Bank } from '@/utils/mockData';
 import { Button } from "@/components/ui/button";
@@ -11,10 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Minus } from 'lucide-react';
-import AddressAgentAssignment from './AddressAgentAssignment';
 
 interface EditLeadFormProps {
   lead: Lead;
@@ -26,7 +25,6 @@ interface EditLeadFormProps {
 }
 
 const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: EditLeadFormProps) => {
-  const [activeTab, setActiveTab] = useState("bank");
   const [formData, setFormData] = useState<any>({
     ...lead,
     additionalDetails: {
@@ -82,14 +80,6 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
       // References
       references: [],
       
-      // Agent Assignments
-      addressAssignments: {
-        primaryAddress: null,
-        additionalAddresses: [],
-        coApplicantAddresses: [],
-        tvtAgent: null
-      },
-      
       ...lead.additionalDetails
     }
   });
@@ -131,12 +121,7 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
         leadType: '',
         phoneNumber: '',
         email: '',
-        addressAssignments: {
-          primaryAddress: null,
-          additionalAddresses: [],
-          coApplicantAddresses: [],
-          tvtAgent: null
-        },
+        references: [],
         ...lead.additionalDetails
       }
     });
@@ -302,22 +287,6 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
     }));
   };
 
-  const handleAddressAssignmentChange = (assignments: any) => {
-    setFormData((prev: any) => ({
-      ...prev,
-      additionalDetails: {
-        ...prev.additionalDetails,
-        addressAssignments: assignments
-      }
-    }));
-  };
-
-  const hasMultipleAddresses = () => {
-    const additionalAddresses = formData.additionalDetails?.addresses || [];
-    const coApplicantAddresses = formData.additionalDetails?.coApplicantAddresses || [];
-    return additionalAddresses.length > 0 || coApplicantAddresses.length > 0 || formData.additionalDetails?.coApplicant;
-  };
-
   const handleUpdate = () => {
     if (!formData.name.trim()) {
       toast({
@@ -337,203 +306,358 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
   };
 
   return (
-    <div className="space-y-6 max-h-[70vh] overflow-y-auto p-1">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-11 text-xs">
-          <TabsTrigger value="bank" className="text-xs">Bank</TabsTrigger>
-          <TabsTrigger value="applicant" className="text-xs">Applicant</TabsTrigger>
-          <TabsTrigger value="coapplicant" className="text-xs">Co-Applicant</TabsTrigger>
-          <TabsTrigger value="addresses" className="text-xs">Addresses</TabsTrigger>
-          <TabsTrigger value="professional" className="text-xs">Professional</TabsTrigger>
-          <TabsTrigger value="property" className="text-xs">Property</TabsTrigger>
-          <TabsTrigger value="vehicle" className="text-xs">Vehicle</TabsTrigger>
-          <TabsTrigger value="financial" className="text-xs">Financial</TabsTrigger>
-          <TabsTrigger value="references" className="text-xs">References</TabsTrigger>
-          <TabsTrigger value="assignment" className="text-xs">Assignment</TabsTrigger>
-          <TabsTrigger value="agentassign" className="text-xs">Agent Assign</TabsTrigger>
-        </TabsList>
-        
+    <div className="space-y-6 max-h-[80vh] overflow-y-auto p-1">
+      <div className="space-y-6">
         {/* Bank Details */}
-        <TabsContent value="bank" className="space-y-4 pt-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Bank Name *</label>
-              <Select
-                value={formData.additionalDetails?.bankName || formData.bank || ''}
-                onValueChange={(value) => handleAdditionalDetailsChange('bankName', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select bank" />
-                </SelectTrigger>
-                <SelectContent>
-                  {banks.map((bank) => (
-                    <SelectItem key={bank.id} value={bank.name}>{bank.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Bank Product *</label>
-              <Input
-                value={formData.additionalDetails?.bankProduct || ''}
-                onChange={(e) => handleAdditionalDetailsChange('bankProduct', e.target.value)}
-                placeholder="e.g., Home Loan, Personal Loan"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Initiated Under Branch *</label>
-              <Input
-                value={formData.additionalDetails?.initiatedBranch || ''}
-                onChange={(e) => handleAdditionalDetailsChange('initiatedBranch', e.target.value)}
-                placeholder="Branch name"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Build Under Branch *</label>
-              <Input
-                value={formData.additionalDetails?.buildBranch || formData.additionalDetails?.bankBranch || ''}
-                onChange={(e) => handleAdditionalDetailsChange('buildBranch', e.target.value)}
-                placeholder="Branch name"
-              />
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* Applicant Information */}
-        <TabsContent value="applicant" className="space-y-4 pt-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Full Name *</label>
-              <Input
-                value={formData.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
-                placeholder="Enter full name"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Phone Number * (10 digits)</label>
-              <Input
-                value={formData.additionalDetails?.phoneNumber || ''}
-                onChange={(e) => handleAdditionalDetailsChange('phoneNumber', e.target.value)}
-                placeholder="Enter 10-digit phone number"
-                maxLength={10}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Age *</label>
-              <Input
-                type="number"
-                value={formData.age}
-                onChange={(e) => handleInputChange('age', parseInt(e.target.value))}
-                placeholder="Enter age"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Email *</label>
-              <Input
-                type="email"
-                value={formData.additionalDetails?.email || ''}
-                onChange={(e) => handleAdditionalDetailsChange('email', e.target.value)}
-                placeholder="Enter email address"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Father's Name</label>
-              <Input
-                value={formData.additionalDetails?.fatherName || ''}
-                onChange={(e) => handleAdditionalDetailsChange('fatherName', e.target.value)}
-                placeholder="Enter father's name"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Mother's Name</label>
-              <Input
-                value={formData.additionalDetails?.motherName || ''}
-                onChange={(e) => handleAdditionalDetailsChange('motherName', e.target.value)}
-                placeholder="Enter mother's name"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Gender</label>
-              <Select 
-                value={formData.additionalDetails?.gender || ''}
-                onValueChange={(value) => handleAdditionalDetailsChange('gender', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select gender" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Male">Male</SelectItem>
-                  <SelectItem value="Female">Female</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Date of Birth</label>
-              <Input
-                type="date"
-                value={formData.additionalDetails?.dateOfBirth || ''}
-                onChange={(e) => handleAdditionalDetailsChange('dateOfBirth', e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Marital Status</label>
-              <Select 
-                value={formData.additionalDetails?.maritalStatus || ''}
-                onValueChange={(value) => handleAdditionalDetailsChange('maritalStatus', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Single">Single</SelectItem>
-                  <SelectItem value="Married">Married</SelectItem>
-                  <SelectItem value="Divorced">Divorced</SelectItem>
-                  <SelectItem value="Widowed">Widowed</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {formData.additionalDetails?.maritalStatus === 'Married' && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Bank Details</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Spouse Name</label>
+                <label className="text-sm font-medium">Bank Name *</label>
+                <Select
+                  value={formData.additionalDetails?.bankName || formData.bank || ''}
+                  onValueChange={(value) => handleAdditionalDetailsChange('bankName', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select bank" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {banks.map((bank) => (
+                      <SelectItem key={bank.id} value={bank.name}>{bank.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Bank Product *</label>
                 <Input
-                  value={formData.additionalDetails?.spouseName || ''}
-                  onChange={(e) => handleAdditionalDetailsChange('spouseName', e.target.value)}
-                  placeholder="Enter spouse name"
+                  value={formData.additionalDetails?.bankProduct || ''}
+                  onChange={(e) => handleAdditionalDetailsChange('bankProduct', e.target.value)}
+                  placeholder="e.g., Home Loan, Personal Loan"
                 />
               </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Initiated Under Branch *</label>
+                <Input
+                  value={formData.additionalDetails?.initiatedBranch || ''}
+                  onChange={(e) => handleAdditionalDetailsChange('initiatedBranch', e.target.value)}
+                  placeholder="Branch name"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Build Under Branch *</label>
+                <Input
+                  value={formData.additionalDetails?.buildBranch || formData.additionalDetails?.bankBranch || ''}
+                  onChange={(e) => handleAdditionalDetailsChange('buildBranch', e.target.value)}
+                  placeholder="Branch name"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Applicant Information */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Applicant Information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Full Name *</label>
+                <Input
+                  value={formData.name}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  placeholder="Enter full name"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Phone Number * (10 digits)</label>
+                <Input
+                  value={formData.additionalDetails?.phoneNumber || ''}
+                  onChange={(e) => handleAdditionalDetailsChange('phoneNumber', e.target.value)}
+                  placeholder="Enter 10-digit phone number"
+                  maxLength={10}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Age *</label>
+                <Input
+                  type="number"
+                  value={formData.age}
+                  onChange={(e) => handleInputChange('age', parseInt(e.target.value))}
+                  placeholder="Enter age"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Email *</label>
+                <Input
+                  type="email"
+                  value={formData.additionalDetails?.email || ''}
+                  onChange={(e) => handleAdditionalDetailsChange('email', e.target.value)}
+                  placeholder="Enter email address"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Father's Name</label>
+                <Input
+                  value={formData.additionalDetails?.fatherName || ''}
+                  onChange={(e) => handleAdditionalDetailsChange('fatherName', e.target.value)}
+                  placeholder="Enter father's name"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Mother's Name</label>
+                <Input
+                  value={formData.additionalDetails?.motherName || ''}
+                  onChange={(e) => handleAdditionalDetailsChange('motherName', e.target.value)}
+                  placeholder="Enter mother's name"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Gender</label>
+                <Select 
+                  value={formData.additionalDetails?.gender || ''}
+                  onValueChange={(value) => handleAdditionalDetailsChange('gender', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select gender" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Male">Male</SelectItem>
+                    <SelectItem value="Female">Female</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Date of Birth</label>
+                <Input
+                  type="date"
+                  value={formData.additionalDetails?.dateOfBirth || ''}
+                  onChange={(e) => handleAdditionalDetailsChange('dateOfBirth', e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Marital Status</label>
+                <Select 
+                  value={formData.additionalDetails?.maritalStatus || ''}
+                  onValueChange={(value) => handleAdditionalDetailsChange('maritalStatus', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Single">Single</SelectItem>
+                    <SelectItem value="Married">Married</SelectItem>
+                    <SelectItem value="Divorced">Divorced</SelectItem>
+                    <SelectItem value="Widowed">Widowed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {formData.additionalDetails?.maritalStatus === 'Married' && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Spouse Name</label>
+                  <Input
+                    value={formData.additionalDetails?.spouseName || ''}
+                    onChange={(e) => handleAdditionalDetailsChange('spouseName', e.target.value)}
+                    placeholder="Enter spouse name"
+                  />
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Primary Address */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Primary Address</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Address Type</label>
+                <Select
+                  value={formData.address?.type || 'Residence'}
+                  onValueChange={(value) => handleAddressChange('type', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Residence">Residence</SelectItem>
+                    <SelectItem value="Office">Office</SelectItem>
+                    <SelectItem value="Property">Property</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Street Address</label>
+                <Input
+                  value={formData.address?.street || ''}
+                  onChange={(e) => handleAddressChange('street', e.target.value)}
+                  placeholder="Enter street address"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">State</label>
+                <Input
+                  value={formData.address?.state || ''}
+                  onChange={(e) => handleAddressChange('state', e.target.value)}
+                  placeholder="Enter state"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">District</label>
+                <Input
+                  value={formData.address?.district || ''}
+                  onChange={(e) => handleAddressChange('district', e.target.value)}
+                  placeholder="Enter district"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">City</label>
+                <Input
+                  value={formData.address?.city || ''}
+                  onChange={(e) => handleAddressChange('city', e.target.value)}
+                  placeholder="Enter city"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Pincode</label>
+                <Input
+                  value={formData.address?.pincode || ''}
+                  onChange={(e) => handleAddressChange('pincode', e.target.value)}
+                  placeholder="Enter pincode"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Additional Addresses */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">Additional Addresses</CardTitle>
+              <Button type="button" variant="outline" size="sm" onClick={addAddress}>
+                <Plus className="h-4 w-4 mr-1" />
+                Add Address
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {formData.additionalDetails?.addresses?.map((addr: any, index: number) => (
+              <div key={index} className="border p-4 rounded-lg">
+                <div className="flex items-center justify-between mb-4">
+                  <h5 className="font-medium">Address {index + 1}</h5>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => removeAddress(index)}
+                  >
+                    <Minus className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Address Type</label>
+                    <Select
+                      value={addr.type}
+                      onValueChange={(value) => handleAddressFieldChange(index, 'type', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Office">Office</SelectItem>
+                        <SelectItem value="Residence">Residence</SelectItem>
+                        <SelectItem value="Property">Property</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Street Address</label>
+                    <Input
+                      value={addr.street}
+                      onChange={(e) => handleAddressFieldChange(index, 'street', e.target.value)}
+                      placeholder="Enter street address"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">State</label>
+                    <Input
+                      value={addr.state}
+                      onChange={(e) => handleAddressFieldChange(index, 'state', e.target.value)}
+                      placeholder="Enter state"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">District</label>
+                    <Input
+                      value={addr.district}
+                      onChange={(e) => handleAddressFieldChange(index, 'district', e.target.value)}
+                      placeholder="Enter district"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">City</label>
+                    <Input
+                      value={addr.city}
+                      onChange={(e) => handleAddressFieldChange(index, 'city', e.target.value)}
+                      placeholder="Enter city"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Pincode</label>
+                    <Input
+                      value={addr.pincode}
+                      onChange={(e) => handleAddressFieldChange(index, 'pincode', e.target.value)}
+                      placeholder="Enter pincode"
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+            {(!formData.additionalDetails?.addresses || formData.additionalDetails.addresses.length === 0) && (
+              <p className="text-center text-muted-foreground py-8">No additional addresses added yet. Click "Add Address" to add addresses.</p>
             )}
-          </div>
-        </TabsContent>
+          </CardContent>
+        </Card>
 
         {/* Co-Applicant */}
-        <TabsContent value="coapplicant" className="space-y-4 pt-4">
-          <div className="flex items-center justify-between">
-            <h4 className="font-medium">Co-Applicant Information</h4>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => {
-                if (formData.additionalDetails?.coApplicant) {
-                  handleAdditionalDetailsChange('coApplicant', null);
-                } else {
-                  handleAdditionalDetailsChange('coApplicant', {
-                    name: '',
-                    phone: '',
-                    relation: '',
-                    email: '',
-                    age: ''
-                  });
-                }
-              }}
-            >
-              {formData.additionalDetails?.coApplicant ? 'Remove Co-Applicant' : 'Add Co-Applicant'}
-            </Button>
-          </div>
-          
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">Co-Applicant Information</CardTitle>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  if (formData.additionalDetails?.coApplicant) {
+                    handleAdditionalDetailsChange('coApplicant', null);
+                  } else {
+                    handleAdditionalDetailsChange('coApplicant', {
+                      name: '',
+                      phone: '',
+                      relation: '',
+                      email: '',
+                      age: ''
+                    });
+                  }
+                }}
+              >
+                {formData.additionalDetails?.coApplicant ? 'Remove Co-Applicant' : 'Add Co-Applicant'}
+              </Button>
+            </div>
+          </CardHeader>
           {formData.additionalDetails?.coApplicant && (
-            <div className="space-y-6">
+            <CardContent className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Full Name *</label>
@@ -595,594 +719,439 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
               </div>
 
               {/* Co-Applicant Addresses */}
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">Co-Applicant Addresses</CardTitle>
-                    <Button type="button" variant="outline" size="sm" onClick={addCoApplicantAddress}>
-                      <Plus className="h-4 w-4 mr-1" />
-                      Add Address
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {formData.additionalDetails?.coApplicantAddresses?.map((addr: any, index: number) => (
-                    <div key={index} className="border p-4 rounded-lg">
-                      <div className="flex items-center justify-between mb-4">
-                        <h5 className="font-medium">Co-Applicant Address {index + 1}</h5>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => removeCoApplicantAddress(index)}
-                        >
-                          <Minus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Address Type</label>
-                          <Select
-                            value={addr.type}
-                            onValueChange={(value) => handleCoApplicantAddressChange(index, 'type', value)}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Residence">Residence</SelectItem>
-                              <SelectItem value="Office">Office</SelectItem>
-                              <SelectItem value="Permanent">Permanent</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Street Address</label>
-                          <Input
-                            value={addr.street}
-                            onChange={(e) => handleCoApplicantAddressChange(index, 'street', e.target.value)}
-                            placeholder="Enter street address"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">State</label>
-                          <Input
-                            value={addr.state}
-                            onChange={(e) => handleCoApplicantAddressChange(index, 'state', e.target.value)}
-                            placeholder="Enter state"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">District</label>
-                          <Input
-                            value={addr.district}
-                            onChange={(e) => handleCoApplicantAddressChange(index, 'district', e.target.value)}
-                            placeholder="Enter district"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">City</label>
-                          <Input
-                            value={addr.city}
-                            onChange={(e) => handleCoApplicantAddressChange(index, 'city', e.target.value)}
-                            placeholder="Enter city"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium">Pincode</label>
-                          <Input
-                            value={addr.pincode}
-                            onChange={(e) => handleCoApplicantAddressChange(index, 'pincode', e.target.value)}
-                            placeholder="Enter pincode"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  {(!formData.additionalDetails?.coApplicantAddresses || formData.additionalDetails.coApplicantAddresses.length === 0) && (
-                    <p className="text-center text-muted-foreground py-8">No co-applicant addresses added yet. Click "Add Address" to add addresses.</p>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          )}
-        </TabsContent>
-
-        {/* Addresses */}
-        <TabsContent value="addresses" className="space-y-4 pt-4">
-          {/* Primary Address */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Primary Address</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Address Type</label>
-                  <Select
-                    value={formData.address?.type || 'Residence'}
-                    onValueChange={(value) => handleAddressChange('type', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Residence">Residence</SelectItem>
-                      <SelectItem value="Office">Office</SelectItem>
-                      <SelectItem value="Property">Property</SelectItem>
-                    </SelectContent>
-                  </Select>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium">Co-Applicant Addresses</h4>
+                  <Button type="button" variant="outline" size="sm" onClick={addCoApplicantAddress}>
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Address
+                  </Button>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Street Address</label>
-                  <Input
-                    value={formData.address?.street || ''}
-                    onChange={(e) => handleAddressChange('street', e.target.value)}
-                    placeholder="Enter street address"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">State</label>
-                  <Input
-                    value={formData.address?.state || ''}
-                    onChange={(e) => handleAddressChange('state', e.target.value)}
-                    placeholder="Enter state"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">District</label>
-                  <Input
-                    value={formData.address?.district || ''}
-                    onChange={(e) => handleAddressChange('district', e.target.value)}
-                    placeholder="Enter district"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">City</label>
-                  <Input
-                    value={formData.address?.city || ''}
-                    onChange={(e) => handleAddressChange('city', e.target.value)}
-                    placeholder="Enter city"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Pincode</label>
-                  <Input
-                    value={formData.address?.pincode || ''}
-                    onChange={(e) => handleAddressChange('pincode', e.target.value)}
-                    placeholder="Enter pincode"
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Additional Addresses */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base">Additional Addresses</CardTitle>
-                <Button type="button" variant="outline" size="sm" onClick={addAddress}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add Address
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {formData.additionalDetails?.addresses?.map((addr: any, index: number) => (
-                <div key={index} className="border p-4 rounded-lg">
-                  <div className="flex items-center justify-between mb-4">
-                    <h5 className="font-medium">Address {index + 1}</h5>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => removeAddress(index)}
-                    >
-                      <Minus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Address Type</label>
-                      <Select
-                        value={addr.type}
-                        onValueChange={(value) => handleAddressFieldChange(index, 'type', value)}
+                {formData.additionalDetails?.coApplicantAddresses?.map((addr: any, index: number) => (
+                  <div key={index} className="border p-4 rounded-lg">
+                    <div className="flex items-center justify-between mb-4">
+                      <h5 className="font-medium">Co-Applicant Address {index + 1}</h5>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeCoApplicantAddress(index)}
                       >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Office">Office</SelectItem>
-                          <SelectItem value="Residence">Residence</SelectItem>
-                          <SelectItem value="Property">Property</SelectItem>
-                        </SelectContent>
-                      </Select>
+                        <Minus className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Street Address</label>
-                      <Input
-                        value={addr.street}
-                        onChange={(e) => handleAddressFieldChange(index, 'street', e.target.value)}
-                        placeholder="Enter street address"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">State</label>
-                      <Input
-                        value={addr.state}
-                        onChange={(e) => handleAddressFieldChange(index, 'state', e.target.value)}
-                        placeholder="Enter state"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">District</label>
-                      <Input
-                        value={addr.district}
-                        onChange={(e) => handleAddressFieldChange(index, 'district', e.target.value)}
-                        placeholder="Enter district"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">City</label>
-                      <Input
-                        value={addr.city}
-                        onChange={(e) => handleAddressFieldChange(index, 'city', e.target.value)}
-                        placeholder="Enter city"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Pincode</label>
-                      <Input
-                        value={addr.pincode}
-                        onChange={(e) => handleAddressFieldChange(index, 'pincode', e.target.value)}
-                        placeholder="Enter pincode"
-                      />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Address Type</label>
+                        <Select
+                          value={addr.type}
+                          onValueChange={(value) => handleCoApplicantAddressChange(index, 'type', value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Residence">Residence</SelectItem>
+                            <SelectItem value="Office">Office</SelectItem>
+                            <SelectItem value="Permanent">Permanent</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Street Address</label>
+                        <Input
+                          value={addr.street}
+                          onChange={(e) => handleCoApplicantAddressChange(index, 'street', e.target.value)}
+                          placeholder="Enter street address"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">State</label>
+                        <Input
+                          value={addr.state}
+                          onChange={(e) => handleCoApplicantAddressChange(index, 'state', e.target.value)}
+                          placeholder="Enter state"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">District</label>
+                        <Input
+                          value={addr.district}
+                          onChange={(e) => handleCoApplicantAddressChange(index, 'district', e.target.value)}
+                          placeholder="Enter district"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">City</label>
+                        <Input
+                          value={addr.city}
+                          onChange={(e) => handleCoApplicantAddressChange(index, 'city', e.target.value)}
+                          placeholder="Enter city"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Pincode</label>
+                        <Input
+                          value={addr.pincode}
+                          onChange={(e) => handleCoApplicantAddressChange(index, 'pincode', e.target.value)}
+                          placeholder="Enter pincode"
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+                {(!formData.additionalDetails?.coApplicantAddresses || formData.additionalDetails.coApplicantAddresses.length === 0) && (
+                  <p className="text-center text-muted-foreground py-4">No co-applicant addresses added yet.</p>
+                )}
+              </div>
             </CardContent>
-          </Card>
-        </TabsContent>
+          )}
+        </Card>
 
         {/* Professional Details */}
-        <TabsContent value="professional" className="space-y-4 pt-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Company Name</label>
-              <Input
-                value={formData.additionalDetails?.company || ''}
-                onChange={(e) => handleAdditionalDetailsChange('company', e.target.value)}
-                placeholder="Enter company name"
-              />
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Professional Details</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Company Name</label>
+                <Input
+                  value={formData.additionalDetails?.company || ''}
+                  onChange={(e) => handleAdditionalDetailsChange('company', e.target.value)}
+                  placeholder="Enter company name"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Designation</label>
+                <Input
+                  value={formData.additionalDetails?.designation || ''}
+                  onChange={(e) => handleAdditionalDetailsChange('designation', e.target.value)}
+                  placeholder="Enter designation"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Work Experience</label>
+                <Input
+                  value={formData.additionalDetails?.workExperience || ''}
+                  onChange={(e) => handleAdditionalDetailsChange('workExperience', e.target.value)}
+                  placeholder="e.g., 5 years"
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Designation</label>
-              <Input
-                value={formData.additionalDetails?.designation || ''}
-                onChange={(e) => handleAdditionalDetailsChange('designation', e.target.value)}
-                placeholder="Enter designation"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Work Experience</label>
-              <Input
-                value={formData.additionalDetails?.workExperience || ''}
-                onChange={(e) => handleAdditionalDetailsChange('workExperience', e.target.value)}
-                placeholder="e.g., 5 years"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Monthly Income</label>
-              <Input
-                type="number"
-                value={formData.additionalDetails?.monthlyIncome || ''}
-                onChange={(e) => handleAdditionalDetailsChange('monthlyIncome', e.target.value)}
-                placeholder="Enter monthly income"
-              />
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* Property Details */}
-        <TabsContent value="property" className="space-y-4 pt-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Property Type</label>
-              <Select
-                value={formData.additionalDetails?.propertyType || ''}
-                onValueChange={(value) => handleAdditionalDetailsChange('propertyType', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select property type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Apartment">Apartment</SelectItem>
-                  <SelectItem value="Villa">Villa</SelectItem>
-                  <SelectItem value="Independent House">Independent House</SelectItem>
-                  <SelectItem value="Plot">Plot</SelectItem>
-                  <SelectItem value="Commercial">Commercial</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Ownership Status</label>
-              <Select
-                value={formData.additionalDetails?.ownershipStatus || ''}
-                onValueChange={(value) => handleAdditionalDetailsChange('ownershipStatus', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select ownership status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Owned">Owned</SelectItem>
-                  <SelectItem value="Rented">Rented</SelectItem>
-                  <SelectItem value="Family Owned">Family Owned</SelectItem>
-                  <SelectItem value="Company Provided">Company Provided</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Property Age</label>
-              <Input
-                value={formData.additionalDetails?.propertyAge || ''}
-                onChange={(e) => handleAdditionalDetailsChange('propertyAge', e.target.value)}
-                placeholder="e.g., 5 years"
-              />
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* Vehicle Details */}
-        <TabsContent value="vehicle" className="space-y-4 pt-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Vehicle Type</label>
-              <Select
-                value={formData.additionalDetails?.vehicleType || formData.additionalDetails?.loanType || ''}
-                onValueChange={(value) => handleAdditionalDetailsChange('vehicleType', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select vehicle type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Car">Car</SelectItem>
-                  <SelectItem value="Bike">Bike</SelectItem>
-                  <SelectItem value="Commercial Vehicle">Commercial Vehicle</SelectItem>
-                  <SelectItem value="Two Wheeler">Two Wheeler</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Vehicle Brand</label>
-              <Input
-                value={formData.additionalDetails?.vehicleBrandName || ''}
-                onChange={(e) => handleAdditionalDetailsChange('vehicleBrandName', e.target.value)}
-                placeholder="e.g., Maruti, Honda, Toyota"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Vehicle Model</label>
-              <Input
-                value={formData.additionalDetails?.vehicleModelName || ''}
-                onChange={(e) => handleAdditionalDetailsChange('vehicleModelName', e.target.value)}
-                placeholder="e.g., Swift, City, Innova"
-              />
-            </div>
-          </div>
-        </TabsContent>
+          </CardContent>
+        </Card>
 
         {/* Financial Information */}
-        <TabsContent value="financial" className="space-y-4 pt-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Annual Income</label>
-              <Input
-                type="number"
-                value={formData.additionalDetails?.annualIncome || ''}
-                onChange={(e) => handleAdditionalDetailsChange('annualIncome', e.target.value)}
-                placeholder="Enter annual income"
-              />
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Financial Information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Monthly Income</label>
+                <Input
+                  type="number"
+                  value={formData.additionalDetails?.monthlyIncome || ''}
+                  onChange={(e) => handleAdditionalDetailsChange('monthlyIncome', e.target.value)}
+                  placeholder="Enter monthly income"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Annual Income</label>
+                <Input
+                  type="number"
+                  value={formData.additionalDetails?.annualIncome || ''}
+                  onChange={(e) => handleAdditionalDetailsChange('annualIncome', e.target.value)}
+                  placeholder="Enter annual income"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Other Income</label>
+                <Input
+                  type="number"
+                  value={formData.additionalDetails?.otherIncome || ''}
+                  onChange={(e) => handleAdditionalDetailsChange('otherIncome', e.target.value)}
+                  placeholder="Enter other income sources"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Loan Amount</label>
+                <Input
+                  type="number"
+                  value={formData.additionalDetails?.loanAmount || ''}
+                  onChange={(e) => handleAdditionalDetailsChange('loanAmount', e.target.value)}
+                  placeholder="Enter requested loan amount"
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Other Income</label>
-              <Input
-                type="number"
-                value={formData.additionalDetails?.otherIncome || ''}
-                onChange={(e) => handleAdditionalDetailsChange('otherIncome', e.target.value)}
-                placeholder="Enter other income sources"
-              />
+          </CardContent>
+        </Card>
+
+        {/* Property Details */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Property Details</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Property Type</label>
+                <Select
+                  value={formData.additionalDetails?.propertyType || ''}
+                  onValueChange={(value) => handleAdditionalDetailsChange('propertyType', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select property type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Apartment">Apartment</SelectItem>
+                    <SelectItem value="Villa">Villa</SelectItem>
+                    <SelectItem value="Independent House">Independent House</SelectItem>
+                    <SelectItem value="Plot">Plot</SelectItem>
+                    <SelectItem value="Commercial">Commercial</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Ownership Status</label>
+                <Select
+                  value={formData.additionalDetails?.ownershipStatus || ''}
+                  onValueChange={(value) => handleAdditionalDetailsChange('ownershipStatus', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select ownership status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Owned">Owned</SelectItem>
+                    <SelectItem value="Rented">Rented</SelectItem>
+                    <SelectItem value="Family Owned">Family Owned</SelectItem>
+                    <SelectItem value="Company Provided">Company Provided</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Property Age</label>
+                <Input
+                  value={formData.additionalDetails?.propertyAge || ''}
+                  onChange={(e) => handleAdditionalDetailsChange('propertyAge', e.target.value)}
+                  placeholder="e.g., 5 years"
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Loan Amount</label>
-              <Input
-                type="number"
-                value={formData.additionalDetails?.loanAmount || ''}
-                onChange={(e) => handleAdditionalDetailsChange('loanAmount', e.target.value)}
-                placeholder="Enter requested loan amount"
-              />
+          </CardContent>
+        </Card>
+
+        {/* Vehicle Details */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Vehicle Details</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Vehicle Type</label>
+                <Select
+                  value={formData.additionalDetails?.vehicleType || formData.additionalDetails?.loanType || ''}
+                  onValueChange={(value) => handleAdditionalDetailsChange('vehicleType', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select vehicle type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Car">Car</SelectItem>
+                    <SelectItem value="Bike">Bike</SelectItem>
+                    <SelectItem value="Commercial Vehicle">Commercial Vehicle</SelectItem>
+                    <SelectItem value="Two Wheeler">Two Wheeler</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Vehicle Brand</label>
+                <Input
+                  value={formData.additionalDetails?.vehicleBrandName || ''}
+                  onChange={(e) => handleAdditionalDetailsChange('vehicleBrandName', e.target.value)}
+                  placeholder="e.g., Maruti, Honda, Toyota"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Vehicle Model</label>
+                <Input
+                  value={formData.additionalDetails?.vehicleModelName || ''}
+                  onChange={(e) => handleAdditionalDetailsChange('vehicleModelName', e.target.value)}
+                  placeholder="e.g., Swift, City, Innova"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Vehicle Price</label>
+                <Input
+                  type="number"
+                  value={formData.additionalDetails?.vehiclePrice || ''}
+                  onChange={(e) => handleAdditionalDetailsChange('vehiclePrice', e.target.value)}
+                  placeholder="Enter vehicle price"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Down Payment</label>
+                <Input
+                  type="number"
+                  value={formData.additionalDetails?.downPayment || ''}
+                  onChange={(e) => handleAdditionalDetailsChange('downPayment', e.target.value)}
+                  placeholder="Enter down payment"
+                />
+              </div>
             </div>
-          </div>
-        </TabsContent>
+          </CardContent>
+        </Card>
 
         {/* References */}
-        <TabsContent value="references" className="space-y-4 pt-4">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base">References</CardTitle>
-                <Button type="button" variant="outline" size="sm" onClick={addReference}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add Reference
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {formData.additionalDetails?.references?.map((ref: any, index: number) => (
-                <div key={index} className="border p-4 rounded-lg">
-                  <div className="flex items-center justify-between mb-4">
-                    <h5 className="font-medium">Reference {index + 1}</h5>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => removeReference(index)}
-                    >
-                      <Minus className="h-4 w-4" />
-                    </Button>
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">References</CardTitle>
+              <Button type="button" variant="outline" size="sm" onClick={addReference}>
+                <Plus className="h-4 w-4 mr-1" />
+                Add Reference
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {formData.additionalDetails?.references?.map((ref: any, index: number) => (
+              <div key={index} className="border p-4 rounded-lg">
+                <div className="flex items-center justify-between mb-4">
+                  <h5 className="font-medium">Reference {index + 1}</h5>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => removeReference(index)}
+                  >
+                    <Minus className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Name</label>
+                    <Input
+                      value={ref.name}
+                      onChange={(e) => handleReferenceChange(index, 'name', e.target.value)}
+                      placeholder="Enter reference name"
+                    />
                   </div>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Name</label>
-                      <Input
-                        value={ref.name}
-                        onChange={(e) => handleReferenceChange(index, 'name', e.target.value)}
-                        placeholder="Enter reference name"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Phone</label>
-                      <Input
-                        value={ref.phone}
-                        onChange={(e) => handleReferenceChange(index, 'phone', e.target.value)}
-                        placeholder="Enter phone number"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Relationship</label>
-                      <Input
-                        value={ref.relationship}
-                        onChange={(e) => handleReferenceChange(index, 'relationship', e.target.value)}
-                        placeholder="e.g., Friend, Colleague"
-                      />
-                    </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Phone</label>
+                    <Input
+                      value={ref.phone}
+                      onChange={(e) => handleReferenceChange(index, 'phone', e.target.value)}
+                      placeholder="Enter phone number"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Relationship</label>
+                    <Input
+                      value={ref.relationship}
+                      onChange={(e) => handleReferenceChange(index, 'relationship', e.target.value)}
+                      placeholder="e.g., Friend, Colleague"
+                    />
                   </div>
                 </div>
-              ))}
-              {(!formData.additionalDetails?.references || formData.additionalDetails.references.length === 0) && (
-                <p className="text-center text-muted-foreground py-8">No references added yet. Click "Add Reference" to add references.</p>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+              </div>
+            ))}
+            {(!formData.additionalDetails?.references || formData.additionalDetails.references.length === 0) && (
+              <p className="text-center text-muted-foreground py-8">No references added yet. Click "Add Reference" to add references.</p>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Assignment & Instructions */}
-        <TabsContent value="assignment" className="space-y-4 pt-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Status</label>
-              <Select 
-                value={formData.status}
-                onValueChange={(value) => handleInputChange('status', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Pending">Pending</SelectItem>
-                  <SelectItem value="In Progress">In Progress</SelectItem>
-                  <SelectItem value="Completed">Completed</SelectItem>
-                  <SelectItem value="Rejected">Rejected</SelectItem>
-                </SelectContent>
-              </Select>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Assignment & Instructions</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Status</label>
+                <Select 
+                  value={formData.status}
+                  onValueChange={(value) => handleInputChange('status', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Pending">Pending</SelectItem>
+                    <SelectItem value="In Progress">In Progress</SelectItem>
+                    <SelectItem value="Completed">Completed</SelectItem>
+                    <SelectItem value="Rejected">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Visit Type</label>
+                <Select 
+                  value={formData.visitType}
+                  onValueChange={(value) => handleInputChange('visitType', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Residence">Residence</SelectItem>
+                    <SelectItem value="Office">Office</SelectItem>
+                    <SelectItem value="Both">Both</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Assigned Agent</label>
+                <Select 
+                  value={formData.assignedTo || ''}
+                  onValueChange={(value) => handleInputChange('assignedTo', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select agent" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {agents.map((agent) => (
+                      <SelectItem key={agent.id} value={agent.id}>{agent.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+            
             <div className="space-y-2">
-              <label className="text-sm font-medium">Visit Type</label>
-              <Select 
-                value={formData.visitType}
-                onValueChange={(value) => handleInputChange('visitType', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Residence">Residence</SelectItem>
-                  <SelectItem value="Office">Office</SelectItem>
-                  <SelectItem value="Both">Both</SelectItem>
-                </SelectContent>
-              </Select>
+              <label className="text-sm font-medium">Special Instructions</label>
+              <Textarea
+                value={formData.instructions || ''}
+                onChange={(e) => handleInputChange('instructions', e.target.value)}
+                rows={4}
+                placeholder="Enter any special instructions for this lead verification..."
+              />
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Assigned Agent</label>
-              <Select 
-                value={formData.assignedTo || ''}
-                onValueChange={(value) => handleInputChange('assignedTo', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select agent" />
-                </SelectTrigger>
-                <SelectContent>
-                  {agents.map((agent) => (
-                    <SelectItem key={agent.id} value={agent.id}>{agent.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Special Instructions</label>
-            <Textarea
-              value={formData.instructions || ''}
-              onChange={(e) => handleInputChange('instructions', e.target.value)}
-              rows={4}
-              placeholder="Enter any special instructions for this lead verification..."
-            />
-          </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Documents Required</label>
-            <div className="p-4 bg-muted rounded-lg">
-              <p className="text-sm text-muted-foreground mb-2">The following documents are required for verification:</p>
-              <ul className="text-sm space-y-1">
-                <li>• Aadhaar Card</li>
-                <li>• PAN Card</li>
-                <li>• Salary Slip</li>
-                <li>• Bank Statement</li>
-                <li>• Property Documents (if applicable)</li>
-                <li>• Income Tax Returns</li>
-              </ul>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Documents Required</label>
+              <div className="p-4 bg-muted rounded-lg">
+                <p className="text-sm text-muted-foreground mb-2">The following documents are required for verification:</p>
+                <ul className="text-sm space-y-1">
+                  <li>• Aadhaar Card</li>
+                  <li>• PAN Card</li>
+                  <li>• Salary Slip</li>
+                  <li>• Bank Statement</li>
+                  <li>• Property Documents (if applicable)</li>
+                  <li>• Income Tax Returns</li>
+                </ul>
+              </div>
             </div>
-          </div>
-        </TabsContent>
-
-        {/* Agent Assignment Tab */}
-        <TabsContent value="agentassign" className="space-y-4 pt-4">
-          {hasMultipleAddresses() ? (
-            <AddressAgentAssignment
-              primaryAddress={{
-                type: formData.address?.type || 'Residence',
-                street: formData.address?.street || '',
-                city: formData.address?.city || '',
-                state: formData.address?.state || '',
-                district: formData.address?.district || '',
-                pincode: formData.address?.pincode || '',
-                assignedAgent: formData.additionalDetails?.addressAssignments?.primaryAddress?.assignedAgent
-              }}
-              additionalAddresses={formData.additionalDetails?.addresses || []}
-              coApplicantAddresses={formData.additionalDetails?.coApplicantAddresses || []}
-              agents={agents}
-              tvtAgent={formData.additionalDetails?.addressAssignments?.tvtAgent}
-              onAssignmentChange={handleAddressAssignmentChange}
-            />
-          ) : (
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground">No multiple addresses found.</p>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    Address-based agent assignment is only available when there are multiple addresses 
-                    (additional addresses for applicant or co-applicant addresses).
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-      </Tabs>
+          </CardContent>
+        </Card>
+      </div>
       
-      <div className="flex justify-end space-x-4 pt-4 border-t">
+      <div className="flex justify-end space-x-4 pt-4 border-t sticky bottom-0 bg-white">
         <Button type="button" variant="outline" onClick={onClose}>
           Cancel
         </Button>
