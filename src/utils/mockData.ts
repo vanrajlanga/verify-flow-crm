@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   name: string;
@@ -588,3 +587,6 @@ export const mockLeads: Lead[] = [
     }
   },
 ];
+
+// Export mockBanks as an alias for backward compatibility
+export const mockBanks = banks;

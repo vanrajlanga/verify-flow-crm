@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -15,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { User, mockBanks } from '@/utils/mockData';
+import { User, banks } from '@/utils/mockData';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
 import { ArrowUp, Building2, Edit, FileUp, Plus, Trash } from 'lucide-react';
@@ -24,7 +23,7 @@ import { toast } from '@/components/ui/use-toast';
 const AdminBanks = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [banks, setBanks] = useState(mockBanks);
+  const [banksList, setBanksList] = useState(banks);
   const [newBank, setNewBank] = useState({
     name: '',
     apiKey: '',
@@ -58,7 +57,7 @@ const AdminBanks = () => {
     // In a real app, we would make an API call to create the bank
     const newBankId = `b${Date.now()}`;
     
-    setBanks(prev => [
+    setBanksList(prev => [
       ...prev,
       {
         id: newBankId,
@@ -82,7 +81,7 @@ const AdminBanks = () => {
 
   const handleDeleteBank = (bankId: string) => {
     // In a real app, we would make an API call to delete the bank
-    setBanks(prev => prev.filter(bank => bank.id !== bankId));
+    setBanksList(prev => prev.filter(bank => bank.id !== bankId));
     
     toast({
       title: "Bank removed",
@@ -191,7 +190,7 @@ const AdminBanks = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {banks.map((bank) => (
+                        {banksList.map((bank) => (
                           <TableRow key={bank.id}>
                             <TableCell className="font-medium">
                               <div className="flex items-center">
