@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { User } from '@/utils/mockData';
@@ -31,7 +30,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, isOpen }) => {
   const location = useLocation();
 
   const adminNavItems = [
-    { icon: Home, label: 'Dashboard', path: '/admin' },
+    { icon: Home, label: 'Dashboard', path: '/admin/dashboard' },
     { icon: FileText, label: 'Leads', path: '/admin/leads' },
     { icon: UserPlus, label: 'Add Lead', path: '/admin/add-lead' },
     { icon: FileSpreadsheet, label: 'Leads Sheet', path: '/admin/leads-sheet' },

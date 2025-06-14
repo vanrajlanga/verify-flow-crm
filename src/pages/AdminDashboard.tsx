@@ -38,13 +38,6 @@ const AdminDashboard = () => {
       return;
     }
 
-    // Check if user is trying to access /admin/dashboard
-    if (window.location.pathname === '/admin/dashboard') {
-      console.log('Redirecting from /admin/dashboard to /admin');
-      navigate('/admin', { replace: true });
-      return;
-    }
-
     setCurrentUser(parsedUser);
   }, [navigate]);
 
