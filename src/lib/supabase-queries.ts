@@ -6,7 +6,7 @@ import {
 } from './data-transformers';
 
 // Fallback to mock data when database is not available
-import { users as mockUsers, mockBanks } from '@/utils/mockData';
+import { mockUsers, banks } from '@/utils/mockData';
 
 // User queries
 export const loginUser = async (email: string, password: string) => {
@@ -59,7 +59,7 @@ export const loginUser = async (email: string, password: string) => {
           district: 'Mumbai',
           state: 'Maharashtra',
           city: 'Mumbai',
-          status: 'active'
+          status: 'Active'
         })
         .select()
         .single();
@@ -77,7 +77,7 @@ export const loginUser = async (email: string, password: string) => {
           district: 'Mumbai',
           state: 'Maharashtra',
           city: 'Mumbai',
-          status: 'active'
+          status: 'Active'
         };
       }
 
@@ -100,7 +100,7 @@ export const loginUser = async (email: string, password: string) => {
         district: 'Mumbai',
         state: 'Maharashtra',
         city: 'Mumbai',
-        status: 'active'
+        status: 'Active'
       };
     }
 
@@ -117,7 +117,7 @@ export const loginUser = async (email: string, password: string) => {
         district: 'Mumbai',
         state: 'Maharashtra',
         city: 'Mumbai',
-        status: 'active'
+        status: 'Active'
       };
     }
 
@@ -146,7 +146,7 @@ export const loginUser = async (email: string, password: string) => {
         district: 'Mumbai',
         state: 'Maharashtra',
         city: 'Mumbai',
-        status: 'active'
+        status: 'Active'
       };
     }
     
@@ -162,7 +162,7 @@ export const loginUser = async (email: string, password: string) => {
         district: 'Mumbai',
         state: 'Maharashtra',
         city: 'Mumbai',
-        status: 'active'
+        status: 'Active'
       };
     }
 
@@ -178,7 +178,7 @@ export const loginUser = async (email: string, password: string) => {
         district: 'Mumbai',
         state: 'Maharashtra',
         city: 'Mumbai',
-        status: 'active'
+        status: 'Active'
       };
     }
     
@@ -186,6 +186,7 @@ export const loginUser = async (email: string, password: string) => {
   }
 };
 
+// User queries
 export const getUserById = async (id: string) => {
   try {
     const { data: user, error } = await supabase
@@ -216,23 +217,23 @@ export const getUserById = async (id: string) => {
 // Bank queries
 export const getBanks = async () => {
   try {
-    const { data: banks, error } = await supabase
+    const { data: banksData, error } = await supabase
       .from('banks')
       .select('*');
 
     if (error && error.code !== '42P01') {
       console.error('Get banks error:', error);
-      return mockBanks;
+      return banks;
     }
 
-    if (banks) {
-      return banks.map(transformSupabaseBank);
+    if (banksData) {
+      return banksData.map(transformSupabaseBank);
     }
 
-    return mockBanks;
+    return banks;
   } catch (error) {
     console.error('Get banks error:', error);
-    return mockBanks;
+    return banks;
   }
 };
 
@@ -254,11 +255,11 @@ export const getBankById = async (id: string) => {
     }
 
     // Fall back to mock data
-    const mockBank = mockBanks.find(b => b.id === id);
+    const mockBank = banks.find(b => b.id === id);
     return mockBank || null;
   } catch (error) {
     console.error('Get bank error:', error);
-    const mockBank = mockBanks.find(b => b.id === id);
+    const mockBank = banks.find(b => b.id === id);
     return mockBank || null;
   }
 };

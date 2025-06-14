@@ -40,6 +40,7 @@ export interface Document {
 }
 
 export interface Verification {
+  id?: string;
   status: 'Not Started' | 'In Progress' | 'Completed' | 'Rejected';
   startTime?: Date;
   endTime?: Date;

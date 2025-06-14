@@ -1,277 +1,202 @@
-import { useState, useEffect } from 'react';
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Lead, User, Bank } from '@/utils/mockData';
-import { getUserById, getBankById } from '@/lib/supabase-queries';
-import { Download, FileCheck, FileX } from 'lucide-react';
+import React, { useState } from 'react';
 import { format } from 'date-fns';
+import { Lead } from '@/utils/mockData';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { CheckCircle, MapPin, Camera, FileText } from 'lucide-react';
 
 interface LeadReviewProps {
   lead: Lead;
-  currentUser: User;
-  onApprove: (remarks: string) => void;
-  onReject: (remarks: string) => void;
-  onForwardToBank: () => void;
+  onApprove: (leadId: string, adminRemarks: string) => void;
+  onReject: (leadId: string, adminRemarks: string) => void;
 }
 
-const LeadReview = ({
-  lead,
-  currentUser,
-  onApprove,
-  onReject,
-  onForwardToBank
-}: LeadReviewProps) => {
-  const [remarks, setRemarks] = useState(lead.verification?.adminRemarks || '');
-  const [agent, setAgent] = useState<User | null>(null);
-  const [bank, setBank] = useState<Bank | null>(null);
-  const [loading, setLoading] = useState(true);
-  
-  const verification = lead.verification;
+const LeadReview = ({ lead, onApprove, onReject }: LeadReviewProps) => {
+  const [adminRemarks, setAdminRemarks] = useState(lead.verification?.adminRemarks || '');
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [agentData, bankData] = await Promise.all([
-          getUserById(lead.assignedTo),
-          getBankById(lead.bank)
-        ]);
-        setAgent(agentData);
-        setBank(bankData);
-      } catch (error) {
-        console.error('Error loading lead review data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadData();
-  }, [lead.assignedTo, lead.bank]);
-
-  const formatDateTime = (date?: Date) => {
-    return date ? format(date, 'h:mm a, MMM d, yyyy') : '—';
-  };
-
-  const getStatusBadge = (status: string) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Not Started':
-        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200">{status}</Badge>;
-      case 'In Progress':
-        return <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">{status}</Badge>;
       case 'Completed':
-        return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">{status}</Badge>;
+        return 'success';
+      case 'In Progress':
+        return 'secondary';
       case 'Rejected':
-        return <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">{status}</Badge>;
+        return 'destructive';
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return 'default';
     }
   };
 
-  const isReviewed = verification?.reviewedBy !== undefined;
+  const handleApprove = () => {
+    onApprove(lead.id, adminRemarks);
+  };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="text-sm text-muted-foreground">Loading review data...</div>
-      </div>
-    );
-  }
+  const handleReject = () => {
+    onReject(lead.id, adminRemarks);
+  };
 
   return (
     <div className="space-y-6">
+      {/* Header Section */}
+      <div className="border-b pb-4">
+        <h2 className="text-2xl font-bold tracking-tight">Lead Verification Review</h2>
+        <p className="text-muted-foreground">Review the verification details submitted by the agent.</p>
+      </div>
+
+      {/* Verification Details */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Verification Review</CardTitle>
-              <CardDescription>Review verification details and submit decision</CardDescription>
-            </div>
-            <div>
-              {verification?.status && getStatusBadge(verification.status)}
-            </div>
-          </div>
+          <CardTitle className="flex items-center">
+            <CheckCircle className="h-5 w-5 mr-2" />
+            Verification Details
+          </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Verification Timeline */}
-          <div>
-            <h3 className="text-sm font-medium mb-3">Verification Timeline</h3>
-            <div className="border rounded-md p-4 space-y-3 bg-muted/30">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground">Started</p>
-                  <p className="text-sm">{formatDateTime(verification?.startTime)}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground">Arrived at Location</p>
-                  <p className="text-sm">{formatDateTime(verification?.arrivalTime)}</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground">Completed</p>
-                  <p className="text-sm">{formatDateTime(verification?.completionTime)}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground">Reviewed</p>
-                  <p className="text-sm">{formatDateTime(verification?.reviewedAt)}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Agent Information */}
-          <div>
-            <h3 className="text-sm font-medium mb-3">Agent Information</h3>
-            <div className="border rounded-md p-4 bg-muted/30">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground">Name</p>
-                  <p className="text-sm">{agent?.name || 'Loading...'}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground">District</p>
-                  <p className="text-sm">{agent?.district || 'Loading...'}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Location */}
-          {verification?.location && (
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <h3 className="text-sm font-medium mb-3">Verification Location</h3>
-              <div className="border rounded-md p-4 bg-muted/30">
-                <p className="text-sm">
-                  Latitude: {verification.location.latitude.toFixed(6)}, 
-                  Longitude: {verification.location.longitude.toFixed(6)}
-                </p>
-                <div className="mt-2 bg-gray-200 h-32 flex items-center justify-center rounded">
-                  <p className="text-sm text-gray-500">Map Placeholder</p>
-                </div>
-              </div>
+              <Label className="text-sm font-medium text-muted-foreground">Agent</Label>
+              <p className="text-sm">{lead.verification?.agentId || 'Not assigned'}</p>
             </div>
-          )}
-
-          {/* Photos & Documents */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <h3 className="text-sm font-medium mb-3">Uploaded Photos</h3>
-              {verification?.photos && verification.photos.length > 0 ? (
-                <div className="grid grid-cols-2 gap-4">
-                  {verification.photos.map((photo) => {
-                    if (typeof photo === 'object' && photo.id) {
-                      return (
-                        <div key={photo.id} className="border rounded-md overflow-hidden">
-                          <img 
-                            src={photo.url} 
-                            alt={photo.name} 
-                            className="w-full h-32 object-cover" 
-                          />
-                          <div className="p-2">
-                            <p className="text-xs">{photo.name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {format(photo.uploadDate, 'MMM d, yyyy')}
-                            </p>
-                          </div>
-                        </div>
-                      );
-                    }
-                    return null;
-                  })}
-                </div>
-              ) : (
-                <div className="border rounded-md p-4 bg-muted/30 flex items-center justify-center h-32">
-                  <p className="text-sm text-muted-foreground">No photos uploaded</p>
-                </div>
-              )}
+              <Label className="text-sm font-medium text-muted-foreground">Status</Label>
+              <Badge variant={getStatusColor(lead.verification?.status || 'Not Started')}>
+                {lead.verification?.status || 'Not Started'}
+              </Badge>
             </div>
-
-            <div>
-              <h3 className="text-sm font-medium mb-3">Uploaded Documents</h3>
-              {verification?.documents && verification.documents.length > 0 ? (
-                <div className="grid grid-cols-2 gap-4">
-                  {verification.documents.map((doc) => (
-                    <div key={doc.id} className="border rounded-md overflow-hidden">
-                      <img 
-                        src={doc.url} 
-                        alt={doc.name} 
-                        className="w-full h-32 object-cover" 
-                      />
-                      <div className="p-2">
-                        <p className="text-xs">{doc.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {format(doc.uploadDate, 'MMM d, yyyy')}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="border rounded-md p-4 bg-muted/30 flex items-center justify-center h-32">
-                  <p className="text-sm text-muted-foreground">No documents uploaded</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Agent Notes */}
-          {verification?.notes && (
-            <div>
-              <h3 className="text-sm font-medium mb-3">Agent Notes</h3>
-              <div className="border rounded-md p-4 bg-muted/30">
-                <p className="text-sm whitespace-pre-wrap">{verification.notes}</p>
-              </div>
-            </div>
-          )}
-
-          {/* Admin Review */}
-          <div>
-            <h3 className="text-sm font-medium mb-3">Admin Review</h3>
-            <Textarea 
-              placeholder="Add your review remarks here..."
-              className="min-h-24"
-              value={remarks}
-              onChange={(e) => setRemarks(e.target.value)}
-              disabled={isReviewed}
-            />
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-between">
-            {!isReviewed ? (
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Button 
-                  variant="destructive" 
-                  onClick={() => onReject(remarks)}
-                  className="flex-1"
-                >
-                  <FileX className="mr-2 h-4 w-4" />
-                  Reject Verification
-                </Button>
-                <Button 
-                  variant="default" 
-                  onClick={() => onApprove(remarks)}
-                  className="flex-1"
-                >
-                  <FileCheck className="mr-2 h-4 w-4" />
-                  Approve Verification
-                </Button>
-              </div>
-            ) : (
-              <div className="flex gap-2">
-                {verification?.status === 'Completed' && (
-                  <Button onClick={onForwardToBank}>
-                    Forward to {bank?.name || 'Bank'}
-                  </Button>
-                )}
+            {lead.verification?.arrivalTime && (
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground">Arrival Time</Label>
+                <p className="text-sm">{format(lead.verification.arrivalTime, 'PPp')}</p>
               </div>
             )}
-            
-            <Button variant="outline">
-              <Download className="mr-2 h-4 w-4" />
-              Download Report
-            </Button>
+            {lead.verification?.completionTime && (
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground">Completion Time</Label>
+                <p className="text-sm">{format(lead.verification.completionTime, 'PPp')}</p>
+              </div>
+            )}
+            {lead.verification?.reviewedAt && (
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground">Reviewed At</Label>
+                <p className="text-sm">{format(lead.verification.reviewedAt, 'PPp')}</p>
+              </div>
+            )}
+          </div>
+
+          {lead.verification?.notes && (
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">Agent Notes</Label>
+              <p className="text-sm bg-muted p-3 rounded">{lead.verification.notes}</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Location Information */}
+      {lead.verification?.location && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <MapPin className="h-5 w-5 mr-2" />
+              Location Verification
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <p className="text-sm"><strong>Latitude:</strong> {lead.verification.location.latitude}</p>
+              <p className="text-sm"><strong>Longitude:</strong> {lead.verification.location.longitude}</p>
+              {lead.verification.location.address && (
+                <p className="text-sm"><strong>Address:</strong> {lead.verification.location.address}</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Photos */}
+      {lead.verification?.photos && lead.verification.photos.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Camera className="h-5 w-5 mr-2" />
+              Verification Photos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {lead.verification.photos.map((photo) => (
+                <div key={photo.id} className="space-y-2">
+                  <img 
+                    src={photo.url} 
+                    alt={photo.name}
+                    className="w-full h-32 object-cover rounded border"
+                  />
+                  <p className="text-xs text-center">{photo.name}</p>
+                  <p className="text-xs text-center text-muted-foreground">
+                    {format(photo.uploadedAt, 'MMM dd, yyyy')}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Documents */}
+      {lead.verification?.documents && lead.verification.documents.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <FileText className="h-5 w-5 mr-2" />
+              Verification Documents
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {lead.verification.documents.map((doc) => (
+                <div key={doc.id} className="flex items-center justify-between p-3 border rounded">
+                  <div>
+                    <p className="font-medium">{doc.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {doc.type} • {format(doc.uploadedAt, 'MMM dd, yyyy')}
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" asChild>
+                    <a href={doc.url} target="_blank" rel="noopener noreferrer">
+                      View
+                    </a>
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Admin Remarks and Action Buttons */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Admin Remarks</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="remarks" className="text-sm font-medium">Additional Notes</Label>
+              <textarea
+                id="remarks"
+                className="w-full border rounded-md p-2 mt-1"
+                rows={3}
+                value={adminRemarks}
+                onChange={(e) => setAdminRemarks(e.target.value)}
+                placeholder="Enter any additional remarks here..."
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <Button variant="secondary" onClick={handleReject}>Reject</Button>
+              <Button onClick={handleApprove}>Approve</Button>
+            </div>
           </div>
         </CardContent>
       </Card>
