@@ -1,9 +1,10 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User } from '@/utils/mockData';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
-import AddLeadFormMultiStep from '@/components/admin/AddLeadFormMultiStep';
+import AddLeadFormSingleStep from '@/components/admin/AddLeadFormSingleStep';
 import { toast } from '@/components/ui/use-toast';
 import { saveLeadToDatabase } from '@/lib/lead-operations';
 import { transformFormDataToLead } from '@/lib/form-data-transformer';
@@ -159,7 +160,7 @@ const AddNewLead = () => {
         
         <main className="flex-1 p-4 md:p-6">
           <div className="max-w-7xl mx-auto">
-            <AddLeadFormMultiStep 
+            <AddLeadFormSingleStep 
               onSubmit={handleAddLead}
               locationData={locationData}
             />

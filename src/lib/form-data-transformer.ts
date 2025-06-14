@@ -1,81 +1,109 @@
+import { Lead, Address, User } from '@/utils/mockData';
 
-import { v4 as uuidv4 } from 'uuid';
-import { Lead, Address, AdditionalDetails } from '@/utils/mockData';
-
+// Transform form data from AddLeadFormSingleStep to Lead format
 export const transformFormDataToLead = (formData: any): Lead => {
-  console.log('Transforming form data to Lead format:', formData);
-  
-  // Create primary address from addresses array
-  const primaryAddress: Address = formData.addresses?.[0] ? {
-    type: formData.addresses[0].type || 'Residence',
-    street: formData.addresses[0].street || '',
-    city: formData.addresses[0].city || '',
-    district: formData.addresses[0].district || '',
-    state: formData.addresses[0].state || '',
-    pincode: formData.addresses[0].pincode || ''
-  } : {
-    type: 'Residence',
-    street: '',
-    city: '',
-    district: '',
-    state: '',
-    pincode: ''
-  };
+  console.log('Transforming form data:', formData);
 
-  // Create additional details
-  const additionalDetails: AdditionalDetails = {
-    company: formData.company || '',
-    designation: formData.designation || '',
-    workExperience: formData.workExperience || '',
-    propertyType: formData.propertyType || '',
-    ownershipStatus: formData.ownershipStatus || '',
-    propertyAge: formData.propertyAge || '',
-    monthlyIncome: formData.monthlyIncome || '',
-    annualIncome: formData.annualIncome || '',
-    otherIncome: formData.otherIncome || '',
-    phoneNumber: formData.phone || '',
-    email: formData.email || '',
-    dateOfBirth: formData.dateOfBirth || '',
-    fatherName: formData.fatherName || '',
-    motherName: formData.motherName || '',
-    gender: formData.gender || '',
-    leadType: formData.vehicleType || '',
-    loanAmount: formData.loanAmount || '',
-    loanType: formData.vehicleType || '',
-    vehicleBrandName: formData.vehicleBrand || '',
-    vehicleModelName: formData.vehicleModel || '',
-    bankBranch: formData.initiatedUnderBranch || '',
-    bankProduct: formData.bankProduct || '',
-    initiatedUnderBranch: formData.initiatedUnderBranch || '',
-    addresses: formData.addresses?.slice(1) || [], // Additional addresses excluding primary
-    coApplicant: formData.hasCoApplicant && formData.coApplicant ? {
-      name: formData.coApplicant.name || '',
-      age: formData.coApplicant.age ? Number(formData.coApplicant.age) : undefined,
-      phone: formData.coApplicant.phone || '',
-      email: formData.coApplicant.email || '',
-      relation: formData.coApplicant.relationship || '',
-      occupation: '',
-      monthlyIncome: ''
-    } : undefined
-  };
+  // Get primary address (first address in the array)
+  const primaryAddress = formData.addresses && formData.addresses.length > 0 
+    ? formData.addresses[0] 
+    : null;
 
-  // Create the Lead object
+  // Transform additional addresses (excluding the first one)
+  const additionalAddresses = formData.addresses && formData.addresses.length > 1
+    ? formData.addresses.slice(1).map((addr: any) => ({
+        type: addr.type as 'Residence' | 'Office' | 'Permanent',
+        street: addr.addressLine1 || '',
+        city: addr.city || '',
+        district: addr.district || '',
+        state: addr.state || '',
+        pincode: addr.pincode || ''
+      }))
+    : [];
+
+  // Create the lead object
   const lead: Lead = {
-    id: uuidv4(),
+    id: `lead-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     name: formData.name || '',
-    age: formData.age ? Number(formData.age) : 0,
-    job: formData.designation || '',
-    address: primaryAddress,
-    additionalDetails,
+    age: 0, // Default age since it's not in the form
+    job: '', // Default job since it's not in the form
+    address: {
+      type: 'Residence',
+      street: primaryAddress?.addressLine1 || '',
+      city: primaryAddress?.city || '',
+      district: primaryAddress?.district || '',
+      state: primaryAddress?.state || '',
+      pincode: primaryAddress?.pincode || ''
+    },
+    additionalDetails: {
+      company: '',
+      designation: '',
+      workExperience: '',
+      propertyType: '',
+      ownershipStatus: '',
+      propertyAge: '',
+      monthlyIncome: '',
+      annualIncome: '',
+      otherIncome: '',
+      loanAmount: formData.loanAmount || '',
+      addresses: additionalAddresses,
+      phoneNumber: formData.phoneNumber || '',
+      email: '',
+      dateOfBirth: formData.dateOfBirth || '',
+      fatherName: formData.fatherName || '',
+      motherName: formData.motherName || '',
+      gender: formData.gender || '',
+      agencyFileNo: formData.agencyFileNo || '',
+      applicationBarcode: formData.applicationBarcode || '',
+      caseId: formData.caseId || '',
+      schemeDesc: formData.schemeDesc || '',
+      bankProduct: formData.bankProduct || '',
+      initiatedUnderBranch: formData.initiatedUnderBranch || '',
+      bankBranch: formData.initiatedUnderBranch || '',
+      additionalComments: formData.additionalComments || '',
+      leadType: formData.leadType || '',
+      loanType: '',
+      vehicleBrandName: '',
+      vehicleModelName: ''
+    },
     status: 'Pending',
-    bank: formData.bankName || '',
-    visitType: 'Residence',
+    bank: formData.bank || '',
+    visitType: formData.visitType || 'Residence',
     assignedTo: '',
     createdAt: new Date(),
     documents: [],
     instructions: formData.instructions || ''
   };
 
-  console.log('Transformed lead data:', lead);
+  console.log('Transformed lead:', lead);
   return lead;
+};
+
+// Existing function (keep as is)
+export const transformToMultiStepFormData = (formData: any) => {
+  return {
+    personalInfo: {
+      name: formData.name || '',
+      phoneNumber: formData.phoneNumber || '',
+      email: formData.email || '',
+      dateOfBirth: formData.dateOfBirth || '',
+      fatherName: formData.fatherName || '',
+      motherName: formData.motherName || '',
+      gender: formData.gender || ''
+    },
+    bankInfo: {
+      bank: formData.bank || '',
+      bankProduct: formData.bankProduct || '',
+      leadType: formData.leadType || '',
+      agencyFileNo: formData.agencyFileNo || '',
+      applicationBarcode: formData.applicationBarcode || '',
+      caseId: formData.caseId || '',
+      schemeDesc: formData.schemeDesc || '',
+      initiatedUnderBranch: formData.initiatedUnderBranch || '',
+      additionalComments: formData.additionalComments || '',
+      loanAmount: formData.loanAmount || ''
+    },
+    addresses: formData.addresses || [],
+    instructions: formData.instructions || ''
+  };
 };

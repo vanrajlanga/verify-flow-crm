@@ -539,6 +539,7 @@ export type Database = {
           email: string
           extra_charge_per_km: number | null
           id: string
+          managed_bank_id: string | null
           max_travel_distance: number | null
           name: string
           password: string
@@ -558,6 +559,7 @@ export type Database = {
           email: string
           extra_charge_per_km?: number | null
           id: string
+          managed_bank_id?: string | null
           max_travel_distance?: number | null
           name: string
           password: string
@@ -577,6 +579,7 @@ export type Database = {
           email?: string
           extra_charge_per_km?: number | null
           id?: string
+          managed_bank_id?: string | null
           max_travel_distance?: number | null
           name?: string
           password?: string

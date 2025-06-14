@@ -1,260 +1,173 @@
 import { supabase } from '@/integrations/supabase/client';
-import { Lead, Address, AdditionalDetails } from '@/utils/mockData';
+import { Lead, User } from '@/utils/mockData';
 
 // Save a new lead to the database
 export const saveLeadToDatabase = async (leadData: Lead) => {
+  console.log('Saving lead to database:', leadData);
+
   try {
-    console.log('Saving lead to database:', leadData);
-
-    // Validate required data
-    if (!leadData.address) {
-      throw new Error('Address is required');
-    }
-
-    if (!leadData.name || leadData.name.trim() === '') {
-      throw new Error('Lead name is required');
-    }
-
-    // First, save the primary address
-    const { data: addressData, error: addressError } = await supabase
-      .from('addresses')
+    // Insert lead into leads table
+    const { data: leadResult, error: leadError } = await supabase
+      .from('leads')
       .insert({
-        type: leadData.address.type || 'Residence',
-        street: leadData.address.street || '',
-        city: leadData.address.city || '',
-        district: leadData.address.district || '',
-        state: leadData.address.state || '',
-        pincode: leadData.address.pincode || ''
+        id: leadData.id,
+        name: leadData.name,
+        age: leadData.age,
+        job: leadData.job,
+        status: leadData.status,
+        bank_id: leadData.bank,
+        assigned_to: leadData.assignedTo,
+        visit_type: leadData.visitType,
+        instructions: leadData.instructions,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       })
       .select()
       .single();
 
-    if (addressError) {
-      console.error('Error saving address:', addressError);
-      throw new Error(`Failed to save address: ${addressError.message}`);
-    }
-
-    console.log('Address saved successfully:', addressData);
-
-    // Map bank name to bank ID - handle both old and new format
-    const getBankId = (bankName: string): string => {
-      const bankMapping: { [key: string]: string } = {
-        'HDFC': 'hdfc',
-        'ICICI': 'icici', 
-        'AXIS': 'axis-bank',
-        'Axis Bank': 'axis-bank',
-        'SBI': 'sbi',
-        'Kotak Mahindra Bank': 'kotak',
-        'Punjab National Bank': 'pnb',
-        'Bank of Baroda': 'bob',
-        'Canara Bank': 'canara',
-        'Union Bank of India': 'union',
-        'Indian Bank': 'indian',
-        'axis': 'axis-bank', // Handle lowercase
-        'hdfc': 'hdfc',
-        'icici': 'icici',
-        'sbi': 'sbi'
-      };
-      
-      // Return mapped bank ID or use the bank name as-is if not found
-      return bankMapping[bankName] || bankName.toLowerCase().replace(/\s+/g, '_');
-    };
-
-    // Save the lead with proper null handling
-    const leadInsertData = {
-      id: leadData.id,
-      name: leadData.name || '',
-      age: leadData.age || null,
-      job: leadData.job || '',
-      address_id: addressData.id,
-      status: leadData.status || 'Pending',
-      bank_id: getBankId(leadData.bank || ''),
-      visit_type: leadData.visitType || 'Residence',
-      assigned_to: leadData.assignedTo || null,
-      verification_date: leadData.verificationDate?.toISOString() || null,
-      instructions: leadData.instructions || null,
-      has_co_applicant: leadData.additionalDetails?.coApplicant ? true : false,
-      co_applicant_name: leadData.additionalDetails?.coApplicant?.name || null
-    };
-
-    console.log('Inserting lead data:', leadInsertData);
-
-    const { data: lead, error: leadError } = await supabase
-      .from('leads')
-      .insert(leadInsertData)
-      .select()
-      .single();
-
     if (leadError) {
-      console.error('Error saving lead:', leadError);
-      throw new Error(`Failed to save lead: ${leadError.message}`);
+      console.error('Error inserting lead:', leadError);
+      throw leadError;
     }
 
-    console.log('Lead saved successfully:', lead);
+    console.log('Lead inserted successfully:', leadResult);
 
-    // Save additional details if they exist
+    // Insert additional details
     if (leadData.additionalDetails) {
-      const additionalDetailsData = {
-        lead_id: leadData.id,
-        company: leadData.additionalDetails.company || null,
-        designation: leadData.additionalDetails.designation || null,
-        work_experience: leadData.additionalDetails.workExperience || null,
-        property_type: leadData.additionalDetails.propertyType || null,
-        ownership_status: leadData.additionalDetails.ownershipStatus || null,
-        property_age: leadData.additionalDetails.propertyAge || null,
-        monthly_income: leadData.additionalDetails.monthlyIncome || null,
-        annual_income: leadData.additionalDetails.annualIncome || null,
-        other_income: leadData.additionalDetails.otherIncome || null,
-        phone_number: leadData.additionalDetails.phoneNumber || null,
-        email: leadData.additionalDetails.email || null,
-        date_of_birth: leadData.additionalDetails.dateOfBirth || null,
-        father_name: leadData.additionalDetails.fatherName || null,
-        mother_name: leadData.additionalDetails.motherName || null,
-        gender: leadData.additionalDetails.gender || null,
-        agency_file_no: leadData.additionalDetails.agencyFileNo || null,
-        application_barcode: leadData.additionalDetails.applicationBarcode || null,
-        case_id: leadData.additionalDetails.caseId || null,
-        scheme_desc: leadData.additionalDetails.schemeDesc || null,
-        bank_branch: leadData.additionalDetails.initiatedUnderBranch || null,
-        bank_product: leadData.additionalDetails.bankProduct || null,
-        additional_comments: leadData.additionalDetails.additionalComments || null,
-        lead_type: leadData.additionalDetails.leadType || null,
-        lead_type_id: leadData.additionalDetails.leadTypeId || null,
-        loan_amount: leadData.additionalDetails.loanAmount || null,
-        loan_type: leadData.additionalDetails.loanType || null,
-        vehicle_brand_name: leadData.additionalDetails.vehicleBrandName || null,
-        vehicle_brand_id: leadData.additionalDetails.vehicleBrandId || null,
-        vehicle_model_name: leadData.additionalDetails.vehicleModelName || null,
-        vehicle_model_id: leadData.additionalDetails.vehicleModelId || null
-      };
-
-      console.log('Inserting additional details:', additionalDetailsData);
-
       const { error: detailsError } = await supabase
         .from('additional_details')
-        .insert(additionalDetailsData);
+        .insert({
+          lead_id: leadData.id,
+          company: leadData.additionalDetails.company,
+          designation: leadData.additionalDetails.designation,
+          work_experience: leadData.additionalDetails.workExperience,
+          property_type: leadData.additionalDetails.propertyType,
+          ownership_status: leadData.additionalDetails.ownershipStatus,
+          property_age: leadData.additionalDetails.propertyAge,
+          monthly_income: leadData.additionalDetails.monthlyIncome,
+          annual_income: leadData.additionalDetails.annualIncome,
+          other_income: leadData.additionalDetails.otherIncome,
+          loan_amount: leadData.additionalDetails.loanAmount,
+          phone_number: leadData.additionalDetails.phoneNumber,
+          email: leadData.additionalDetails.email,
+          date_of_birth: leadData.additionalDetails.dateOfBirth ? new Date(leadData.additionalDetails.dateOfBirth).toISOString().split('T')[0] : null,
+          father_name: leadData.additionalDetails.fatherName,
+          mother_name: leadData.additionalDetails.motherName,
+          gender: leadData.additionalDetails.gender,
+          agency_file_no: leadData.additionalDetails.agencyFileNo,
+          application_barcode: leadData.additionalDetails.applicationBarcode,
+          case_id: leadData.additionalDetails.caseId,
+          scheme_desc: leadData.additionalDetails.schemeDesc,
+          bank_product: leadData.additionalDetails.bankProduct,
+          bank_branch: leadData.additionalDetails.bankBranch,
+          additional_comments: leadData.additionalDetails.additionalComments,
+          lead_type: leadData.additionalDetails.leadType,
+          loan_type: leadData.additionalDetails.loanType,
+          vehicle_brand_name: leadData.additionalDetails.vehicleBrandName,
+          vehicle_model_name: leadData.additionalDetails.vehicleModelName,
+          created_at: new Date().toISOString()
+        });
 
       if (detailsError) {
-        console.error('Error saving additional details:', detailsError);
-        // Don't throw here, just log the error as additional details are optional
-      } else {
-        console.log('Additional details saved successfully');
+        console.error('Error inserting additional details:', detailsError);
+        throw detailsError;
       }
 
-      // Save co-applicant if exists
-      if (leadData.additionalDetails.coApplicant) {
-        const coApplicantData = {
+      console.log('Additional details inserted successfully');
+    }
+
+    // Insert primary address
+    if (leadData.address) {
+      const { data: addressResult, error: addressError } = await supabase
+        .from('addresses')
+        .insert({
+          type: leadData.address.type,
+          street: leadData.address.street,
+          city: leadData.address.city,
+          district: leadData.address.district,
+          state: leadData.address.state,
+          pincode: leadData.address.pincode,
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (addressError) {
+        console.error('Error inserting primary address:', addressError);
+        throw addressError;
+      }
+
+      console.log('Primary address inserted successfully:', addressResult);
+
+      // Link address to lead
+      const { error: linkError } = await supabase
+        .from('lead_addresses')
+        .insert({
           lead_id: leadData.id,
-          name: leadData.additionalDetails.coApplicant.name || '',
-          age: leadData.additionalDetails.coApplicant.age ? Number(leadData.additionalDetails.coApplicant.age) : null,
-          phone_number: leadData.additionalDetails.coApplicant.phone || null,
-          email: leadData.additionalDetails.coApplicant.email || null,
-          relationship: leadData.additionalDetails.coApplicant.relation || null,
-          occupation: leadData.additionalDetails.coApplicant.occupation || null,
-          monthly_income: leadData.additionalDetails.coApplicant.monthlyIncome || null
-        };
+          address_id: addressResult.id,
+          created_at: new Date().toISOString()
+        });
 
-        console.log('Inserting co-applicant:', coApplicantData);
-
-        const { error: coApplicantError } = await supabase
-          .from('co_applicants')
-          .insert(coApplicantData);
-
-        if (coApplicantError) {
-          console.error('Error saving co-applicant:', coApplicantError);
-          // Don't throw here, just log the error as co-applicant is optional
-        } else {
-          console.log('Co-applicant saved successfully');
-        }
+      if (linkError) {
+        console.error('Error linking address to lead:', linkError);
+        throw linkError;
       }
 
-      // Save additional addresses if they exist
-      if (leadData.additionalDetails.addresses && leadData.additionalDetails.addresses.length > 0) {
-        for (const addr of leadData.additionalDetails.addresses) {
-          const { data: additionalAddress, error: addrError } = await supabase
-            .from('addresses')
-            .insert({
-              type: addr.type || 'Residence',
-              street: addr.street || '',
-              city: addr.city || '',
-              district: addr.district || '',
-              state: addr.state || '',
-              pincode: addr.pincode || ''
-            })
-            .select()
-            .single();
+      // Update lead with address_id
+      const { error: updateError } = await supabase
+        .from('leads')
+        .update({ address_id: addressResult.id })
+        .eq('id', leadData.id);
 
-          if (addrError) {
-            console.error('Error saving additional address:', addrError);
-            continue;
-          }
-
-          // Link address to lead
-          const { error: linkError } = await supabase
-            .from('lead_addresses')
-            .insert({
-              lead_id: leadData.id,
-              address_id: additionalAddress.id
-            });
-
-          if (linkError) {
-            console.error('Error linking address to lead:', linkError);
-          }
-        }
-      }
-
-      // Save vehicle details if exists
-      if (leadData.additionalDetails.vehicleBrandName || leadData.additionalDetails.vehicleModelName) {
-        const vehicleData = {
-          lead_id: leadData.id,
-          vehicle_brand_name: leadData.additionalDetails.vehicleBrandName || null,
-          vehicle_brand_id: leadData.additionalDetails.vehicleBrandId || null,
-          vehicle_model_name: leadData.additionalDetails.vehicleModelName || null,
-          vehicle_model_id: leadData.additionalDetails.vehicleModelId || null,
-          vehicle_type: leadData.additionalDetails.loanType || null,
-          vehicle_price: leadData.additionalDetails.loanAmount || null
-        };
-
-        console.log('Inserting vehicle details:', vehicleData);
-
-        const { error: vehicleError } = await supabase
-          .from('vehicle_details')
-          .insert(vehicleData);
-
-        if (vehicleError) {
-          console.error('Error saving vehicle details:', vehicleError);
-          // Don't throw here, just log the error as vehicle details are optional
-        } else {
-          console.log('Vehicle details saved successfully');
-        }
+      if (updateError) {
+        console.error('Error updating lead with address_id:', updateError);
+        throw updateError;
       }
     }
 
-    // Create verification record if verification data exists
-    if (leadData.verification) {
-      const verificationData = {
-        lead_id: leadData.id,
-        status: leadData.verification.status || 'Not Started',
-        agent_id: leadData.verification.agentId || null,
-        notes: leadData.verification.notes || null
-      };
+    // Insert additional addresses
+    if (leadData.additionalDetails?.addresses && leadData.additionalDetails.addresses.length > 0) {
+      for (const addr of leadData.additionalDetails.addresses) {
+        const { data: additionalAddressResult, error: additionalAddressError } = await supabase
+          .from('addresses')
+          .insert({
+            type: addr.type,
+            street: addr.street,
+            city: addr.city,
+            district: addr.district,
+            state: addr.state,
+            pincode: addr.pincode,
+            created_at: new Date().toISOString()
+          })
+          .select()
+          .single();
 
-      console.log('Inserting verification:', verificationData);
+        if (additionalAddressError) {
+          console.error('Error inserting additional address:', additionalAddressError);
+          throw additionalAddressError;
+        }
 
-      const { error: verificationError } = await supabase
-        .from('verifications')
-        .insert(verificationData);
+        // Link additional address to lead
+        const { error: linkError } = await supabase
+          .from('lead_addresses')
+          .insert({
+            lead_id: leadData.id,
+            address_id: additionalAddressResult.id,
+            created_at: new Date().toISOString()
+          });
 
-      if (verificationError) {
-        console.error('Error saving verification:', verificationError);
-        // Don't throw here, just log the error as verification is optional initially
-      } else {
-        console.log('Verification saved successfully');
+        if (linkError) {
+          console.error('Error linking additional address to lead:', linkError);
+          throw linkError;
+        }
       }
+
+      console.log('Additional addresses inserted successfully');
     }
 
-    console.log('Lead saved successfully to database');
-    return lead;
+    console.log('Lead saved to database successfully');
+    return leadResult;
+
   } catch (error) {
     console.error('Error in saveLeadToDatabase:', error);
     throw error;
@@ -262,194 +175,391 @@ export const saveLeadToDatabase = async (leadData: Lead) => {
 };
 
 // Get all leads from the database - FIXED to remove foreign key joins
-export const getLeadsFromDatabase = async (forceRefresh = false) => {
+export const getAllLeadsFromDatabase = async (): Promise<Lead[]> => {
   try {
-    console.log('Fetching leads from database - force refresh:', forceRefresh);
-    
-    // FIXED: Remove the banks join since we removed the foreign key
-    const { data: leads, error } = await supabase
+    console.log('Fetching all leads from database');
+
+    const { data: leadsData, error } = await supabase
       .from('leads')
       .select(`
         *,
-        addresses!leads_address_id_fkey(*),
-        users!leads_assigned_to_fkey(*),
-        additional_details(*),
-        verifications(*),
-        co_applicants(*),
-        lead_addresses(
-          addresses(*)
-        )
+        additional_details (*),
+        addresses (*)
       `)
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching leads from database:', error);
+      console.error('Error fetching leads:', error);
       throw error;
     }
 
-    if (!leads) {
+    if (!leadsData || leadsData.length === 0) {
       console.log('No leads found in database');
       return [];
     }
 
-    console.log(`Raw leads from database: ${leads.length} leads found`);
+    // Transform database data to Lead format
+    const leads: Lead[] = await Promise.all(
+      leadsData.map(async (leadData) => {
+        // Fetch addresses for each lead
+        const { data: leadAddresses } = await supabase
+          .from('lead_addresses')
+          .select(`
+            address_id,
+            addresses (*)
+          `)
+          .eq('lead_id', leadData.id);
 
-    // Transform database leads to match our Lead interface
-    const transformedLeads: Lead[] = leads.map((lead: any) => {
-      const additionalDetails: AdditionalDetails = lead.additional_details?.[0] ? {
-        company: lead.additional_details[0].company || '',
-        designation: lead.additional_details[0].designation || '',
-        workExperience: lead.additional_details[0].work_experience || '',
-        propertyType: lead.additional_details[0].property_type || '',
-        ownershipStatus: lead.additional_details[0].ownership_status || '',
-        propertyAge: lead.additional_details[0].property_age || '',
-        monthlyIncome: lead.additional_details[0].monthly_income || '',
-        annualIncome: lead.additional_details[0].annual_income || '',
-        otherIncome: lead.additional_details[0].other_income || '',
-        phoneNumber: lead.additional_details[0].phone_number,
-        email: lead.additional_details[0].email,
-        dateOfBirth: lead.additional_details[0].date_of_birth,
-        fatherName: lead.additional_details[0].father_name,
-        motherName: lead.additional_details[0].mother_name,
-        gender: lead.additional_details[0].gender,
-        agencyFileNo: lead.additional_details[0].agency_file_no,
-        applicationBarcode: lead.additional_details[0].application_barcode,
-        caseId: lead.additional_details[0].case_id,
-        schemeDesc: lead.additional_details[0].scheme_desc,
-        bankBranch: lead.additional_details[0].bank_branch,
-        bankProduct: lead.additional_details[0].bank_product,
-        initiatedUnderBranch: lead.additional_details[0].bank_branch,
-        additionalComments: lead.additional_details[0].additional_comments,
-        leadType: lead.additional_details[0].lead_type,
-        leadTypeId: lead.additional_details[0].lead_type_id,
-        loanAmount: lead.additional_details[0].loan_amount,
-        loanType: lead.additional_details[0].loan_type,
-        vehicleBrandName: lead.additional_details[0].vehicle_brand_name,
-        vehicleBrandId: lead.additional_details[0].vehicle_brand_id,
-        vehicleModelName: lead.additional_details[0].vehicle_model_name,
-        vehicleModelId: lead.additional_details[0].vehicle_model_id,
-        addresses: lead.lead_addresses?.map((la: any) => ({
-          type: la.addresses.type,
-          street: la.addresses.street,
-          city: la.addresses.city,
-          district: la.addresses.district,
-          state: la.addresses.state,
-          pincode: la.addresses.pincode
-        })) || [],
-        coApplicant: lead.co_applicants?.[0] ? {
-          name: lead.co_applicants[0].name || '',
-          age: lead.co_applicants[0].age || undefined,
-          phone: lead.co_applicants[0].phone_number || '',
-          email: lead.co_applicants[0].email || '',
-          relation: lead.co_applicants[0].relationship || '',
-          occupation: lead.co_applicants[0].occupation || '',
-          monthlyIncome: lead.co_applicants[0].monthly_income || ''
-        } : undefined
-      } : {
-        company: '',
-        designation: '',
-        workExperience: '',
-        propertyType: '',
-        ownershipStatus: '',
-        propertyAge: '',
-        monthlyIncome: '',
-        annualIncome: '',
-        otherIncome: '',
-        addresses: []
-      };
-
-      // Safely cast visitType with fallback
-      const getValidVisitType = (visitType: string | null): Lead['visitType'] => {
-        if (visitType === 'Office' || visitType === 'Both') {
-          return visitType;
-        }
-        return 'Residence'; // Default fallback
-      };
-
-      // Get bank name from bank_id using mapping
-      const getBankName = (bankId: string): string => {
-        const bankMapping: { [key: string]: string } = {
-          'hdfc': 'HDFC',
-          'icici': 'ICICI',
-          'axis': 'AXIS',
-          'axis-bank': 'Axis Bank',
-          'sbi': 'SBI',
-          'kotak': 'Kotak Mahindra Bank',
-          'pnb': 'Punjab National Bank',
-          'bob': 'Bank of Baroda',
-          'canara': 'Canara Bank',
-          'union': 'Union Bank of India',
-          'indian': 'Indian Bank'
-        };
-        
-        return bankMapping[bankId] || bankId.toUpperCase();
-      };
-
-      return {
-        id: lead.id,
-        name: lead.name,
-        age: lead.age || 0,
-        job: lead.job || '',
-        address: {
-          type: lead.addresses?.type || 'Residence',
-          street: lead.addresses?.street || '',
-          city: lead.addresses?.city || '',
-          district: lead.addresses?.district || '',
-          state: lead.addresses?.state || '',
-          pincode: lead.addresses?.pincode || ''
-        },
-        additionalDetails,
-        status: lead.status as Lead['status'],
-        bank: getBankName(lead.bank_id || ''),
-        visitType: getValidVisitType(lead.visit_type),
-        assignedTo: lead.assigned_to || '',
-        createdAt: new Date(lead.created_at),
-        verificationDate: lead.verification_date ? new Date(lead.verification_date) : undefined,
-        documents: [],
-        instructions: lead.instructions || '',
-        verification: lead.verifications?.[0] ? {
-          id: lead.verifications[0].id,
-          leadId: lead.id,
-          status: lead.verifications[0].status as "Not Started" | "In Progress" | "Completed" | "Rejected",
-          agentId: lead.verifications[0].agent_id,
-          photos: [],
+        const lead: Lead = {
+          id: leadData.id,
+          name: leadData.name,
+          age: leadData.age || 0,
+          job: leadData.job || '',
+          address: {
+            type: 'Residence',
+            street: '',
+            city: '',
+            district: '',
+            state: '',
+            pincode: ''
+          },
+          additionalDetails: leadData.additional_details ? {
+            company: leadData.additional_details.company || '',
+            designation: leadData.additional_details.designation || '',
+            workExperience: leadData.additional_details.work_experience || '',
+            propertyType: leadData.additional_details.property_type || '',
+            ownershipStatus: leadData.additional_details.ownership_status || '',
+            propertyAge: leadData.additional_details.property_age || '',
+            monthlyIncome: leadData.additional_details.monthly_income || '',
+            annualIncome: leadData.additional_details.annual_income || '',
+            otherIncome: leadData.additional_details.other_income || '',
+            loanAmount: leadData.additional_details.loan_amount || '',
+            addresses: [],
+            phoneNumber: leadData.additional_details.phone_number || '',
+            email: leadData.additional_details.email || '',
+            dateOfBirth: leadData.additional_details.date_of_birth || '',
+            fatherName: leadData.additional_details.father_name || '',
+            motherName: leadData.additional_details.mother_name || '',
+            gender: leadData.additional_details.gender || '',
+            agencyFileNo: leadData.additional_details.agency_file_no || '',
+            applicationBarcode: leadData.additional_details.application_barcode || '',
+            caseId: leadData.additional_details.case_id || '',
+            schemeDesc: leadData.additional_details.scheme_desc || '',
+            bankProduct: leadData.additional_details.bank_product || '',
+            initiatedUnderBranch: leadData.additional_details.bank_branch || '',
+            bankBranch: leadData.additional_details.bank_branch || '',
+            additionalComments: leadData.additional_details.additional_comments || '',
+            leadType: leadData.additional_details.lead_type || '',
+            loanType: leadData.additional_details.loan_type || '',
+            vehicleBrandName: leadData.additional_details.vehicle_brand_name || '',
+            vehicleModelName: leadData.additional_details.vehicle_model_name || ''
+          } : undefined,
+          status: leadData.status,
+          bank: leadData.bank_id || '',
+          visitType: leadData.visit_type as 'Residence' | 'Office' | 'Both',
+          assignedTo: leadData.assigned_to || '',
+          createdAt: new Date(leadData.created_at),
+          verificationDate: leadData.verification_date ? new Date(leadData.verification_date) : undefined,
           documents: [],
-          notes: lead.verifications[0].notes || ""
-        } : undefined
-      };
-    });
+          instructions: leadData.instructions || ''
+        };
 
-    console.log(`Transformed leads: ${transformedLeads.length} leads processed`);
-    return transformedLeads;
+        // Set addresses
+        if (leadAddresses && leadAddresses.length > 0) {
+          const primaryAddressData = leadAddresses[0];
+          if (primaryAddressData.addresses) {
+            lead.address = {
+              type: primaryAddressData.addresses.type as 'Residence' | 'Office' | 'Permanent',
+              street: primaryAddressData.addresses.street || '',
+              city: primaryAddressData.addresses.city || '',
+              district: primaryAddressData.addresses.district || '',
+              state: primaryAddressData.addresses.state || '',
+              pincode: primaryAddressData.addresses.pincode || ''
+            };
+          }
+
+          if (leadAddresses.length > 1 && lead.additionalDetails) {
+            lead.additionalDetails.addresses = leadAddresses.slice(1).map((addr: any) => ({
+              type: addr.addresses.type as 'Residence' | 'Office' | 'Permanent',
+              street: addr.addresses.street || '',
+              city: addr.addresses.city || '',
+              district: addr.addresses.district || '',
+              state: addr.addresses.state || '',
+              pincode: addr.addresses.pincode || ''
+            }));
+          }
+        }
+
+        return lead;
+      })
+    );
+
+    console.log(`Fetched ${leads.length} leads from database`);
+    return leads;
+
   } catch (error) {
-    console.error('Error in getLeadsFromDatabase:', error);
+    console.error('Error in getAllLeadsFromDatabase:', error);
     throw error;
   }
+};
 
-  // Helper functions for transformation
-  function getValidVisitType(visitType: string | null): Lead['visitType'] {
-    if (visitType === 'Office' || visitType === 'Both') {
-      return visitType;
+// Get leads filtered by bank for managers
+export const getLeadsByBankFromDatabase = async (bankId: string): Promise<Lead[]> => {
+  try {
+    console.log('Fetching leads by bank from database:', bankId);
+
+    const { data: leadsData, error } = await supabase
+      .from('leads')
+      .select(`
+        *,
+        additional_details (*),
+        addresses (*)
+      `)
+      .eq('bank_id', bankId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching leads by bank:', error);
+      throw error;
     }
-    return 'Residence';
-  }
 
-  function getBankName(bankId: string): string {
-    const bankMapping: { [key: string]: string } = {
-      'hdfc': 'HDFC',
-      'icici': 'ICICI',
-      'axis': 'AXIS',
-      'axis-bank': 'Axis Bank',
-      'sbi': 'SBI',
-      'kotak': 'Kotak Mahindra Bank',
-      'pnb': 'Punjab National Bank',
-      'bob': 'Bank of Baroda',
-      'canara': 'Canara Bank',
-      'union': 'Union Bank of India',
-      'indian': 'Indian Bank'
+    if (!leadsData || leadsData.length === 0) {
+      console.log('No leads found for bank:', bankId);
+      return [];
+    }
+
+    // Transform database data to Lead format (same logic as getAllLeadsFromDatabase)
+    const leads: Lead[] = await Promise.all(
+      leadsData.map(async (leadData) => {
+        const { data: leadAddresses } = await supabase
+          .from('lead_addresses')
+          .select(`
+            address_id,
+            addresses (*)
+          `)
+          .eq('lead_id', leadData.id);
+
+        const lead: Lead = {
+          id: leadData.id,
+          name: leadData.name,
+          age: leadData.age || 0,
+          job: leadData.job || '',
+          address: {
+            type: 'Residence',
+            street: '',
+            city: '',
+            district: '',
+            state: '',
+            pincode: ''
+          },
+          additionalDetails: leadData.additional_details ? {
+            company: leadData.additional_details.company || '',
+            designation: leadData.additional_details.designation || '',
+            workExperience: leadData.additional_details.work_experience || '',
+            propertyType: leadData.additional_details.property_type || '',
+            ownershipStatus: leadData.additional_details.ownership_status || '',
+            propertyAge: leadData.additional_details.property_age || '',
+            monthlyIncome: leadData.additional_details.monthly_income || '',
+            annualIncome: leadData.additional_details.annual_income || '',
+            otherIncome: leadData.additional_details.other_income || '',
+            loanAmount: leadData.additional_details.loan_amount || '',
+            addresses: [],
+            phoneNumber: leadData.additional_details.phone_number || '',
+            email: leadData.additional_details.email || '',
+            dateOfBirth: leadData.additional_details.date_of_birth || '',
+            fatherName: leadData.additional_details.father_name || '',
+            motherName: leadData.additional_details.mother_name || '',
+            gender: leadData.additional_details.gender || '',
+            agencyFileNo: leadData.additional_details.agency_file_no || '',
+            applicationBarcode: leadData.additional_details.application_barcode || '',
+            caseId: leadData.additional_details.case_id || '',
+            schemeDesc: leadData.additional_details.scheme_desc || '',
+            bankProduct: leadData.additional_details.bank_product || '',
+            initiatedUnderBranch: leadData.additional_details.bank_branch || '',
+            bankBranch: leadData.additional_details.bank_branch || '',
+            additionalComments: leadData.additional_details.additional_comments || '',
+            leadType: leadData.additional_details.lead_type || '',
+            loanType: leadData.additional_details.loan_type || '',
+            vehicleBrandName: leadData.additional_details.vehicle_brand_name || '',
+            vehicleModelName: leadData.additional_details.vehicle_model_name || ''
+          } : undefined,
+          status: leadData.status,
+          bank: leadData.bank_id || '',
+          visitType: leadData.visit_type as 'Residence' | 'Office' | 'Both',
+          assignedTo: leadData.assigned_to || '',
+          createdAt: new Date(leadData.created_at),
+          verificationDate: leadData.verification_date ? new Date(leadData.verification_date) : undefined,
+          documents: [],
+          instructions: leadData.instructions || ''
+        };
+
+        // Set addresses
+        if (leadAddresses && leadAddresses.length > 0) {
+          const primaryAddressData = leadAddresses[0];
+          if (primaryAddressData.addresses) {
+            lead.address = {
+              type: primaryAddressData.addresses.type as 'Residence' | 'Office' | 'Permanent',
+              street: primaryAddressData.addresses.street || '',
+              city: primaryAddressData.addresses.city || '',
+              district: primaryAddressData.addresses.district || '',
+              state: primaryAddressData.addresses.state || '',
+              pincode: primaryAddressData.addresses.pincode || ''
+            };
+          }
+
+          if (leadAddresses.length > 1 && lead.additionalDetails) {
+            lead.additionalDetails.addresses = leadAddresses.slice(1).map((addr: any) => ({
+              type: addr.addresses.type as 'Residence' | 'Office' | 'Permanent',
+              street: addr.addresses.street || '',
+              city: addr.addresses.city || '',
+              district: addr.addresses.district || '',
+              state: addr.addresses.state || '',
+              pincode: addr.addresses.pincode || ''
+            }));
+          }
+        }
+
+        return lead;
+      })
+    );
+
+    console.log(`Fetched ${leads.length} leads for bank ${bankId} from database`);
+    return leads;
+
+  } catch (error) {
+    console.error('Error in getLeadsByBankFromDatabase:', error);
+    throw error;
+  }
+};
+
+// Get single lead by ID
+export const getLeadByIdFromDatabase = async (leadId: string): Promise<Lead | null> => {
+  try {
+    console.log('Fetching lead by ID from database:', leadId);
+
+    // Fetch lead with all related data
+    const { data: leadData, error: leadError } = await supabase
+      .from('leads')
+      .select(`
+        *,
+        additional_details (*),
+        addresses (*)
+      `)
+      .eq('id', leadId)
+      .single();
+
+    if (leadError) {
+      console.error('Error fetching lead:', leadError);
+      throw leadError;
+    }
+
+    if (!leadData) {
+      console.log('No lead found with ID:', leadId);
+      return null;
+    }
+
+    // Fetch all addresses for this lead
+    const { data: leadAddresses, error: addressError } = await supabase
+      .from('lead_addresses')
+      .select(`
+        address_id,
+        addresses (*)
+      `)
+      .eq('lead_id', leadId);
+
+    if (addressError) {
+      console.error('Error fetching lead addresses:', addressError);
+      throw addressError;
+    }
+
+    // Transform database data to Lead format
+    const lead: Lead = {
+      id: leadData.id,
+      name: leadData.name,
+      age: leadData.age || 0,
+      job: leadData.job || '',
+      address: {
+        type: 'Residence',
+        street: '',
+        city: '',
+        district: '',
+        state: '',
+        pincode: ''
+      },
+      additionalDetails: leadData.additional_details ? {
+        company: leadData.additional_details.company || '',
+        designation: leadData.additional_details.designation || '',
+        workExperience: leadData.additional_details.work_experience || '',
+        propertyType: leadData.additional_details.property_type || '',
+        ownershipStatus: leadData.additional_details.ownership_status || '',
+        propertyAge: leadData.additional_details.property_age || '',
+        monthlyIncome: leadData.additional_details.monthly_income || '',
+        annualIncome: leadData.additional_details.annual_income || '',
+        otherIncome: leadData.additional_details.other_income || '',
+        loanAmount: leadData.additional_details.loan_amount || '',
+        addresses: [],
+        phoneNumber: leadData.additional_details.phone_number || '',
+        email: leadData.additional_details.email || '',
+        dateOfBirth: leadData.additional_details.date_of_birth || '',
+        fatherName: leadData.additional_details.father_name || '',
+        motherName: leadData.additional_details.mother_name || '',
+        gender: leadData.additional_details.gender || '',
+        agencyFileNo: leadData.additional_details.agency_file_no || '',
+        applicationBarcode: leadData.additional_details.application_barcode || '',
+        caseId: leadData.additional_details.case_id || '',
+        schemeDesc: leadData.additional_details.scheme_desc || '',
+        bankProduct: leadData.additional_details.bank_product || '',
+        initiatedUnderBranch: leadData.additional_details.bank_branch || '',
+        bankBranch: leadData.additional_details.bank_branch || '',
+        additionalComments: leadData.additional_details.additional_comments || '',
+        leadType: leadData.additional_details.lead_type || '',
+        loanType: leadData.additional_details.loan_type || '',
+        vehicleBrandName: leadData.additional_details.vehicle_brand_name || '',
+        vehicleModelName: leadData.additional_details.vehicle_model_name || ''
+      } : undefined,
+      status: leadData.status,
+      bank: leadData.bank_id || '',
+      visitType: leadData.visit_type as 'Residence' | 'Office' | 'Both',
+      assignedTo: leadData.assigned_to || '',
+      createdAt: new Date(leadData.created_at),
+      verificationDate: leadData.verification_date ? new Date(leadData.verification_date) : undefined,
+      documents: [],
+      instructions: leadData.instructions || ''
     };
-    
-    return bankMapping[bankId] || bankId.toUpperCase();
+
+    // Set primary address and additional addresses
+    if (leadAddresses && leadAddresses.length > 0) {
+      const primaryAddressData = leadAddresses[0];
+      if (primaryAddressData.addresses) {
+        lead.address = {
+          type: primaryAddressData.addresses.type as 'Residence' | 'Office' | 'Permanent',
+          street: primaryAddressData.addresses.street || '',
+          city: primaryAddressData.addresses.city || '',
+          district: primaryAddressData.addresses.district || '',
+          state: primaryAddressData.addresses.state || '',
+          pincode: primaryAddressData.addresses.pincode || ''
+        };
+      }
+
+      // Additional addresses (excluding the first one)
+      if (leadAddresses.length > 1 && lead.additionalDetails) {
+        lead.additionalDetails.addresses = leadAddresses.slice(1).map((addr: any) => ({
+          type: addr.addresses.type as 'Residence' | 'Office' | 'Permanent',
+          street: addr.addresses.street || '',
+          city: addr.addresses.city || '',
+          district: addr.addresses.district || '',
+          state: addr.addresses.state || '',
+          pincode: addr.addresses.pincode || ''
+        }));
+      }
+    }
+
+    console.log('Lead fetched successfully:', lead);
+    return lead;
+
+  } catch (error) {
+    console.error('Error in getLeadByIdFromDatabase:', error);
+    throw error;
   }
 };
 
@@ -582,157 +692,6 @@ export const updateLeadInDatabase = async (leadId: string, updates: Partial<Lead
     console.log('Lead updated successfully in database');
   } catch (error) {
     console.error('Error in updateLeadInDatabase:', error);
-    throw error;
-  }
-};
-
-// Get single lead by ID
-export const getLeadByIdFromDatabase = async (leadId: string) => {
-  try {
-    console.log('Fetching lead by ID from database:', leadId);
-    
-    const { data: lead, error } = await supabase
-      .from('leads')
-      .select(`
-        *,
-        addresses!leads_address_id_fkey(*),
-        users!leads_assigned_to_fkey(*),
-        additional_details(*),
-        verifications(*),
-        lead_addresses(
-          addresses(*)
-        )
-      `)
-      .eq('id', leadId)
-      .single();
-
-    if (error) {
-      console.error('Error fetching lead by ID:', error);
-      throw error;
-    }
-
-    if (!lead) {
-      console.log('No lead found with ID:', leadId);
-      return null;
-    }
-
-    // Transform single lead data (same transformation logic as above)
-    const additionalDetails: AdditionalDetails = lead.additional_details?.[0] ? {
-      company: lead.additional_details[0].company || '',
-      designation: lead.additional_details[0].designation || '',
-      workExperience: lead.additional_details[0].work_experience || '',
-      propertyType: lead.additional_details[0].property_type || '',
-      ownershipStatus: lead.additional_details[0].ownership_status || '',
-      propertyAge: lead.additional_details[0].property_age || '',
-      monthlyIncome: lead.additional_details[0].monthly_income || '',
-      annualIncome: lead.additional_details[0].annual_income || '',
-      otherIncome: lead.additional_details[0].other_income || '',
-      phoneNumber: lead.additional_details[0].phone_number,
-      email: lead.additional_details[0].email,
-      dateOfBirth: lead.additional_details[0].date_of_birth,
-      fatherName: lead.additional_details[0].father_name,
-      motherName: lead.additional_details[0].mother_name,
-      gender: lead.additional_details[0].gender,
-      agencyFileNo: lead.additional_details[0].agency_file_no,
-      applicationBarcode: lead.additional_details[0].application_barcode,
-      caseId: lead.additional_details[0].case_id,
-      schemeDesc: lead.additional_details[0].scheme_desc,
-      bankBranch: lead.additional_details[0].bank_branch,
-      bankProduct: lead.additional_details[0].bank_product,
-      initiatedUnderBranch: lead.additional_details[0].bank_branch,
-      additionalComments: lead.additional_details[0].additional_comments,
-      leadType: lead.additional_details[0].lead_type,
-      leadTypeId: lead.additional_details[0].lead_type_id,
-      loanAmount: lead.additional_details[0].loan_amount,
-      loanType: lead.additional_details[0].loan_type,
-      vehicleBrandName: lead.additional_details[0].vehicle_brand_name,
-      vehicleBrandId: lead.additional_details[0].vehicle_brand_id,
-      vehicleModelName: lead.additional_details[0].vehicle_model_name,
-      vehicleModelId: lead.additional_details[0].vehicle_model_id,
-      addresses: lead.lead_addresses?.map((la: any) => ({
-        type: la.addresses.type,
-        street: la.addresses.street,
-        city: la.addresses.city,
-        district: la.addresses.district,
-        state: la.addresses.state,
-        pincode: la.addresses.pincode
-      })) || []
-    } : {
-      company: '',
-      designation: '',
-      workExperience: '',
-      propertyType: '',
-      ownershipStatus: '',
-      propertyAge: '',
-      monthlyIncome: '',
-      annualIncome: '',
-      otherIncome: '',
-      addresses: []
-    };
-
-    // Safely cast visitType with fallback
-    const getValidVisitType = (visitType: string | null): Lead['visitType'] => {
-      if (visitType === 'Office' || visitType === 'Both') {
-        return visitType;
-      }
-      return 'Residence'; // Default fallback
-    };
-
-    // Get bank name from bank_id using mapping
-    const getBankName = (bankId: string): string => {
-      const bankMapping: { [key: string]: string } = {
-        'hdfc': 'HDFC',
-        'icici': 'ICICI',
-        'axis': 'AXIS',
-        'sbi': 'SBI',
-        'kotak': 'Kotak Mahindra Bank',
-        'pnb': 'Punjab National Bank',
-        'bob': 'Bank of Baroda',
-        'canara': 'Canara Bank',
-        'union': 'Union Bank of India',
-        'indian': 'Indian Bank'
-      };
-      
-      return bankMapping[bankId] || bankId.toUpperCase();
-    };
-
-    const transformedLead: Lead = {
-      id: lead.id,
-      name: lead.name,
-      age: lead.age || 0,
-      job: lead.job || '',
-      address: {
-        type: lead.addresses?.type || 'Residence',
-        street: lead.addresses?.street || '',
-        city: lead.addresses?.city || '',
-        district: lead.addresses?.district || '',
-        state: lead.addresses?.state || '',
-        pincode: lead.addresses?.pincode || ''
-      },
-      additionalDetails,
-      status: lead.status as Lead['status'],
-      bank: getBankName(lead.bank_id || ''),
-      visitType: getValidVisitType(lead.visit_type),
-      assignedTo: lead.assigned_to || '',
-      createdAt: new Date(lead.created_at),
-      verificationDate: lead.verification_date ? new Date(lead.verification_date) : undefined,
-      documents: [],
-      instructions: lead.instructions || '',
-      verification: lead.verifications?.[0] ? {
-        id: lead.verifications[0].id,
-        leadId: lead.id,
-        status: lead.verifications[0].status as "Not Started" | "In Progress" | "Completed" | "Rejected",
-        agentId: lead.verifications[0].agent_id,
-        photos: [],
-        documents: [],
-        notes: lead.verifications[0].notes || ""
-      } : undefined
-    };
-
-    console.log('Lead fetched and transformed successfully:', transformedLead.id);
-    return transformedLead;
-  } catch (error) {
-    console.error('Error in getLeadByIdFromDatabase:', error);
     throw error;
   }
 };

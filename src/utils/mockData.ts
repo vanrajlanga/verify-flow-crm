@@ -4,21 +4,21 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'agent' | 'tvtteam';
-  district?: string;
+  role: 'admin' | 'agent' | 'manager' | 'tvt';
+  password: string;
   phone?: string;
-  city?: string;
+  district?: string;
   state?: string;
-  baseLocation?: string;
+  city?: string;
   branch?: string;
+  baseLocation?: string;
   profilePicture?: string;
-  maxTravelDistance?: number;
-  extraChargePerKm?: number;
   totalVerifications?: number;
   completionRate?: number;
+  maxTravelDistance?: number;
+  extraChargePerKm?: number;
   status?: 'active' | 'inactive';
-  password?: string;
-  documents?: Document[];
+  managedBankId?: string; // New field for manager role
 }
 
 export interface Address {
@@ -162,41 +162,65 @@ export type MainNavItem = NavItemWithOptionalChildren
 export type SidebarNavItem = NavItemWithChildren
 
 // Mock data exports for backward compatibility
-export const mockUsers: User[] = [
+export const users: User[] = [
   {
     id: 'admin-1',
     name: 'Admin User',
-    email: 'admin@kycverification.com',
-    password: 'password',
+    email: 'admin@example.com',
     role: 'admin',
-    phone: '9999999999',
-    district: 'Mumbai',
-    state: 'Maharashtra',
-    city: 'Mumbai',
+    password: 'admin123',
     status: 'active'
   },
   {
     id: 'agent-1',
-    name: 'Rajesh Kumar',
-    email: 'rajesh@kycverification.com',
-    password: 'password',
+    name: 'John Doe',
+    email: 'john.doe@example.com',
     role: 'agent',
-    phone: '9876543210',
+    password: 'agent123',
+    phone: '+91 9876543210',
     district: 'Mumbai',
     state: 'Maharashtra',
     city: 'Mumbai',
+    branch: 'Mumbai Central',
+    baseLocation: 'Mumbai Central',
+    totalVerifications: 145,
+    completionRate: 92,
+    maxTravelDistance: 50,
+    extraChargePerKm: 15,
     status: 'active'
   },
   {
-    id: 'tvt-1',
-    name: 'Mike TVT',
-    email: 'mike.tvt@example.com',
-    password: 'password',
-    role: 'tvtteam',
-    phone: '9876543211',
+    id: 'manager-1',
+    name: 'Chintan Shah',
+    email: 'chintan@example.com',
+    role: 'manager',
+    password: 'manager123',
+    phone: '+91 9876543211',
     district: 'Mumbai',
     state: 'Maharashtra',
     city: 'Mumbai',
+    status: 'active',
+    managedBankId: 'axis' // Manager for Axis Bank
+  },
+  {
+    id: 'manager-2',
+    name: 'Priya Sharma',
+    email: 'priya@example.com',
+    role: 'manager',
+    password: 'manager123',
+    phone: '+91 9876543212',
+    district: 'Bangalore',
+    state: 'Karnataka',
+    city: 'Bangalore',
+    status: 'active',
+    managedBankId: 'hdfc' // Manager for HDFC Bank
+  },
+  {
+    id: 'tvt-1',
+    name: 'TVT User',
+    email: 'tvt@example.com',
+    role: 'tvt',
+    password: 'tvt123',
     status: 'active'
   }
 ];
