@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FileX, FileCheck, Image, User as UserIcon } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
-import { User } from '@/utils/mockData';
+import { User, Document } from '@/utils/mockData';
 
 interface AgentDocumentsProps {
   user: User;
@@ -30,7 +30,7 @@ const AgentDocuments = ({ user, onUpdate }: AgentDocumentsProps) => {
     type: doc.type || 'Document',
     filename: doc.name,
     url: doc.url,
-    uploadDate: doc.uploadDate.toISOString()
+    uploadDate: typeof doc.uploadDate === 'string' ? doc.uploadDate : doc.uploadDate.toISOString()
   }));
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -41,12 +41,14 @@ const AgentDocuments = ({ user, onUpdate }: AgentDocumentsProps) => {
     // For this mockup, we'll create a URL and simulate the upload
     const fakeUrl = URL.createObjectURL(file);
     
-    const newDocument = {
+    const newDocument: Document = {
       id: `doc-${Date.now()}`,
       name: file.name,
       url: fakeUrl,
       uploadDate: new Date(),
-      type: selectedDocType
+      type: selectedDocType,
+      uploadedBy: user.name || 'Current User',
+      size: file.size
     };
     
     // Add document to user

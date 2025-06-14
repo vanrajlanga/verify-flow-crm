@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,13 +46,13 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
     otherIncome: lead.additionalDetails?.otherIncome || '',
     phoneNumber: lead.additionalDetails?.phoneNumber || '',
     propertyType: lead.additionalDetails?.propertyType || '',
-    ownershipStatus: lead.additionalDetails?.ownershipStatus || '',
-    propertyAge: lead.additionalDetails?.propertyAge || '',
-    agencyFileNo: lead.additionalDetails?.agencyFileNo || '',
-    caseId: lead.additionalDetails?.caseId || '',
-    loanAmount: lead.additionalDetails?.loanAmount || '',
-    loanType: lead.additionalDetails?.loanType || '',
-    additionalComments: lead.additionalDetails?.additionalComments || ''
+    ownershipStatus: lead.ownershipStatus || '',
+    propertyAge: lead.propertyAge || '',
+    agencyFileNo: lead.agencyFileNo || '',
+    caseId: lead.caseId || '',
+    loanAmount: lead.loanAmount || '',
+    loanType: lead.loanType || '',
+    additionalComments: lead.additionalComments || ''
   });
 
   const [uploading, setUploading] = useState(false);
@@ -509,4 +508,3 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
 };
 
 export default EditLeadForm;
-
