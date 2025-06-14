@@ -26,22 +26,28 @@ export const saveLeadToDatabase = async (leadData: Lead): Promise<void> => {
 
     console.log('Address saved with ID:', addressData.id);
 
-    // Save the main lead
-    const { data: leadInsertData, error: leadError } = await supabase
+    // Save the main lead - only set assigned_to if it's not empty
+    const leadInsertData: any = {
+      id: leadData.id,
+      name: leadData.name,
+      age: leadData.age || 0,
+      job: leadData.job || '',
+      address_id: addressData.id,
+      status: leadData.status,
+      bank_id: leadData.bank,
+      visit_type: leadData.visitType,
+      instructions: leadData.instructions || '',
+      has_co_applicant: !!leadData.additionalDetails?.coApplicant
+    };
+
+    // Only add assigned_to if it's not empty to avoid foreign key constraint
+    if (leadData.assignedTo && leadData.assignedTo.trim() !== '') {
+      leadInsertData.assigned_to = leadData.assignedTo;
+    }
+
+    const { data: leadInsertResult, error: leadError } = await supabase
       .from('leads')
-      .insert({
-        id: leadData.id,
-        name: leadData.name,
-        age: leadData.age || 0,
-        job: leadData.job || '',
-        address_id: addressData.id,
-        status: leadData.status,
-        bank_id: leadData.bank,
-        visit_type: leadData.visitType,
-        assigned_to: leadData.assignedTo || '',
-        instructions: leadData.instructions || '',
-        has_co_applicant: !!leadData.additionalDetails?.coApplicant
-      })
+      .insert(leadInsertData)
       .select()
       .single();
 
@@ -50,7 +56,7 @@ export const saveLeadToDatabase = async (leadData: Lead): Promise<void> => {
       throw new Error(`Failed to save lead: ${leadError.message}`);
     }
 
-    console.log('Lead saved successfully:', leadInsertData);
+    console.log('Lead saved successfully:', leadInsertResult);
 
     // Save additional details if present
     if (leadData.additionalDetails) {

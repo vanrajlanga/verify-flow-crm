@@ -69,12 +69,21 @@ export const transformFormDataToLead = (formData: any): Lead => {
       leadType: formData.leadType || '',
       loanType: '',
       vehicleBrandName: formData.vehicleBrand || '',
-      vehicleModelName: formData.vehicleModel || ''
+      vehicleModelName: formData.vehicleModel || '',
+      coApplicant: formData.hasCoApplicant ? {
+        name: formData.coApplicantName || '',
+        age: 0,
+        phone: formData.coApplicantPhone || '',
+        email: '',
+        relation: 'Spouse',
+        occupation: '',
+        monthlyIncome: ''
+      } : undefined
     },
     status: 'Pending',
     bank: formData.bankName || '',
     visitType: formData.visitType || 'Residence',
-    assignedTo: '', // No assignment on creation - will be assigned later
+    assignedTo: '', // Leave empty - will be assigned later by admin
     createdAt: new Date(),
     documents: [],
     instructions: formData.instructions || ''
