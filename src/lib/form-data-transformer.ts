@@ -35,12 +35,18 @@ export const transformFormDataToLead = (formData: any): Lead => {
     otherIncome: formData.otherIncome || '',
     phoneNumber: formData.phone || '',
     email: formData.email || '',
+    dateOfBirth: formData.dateOfBirth || '',
+    fatherName: formData.fatherName || '',
+    motherName: formData.motherName || '',
+    gender: formData.gender || '',
     leadType: formData.vehicleType || '',
     loanAmount: formData.loanAmount || '',
     loanType: formData.vehicleType || '',
     vehicleBrandName: formData.vehicleBrand || '',
     vehicleModelName: formData.vehicleModel || '',
     bankBranch: formData.initiatedUnderBranch || '',
+    bankProduct: formData.bankProduct || '',
+    initiatedUnderBranch: formData.initiatedUnderBranch || '',
     addresses: formData.addresses?.slice(1) || [], // Additional addresses excluding primary
     coApplicant: formData.hasCoApplicant && formData.coApplicant ? {
       name: formData.coApplicant.name || '',

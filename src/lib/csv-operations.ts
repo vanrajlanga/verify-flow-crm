@@ -36,11 +36,16 @@ export const CSV_HEADERS = [
   'Phone Number',
   'Email',
   'Date of Birth',
+  'Father Name',
+  'Mother Name',
+  'Gender',
   'Agency File No',
   'Application Barcode',
   'Case ID',
   'Scheme Description',
   'Bank Branch',
+  'Bank Product',
+  'Initiated Under Branch',
   'Additional Comments',
   'Lead Type',
   'Lead Type ID',
@@ -101,11 +106,16 @@ export const exportLeadsToCSV = (leads: Lead[]): string => {
       `"${formatValue(lead.additionalDetails?.phoneNumber)}"`,
       `"${formatValue(lead.additionalDetails?.email)}"`,
       `"${formatValue(lead.additionalDetails?.dateOfBirth)}"`,
+      `"${formatValue(lead.additionalDetails?.fatherName)}"`,
+      `"${formatValue(lead.additionalDetails?.motherName)}"`,
+      `"${formatValue(lead.additionalDetails?.gender)}"`,
       `"${formatValue(lead.additionalDetails?.agencyFileNo)}"`,
       `"${formatValue(lead.additionalDetails?.applicationBarcode)}"`,
       `"${formatValue(lead.additionalDetails?.caseId)}"`,
       `"${formatValue(lead.additionalDetails?.schemeDesc)}"`,
       `"${formatValue(lead.additionalDetails?.bankBranch)}"`,
+      `"${formatValue(lead.additionalDetails?.bankProduct)}"`,
+      `"${formatValue(lead.additionalDetails?.initiatedUnderBranch)}"`,
       `"${formatValue(lead.additionalDetails?.additionalComments)}"`,
       `"${formatValue(lead.additionalDetails?.leadType)}"`,
       `"${formatValue(lead.additionalDetails?.leadTypeId)}"`,
@@ -177,9 +187,16 @@ const parseCSVLine = (line: string): string[] => {
   return values;
 };
 
-// Helper function to get value or NA for CSV import
+// Helper function to get value or NA for CSV import - improved mapping
 const getValueOrNA = (headerName: string, headers: string[], values: string[]): string => {
-  const index = headers.findIndex(h => h.toLowerCase().includes(headerName.toLowerCase()));
+  // Exact match first
+  let index = headers.findIndex(h => h.toLowerCase() === headerName.toLowerCase());
+  
+  // If no exact match, try partial match
+  if (index === -1) {
+    index = headers.findIndex(h => h.toLowerCase().includes(headerName.toLowerCase()));
+  }
+  
   const value = index !== -1 ? values[index]?.replace(/"/g, '') || '' : '';
   return value === '' || value === 'undefined' || value === 'null' ? 'NA' : value;
 };
@@ -222,11 +239,16 @@ const mapCSVRowToLead = (headers: string[], values: string[]): Partial<Lead> => 
     phoneNumber: getValue('Phone Number'),
     email: getValue('Email'),
     dateOfBirth: getValue('Date of Birth'),
+    fatherName: getValue('Father Name'),
+    motherName: getValue('Mother Name'),
+    gender: getValue('Gender'),
     agencyFileNo: getValue('Agency File No'),
     applicationBarcode: getValue('Application Barcode'),
     caseId: getValue('Case ID'),
     schemeDesc: getValue('Scheme Description'),
     bankBranch: getValue('Bank Branch'),
+    bankProduct: getValue('Bank Product'),
+    initiatedUnderBranch: getValue('Initiated Under Branch'),
     additionalComments: getValue('Additional Comments'),
     leadType: getValue('Lead Type'),
     leadTypeId: getValue('Lead Type ID'),
@@ -238,6 +260,19 @@ const mapCSVRowToLead = (headers: string[], values: string[]): Partial<Lead> => 
     vehicleModelId: getValue('Vehicle Model ID'),
     addresses: []
   };
+  
+  // Handle Co-Applicant
+  if (getBooleanValue('Has Co-Applicant')) {
+    additionalDetails.coApplicant = {
+      name: getValue('Co-Applicant Name'),
+      age: undefined,
+      phone: '',
+      email: '',
+      relation: '',
+      occupation: '',
+      monthlyIncome: ''
+    };
+  }
   
   const ageValue = getValue('Age');
   const lead: Partial<Lead> = {
@@ -297,11 +332,16 @@ export const generateSampleCSV = (): string => {
       '9876543210',
       'john.doe@example.com',
       '1994-01-15',
+      'John Father',
+      'John Mother',
+      'Male',
       'AGF999',
       'BC99999',
       'CASE999',
       'Home Loan Sample',
       'HDFC Main Branch',
+      'Home Loan Product',
+      'Mumbai Branch',
       'Sample lead for testing',
       'Home Loan',
       'HL999',

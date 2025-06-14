@@ -182,6 +182,18 @@ const LeadsTable: React.FC<LeadsTableProps> = ({
             loanAmount: value.toString()
           };
           break;
+        case 'bankProduct':
+          updates.additionalDetails = {
+            ...lead.additionalDetails,
+            bankProduct: value.toString()
+          };
+          break;
+        case 'initiatedUnderBranch':
+          updates.additionalDetails = {
+            ...lead.additionalDetails,
+            initiatedUnderBranch: value.toString()
+          };
+          break;
       }
 
       await updateLeadInDatabase(leadId, updates);
@@ -303,6 +315,9 @@ const LeadsTable: React.FC<LeadsTableProps> = ({
                 <TableHead>Company</TableHead>
                 <TableHead>Loan Type</TableHead>
                 <TableHead>Loan Amount</TableHead>
+                <TableHead>Bank Product</TableHead>
+                <TableHead>Initiated Branch</TableHead>
+                <TableHead>Co-Applicant</TableHead>
                 <TableHead>Assigned To</TableHead>
                 <TableHead>Created Date</TableHead>
                 {showActions && <TableHead>Actions</TableHead>}
@@ -311,7 +326,7 @@ const LeadsTable: React.FC<LeadsTableProps> = ({
             <TableBody>
               {filteredLeads.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={enableBulkSelect ? (showActions ? 18 : 17) : (showActions ? 17 : 16)} className="text-center py-8">
+                  <TableCell colSpan={enableBulkSelect ? (showActions ? 21 : 20) : (showActions ? 20 : 19)} className="text-center py-8">
                     <div className="text-muted-foreground">
                       {searchTerm ? 'No leads found matching your search criteria.' : 'No leads available in database.'}
                     </div>
@@ -474,6 +489,38 @@ const LeadsTable: React.FC<LeadsTableProps> = ({
                         />
                       ) : (
                         lead.additionalDetails?.loanAmount || '-'
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {enableInlineEdit ? (
+                        <EditableCell
+                          value={lead.additionalDetails?.bankProduct || ''}
+                          onSave={(value) => handleCellUpdate(lead.id, 'bankProduct', value)}
+                          placeholder="Enter bank product"
+                        />
+                      ) : (
+                        lead.additionalDetails?.bankProduct || '-'
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {enableInlineEdit ? (
+                        <EditableCell
+                          value={lead.additionalDetails?.initiatedUnderBranch || ''}
+                          onSave={(value) => handleCellUpdate(lead.id, 'initiatedUnderBranch', value)}
+                          placeholder="Enter branch"
+                        />
+                      ) : (
+                        lead.additionalDetails?.initiatedUnderBranch || '-'
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {lead.additionalDetails?.coApplicant ? (
+                        <span className="text-sm">
+                          {lead.additionalDetails.coApplicant.name}
+                          {lead.additionalDetails.coApplicant.relation && ` (${lead.additionalDetails.coApplicant.relation})`}
+                        </span>
+                      ) : (
+                        '-'
                       )}
                     </TableCell>
                     <TableCell>{lead.assignedTo || 'Unassigned'}</TableCell>
