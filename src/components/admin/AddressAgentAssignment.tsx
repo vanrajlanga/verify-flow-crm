@@ -49,7 +49,7 @@ const AddressAgentAssignment = ({
   });
 
   const fieldAgents = agents.filter(agent => agent.role === 'agent');
-  const tvtAgents = agents.filter(agent => agent.role === 'tvt');
+  const tvtAgents = agents.filter(agent => agent.role === 'tvtteam');
 
   const handleAddressAssignment = (addressType: 'primary' | 'additional' | 'coApplicant', index: number | null, agentId: string) => {
     setAssignments(prev => {

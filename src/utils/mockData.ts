@@ -17,6 +17,9 @@ export interface User {
   extraChargePerKm?: number;
   password?: string;
   branch?: string;
+  totalVerifications?: number;
+  completionRate?: number;
+  documents?: Document[];
 }
 
 export interface Address {
@@ -26,6 +29,76 @@ export interface Address {
   pincode: string;
   district: string;
   type?: 'Residence' | 'Office' | 'Permanent' | 'Temporary' | 'Current';
+}
+
+export interface Document {
+  id: string;
+  type: string;
+  url: string;
+  uploadedAt: Date;
+}
+
+export interface Verification {
+  status: 'Not Started' | 'In Progress' | 'Completed' | 'Rejected';
+  startTime?: Date;
+  endTime?: Date;
+  notes?: string;
+  agentId?: string;
+}
+
+export interface AdditionalDetails {
+  fatherName?: string;
+  motherName?: string;
+  dateOfBirth?: Date;
+  gender?: string;
+  company?: string;
+  designation?: string;
+  workExperience?: string;
+  monthlyIncome?: number;
+  phoneNumber?: string;
+  email?: string;
+  bankProduct?: string;
+  initiatedUnderBranch?: string;
+  bankBranch?: string;
+  annualIncome?: string;
+  otherIncome?: string;
+  loanAmount?: string;
+  loanType?: string;
+  vehicleBrandName?: string;
+  vehicleModelName?: string;
+  agencyFileNo?: string;
+  applicationBarcode?: string;
+  caseId?: string;
+  schemeDesc?: string;
+  additionalComments?: string;
+  leadType?: string;
+  propertyType?: string;
+  ownershipStatus?: string;
+  propertyAge?: string;
+  leadTypeId?: string;
+  vehicleBrandId?: string;
+  vehicleModelId?: string;
+  coApplicant?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+  };
+  addresses?: {
+    type: 'Residence' | 'Office' | 'Permanent';
+    street: string;
+    city: string;
+    district: string;
+    state: string;
+    pincode: string;
+  }[];
+  coApplicantAddresses?: {
+    type: 'Residence' | 'Office' | 'Permanent';
+    street: string;
+    city: string;
+    district: string;
+    state: string;
+    pincode: string;
+  }[];
 }
 
 export interface Lead {
@@ -42,53 +115,10 @@ export interface Lead {
   visitType: 'Physical' | 'Virtual';
   bank?: string;
   instructions?: string;
-  documents?: any[];
-  additionalDetails?: {
-    fatherName?: string;
-    motherName?: string;
-    dateOfBirth?: Date;
-    gender?: string;
-    company?: string;
-    designation?: string;
-    workExperience?: string;
-    monthlyIncome?: number;
-    phoneNumber?: string;
-    email?: string;
-    bankProduct?: string;
-    initiatedUnderBranch?: string;
-    bankBranch?: string;
-    annualIncome?: string;
-    otherIncome?: string;
-    loanAmount?: string;
-    loanType?: string;
-    vehicleBrandName?: string;
-    vehicleModelName?: string;
-    agencyFileNo?: string;
-    applicationBarcode?: string;
-    caseId?: string;
-    schemeDesc?: string;
-    additionalComments?: string;
-    leadType?: string;
-    propertyType?: string;
-    ownershipStatus?: string;
-    propertyAge?: string;
-    addresses?: {
-      type: 'Residence' | 'Office' | 'Permanent';
-      street: string;
-      city: string;
-      district: string;
-      state: string;
-      pincode: string;
-    }[];
-    coApplicantAddresses?: {
-      type: 'Residence' | 'Office' | 'Permanent';
-      street: string;
-      city: string;
-      district: string;
-      state: string;
-      pincode: string;
-    }[];
-  };
+  documents?: Document[];
+  verification?: Verification;
+  verificationDate?: Date;
+  additionalDetails?: AdditionalDetails;
   carDetails?: {
     make: string;
     model: string;
@@ -172,7 +202,9 @@ export const agents: User[] = [
     branch: 'Delhi Branch',
     baseLocation: 'Connaught Place, New Delhi',
     maxTravelDistance: 15,
-    extraChargePerKm: 5
+    extraChargePerKm: 5,
+    totalVerifications: 45,
+    completionRate: 92
   },
   {
     id: '5',
@@ -189,7 +221,9 @@ export const agents: User[] = [
     branch: 'Mumbai Main Branch',
     baseLocation: 'Andheri East, Mumbai',
     maxTravelDistance: 20,
-    extraChargePerKm: 6
+    extraChargePerKm: 6,
+    totalVerifications: 38,
+    completionRate: 87
   }
 ];
 
@@ -203,7 +237,9 @@ export const mockUsers: User[] = [
     address: 'Mumbai, Maharashtra',
     joiningDate: '2023-01-15',
     status: 'Active',
-    password: 'password'
+    password: 'password',
+    totalVerifications: 0,
+    completionRate: 0
   },
   {
     id: '2',
@@ -220,7 +256,9 @@ export const mockUsers: User[] = [
     baseLocation: 'Connaught Place, New Delhi',
     maxTravelDistance: 15,
     extraChargePerKm: 5,
-    password: 'password'
+    password: 'password',
+    totalVerifications: 45,
+    completionRate: 92
   },
   {
     id: '3',
@@ -231,7 +269,9 @@ export const mockUsers: User[] = [
     address: 'Bangalore, Karnataka',
     joiningDate: '2023-01-10',
     status: 'Active',
-    password: 'password'
+    password: 'password',
+    totalVerifications: 0,
+    completionRate: 0
   },
   {
     id: '4',
@@ -242,7 +282,9 @@ export const mockUsers: User[] = [
     address: 'Chennai, Tamil Nadu',
     joiningDate: '2023-03-01',
     status: 'Active',
-    password: 'password'
+    password: 'password',
+    totalVerifications: 23,
+    completionRate: 95
   }
 ];
 
@@ -267,6 +309,9 @@ export const mockLeads: Lead[] = [
     visitType: 'Physical',
     bank: 'Citibank',
     instructions: 'Verify employment details and address.',
+    verification: {
+      status: 'Not Started'
+    },
     additionalDetails: {
       fatherName: 'Robert Doe',
       motherName: 'Jane Doe',
@@ -317,6 +362,10 @@ export const mockLeads: Lead[] = [
     visitType: 'Virtual',
     bank: 'Bank of America',
     instructions: 'Check credit score and previous loan history.',
+    verification: {
+      status: 'In Progress',
+      startTime: new Date('2024-01-23')
+    },
     additionalDetails: {
       fatherName: 'Michael Smith',
       motherName: 'Linda Smith',
@@ -367,6 +416,12 @@ export const mockLeads: Lead[] = [
     visitType: 'Physical',
     bank: 'Chase Bank',
     instructions: 'Confirm employment and salary details.',
+    verification: {
+      status: 'Completed',
+      startTime: new Date('2024-01-26'),
+      endTime: new Date('2024-01-26')
+    },
+    verificationDate: new Date('2024-01-26'),
     additionalDetails: {
       fatherName: 'William Johnson',
       motherName: 'Mary Johnson',
@@ -417,6 +472,9 @@ export const mockLeads: Lead[] = [
     visitType: 'Virtual',
     bank: 'Wells Fargo',
     instructions: 'Verify financial statements and tax returns.',
+    verification: {
+      status: 'Rejected'
+    },
     additionalDetails: {
       fatherName: 'David White',
       motherName: 'Susan White',
@@ -467,6 +525,9 @@ export const mockLeads: Lead[] = [
     visitType: 'Physical',
     bank: 'Citibank',
     instructions: 'Verify address and contact details.',
+    verification: {
+      status: 'Not Started'
+    },
     additionalDetails: {
       fatherName: 'Tom TVT',
       motherName: 'Alice TVT',
