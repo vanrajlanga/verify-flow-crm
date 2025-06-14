@@ -1,3 +1,4 @@
+
 import { User, Lead, Bank, Address, AdditionalDetails, Verification } from '@/utils/mockData';
 
 export const transformSupabaseUser = (supabaseUser: any): User => {
@@ -135,12 +136,18 @@ export const transformSupabaseLead = (supabaseLead: any): Lead => {
     ? transformSupabaseVerification(supabaseLead.verifications[0])
     : undefined;
 
+  // Get phone and email from phone_numbers table or additional_details
+  const phone = supabaseLead.phone_numbers?.[0]?.number || supabaseLead.additional_details?.[0]?.phone_number || '';
+  const email = supabaseLead.additional_details?.[0]?.email || '';
+
   return {
     id: supabaseLead.id,
     name: supabaseLead.name,
     age: supabaseLead.age || 0,
     job: supabaseLead.job || '',
     address,
+    phone,
+    email,
     additionalDetails,
     status: supabaseLead.status,
     bank: supabaseLead.banks?.name || '',

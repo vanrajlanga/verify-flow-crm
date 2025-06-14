@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   name: string;
@@ -19,6 +20,7 @@ export interface User {
   totalVerifications?: number;
   completionRate?: number;
   documents?: Document[];
+  managedBankId?: string;
 }
 
 export interface Address {

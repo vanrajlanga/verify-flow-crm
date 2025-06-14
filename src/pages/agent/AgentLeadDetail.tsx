@@ -146,7 +146,7 @@ const AgentLeadDetail = () => {
         id: `photo-${Date.now()}-${index}`,
         name: file.name,
         url: URL.createObjectURL(file),
-        uploadDate: new Date()
+        uploadedAt: new Date() // Changed from uploadDate to uploadedAt
       }));
       
       const updatedLead = {
@@ -183,7 +183,7 @@ const AgentLeadDetail = () => {
         name: file.name,
         type,
         url: URL.createObjectURL(file),
-        uploadDate: new Date()
+        uploadedAt: new Date() // Changed from uploadDate to uploadedAt
       }));
       
       const updatedLead = {
