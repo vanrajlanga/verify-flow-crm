@@ -19,6 +19,7 @@ export interface User {
   extraChargePerKm?: number;
   status?: 'active' | 'inactive';
   managedBankId?: string; // New field for manager role
+  documents?: Document[]; // Add documents property for agents
 }
 
 export interface Address {
@@ -187,7 +188,8 @@ export const users: User[] = [
     completionRate: 92,
     maxTravelDistance: 50,
     extraChargePerKm: 15,
-    status: 'active'
+    status: 'active',
+    documents: []
   },
   {
     id: 'manager-1',
@@ -413,7 +415,7 @@ export const agents: User[] = [
     id: 'tvt1', 
     name: 'Sarah TVT', 
     email: 'sarah@example.com', 
-    role: 'tvtteam', 
+    role: 'tvt', 
     branch: 'Delhi Main',
     password: 'password123',
     status: 'active'
@@ -422,7 +424,7 @@ export const agents: User[] = [
     id: 'tvt-1', 
     name: 'Mike TVT', 
     email: 'mike.tvt@example.com', 
-    role: 'tvtteam', 
+    role: 'tvt', 
     branch: 'Mumbai Central',
     password: 'password',
     status: 'active'

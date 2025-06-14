@@ -18,11 +18,11 @@ const LeadList = ({ leads, currentUser, showActions = true }: LeadListProps) => 
 
   const handleViewLead = (leadId: string) => {
     // Navigate to appropriate lead detail page based on user role
-    if (currentUser.role === 'admin') {
+    if (currentUser.role === 'admin' || currentUser.role === 'manager') {
       navigate(`/admin/leads/${leadId}`);
     } else if (currentUser.role === 'agent') {
       navigate(`/agent/leads/${leadId}`);
-    } else if (currentUser.role === 'tvtteam') {
+    } else if (currentUser.role === 'tvt') {
       navigate(`/tvt/leads/${leadId}`);
     }
   };
