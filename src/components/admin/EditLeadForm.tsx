@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Lead, User, Bank, Document } from '@/utils/mockData';
+import { Lead, User, Bank } from '@/utils/mockData';
 import { toast } from '@/components/ui/use-toast';
 import { updateLeadInDatabase } from '@/lib/lead-operations';
 import DocumentViewer from '@/components/shared/DocumentViewer';
@@ -37,7 +38,7 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
     district: lead.address?.district || '',
     state: lead.address?.state || '',
     pincode: lead.address?.pincode || '',
-    // Additional details - accessing from additionalDetails
+    // Additional details without the removed fields
     company: lead.additionalDetails?.company || '',
     designation: lead.additionalDetails?.designation || '',
     workExperience: lead.additionalDetails?.workExperience || '',
@@ -56,7 +57,7 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
   });
 
   const [uploading, setUploading] = useState(false);
-  const [uploadedDocuments, setUploadedDocuments] = useState<Document[]>(lead.documents || []);
+  const [uploadedDocuments, setUploadedDocuments] = useState(lead.documents || []);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -73,7 +74,7 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
     
     try {
       // Simulate file upload - in a real app, this would upload to a server or cloud storage
-      const newDocuments: Document[] = Array.from(files).map(file => ({
+      const newDocuments = Array.from(files).map(file => ({
         id: `doc-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         name: file.name,
         type: file.type || 'application/octet-stream',
@@ -160,8 +161,8 @@ const EditLeadForm = ({ lead, agents, banks, onUpdate, onClose, locationData }: 
         documents: uploadedDocuments
       };
 
-      // Update in database - providing both required arguments
-      await updateLeadInDatabase(updatedLead.id, updatedLead);
+      // Update in database
+      await updateLeadInDatabase(updatedLead);
       
       onUpdate(updatedLead);
       

@@ -1,3 +1,4 @@
+
 import { LucideIcon } from 'lucide-react';
 
 export interface User {
@@ -112,10 +113,8 @@ export interface Document {
   id: string;
   name: string;
   url: string;
-  uploadDate: Date | string;
+  uploadDate: Date;
   type: string;
-  uploadedBy: string;
-  size?: number;
 }
 
 export interface Bank {
