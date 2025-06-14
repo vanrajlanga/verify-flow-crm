@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User } from '@/utils/mockData';
@@ -7,6 +6,7 @@ import Sidebar from '@/components/shared/Sidebar';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   Dialog,
   DialogContent,
@@ -21,7 +21,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from '@/components/ui/use-toast';
-import { Plus, Edit, Trash, Building2, MapPin, CreditCard } from 'lucide-react';
+import { Plus, Edit, Trash, Building2, MapPin, CreditCard, Trash2 } from 'lucide-react';
 import { Bank, BankProduct, BankBranch } from '@/types/bank-product';
 import {
   getBanks,
@@ -45,6 +45,11 @@ const BankProductModule = () => {
   const [bankProducts, setBankProducts] = useState<BankProduct[]>([]);
   const [bankBranches, setBankBranches] = useState<BankBranch[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Selection states for bulk delete
+  const [selectedBanks, setSelectedBanks] = useState<string[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  const [selectedBranches, setSelectedBranches] = useState<string[]>([]);
   
   // Dialog states
   const [bankDialogOpen, setBankDialogOpen] = useState(false);
@@ -108,6 +113,123 @@ const BankProductModule = () => {
   const handleLogout = () => {
     localStorage.removeItem('kycUser');
     navigate('/');
+  };
+
+  // Bulk delete functions
+  const handleBulkDeleteBanks = async () => {
+    if (selectedBanks.length === 0) return;
+    
+    const deletePromises = selectedBanks.map(id => deleteBank(id));
+    const results = await Promise.all(deletePromises);
+    
+    if (results.every(result => result)) {
+      setBanks(prev => prev.filter(b => !selectedBanks.includes(b.id)));
+      setSelectedBanks([]);
+      toast({
+        title: "Success",
+        description: `${selectedBanks.length} bank(s) deleted successfully`
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "Some banks could not be deleted",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleBulkDeleteProducts = async () => {
+    if (selectedProducts.length === 0) return;
+    
+    const deletePromises = selectedProducts.map(id => deleteBankProduct(id));
+    const results = await Promise.all(deletePromises);
+    
+    if (results.every(result => result)) {
+      setBankProducts(prev => prev.filter(p => !selectedProducts.includes(p.id)));
+      setSelectedProducts([]);
+      toast({
+        title: "Success",
+        description: `${selectedProducts.length} product(s) deleted successfully`
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "Some products could not be deleted",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleBulkDeleteBranches = async () => {
+    if (selectedBranches.length === 0) return;
+    
+    const deletePromises = selectedBranches.map(id => deleteBankBranch(id));
+    const results = await Promise.all(deletePromises);
+    
+    if (results.every(result => result)) {
+      setBankBranches(prev => prev.filter(b => !selectedBranches.includes(b.id)));
+      setSelectedBranches([]);
+      toast({
+        title: "Success",
+        description: `${selectedBranches.length} branch(es) deleted successfully`
+      });
+    } else {
+      toast({
+        title: "Error",
+        description: "Some branches could not be deleted",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Selection handlers
+  const handleBankSelection = (bankId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedBanks(prev => [...prev, bankId]);
+    } else {
+      setSelectedBanks(prev => prev.filter(id => id !== bankId));
+    }
+  };
+
+  const handleProductSelection = (productId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedProducts(prev => [...prev, productId]);
+    } else {
+      setSelectedProducts(prev => prev.filter(id => id !== productId));
+    }
+  };
+
+  const handleBranchSelection = (branchId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedBranches(prev => [...prev, branchId]);
+    } else {
+      setSelectedBranches(prev => prev.filter(id => id !== branchId));
+    }
+  };
+
+  // Select all handlers
+  const handleSelectAllBanks = (checked: boolean) => {
+    if (checked) {
+      setSelectedBanks(banks.map(b => b.id));
+    } else {
+      setSelectedBanks([]);
+    }
+  };
+
+  const handleSelectAllProducts = (checked: boolean) => {
+    if (checked) {
+      setSelectedProducts(bankProducts.map(p => p.id));
+    } else {
+      setSelectedProducts([]);
+    }
+  };
+
+  const handleSelectAllBranches = (checked: boolean) => {
+    if (checked) {
+      setSelectedBranches(bankBranches.map(b => b.id));
+    } else {
+      setSelectedBranches([]);
+    }
   };
 
   // Bank operations
@@ -284,43 +406,61 @@ const BankProductModule = () => {
                         <CardTitle>Banks</CardTitle>
                         <CardDescription>Manage bank information</CardDescription>
                       </div>
-                      <Dialog open={bankDialogOpen} onOpenChange={setBankDialogOpen}>
-                        <DialogTrigger asChild>
-                          <Button onClick={() => { setEditingBank(null); setNewBank({ name: '' }); }}>
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add Bank
+                      <div className="flex gap-2">
+                        {selectedBanks.length > 0 && (
+                          <Button 
+                            variant="destructive" 
+                            onClick={handleBulkDeleteBanks}
+                            className="mr-2"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete Selected ({selectedBanks.length})
                           </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>{editingBank ? 'Edit Bank' : 'Add New Bank'}</DialogTitle>
-                          </DialogHeader>
-                          <div className="space-y-4">
-                            <div>
-                              <Label htmlFor="bankName">Bank Name</Label>
-                              <Input
-                                id="bankName"
-                                value={editingBank ? editingBank.name : newBank.name}
-                                onChange={(e) => editingBank 
-                                  ? setEditingBank({...editingBank, name: e.target.value})
-                                  : setNewBank({...newBank, name: e.target.value})
-                                }
-                              />
-                            </div>
-                          </div>
-                          <DialogFooter>
-                            <Button onClick={editingBank ? handleEditBank : handleAddBank}>
-                              {editingBank ? 'Update' : 'Add'} Bank
+                        )}
+                        <Dialog open={bankDialogOpen} onOpenChange={setBankDialogOpen}>
+                          <DialogTrigger asChild>
+                            <Button onClick={() => { setEditingBank(null); setNewBank({ name: '' }); }}>
+                              <Plus className="mr-2 h-4 w-4" />
+                              Add Bank
                             </Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>{editingBank ? 'Edit Bank' : 'Add New Bank'}</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              <div>
+                                <Label htmlFor="bankName">Bank Name</Label>
+                                <Input
+                                  id="bankName"
+                                  value={editingBank ? editingBank.name : newBank.name}
+                                  onChange={(e) => editingBank 
+                                    ? setEditingBank({...editingBank, name: e.target.value})
+                                    : setNewBank({...newBank, name: e.target.value})
+                                  }
+                                />
+                              </div>
+                            </div>
+                            <DialogFooter>
+                              <Button onClick={editingBank ? handleEditBank : handleAddBank}>
+                                {editingBank ? 'Update' : 'Add'} Bank
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent>
                     <Table>
                       <TableHeader>
                         <TableRow>
+                          <TableHead className="w-[50px]">
+                            <Checkbox
+                              checked={selectedBanks.length === banks.length && banks.length > 0}
+                              onCheckedChange={handleSelectAllBanks}
+                            />
+                          </TableHead>
                           <TableHead>Name</TableHead>
                           <TableHead>Applications</TableHead>
                           <TableHead className="w-[100px]">Actions</TableHead>
@@ -329,6 +469,12 @@ const BankProductModule = () => {
                       <TableBody>
                         {banks.map((bank) => (
                           <TableRow key={bank.id}>
+                            <TableCell>
+                              <Checkbox
+                                checked={selectedBanks.includes(bank.id)}
+                                onCheckedChange={(checked) => handleBankSelection(bank.id, checked as boolean)}
+                              />
+                            </TableCell>
                             <TableCell className="font-medium">
                               <div className="flex items-center">
                                 <Building2 className="h-4 w-4 mr-2 text-muted-foreground" />
@@ -373,76 +519,94 @@ const BankProductModule = () => {
                         <CardTitle>Bank Branches</CardTitle>
                         <CardDescription>Manage bank branch information</CardDescription>
                       </div>
-                      <Dialog open={branchDialogOpen} onOpenChange={setBranchDialogOpen}>
-                        <DialogTrigger asChild>
-                          <Button onClick={() => { 
-                            setEditingBranch(null); 
-                            setNewBranch({ name: '', location: '', bank_id: '', address: '', phone: '', email: '' }); 
-                          }}>
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add Branch
+                      <div className="flex gap-2">
+                        {selectedBranches.length > 0 && (
+                          <Button 
+                            variant="destructive" 
+                            onClick={handleBulkDeleteBranches}
+                            className="mr-2"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete Selected ({selectedBranches.length})
                           </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>{editingBranch ? 'Edit Branch' : 'Add New Branch'}</DialogTitle>
-                          </DialogHeader>
-                          <div className="space-y-4">
-                            <div>
-                              <Label htmlFor="branchBank">Bank</Label>
-                              <Select 
-                                value={editingBranch ? editingBranch.bank_id : newBranch.bank_id}
-                                onValueChange={(value) => editingBranch 
-                                  ? setEditingBranch({...editingBranch, bank_id: value})
-                                  : setNewBranch({...newBranch, bank_id: value})
-                                }
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select bank" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {banks.map((bank) => (
-                                    <SelectItem key={bank.id} value={bank.id}>{bank.name}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div>
-                              <Label htmlFor="branchName">Branch Name</Label>
-                              <Input
-                                id="branchName"
-                                value={editingBranch ? editingBranch.name : newBranch.name}
-                                onChange={(e) => editingBranch 
-                                  ? setEditingBranch({...editingBranch, name: e.target.value})
-                                  : setNewBranch({...newBranch, name: e.target.value})
-                                }
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="branchLocation">Location</Label>
-                              <Input
-                                id="branchLocation"
-                                value={editingBranch ? editingBranch.location : newBranch.location}
-                                onChange={(e) => editingBranch 
-                                  ? setEditingBranch({...editingBranch, location: e.target.value})
-                                  : setNewBranch({...newBranch, location: e.target.value})
-                                }
-                              />
-                            </div>
-                          </div>
-                          <DialogFooter>
-                            <Button onClick={editingBranch ? handleEditBranch : handleAddBranch}>
-                              {editingBranch ? 'Update' : 'Add'} Branch
+                        )}
+                        <Dialog open={branchDialogOpen} onOpenChange={setBranchDialogOpen}>
+                          <DialogTrigger asChild>
+                            <Button onClick={() => { 
+                              setEditingBranch(null); 
+                              setNewBranch({ name: '', location: '', bank_id: '', address: '', phone: '', email: '' }); 
+                            }}>
+                              <Plus className="mr-2 h-4 w-4" />
+                              Add Branch
                             </Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>{editingBranch ? 'Edit Branch' : 'Add New Branch'}</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              <div>
+                                <Label htmlFor="branchBank">Bank</Label>
+                                <Select 
+                                  value={editingBranch ? editingBranch.bank_id : newBranch.bank_id}
+                                  onValueChange={(value) => editingBranch 
+                                    ? setEditingBranch({...editingBranch, bank_id: value})
+                                    : setNewBranch({...newBranch, bank_id: value})
+                                  }
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select bank" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {banks.map((bank) => (
+                                      <SelectItem key={bank.id} value={bank.id}>{bank.name}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div>
+                                <Label htmlFor="branchName">Branch Name</Label>
+                                <Input
+                                  id="branchName"
+                                  value={editingBranch ? editingBranch.name : newBranch.name}
+                                  onChange={(e) => editingBranch 
+                                    ? setEditingBranch({...editingBranch, name: e.target.value})
+                                    : setNewBranch({...newBranch, name: e.target.value})
+                                  }
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="branchLocation">Location</Label>
+                                <Input
+                                  id="branchLocation"
+                                  value={editingBranch ? editingBranch.location : newBranch.location}
+                                  onChange={(e) => editingBranch 
+                                    ? setEditingBranch({...editingBranch, location: e.target.value})
+                                    : setNewBranch({...newBranch, location: e.target.value})
+                                  }
+                                />
+                              </div>
+                            </div>
+                            <DialogFooter>
+                              <Button onClick={editingBranch ? handleEditBranch : handleAddBranch}>
+                                {editingBranch ? 'Update' : 'Add'} Branch
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent>
                     <Table>
                       <TableHeader>
                         <TableRow>
+                          <TableHead className="w-[50px]">
+                            <Checkbox
+                              checked={selectedBranches.length === bankBranches.length && bankBranches.length > 0}
+                              onCheckedChange={handleSelectAllBranches}
+                            />
+                          </TableHead>
                           <TableHead>Bank</TableHead>
                           <TableHead>Branch Name</TableHead>
                           <TableHead>Location</TableHead>
@@ -452,6 +616,12 @@ const BankProductModule = () => {
                       <TableBody>
                         {bankBranches.map((branch) => (
                           <TableRow key={branch.id}>
+                            <TableCell>
+                              <Checkbox
+                                checked={selectedBranches.includes(branch.id)}
+                                onCheckedChange={(checked) => handleBranchSelection(branch.id, checked as boolean)}
+                              />
+                            </TableCell>
                             <TableCell>{getBankName(branch.bank_id)}</TableCell>
                             <TableCell className="font-medium">
                               <div className="flex items-center">
@@ -497,76 +667,94 @@ const BankProductModule = () => {
                         <CardTitle>Bank Products</CardTitle>
                         <CardDescription>Manage bank products and services</CardDescription>
                       </div>
-                      <Dialog open={productDialogOpen} onOpenChange={setProductDialogOpen}>
-                        <DialogTrigger asChild>
-                          <Button onClick={() => { 
-                            setEditingProduct(null); 
-                            setNewProduct({ name: '', description: '', bank_id: '' }); 
-                          }}>
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add Product
+                      <div className="flex gap-2">
+                        {selectedProducts.length > 0 && (
+                          <Button 
+                            variant="destructive" 
+                            onClick={handleBulkDeleteProducts}
+                            className="mr-2"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete Selected ({selectedProducts.length})
                           </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
-                          </DialogHeader>
-                          <div className="space-y-4">
-                            <div>
-                              <Label htmlFor="productBank">Bank</Label>
-                              <Select 
-                                value={editingProduct ? editingProduct.bank_id : newProduct.bank_id}
-                                onValueChange={(value) => editingProduct 
-                                  ? setEditingProduct({...editingProduct, bank_id: value})
-                                  : setNewProduct({...newProduct, bank_id: value})
-                                }
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select bank" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {banks.map((bank) => (
-                                    <SelectItem key={bank.id} value={bank.id}>{bank.name}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div>
-                              <Label htmlFor="productName">Product Name</Label>
-                              <Input
-                                id="productName"
-                                value={editingProduct ? editingProduct.name : newProduct.name}
-                                onChange={(e) => editingProduct 
-                                  ? setEditingProduct({...editingProduct, name: e.target.value})
-                                  : setNewProduct({...newProduct, name: e.target.value})
-                                }
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="productDescription">Description</Label>
-                              <Input
-                                id="productDescription"
-                                value={editingProduct ? editingProduct.description || '' : newProduct.description}
-                                onChange={(e) => editingProduct 
-                                  ? setEditingProduct({...editingProduct, description: e.target.value})
-                                  : setNewProduct({...newProduct, description: e.target.value})
-                                }
-                              />
-                            </div>
-                          </div>
-                          <DialogFooter>
-                            <Button onClick={editingProduct ? handleEditProduct : handleAddProduct}>
-                              {editingProduct ? 'Update' : 'Add'} Product
+                        )}
+                        <Dialog open={productDialogOpen} onOpenChange={setProductDialogOpen}>
+                          <DialogTrigger asChild>
+                            <Button onClick={() => { 
+                              setEditingProduct(null); 
+                              setNewProduct({ name: '', description: '', bank_id: '' }); 
+                            }}>
+                              <Plus className="mr-2 h-4 w-4" />
+                              Add Product
                             </Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              <div>
+                                <Label htmlFor="productBank">Bank</Label>
+                                <Select 
+                                  value={editingProduct ? editingProduct.bank_id : newProduct.bank_id}
+                                  onValueChange={(value) => editingProduct 
+                                    ? setEditingProduct({...editingProduct, bank_id: value})
+                                    : setNewProduct({...newProduct, bank_id: value})
+                                  }
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select bank" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {banks.map((bank) => (
+                                      <SelectItem key={bank.id} value={bank.id}>{bank.name}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div>
+                                <Label htmlFor="productName">Product Name</Label>
+                                <Input
+                                  id="productName"
+                                  value={editingProduct ? editingProduct.name : newProduct.name}
+                                  onChange={(e) => editingProduct 
+                                    ? setEditingProduct({...editingProduct, name: e.target.value})
+                                    : setNewProduct({...newProduct, name: e.target.value})
+                                  }
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="productDescription">Description</Label>
+                                <Input
+                                  id="productDescription"
+                                  value={editingProduct ? editingProduct.description || '' : newProduct.description}
+                                  onChange={(e) => editingProduct 
+                                    ? setEditingProduct({...editingProduct, description: e.target.value})
+                                    : setNewProduct({...newProduct, description: e.target.value})
+                                  }
+                                />
+                              </div>
+                            </div>
+                            <DialogFooter>
+                              <Button onClick={editingProduct ? handleEditProduct : handleAddProduct}>
+                                {editingProduct ? 'Update' : 'Add'} Product
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent>
                     <Table>
                       <TableHeader>
                         <TableRow>
+                          <TableHead className="w-[50px]">
+                            <Checkbox
+                              checked={selectedProducts.length === bankProducts.length && bankProducts.length > 0}
+                              onCheckedChange={handleSelectAllProducts}
+                            />
+                          </TableHead>
                           <TableHead>Bank</TableHead>
                           <TableHead>Product Name</TableHead>
                           <TableHead>Description</TableHead>
@@ -576,6 +764,12 @@ const BankProductModule = () => {
                       <TableBody>
                         {bankProducts.map((product) => (
                           <TableRow key={product.id}>
+                            <TableCell>
+                              <Checkbox
+                                checked={selectedProducts.includes(product.id)}
+                                onCheckedChange={(checked) => handleProductSelection(product.id, checked as boolean)}
+                              />
+                            </TableCell>
                             <TableCell>{getBankName(product.bank_id)}</TableCell>
                             <TableCell className="font-medium">
                               <div className="flex items-center">
