@@ -43,7 +43,7 @@ export const transformFormDataToLead = (formData: any): Lead => {
     ? (formData.phoneNumbers.find((p: any) => p.isPrimary && !!p.number) || formData.phoneNumbers[0])
     : { number: formData.phone || "" };
 
-  // Vehicle Type
+  // Vehicle Type (at top-level, not inside additionalDetails)
   const vehicleType = formData.vehicleType || (formData.additionalDetails?.vehicleType ?? '');
 
   // Main lead output
@@ -93,7 +93,7 @@ export const transformFormDataToLead = (formData: any): Lead => {
       loanType: formData.loanType || '',
       vehicleBrandName: formData.vehicleBrand || formData.vehicleBrandName || '',
       vehicleModelName: formData.vehicleModel || formData.vehicleModelName || '',
-      vehicleType,
+      // vehicleType: <--- REMOVE this line as no such property in type AdditionalDetails
       coApplicant: formData.hasCoApplicant ? {
         name: formData.coApplicantName || '',
         age: formData.coApplicantAge ? Number(formData.coApplicantAge) : 0,
@@ -104,6 +104,7 @@ export const transformFormDataToLead = (formData: any): Lead => {
         monthlyIncome: formData.coApplicantIncome || ''
       } : undefined
     },
+    vehicleType, // Add here at the root Lead object
     status: 'Pending',
     bank: bankId,
     visitType: visitTypeVal as 'Physical' | 'Virtual',

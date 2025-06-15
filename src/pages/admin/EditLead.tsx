@@ -3,12 +3,46 @@ import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Lead } from '@/utils/mockData';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import AddLeadFormSingleStep from '@/components/admin/AddLeadFormSingleStep';
 import { transformFormDataToLead } from '@/lib/form-data-transformer';
 import { updateLeadInDatabase, getLeadByIdFromDatabase } from '@/lib/lead-operations';
+
+// import locationData structure from AddNewLead or define default here
+const DEFAULT_LOCATION_DATA = {
+  states: [
+    {
+      id: 'state-1',
+      name: 'Karnataka',
+      districts: [
+        {
+          id: 'district-1',
+          name: 'Bangalore Urban',
+          cities: [
+            { id: 'city-1', name: 'Bangalore' },
+            { id: 'city-2', name: 'Electronic City' },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'state-2',
+      name: 'Maharashtra',
+      districts: [
+        {
+          id: 'district-2',
+          name: 'Mumbai',
+          cities: [
+            { id: 'city-3', name: 'Mumbai' },
+            { id: 'city-4', name: 'Navi Mumbai' },
+          ],
+        },
+      ],
+    },
+  ],
+};
 
 const EditLead = () => {
   const navigate = useNavigate();
@@ -16,6 +50,19 @@ const EditLead = () => {
   const { user: currentUser } = useAuth();
   const [lead, setLead] = useState<Lead | null>(null);
   const [loading, setLoading] = useState(true);
+  const [locationData, setLocationData] = useState(DEFAULT_LOCATION_DATA);
+
+  useEffect(() => {
+    // Optionally try to get locationData from localStorage for consistency with AddNewLead
+    const storedLocationData = localStorage.getItem('locationData');
+    if (storedLocationData) {
+      try {
+        setLocationData(JSON.parse(storedLocationData));
+      } catch {
+        setLocationData(DEFAULT_LOCATION_DATA);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (id) {
@@ -93,9 +140,9 @@ const EditLead = () => {
         </CardHeader>
         <CardContent>
           <AddLeadFormSingleStep
-            defaultValues={lead}
             onSubmit={handleUpdate}
-            // optionally pass any additional props for editing (all fields)
+            locationData={locationData}
+            // Add more props if AddLeadFormSingleStep supports pre-filling fields from `lead`
           />
         </CardContent>
       </Card>
