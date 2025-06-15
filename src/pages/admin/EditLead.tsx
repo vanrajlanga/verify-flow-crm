@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -67,13 +68,13 @@ const EditLead = () => {
     if (id) {
       loadLead(id);
     }
+    // eslint-disable-next-line
   }, [id]);
 
   const loadLead = async (leadId: string) => {
     setLoading(true);
     setError(null);
     try {
-      console.log(`Fetching lead with id: ${leadId}`);
       const found = await getLeadByIdFromDatabase(leadId);
       if (found) {
         setLead(found);
@@ -88,7 +89,6 @@ const EditLead = () => {
         });
       }
     } catch (error) {
-      console.error('Error loading lead:', error);
       setError("Failed to load lead details. Please try again later.");
       toast({
         title: "Error",
@@ -103,6 +103,7 @@ const EditLead = () => {
   // Update handler for full form submission
   const handleUpdate = async (formData: any) => {
     try {
+      // Merge updated data with the previous lead
       const updatedLead: Lead = transformFormDataToLead({ ...lead, ...formData, id: lead?.id });
       await updateLeadInDatabase(updatedLead.id, updatedLead);
       toast({
@@ -163,7 +164,8 @@ const EditLead = () => {
           <AddLeadFormSingleStep
             onSubmit={handleUpdate}
             locationData={locationData}
-            // Add more props if AddLeadFormSingleStep supports pre-filling fields from `lead`
+            // Pass current lead data as defaultValues to prefill the form (important fix!)
+            defaultValues={lead}
           />
         </CardContent>
       </Card>
@@ -172,3 +174,4 @@ const EditLead = () => {
 };
 
 export default EditLead;
+
