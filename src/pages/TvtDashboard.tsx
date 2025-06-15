@@ -132,6 +132,10 @@ const TvtDashboard = () => {
     navigate('/');
   };
 
+  const handleVerifyLead = (leadId: string) => {
+    navigate(`/tvt/verify/${leadId}`);
+  };
+
   if (!currentUser) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
   }
@@ -179,7 +183,7 @@ const TvtDashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {leads.filter(lead => lead.status === 'Pending').length}
+                    {leads.filter(lead => lead.status === 'Pending' || lead.status === 'In Progress').length}
                   </div>
                   <p className="text-xs text-muted-foreground">
                     Leads waiting for verification
@@ -208,7 +212,7 @@ const TvtDashboard = () => {
               <CardHeader>
                 <CardTitle>My Assigned Leads</CardTitle>
                 <CardDescription>
-                  Leads assigned to you for verification. Click "View Details" to verify and update lead status.
+                  Leads assigned to you for verification. Click "Verify Lead" to start the verification process.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -217,10 +221,66 @@ const TvtDashboard = () => {
                     <p className="text-muted-foreground">Loading leads...</p>
                   </div>
                 ) : (
-                  <LeadList 
-                    leads={leads} 
-                    currentUser={currentUser}
-                  />
+                  <div className="space-y-4">
+                    {leads.length === 0 ? (
+                      <div className="text-center py-8">
+                        <p className="text-muted-foreground">No leads assigned to you yet.</p>
+                      </div>
+                    ) : (
+                      leads.map((lead) => (
+                        <div key={lead.id} className="flex items-center justify-between p-4 border rounded-lg">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-4">
+                              <div>
+                                <h3 className="font-semibold">{lead.name}</h3>
+                                <p className="text-sm text-muted-foreground">ID: {lead.id}</p>
+                              </div>
+                              <div>
+                                <p className="text-sm">
+                                  <span className="font-medium">Bank:</span> {lead.bank || 'Not specified'}
+                                </p>
+                                <p className="text-sm">
+                                  <span className="font-medium">City:</span> {lead.address?.city || 'Not provided'}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-sm">
+                                  <span className="font-medium">Phone:</span> {lead.phone || 'Not provided'}
+                                </p>
+                                <p className="text-sm">
+                                  <span className="font-medium">Created:</span> {new Date(lead.createdAt).toLocaleDateString()}
+                                </p>
+                              </div>
+                              <Badge className={
+                                lead.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                                lead.status === 'In Progress' ? 'bg-blue-100 text-blue-800' :
+                                lead.status === 'Completed' ? 'bg-green-100 text-green-800' :
+                                'bg-gray-100 text-gray-800'
+                              }>
+                                {lead.status}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => navigate(`/tvt/leads/${lead.id}`)}
+                            >
+                              View Details
+                            </Button>
+                            <Button
+                              size="sm"
+                              onClick={() => handleVerifyLead(lead.id)}
+                              disabled={lead.status === 'Completed'}
+                            >
+                              {lead.status === 'Completed' ? 'Verified' : 'Verify Lead'}
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 )}
               </CardContent>
             </Card>

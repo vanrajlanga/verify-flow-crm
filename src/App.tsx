@@ -70,6 +70,7 @@ const App = () => (
           <Route path="/tvt" element={<Navigate to="/tvt/dashboard" replace />} />
           <Route path="/tvt/dashboard" element={<TvtDashboard />} />
           <Route path="/tvt/leads/:leadId" element={<TvtLeadDetail />} />
+          <Route path="/tvt/verify/:leadId" element={<TvtLeadVerification />} />
           
           <Route path="*" element={<NotFound />} />
         </Routes>

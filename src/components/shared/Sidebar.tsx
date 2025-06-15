@@ -62,10 +62,10 @@ const Sidebar: React.FC<SidebarProps> = ({ user, isOpen }) => {
         return adminNavItems;
       case 'agent':
         return agentNavItems;
-      case 'tvtteam': // Fix: Use 'tvtteam' instead of 'tvt'
+      case 'tvtteam':
         return tvtNavItems;
       case 'manager':
-        return adminNavItems; // Managers use same nav as admin but with restricted access
+        return adminNavItems;
       default:
         return [];
     }
