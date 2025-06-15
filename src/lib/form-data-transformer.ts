@@ -1,4 +1,3 @@
-
 import { Lead, Address, User } from '@/utils/mockData';
 
 // Transform form data from AddLeadFormSingleStep to Lead format
@@ -26,17 +25,16 @@ export const transformFormDataToLead = (formData: any): Lead => {
   const primaryPhone = formData.phoneNumbers?.find((phone: any) => phone.isPrimary) 
     || formData.phoneNumbers?.[0];
 
-  // Map visit type to database-compatible value
-  const getVisitType = (formVisitType: string): 'Residence' | 'Office' | 'Business' => {
-    // From the network logs, I can see existing valid values are "Residence", "Office", etc.
-    // Default to "Residence" for Physical visits
-    if (formVisitType === 'Physical' || !formVisitType) {
-      return 'Residence';
+  // Map visit type to database-compatible value - Lead type expects "Physical" | "Virtual"
+  const getVisitType = (formVisitType: string): 'Physical' | 'Virtual' => {
+    // If visitType is not provided or is "Physical", return "Physical"
+    if (!formVisitType || formVisitType === 'Physical' || formVisitType === 'Residence' || formVisitType === 'Office' || formVisitType === 'Business') {
+      return 'Physical';
     }
-    if (formVisitType === 'Office' || formVisitType === 'Business') {
-      return formVisitType as 'Residence' | 'Office' | 'Business';
+    if (formVisitType === 'Virtual' || formVisitType === 'Online') {
+      return 'Virtual';
     }
-    return 'Residence'; // Safe default
+    return 'Physical'; // Safe default
   };
 
   // Create the lead object
@@ -97,7 +95,7 @@ export const transformFormDataToLead = (formData: any): Lead => {
     },
     status: 'Pending',
     bank: formData.bankName || formData.bank || '',
-    visitType: getVisitType(formData.visitType), // Fix: Use proper mapping
+    visitType: getVisitType(formData.visitType), // Fix: Use proper mapping to "Physical" | "Virtual"
     assignedTo: formData.assignedTo || '',
     createdAt: new Date(),
     updatedAt: new Date(),
