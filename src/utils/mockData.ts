@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   name: string;
@@ -113,14 +112,7 @@ export interface AdditionalDetails {
     occupation?: string;
     monthlyIncome?: string;
   };
-  addresses?: {
-    type: 'Residence' | 'Office' | 'Permanent';
-    street: string;
-    city: string;
-    district: string;
-    state: string;
-    pincode: string;
-  }[];
+  addresses?: Address[];
   coApplicantAddresses?: {
     type: 'Residence' | 'Office' | 'Permanent';
     street: string;
@@ -136,31 +128,22 @@ export interface Lead {
   name: string;
   age: number;
   job: string;
-  address: Address;
   phone: string;
   email: string;
-  status: 'Pending' | 'In Progress' | 'Completed' | 'Rejected';
+  address: Address;
+  additionalDetails: AdditionalDetails;
+  status: string;
+  bank: string;
+  visitType: 'Physical' | 'Virtual';
   assignedTo: string;
   createdAt: Date;
   updatedAt: Date;
-  visitType: 'Physical' | 'Virtual';
-  bank?: string;
-  instructions?: string;
-  documents?: Document[];
-  verification?: Verification;
-  verificationDate?: Date;
-  additionalDetails?: AdditionalDetails;
   hasCoApplicant?: boolean;
   coApplicantName?: string;
-  carDetails?: {
-    make: string;
-    model: string;
-    year: number;
-  };
-  incomeDetails?: {
-    salary: number;
-    otherIncome: number;
-  };
+  documents: any[];
+  instructions?: string;
+  verificationDate?: Date;
+  vehicleType?: string;
 }
 
 export interface Bank {
