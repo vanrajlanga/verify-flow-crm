@@ -114,17 +114,17 @@ const AddNewLead = () => {
   const handleAddLead = async (formData: any) => {
     try {
       console.log('AddNewLead: Received form data:', formData);
-      
+      // Validate
       // Transform form data to Lead format
       const leadData = transformFormDataToLead(formData);
-      
-      console.log('AddNewLead: Transformed lead data:', leadData);
-      
+
+      console.log('AddNewLead: Transformed lead data FINAL:', JSON.stringify(leadData, null, 2));
+
       // Save lead to database
       await saveLeadToDatabase(leadData);
 
       console.log('AddNewLead: Lead successfully saved to database');
-      
+
       toast({
         title: "Lead added successfully",
         description: `New lead ${leadData.name} has been saved to database and is ready for management.`,
@@ -134,7 +134,7 @@ const AddNewLead = () => {
       navigate('/admin/leads');
     } catch (error) {
       console.error('AddNewLead: ERROR - Failed to save lead to database:', error);
-      
+
       toast({
         title: "Database Save Failed",
         description: `Failed to save lead to database. Error: ${error instanceof Error ? error.message : 'Unknown error'}. Please check your connection and try again.`,

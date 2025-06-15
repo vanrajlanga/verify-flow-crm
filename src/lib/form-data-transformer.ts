@@ -4,15 +4,14 @@ import { Lead, Address, User } from '@/utils/mockData';
 export const transformFormDataToLead = (formData: any): Lead => {
   console.log('Transforming form data:', formData);
 
-  // Get primary address (first address in the array)
-  const primaryAddress = formData.addresses && formData.addresses.length > 0 
-    ? formData.addresses[0] 
-    : null;
+  // PRIMARY ADDRESS
+  const primaryAddress = formData.addresses && formData.addresses.length > 0 ? formData.addresses[0] : null;
 
-  // Transform additional addresses (excluding the first one)
+  // ADDITIONAL ADDRESSES
   const additionalAddresses = formData.addresses && formData.addresses.length > 1
     ? formData.addresses.slice(1).map((addr: any) => ({
-        type: addr.type as 'Residence' | 'Office' | 'Permanent' | 'Temporary' | 'Current',
+        type: (addr.type === "Office" || addr.type === "Permanent" || addr.type === "Residence")
+          ? addr.type : 'Residence',
         street: addr.addressLine1 || addr.street || '',
         city: addr.city || '',
         district: addr.district || '',
@@ -21,28 +20,50 @@ export const transformFormDataToLead = (formData: any): Lead => {
       }))
     : [];
 
-  // Get primary phone number or first available phone number
-  const primaryPhone = formData.phoneNumbers?.find((phone: any) => phone.isPrimary) 
+  // PRIMARY PHONE NUMBER
+  const primaryPhone = formData.phoneNumbers?.find((phone: any) => phone.isPrimary)
     || formData.phoneNumbers?.[0];
 
-  // Map visit type to database-compatible value - Lead type expects "Physical" | "Virtual"
+  // VISIT TYPE MAPPING: Must be 'Physical' | 'Virtual'
   const getVisitType = (formVisitType: string): 'Physical' | 'Virtual' => {
-    if (formVisitType === 'Virtual' || formVisitType === 'Online') {
-      return 'Virtual';
+    if (typeof formVisitType === "string") {
+      if (formVisitType.toLowerCase().includes('virtual') || formVisitType.toLowerCase().includes('online')) {
+        return 'Virtual';
+      }
+      // Accept "Physical", ignore address types.
     }
-    return 'Physical'; // Default to Physical for all other cases
+    return 'Physical';
   };
 
-  // Create the lead object
+  // BANK MAPPING: Must be the actual bank_id as per Supabase!!
+  const getBankId = () => {
+    // If ID given, use it; else, fall back to name.
+    if (formData.bankName && formData.bankName.trim().length > 0) return formData.bankName.trim();
+    if (formData.bank && formData.bank.trim().length > 0) return formData.bank.trim();
+    return '';
+  };
+
+  // LEAD ID: Use form or auto-generate
+  const leadId = formData.id || `lead-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  
+  // AGE strict int fallback
+  const getAge = () => {
+    if (formData.age !== undefined && !isNaN(Number(formData.age))) return parseInt(formData.age, 10);
+    return 25;
+  };
+
+  // FINAL LEAD OBJECT
   const lead: Lead = {
-    id: `lead-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    id: leadId,
     name: formData.name || '',
-    age: parseInt(formData.age) || 25,
+    age: getAge(),
     job: formData.designation || formData.occupation || '',
     phone: primaryPhone?.number || formData.phone || '',
     email: formData.email || '',
     address: {
-      type: (primaryAddress?.type as Address['type']) || 'Residence',
+      type: (primaryAddress?.type === "Office" || primaryAddress?.type === "Permanent" || primaryAddress?.type === "Residence")
+        ? primaryAddress?.type
+        : 'Residence',
       street: primaryAddress?.addressLine1 || primaryAddress?.street || '',
       city: primaryAddress?.city || '',
       district: primaryAddress?.district || '',
@@ -90,19 +111,19 @@ export const transformFormDataToLead = (formData: any): Lead => {
       } : undefined
     },
     status: 'Pending',
-    bank: formData.bankName || formData.bank || '',
+    bank: getBankId(),
     visitType: getVisitType(formData.visitType),
-    assignedTo: '', // Will be set to empty string initially since we don't have user ID mapping
+    assignedTo: '', // Always empty unless mapped to a user
     createdAt: new Date(),
     updatedAt: new Date(),
-    hasCoApplicant: formData.hasCoApplicant || false,
+    hasCoApplicant: !!formData.hasCoApplicant,
     coApplicantName: formData.hasCoApplicant ? formData.coApplicantName : undefined,
     documents: [],
     instructions: formData.instructions || '',
     verificationDate: undefined
   };
 
-  console.log('Transformed lead:', lead);
+  console.log('Transformed lead for Supabase:', lead);
   return lead;
 };
 

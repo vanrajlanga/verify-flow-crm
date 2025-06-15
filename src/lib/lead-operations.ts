@@ -3,23 +3,23 @@ import { Lead, Address, User } from '@/utils/mockData';
 
 export const createLead = async (leadData: any) => {
   try {
-    console.log('Creating lead:', leadData);
+    console.log('START createLead: final leadData sent to DB:', JSON.stringify(leadData, null, 2));
 
-    // First insert into leads table with minimal required fields
+    // Main lead insert
     const leadInsert = {
       id: leadData.id,
       name: leadData.name || '',
       age: leadData.age || 0,
       job: leadData.job || '',
       status: leadData.status || 'Pending',
-      visit_type: leadData.visitType || 'Physical',
-      assigned_to: null, // Set to null initially to avoid foreign key constraint
+      visit_type: leadData.visitType, // Accept ONLY 'Physical' or 'Virtual'
+      assigned_to: leadData.assignedTo || null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       instructions: leadData.instructions || '',
-      has_co_applicant: leadData.hasCoApplicant || false,
+      has_co_applicant: !!leadData.hasCoApplicant,
       co_applicant_name: leadData.coApplicantName || null,
-      bank_id: leadData.bank || '' // Use bank name as ID for now
+      bank_id: leadData.bank || null // This must always be the bank's ID
     };
 
     const { data: lead, error: leadError } = await supabase
