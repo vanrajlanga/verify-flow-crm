@@ -106,9 +106,14 @@ interface FormData {
 interface AddLeadFormSingleStepProps {
   onSubmit: (data: FormData) => void;
   locationData: LocationData;
+  defaultValues?: Partial<FormData>; // <-- add this optional prop
 }
 
-const AddLeadFormSingleStep: React.FC<AddLeadFormSingleStepProps> = ({ onSubmit, locationData }) => {
+const AddLeadFormSingleStep: React.FC<AddLeadFormSingleStepProps> = ({
+  onSubmit,
+  locationData,
+  defaultValues
+}) => {
   const [propertyTypes, setPropertyTypes] = useState<Array<{ id: string; name: string }>>([]);
   const [vehicleBrands, setVehicleBrands] = useState<Array<{ id: string; name: string }>>([]);
   const [vehicleTypes, setVehicleTypes] = useState<Array<{ id: string; name: string }>>([]);
@@ -121,7 +126,7 @@ const AddLeadFormSingleStep: React.FC<AddLeadFormSingleStepProps> = ({ onSubmit,
   const [selectedBank, setSelectedBank] = useState('');
   const [loading, setLoading] = useState(true);
 
-  const [formData, setFormData] = useState<FormData>({
+  const defaultFormState: FormData = {
     bankName: '',
     bankProduct: '',
     initiatedUnderBranch: '',
@@ -171,7 +176,32 @@ const AddLeadFormSingleStep: React.FC<AddLeadFormSingleStepProps> = ({ onSubmit,
     otherIncome: '',
     documents: {},
     instructions: ''
-  });
+  };
+
+  // If defaultValues exists, merge it into the defaultFormState for prefill
+  const getInitialFormData = () => {
+    if (!defaultValues) return defaultFormState;
+    // Deep merge for nested form values
+    return {
+      ...defaultFormState,
+      ...defaultValues,
+      phoneNumbers: defaultValues.phoneNumbers ?? defaultFormState.phoneNumbers,
+      addresses: defaultValues.addresses ?? defaultFormState.addresses,
+      coApplicantAddresses: defaultValues.coApplicantAddresses ?? defaultFormState.coApplicantAddresses,
+      officeAddress: {
+        ...defaultFormState.officeAddress,
+        ...(defaultValues.officeAddress || {})
+      },
+      documents: defaultValues.documents ?? defaultFormState.documents,
+    };
+  };
+
+  const [formData, setFormData] = useState<FormData>(() => getInitialFormData());
+  // Patch: also update form if defaultValues changes (for quick lead reload fix)
+  useEffect(() => {
+    setFormData(getInitialFormData());
+    // eslint-disable-next-line
+  }, [JSON.stringify(defaultValues)]);
 
   useEffect(() => {
     const fetchAllData = async () => {
