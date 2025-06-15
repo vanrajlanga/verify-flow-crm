@@ -64,6 +64,85 @@ const formatValue = (value: any): string => {
   return String(value);
 };
 
+// --- Add robust header mapping as per provided CSV headers ---
+const CSV_HEADER_MAP: Record<string, string> = {
+  "Lead ID": "id",
+  "Name": "name",
+  "Age": "age",
+  "Job": "job",
+  "Status": "status",
+  "Bank": "bank",
+  "Visit Type": "visitType",
+  "Assigned To": "assignedTo",
+  "Verification Date": "verificationDate",
+  "Instructions": "instructions",
+  "Has Co-Applicant": "hasCoApplicant",
+  "Co-Applicant Name": "coApplicantName",
+  "Created At": "createdAt",
+  "Address Type": "address.type",
+  "Street": "address.street",
+  "City": "address.city",
+  "District": "address.district",
+  "State": "address.state",
+  "Pincode": "address.pincode",
+  "Company": "additionalDetails.company",
+  "Designation": "additionalDetails.designation",
+  "Work Experience": "additionalDetails.workExperience",
+  "Property Type": "additionalDetails.propertyType",
+  "Ownership Status": "additionalDetails.ownershipStatus",
+  "Property Age": "additionalDetails.propertyAge",
+  "Monthly Income": "additionalDetails.monthlyIncome",
+  "Annual Income": "additionalDetails.annualIncome",
+  "Other Income": "additionalDetails.otherIncome",
+  "Phone Number": "phone",
+  "Email": "email",
+  "Date of Birth": "additionalDetails.dateOfBirth",
+  "Father Name": "additionalDetails.fatherName",
+  "Mother Name": "additionalDetails.motherName",
+  "Gender": "additionalDetails.gender",
+  "Agency File No": "additionalDetails.agencyFileNo",
+  "Application Barcode": "additionalDetails.applicationBarcode",
+  "Case ID": "additionalDetails.caseId",
+  "Scheme Description": "additionalDetails.schemeDesc",
+  "Bank Branch": "additionalDetails.bankBranch",
+  "Bank Product": "additionalDetails.bankProduct",
+  "Initiated Under Branch": "additionalDetails.initiatedUnderBranch",
+  "Additional Comments": "additionalDetails.additionalComments",
+  "Lead Type": "additionalDetails.leadType",
+  "Lead Type ID": "additionalDetails.leadTypeId",
+  "Loan Amount": "additionalDetails.loanAmount",
+  "Loan Type": "additionalDetails.loanType",
+  "Vehicle Brand Name": "additionalDetails.vehicleBrandName",
+  "Vehicle Brand ID": "additionalDetails.vehicleBrandId",
+  "Vehicle Model Name": "additionalDetails.vehicleModelName",
+  "Vehicle Model ID": "additionalDetails.vehicleModelId"
+};
+
+// --- Improved CSV line parser: handles quoted fields and commas within fields
+function parseCSVLineStrict(line: string): string[] {
+  const result: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"'; // double quotes inside quoted field
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (c === ',' && !inQuotes) {
+      result.push(current);
+      current = '';
+    } else {
+      current += c;
+    }
+  }
+  result.push(current);
+  return result;
+}
+
 // Export leads to CSV format
 export const exportLeadsToCSV = (leads: Lead[]): string => {
   console.log(`Exporting ${leads.length} leads to CSV...`);
@@ -135,74 +214,114 @@ export const exportLeadsToCSV = (leads: Lead[]): string => {
 // Parse CSV data and convert to Lead objects
 export const parseCSVToLeads = (csvData: string): Lead[] => {
   const lines = csvData.trim().split('\n');
-  const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+  if (lines.length < 2) return [];
+  const csvHeadersRaw = parseCSVLineStrict(lines[0]);
+  // Normalize headers for matching
+  const csvHeaders = csvHeadersRaw.map(h => h.trim().replace(/^"|"$/g, ''));
   
-  return lines.slice(1).map((line, index) => {
-    const values = line.split(',').map(v => v.trim());
-    const leadData: any = {};
-    
-    headers.forEach((header, i) => {
-      leadData[header] = values[i] || '';
-    });
+  const leads: Lead[] = [];
+  for (let rowIndex = 1; rowIndex < lines.length; rowIndex++) {
+    const line = lines[rowIndex];
+    if (!line.trim()) continue;
+    const values = parseCSVLineStrict(line);
 
-    // Transform CSV data to Lead format
-    return {
-      id: leadData.id || `csv-lead-${Date.now()}-${index}`,
-      name: leadData.name || '',
-      age: parseInt(leadData.age) || 0,
-      job: leadData.job || '',
-      phone: leadData.phone || '',
-      email: leadData.email || '',
-      address: {
-        type: (leadData.address_type || 'Residence') as Address['type'],
-        street: leadData.street || '',
-        city: leadData.city || '',
-        district: leadData.district || '',
-        state: leadData.state || '',
-        pincode: leadData.pincode || ''
-      },
-      additionalDetails: {
-        company: leadData.company || '',
-        designation: leadData.designation || '',
-        workExperience: leadData.work_experience || '',
-        propertyType: leadData.property_type || '',
-        ownershipStatus: leadData.ownership_status || '',
-        propertyAge: leadData.property_age || '',
-        monthlyIncome: parseFloat(leadData.monthly_income) || 0,
-        annualIncome: leadData.annual_income || '',
-        otherIncome: leadData.other_income || '',
-        loanAmount: leadData.loan_amount || '',
-        addresses: [],
-        phoneNumber: leadData.phone || '',
-        email: leadData.email || '',
-        dateOfBirth: leadData.date_of_birth ? new Date(leadData.date_of_birth) : new Date(),
-        fatherName: leadData.father_name || '',
-        motherName: leadData.mother_name || '',
-        gender: leadData.gender || '',
-        agencyFileNo: leadData.agency_file_no || '',
-        applicationBarcode: leadData.application_barcode || '',
-        caseId: leadData.case_id || '',
-        schemeDesc: leadData.scheme_desc || '',
-        bankProduct: leadData.bank_product || '',
-        bankBranch: leadData.bank_branch || '',
-        additionalComments: leadData.additional_comments || '',
-        leadType: leadData.lead_type || '',
-        loanType: leadData.loan_type || '',
-        vehicleBrandName: leadData.vehicle_brand_name || '',
-        vehicleModelName: leadData.vehicle_model_name || ''
-      },
-      status: (leadData.status || 'Pending') as Lead['status'],
-      bank: leadData.bank || '',
-      visitType: (leadData.visit_type || 'Physical') as Lead['visitType'],
-      assignedTo: leadData.assigned_to || '',
-      createdAt: leadData.created_at ? new Date(leadData.created_at) : new Date(),
-      updatedAt: leadData.updated_at ? new Date(leadData.updated_at) : new Date(),
-      hasCoApplicant: leadData.has_co_applicant === 'true' || false,
-      coApplicantName: leadData.co_applicant_name || undefined,
-      documents: [],
-      instructions: leadData.instructions || ''
-    } as Lead;
-  });
+    // Step 1: Map each column to its path in Lead object
+    const rawLead: Record<string, any> = {};
+    
+    for (let i = 0; i < csvHeaders.length; i++) {
+      // Find the correct field mapping by header
+      const header = csvHeaders[i];
+      // Find the canonical key in our MAP
+      // Support some tolerance for whitespace/case
+      const canonicalKey = Object.keys(CSV_HEADER_MAP).find(
+        k => k.trim().toLowerCase() === header.trim().toLowerCase()
+      );
+      const path = canonicalKey ? CSV_HEADER_MAP[canonicalKey] : header;
+      let value = values[i] ?? '';
+      value = value.replace(/^"|"$/g, ''); // Remove outer quotes
+      rawLead[path] = value;
+    }
+
+    // Step 2: Populate Lead fields, deeply
+    // Handle basic fields first
+    const lead: any = {
+      id: rawLead['id'] || rawLead['Lead ID'] || `lead-${Date.now()}-${rowIndex}`,
+      name: rawLead['name'] || '',
+      age: rawLead['age'] ? parseInt(rawLead['age']) : 0,
+      job: rawLead['job'] || '',
+      phone: rawLead['phone'] || '',
+      email: rawLead['email'] || '',
+      status: (rawLead['status'] || 'Pending'),
+      bank: rawLead['bank'] || '',
+      visitType: (rawLead['visitType'] || 'Physical'),
+      assignedTo: rawLead['assignedTo'] || '',
+      verificationDate: rawLead['verificationDate']
+        ? new Date(rawLead['verificationDate'])
+        : undefined,
+      instructions: rawLead['instructions'] || '',
+      hasCoApplicant: 
+        (rawLead['hasCoApplicant'] ?? rawLead['Has Co-Applicant'])?.toLowerCase() === 'true' || 
+        (rawLead['hasCoApplicant'] ?? rawLead['Has Co-Applicant']) === '1',
+      coApplicantName: rawLead['coApplicantName'] ?? rawLead['Co-Applicant Name'] || undefined,
+      createdAt: rawLead['createdAt']
+        ? new Date(rawLead['createdAt'])
+        : new Date(),
+      updatedAt: new Date(),
+      documents: []
+    };
+
+    // Address
+    lead.address = {
+      type: rawLead['address.type'] || 'Residence',
+      street: rawLead['address.street'] || '',
+      city: rawLead['address.city'] || '',
+      district: rawLead['address.district'] || '',
+      state: rawLead['address.state'] || '',
+      pincode: rawLead['address.pincode'] || ''
+    };
+
+    // Additional Details
+    lead.additionalDetails = {
+      company: rawLead['additionalDetails.company'] || '',
+      designation: rawLead['additionalDetails.designation'] || '',
+      workExperience: rawLead['additionalDetails.workExperience'] || '',
+      propertyType: rawLead['additionalDetails.propertyType'] || '',
+      ownershipStatus: rawLead['additionalDetails.ownershipStatus'] || '',
+      propertyAge: rawLead['additionalDetails.propertyAge'] || '',
+      monthlyIncome: rawLead['additionalDetails.monthlyIncome']
+        ? parseFloat(rawLead['additionalDetails.monthlyIncome']) : 0,
+      annualIncome: rawLead['additionalDetails.annualIncome'] || '',
+      otherIncome: rawLead['additionalDetails.otherIncome'] || '',
+      phoneNumber: lead.phone,
+      email: lead.email,
+      dateOfBirth: rawLead['additionalDetails.dateOfBirth']
+        ? new Date(rawLead['additionalDetails.dateOfBirth'])
+        : undefined,
+      fatherName: rawLead['additionalDetails.fatherName'] || '',
+      motherName: rawLead['additionalDetails.motherName'] || '',
+      gender: rawLead['additionalDetails.gender'] || '',
+      agencyFileNo: rawLead['additionalDetails.agencyFileNo'] || '',
+      applicationBarcode: rawLead['additionalDetails.applicationBarcode'] || '',
+      caseId: rawLead['additionalDetails.caseId'] || '',
+      schemeDesc: rawLead['additionalDetails.schemeDesc'] || '',
+      bankProduct: rawLead['additionalDetails.bankProduct'] || '',
+      initiatedUnderBranch: rawLead['additionalDetails.initiatedUnderBranch'] || '',
+      bankBranch: rawLead['additionalDetails.bankBranch'] || '',
+      additionalComments: rawLead['additionalDetails.additionalComments'] || '',
+      leadType: rawLead['additionalDetails.leadType'] || '',
+      leadTypeId: rawLead['additionalDetails.leadTypeId'] || '',
+      loanAmount: rawLead['additionalDetails.loanAmount'] || '',
+      loanType: rawLead['additionalDetails.loanType'] || '',
+      vehicleBrandName: rawLead['additionalDetails.vehicleBrandName'] || '',
+      vehicleBrandId: rawLead['additionalDetails.vehicleBrandId'] || '',
+      vehicleModelName: rawLead['additionalDetails.vehicleModelName'] || '',
+      vehicleModelId: rawLead['additionalDetails.vehicleModelId'] || '',
+      addresses: []
+    };
+
+    leads.push(lead as Lead);
+  }
+  return leads;
 };
 
 // Parse a single CSV line handling quoted values
