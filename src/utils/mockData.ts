@@ -145,6 +145,11 @@ export interface Lead {
   verificationDate?: Date;
   vehicleType?: string;
   verification?: Verification;
+  carDetails?: {
+    make: string;
+    model: string;
+    year: number;
+  };
 }
 
 export interface Bank {
