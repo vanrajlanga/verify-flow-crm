@@ -25,12 +25,17 @@ export const createLead = async (leadData: any) => {
       visit_type: leadData.visitType || 'Physical',
       assigned_to: leadData.assignedTo || '',
       created_at: new Date().toISOString(),
-      instructions: leadData.instructions || ''
+      updated_at: new Date().toISOString(),
+      instructions: leadData.instructions || '',
+      has_co_applicant: leadData.hasCoApplicant || false,
+      co_applicant_name: leadData.coApplicantName || null
     };
 
     const { data, error } = await supabase
       .from('leads')
-      .insert([lead]);
+      .insert([lead])
+      .select()
+      .single();
 
     if (error) {
       console.error('Error creating lead:', error);
@@ -58,7 +63,7 @@ const createLeadDetails = async (leadData: any) => {
     property_type: leadData.additionalDetails?.propertyType || '',
     ownership_status: leadData.additionalDetails?.ownershipStatus || '',
     property_age: leadData.additionalDetails?.propertyAge || '',
-    monthly_income: leadData.additionalDetails?.monthlyIncome || '',
+    monthly_income: leadData.additionalDetails?.monthlyIncome?.toString() || '',
     annual_income: leadData.additionalDetails?.annualIncome || '',
     other_income: leadData.additionalDetails?.otherIncome || '',
     loan_amount: leadData.additionalDetails?.loanAmount || '',

@@ -30,13 +30,13 @@ export const transformFormDataToLead = (formData: any): Lead => {
   const lead: Lead = {
     id: `lead-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     name: formData.name || '',
-    age: 0, // Default age since it's not in the form
-    job: '', // Default job since it's not in the form
-    phone: primaryPhone?.number || '',
+    age: parseInt(formData.age) || 25, // Use form age or default
+    job: formData.designation || formData.occupation || '',
+    phone: primaryPhone?.number || formData.phone || '',
     email: formData.email || '',
     address: {
-      type: 'Residence',
-      street: primaryAddress?.addressLine1 || '',
+      type: (primaryAddress?.type as Address['type']) || 'Residence',
+      street: primaryAddress?.addressLine1 || primaryAddress?.street || '',
       city: primaryAddress?.city || '',
       district: primaryAddress?.district || '',
       state: primaryAddress?.state || '',
@@ -49,12 +49,12 @@ export const transformFormDataToLead = (formData: any): Lead => {
       propertyType: formData.propertyType || '',
       ownershipStatus: formData.ownershipStatus || '',
       propertyAge: formData.propertyAge || '',
-      monthlyIncome: formData.monthlyIncome || '',
+      monthlyIncome: parseInt(formData.monthlyIncome) || 0,
       annualIncome: formData.annualIncome || '',
       otherIncome: formData.otherIncome || '',
       loanAmount: formData.loanAmount || '',
       addresses: additionalAddresses,
-      phoneNumber: primaryPhone?.number || '',
+      phoneNumber: primaryPhone?.number || formData.phone || '',
       email: formData.email || '',
       dateOfBirth: formData.dateOfBirth ? new Date(formData.dateOfBirth) : new Date(),
       fatherName: formData.fatherName || '',
@@ -63,35 +63,36 @@ export const transformFormDataToLead = (formData: any): Lead => {
       agencyFileNo: formData.agencyFileNo || '',
       applicationBarcode: formData.applicationBarcode || '',
       caseId: formData.caseId || '',
-      schemeDesc: formData.schemeDesc || '',
+      schemeDesc: formData.schemeDesc || formData.schemeDescription || '',
       bankProduct: formData.bankProduct || '',
       initiatedUnderBranch: formData.initiatedUnderBranch || '',
-      bankBranch: formData.initiatedUnderBranch || '',
+      bankBranch: formData.bankBranch || formData.initiatedUnderBranch || '',
       additionalComments: formData.additionalComments || '',
       leadType: formData.leadType || '',
-      loanType: '',
-      vehicleBrandName: formData.vehicleBrand || '',
-      vehicleModelName: formData.vehicleModel || '',
+      loanType: formData.loanType || '',
+      vehicleBrandName: formData.vehicleBrand || formData.vehicleBrandName || '',
+      vehicleModelName: formData.vehicleModel || formData.vehicleModelName || '',
       coApplicant: formData.hasCoApplicant ? {
         name: formData.coApplicantName || '',
-        age: 0,
+        age: parseInt(formData.coApplicantAge) || 0,
         phone: formData.coApplicantPhone || '',
-        email: '',
-        relation: 'Spouse',
-        occupation: '',
-        monthlyIncome: ''
+        email: formData.coApplicantEmail || '',
+        relation: formData.coApplicantRelation || 'Spouse',
+        occupation: formData.coApplicantOccupation || '',
+        monthlyIncome: formData.coApplicantIncome || ''
       } : undefined
     },
     status: 'Pending',
-    bank: formData.bankName || '',
-    visitType: formData.visitType || 'Physical',
-    assignedTo: '', // Leave empty - will be assigned later by admin
+    bank: formData.bankName || formData.bank || '',
+    visitType: (formData.visitType as Lead['visitType']) || 'Physical',
+    assignedTo: formData.assignedTo || '',
     createdAt: new Date(),
     updatedAt: new Date(),
     hasCoApplicant: formData.hasCoApplicant || false,
     coApplicantName: formData.hasCoApplicant ? formData.coApplicantName : undefined,
     documents: [],
-    instructions: formData.instructions || ''
+    instructions: formData.instructions || '',
+    verificationDate: undefined
   };
 
   console.log('Transformed lead:', lead);
