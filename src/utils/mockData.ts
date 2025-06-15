@@ -368,7 +368,8 @@ export const mockLeads: Lead[] = [
     incomeDetails: {
       salary: 90000,
       otherIncome: 10000
-    }
+    },
+    documents: []
   },
   {
     id: '102',
@@ -424,7 +425,8 @@ export const mockLeads: Lead[] = [
     incomeDetails: {
       salary: 75000,
       otherIncome: 5000
-    }
+    },
+    documents: []
   },
   {
     id: '103',
@@ -482,7 +484,8 @@ export const mockLeads: Lead[] = [
     incomeDetails: {
       salary: 60000,
       otherIncome: 2000
-    }
+    },
+    documents: []
   },
   {
     id: '104',
@@ -537,7 +540,8 @@ export const mockLeads: Lead[] = [
     incomeDetails: {
       salary: 80000,
       otherIncome: 8000
-    }
+    },
+    documents: []
   },
   {
     id: '105',
@@ -593,7 +597,8 @@ export const mockLeads: Lead[] = [
     incomeDetails: {
       salary: 40000,
       otherIncome: 1000
-    }
+    },
+    documents: []
   },
 ];
 
