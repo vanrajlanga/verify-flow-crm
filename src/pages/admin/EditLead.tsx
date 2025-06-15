@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -43,6 +42,83 @@ const DEFAULT_LOCATION_DATA = {
     },
   ],
 };
+
+// Convert Lead object to FormData shape (esp. documents field)
+function leadToFormData(lead: Lead): any {
+  // Map lead fields to formData fields by best effort
+  const formData: any = {
+    bankName: lead.bank ?? "",
+    name: lead.name ?? "",
+    phoneNumbers: [
+      {
+        type: "Mobile",
+        number: lead.phone ?? "",
+        isPrimary: true,
+      }
+    ],
+    addresses: [
+      {
+        type: lead.address.type ?? "Residence",
+        addressLine1: lead.address.street ?? "",
+        city: lead.address.city ?? "",
+        district: lead.address.district ?? "",
+        state: lead.address.state ?? "",
+        pincode: lead.address.pincode ?? "",
+      }
+    ],
+    hasCoApplicant: lead.hasCoApplicant ?? false,
+    coApplicantName: lead.coApplicantName ?? "",
+    documents: {}, // will convert below
+    // Additional mappings as needed
+    instructions: lead.instructions ?? "",
+    bankProduct: lead.additionalDetails?.bankProduct ?? "",
+    initiatedUnderBranch: lead.additionalDetails?.initiatedUnderBranch ?? "",
+    // etc. Add more fields as needed for better prefill
+  };
+
+  // Documents: convert array [] into an object shape
+  if (Array.isArray(lead.documents)) {
+    lead.documents.forEach((doc: any) => {
+      // Use doc.type or doc.name or doc.id as key
+      const docKey = doc.type || doc.name || doc.id || "document";
+      formData.documents[docKey] = null; // No File object for existing docs; just placeholder
+    });
+  }
+
+  // Attempt to fill other important fields for edit experience
+  // Try to extract coApplicantPhone if possible
+  if (
+    lead.additionalDetails?.coApplicant &&
+    typeof lead.additionalDetails.coApplicant.phone === "string"
+  ) {
+    formData.coApplicantPhone = lead.additionalDetails.coApplicant.phone;
+  }
+  // Merge in anything from additionalDetails
+  if (lead.additionalDetails) {
+    formData.company = lead.additionalDetails.company ?? "";
+    formData.designation = lead.additionalDetails.designation ?? "";
+    formData.workExperience = lead.additionalDetails.workExperience ?? "";
+    formData.monthlyIncome = (lead.additionalDetails.monthlyIncome ?? "").toString();
+    formData.officeAddress = {
+      addressLine1: "", // These can be mapped if available in details
+      city: "",
+      district: "",
+      state: "",
+      pincode: "",
+    };
+    formData.propertyType = lead.additionalDetails.propertyType ?? "";
+    formData.ownershipStatus = lead.additionalDetails.ownershipStatus ?? "";
+    formData.propertyAge = lead.additionalDetails.propertyAge ?? "";
+    formData.vehicleType = lead.vehicleType ?? "";
+    formData.vehicleBrand = lead.additionalDetails.vehicleBrandName ?? "";
+    formData.vehicleModel = lead.additionalDetails.vehicleModelName ?? "";
+    formData.annualIncome = lead.additionalDetails.annualIncome ?? "";
+    formData.otherIncome = lead.additionalDetails.otherIncome ?? "";
+    // ...add more as needed
+  }
+
+  return formData;
+}
 
 const EditLead = () => {
   const navigate = useNavigate();
@@ -142,6 +218,9 @@ const EditLead = () => {
     return <div className="flex items-center justify-center h-56">No lead data found.</div>;
   }
 
+  // Convert lead to partial FormData to pass as defaultValues
+  const formDefaultValues = leadToFormData(lead);
+
   return (
     <div className="max-w-2xl mx-auto pb-8">
       <div className="flex justify-between items-center mb-6">
@@ -164,8 +243,8 @@ const EditLead = () => {
           <AddLeadFormSingleStep
             onSubmit={handleUpdate}
             locationData={locationData}
-            // Pass current lead data as defaultValues to prefill the form (important fix!)
-            defaultValues={lead}
+            // Pass current lead data as defaultValues to prefill the form (now transformed)
+            defaultValues={formDefaultValues}
           />
         </CardContent>
       </Card>
@@ -174,4 +253,3 @@ const EditLead = () => {
 };
 
 export default EditLead;
-
