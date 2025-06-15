@@ -30,7 +30,7 @@ export const transformFormDataToLead = (formData: any): Lead => {
   const lead: Lead = {
     id: `lead-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     name: formData.name || '',
-    age: parseInt(formData.age) || 25, // Use form age or default
+    age: parseInt(formData.age) || 25,
     job: formData.designation || formData.occupation || '',
     phone: primaryPhone?.number || formData.phone || '',
     email: formData.email || '',

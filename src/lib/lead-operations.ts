@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Lead, Address, User } from '@/utils/mockData';
 
@@ -6,46 +5,179 @@ export const createLead = async (leadData: any) => {
   try {
     console.log('Creating lead:', leadData);
 
-    // Basic lead data to be stored in the 'leads' table
-    const lead = {
+    // First insert into leads table
+    const leadInsert = {
       id: leadData.id,
       name: leadData.name || '',
       age: leadData.age || 0,
       job: leadData.job || '',
-      phone: leadData.phone || '',
-      email: leadData.email || '',
-      address_type: leadData.address?.type || 'Residence',
-      address_street: leadData.address?.street || '',
-      address_city: leadData.address?.city || '',
-      address_district: leadData.address?.district || '',
-      address_state: leadData.address?.state || '',
-      address_pincode: leadData.address?.pincode || '',
       status: leadData.status || 'Pending',
-      bank: leadData.bank || '',
       visit_type: leadData.visitType || 'Physical',
       assigned_to: leadData.assignedTo || '',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       instructions: leadData.instructions || '',
       has_co_applicant: leadData.hasCoApplicant || false,
-      co_applicant_name: leadData.coApplicantName || null
+      co_applicant_name: leadData.coApplicantName || null,
+      bank_id: leadData.bank || ''
     };
 
-    const { data, error } = await supabase
+    const { data: lead, error: leadError } = await supabase
       .from('leads')
-      .insert([lead])
+      .insert([leadInsert])
       .select()
       .single();
 
-    if (error) {
-      console.error('Error creating lead:', error);
-      throw error;
+    if (leadError) {
+      console.error('Error creating lead:', leadError);
+      throw leadError;
     }
 
-    await createLeadDetails(leadData);
+    // Insert phone number
+    if (leadData.phone) {
+      const { error: phoneError } = await supabase
+        .from('phone_numbers')
+        .insert([{
+          lead_id: leadData.id,
+          number: leadData.phone,
+          type: 'mobile',
+          is_primary: true
+        }]);
 
-    console.log('Lead created successfully:', data);
-    return data;
+      if (phoneError) {
+        console.error('Error inserting phone number:', phoneError);
+      }
+    }
+
+    // Insert primary address
+    if (leadData.address) {
+      const { data: addressData, error: addressError } = await supabase
+        .from('addresses')
+        .insert([{
+          type: leadData.address.type || 'Residence',
+          street: leadData.address.street || '',
+          city: leadData.address.city || '',
+          district: leadData.address.district || '',
+          state: leadData.address.state || '',
+          pincode: leadData.address.pincode || ''
+        }])
+        .select()
+        .single();
+
+      if (addressError) {
+        console.error('Error inserting address:', addressError);
+      } else if (addressData) {
+        // Link address to lead
+        await supabase
+          .from('lead_addresses')
+          .insert([{
+            lead_id: leadData.id,
+            address_id: addressData.id
+          }]);
+
+        // Update lead with address_id
+        await supabase
+          .from('leads')
+          .update({ address_id: addressData.id })
+          .eq('id', leadData.id);
+      }
+    }
+
+    // Insert additional details
+    if (leadData.additionalDetails) {
+      const additionalDetailsInsert = {
+        lead_id: leadData.id,
+        company: leadData.additionalDetails.company || '',
+        designation: leadData.additionalDetails.designation || '',
+        work_experience: leadData.additionalDetails.workExperience || '',
+        property_type: leadData.additionalDetails.propertyType || '',
+        ownership_status: leadData.additionalDetails.ownershipStatus || '',
+        property_age: leadData.additionalDetails.propertyAge || '',
+        monthly_income: leadData.additionalDetails.monthlyIncome?.toString() || '0',
+        annual_income: leadData.additionalDetails.annualIncome || '',
+        other_income: leadData.additionalDetails.otherIncome || '',
+        loan_amount: leadData.additionalDetails.loanAmount || '',
+        date_of_birth: leadData.additionalDetails.dateOfBirth ? 
+          new Date(leadData.additionalDetails.dateOfBirth).toISOString().split('T')[0] : null,
+        father_name: leadData.additionalDetails.fatherName || '',
+        mother_name: leadData.additionalDetails.motherName || '',
+        gender: leadData.additionalDetails.gender || '',
+        agency_file_no: leadData.additionalDetails.agencyFileNo || '',
+        application_barcode: leadData.additionalDetails.applicationBarcode || '',
+        case_id: leadData.additionalDetails.caseId || '',
+        scheme_desc: leadData.additionalDetails.schemeDesc || '',
+        bank_product: leadData.additionalDetails.bankProduct || '',
+        bank_branch: leadData.additionalDetails.bankBranch || '',
+        additional_comments: leadData.additionalDetails.additionalComments || '',
+        lead_type: leadData.additionalDetails.leadType || '',
+        loan_type: leadData.additionalDetails.loanType || '',
+        vehicle_brand_name: leadData.additionalDetails.vehicleBrandName || '',
+        vehicle_model_name: leadData.additionalDetails.vehicleModelName || '',
+        phone_number: leadData.phone || '',
+        email: leadData.email || '',
+        created_at: new Date().toISOString()
+      };
+
+      const { error: detailsError } = await supabase
+        .from('additional_details')
+        .insert([additionalDetailsInsert]);
+
+      if (detailsError) {
+        console.error('Error creating additional details:', detailsError);
+      }
+    }
+
+    // Insert co-applicant if exists
+    if (leadData.hasCoApplicant && leadData.additionalDetails?.coApplicant) {
+      const coApplicantInsert = {
+        lead_id: leadData.id,
+        name: leadData.additionalDetails.coApplicant.name || '',
+        age: leadData.additionalDetails.coApplicant.age || 0,
+        phone_number: leadData.additionalDetails.coApplicant.phone || '',
+        email: leadData.additionalDetails.coApplicant.email || '',
+        relationship: leadData.additionalDetails.coApplicant.relation || 'Spouse',
+        occupation: leadData.additionalDetails.coApplicant.occupation || '',
+        monthly_income: leadData.additionalDetails.coApplicant.monthlyIncome || ''
+      };
+
+      const { error: coApplicantError } = await supabase
+        .from('co_applicants')
+        .insert([coApplicantInsert]);
+
+      if (coApplicantError) {
+        console.error('Error creating co-applicant:', coApplicantError);
+      }
+    }
+
+    // Insert additional addresses
+    if (leadData.additionalDetails?.addresses && leadData.additionalDetails.addresses.length > 0) {
+      for (const addr of leadData.additionalDetails.addresses) {
+        const { data: additionalAddress, error: additionalAddressError } = await supabase
+          .from('addresses')
+          .insert([{
+            type: addr.type || 'Residence',
+            street: addr.street || '',
+            city: addr.city || '',
+            district: addr.district || '',
+            state: addr.state || '',
+            pincode: addr.pincode || ''
+          }])
+          .select()
+          .single();
+
+        if (!additionalAddressError && additionalAddress) {
+          await supabase
+            .from('lead_addresses')
+            .insert([{
+              lead_id: leadData.id,
+              address_id: additionalAddress.id
+            }]);
+        }
+      }
+    }
+
+    console.log('Lead created successfully:', lead);
+    return lead;
   } catch (error) {
     console.error('Error in createLead:', error);
     throw error;
@@ -174,7 +306,13 @@ export const getLeadsFromDatabase = async (): Promise<Lead[]> => {
       .from('leads')
       .select(`
         *,
-        additional_details (*)
+        additional_details (*),
+        phone_numbers (*),
+        addresses (*),
+        lead_addresses (
+          addresses (*)
+        ),
+        co_applicants (*)
       `);
 
     if (leadsError) {
@@ -194,15 +332,15 @@ export const getLeadsFromDatabase = async (): Promise<Lead[]> => {
       name: lead.name,
       age: lead.age || 0,
       job: lead.job || '',
-      phone: lead.phone || '',
-      email: lead.email || '',
+      phone: lead.phone_numbers?.[0]?.number || '',
+      email: lead.additional_details?.[0]?.email || '',
       address: {
-        type: (lead.address_type || 'Residence') as Address['type'],
-        street: lead.address_street || '',
-        city: lead.address_city || '',
-        district: lead.address_district || '',
-        state: lead.address_state || '',
-        pincode: lead.address_pincode || ''
+        type: (lead.addresses?.type || 'Residence') as Address['type'],
+        street: lead.addresses?.street || '',
+        city: lead.addresses?.city || '',
+        district: lead.addresses?.district || '',
+        state: lead.addresses?.state || '',
+        pincode: lead.addresses?.pincode || ''
       },
       additionalDetails: {
         company: lead.additional_details?.[0]?.company || '',
@@ -211,13 +349,20 @@ export const getLeadsFromDatabase = async (): Promise<Lead[]> => {
         propertyType: lead.additional_details?.[0]?.property_type || '',
         ownershipStatus: lead.additional_details?.[0]?.ownership_status || '',
         propertyAge: lead.additional_details?.[0]?.property_age || '',
-        monthlyIncome: lead.additional_details?.[0]?.monthly_income || '',
+        monthlyIncome: parseInt(lead.additional_details?.[0]?.monthly_income) || 0,
         annualIncome: lead.additional_details?.[0]?.annual_income || '',
         otherIncome: lead.additional_details?.[0]?.other_income || '',
         loanAmount: lead.additional_details?.[0]?.loan_amount || '',
-        addresses: [],
-        phoneNumber: lead.phone || '',
-        email: lead.email || '',
+        addresses: lead.lead_addresses?.map((la: any) => ({
+          type: la.addresses?.type || 'Residence',
+          street: la.addresses?.street || '',
+          city: la.addresses?.city || '',
+          district: la.addresses?.district || '',
+          state: la.addresses?.state || '',
+          pincode: la.addresses?.pincode || ''
+        })) || [],
+        phoneNumber: lead.phone_numbers?.[0]?.number || '',
+        email: lead.additional_details?.[0]?.email || '',
         dateOfBirth: lead.additional_details?.[0]?.date_of_birth ? new Date(lead.additional_details[0].date_of_birth) : new Date(),
         fatherName: lead.additional_details?.[0]?.father_name || '',
         motherName: lead.additional_details?.[0]?.mother_name || '',
@@ -232,10 +377,19 @@ export const getLeadsFromDatabase = async (): Promise<Lead[]> => {
         leadType: lead.additional_details?.[0]?.lead_type || '',
         loanType: lead.additional_details?.[0]?.loan_type || '',
         vehicleBrandName: lead.additional_details?.[0]?.vehicle_brand_name || '',
-        vehicleModelName: lead.additional_details?.[0]?.vehicle_model_name || ''
+        vehicleModelName: lead.additional_details?.[0]?.vehicle_model_name || '',
+        coApplicant: lead.co_applicants?.[0] ? {
+          name: lead.co_applicants[0].name || '',
+          age: lead.co_applicants[0].age || 0,
+          phone: lead.co_applicants[0].phone_number || '',
+          email: lead.co_applicants[0].email || '',
+          relation: lead.co_applicants[0].relationship || 'Spouse',
+          occupation: lead.co_applicants[0].occupation || '',
+          monthlyIncome: lead.co_applicants[0].monthly_income || ''
+        } : undefined
       },
       status: lead.status as Lead['status'],
-      bank: lead.bank,
+      bank: lead.bank_id || '',
       visitType: (lead.visit_type || 'Physical') as Lead['visitType'],
       assignedTo: lead.assigned_to || '',
       createdAt: new Date(lead.created_at),
@@ -264,7 +418,13 @@ export const getLeadById = async (leadId: string): Promise<Lead | null> => {
       .from('leads')
       .select(`
         *,
-        additional_details (*)
+        additional_details (*),
+        phone_numbers (*),
+        addresses (*),
+        lead_addresses (
+          addresses (*)
+        ),
+        co_applicants (*)
       `)
       .eq('id', leadId)
       .single();
@@ -299,7 +459,13 @@ export const getLeadsByBankFromDatabase = async (bankId: string): Promise<Lead[]
       .from('leads')
       .select(`
         *,
-        additional_details (*)
+        additional_details (*),
+        phone_numbers (*),
+        addresses (*),
+        lead_addresses (
+          addresses (*)
+        ),
+        co_applicants (*)
       `)
       .eq('bank_id', bankId);
 
@@ -333,15 +499,15 @@ const transformLeadFromSupabase = (lead: any): Lead => {
     name: lead.name,
     age: lead.age || 0,
     job: lead.job || '',
-    phone: lead.phone || '',
-    email: lead.email || '',
+    phone: lead.phone_numbers?.[0]?.number || '',
+    email: lead.additional_details?.[0]?.email || '',
     address: {
-      type: (lead.address_type || 'Residence') as Address['type'],
-      street: lead.address_street || '',
-      city: lead.address_city || '',
-      district: lead.address_district || '',
-      state: lead.address_state || '',
-      pincode: lead.address_pincode || ''
+      type: (lead.addresses?.type || 'Residence') as Address['type'],
+      street: lead.addresses?.street || '',
+      city: lead.addresses?.city || '',
+      district: lead.addresses?.district || '',
+      state: lead.addresses?.state || '',
+      pincode: lead.addresses?.pincode || ''
     },
     additionalDetails: {
       company: lead.additional_details?.[0]?.company || '',
@@ -350,13 +516,20 @@ const transformLeadFromSupabase = (lead: any): Lead => {
       propertyType: lead.additional_details?.[0]?.property_type || '',
       ownershipStatus: lead.additional_details?.[0]?.ownership_status || '',
       propertyAge: lead.additional_details?.[0]?.property_age || '',
-      monthlyIncome: lead.additional_details?.[0]?.monthly_income || '',
+      monthlyIncome: parseInt(lead.additional_details?.[0]?.monthly_income) || 0,
       annualIncome: lead.additional_details?.[0]?.annual_income || '',
       otherIncome: lead.additional_details?.[0]?.other_income || '',
       loanAmount: lead.additional_details?.[0]?.loan_amount || '',
-      addresses: [],
-      phoneNumber: lead.phone || '',
-      email: lead.email || '',
+      addresses: lead.lead_addresses?.map((la: any) => ({
+        type: la.addresses?.type || 'Residence',
+        street: la.addresses?.street || '',
+        city: la.addresses?.city || '',
+        district: la.addresses?.district || '',
+        state: la.addresses?.state || '',
+        pincode: la.addresses?.pincode || ''
+      })) || [],
+      phoneNumber: lead.phone_numbers?.[0]?.number || '',
+      email: lead.additional_details?.[0]?.email || '',
       dateOfBirth: lead.additional_details?.[0]?.date_of_birth ? new Date(lead.additional_details[0].date_of_birth) : new Date(),
       fatherName: lead.additional_details?.[0]?.father_name || '',
       motherName: lead.additional_details?.[0]?.mother_name || '',
@@ -371,10 +544,19 @@ const transformLeadFromSupabase = (lead: any): Lead => {
       leadType: lead.additional_details?.[0]?.lead_type || '',
       loanType: lead.additional_details?.[0]?.loan_type || '',
       vehicleBrandName: lead.additional_details?.[0]?.vehicle_brand_name || '',
-      vehicleModelName: lead.additional_details?.[0]?.vehicle_model_name || ''
+      vehicleModelName: lead.additional_details?.[0]?.vehicle_model_name || '',
+      coApplicant: lead.co_applicants?.[0] ? {
+        name: lead.co_applicants[0].name || '',
+        age: lead.co_applicants[0].age || 0,
+        phone: lead.co_applicants[0].phone_number || '',
+        email: lead.co_applicants[0].email || '',
+        relation: lead.co_applicants[0].relationship || 'Spouse',
+        occupation: lead.co_applicants[0].occupation || '',
+        monthlyIncome: lead.co_applicants[0].monthly_income || ''
+      } : undefined
     },
     status: lead.status as Lead['status'],
-    bank: lead.bank,
+    bank: lead.bank_id || '',
     visitType: (lead.visit_type || 'Physical') as Lead['visitType'],
     assignedTo: lead.assigned_to || '',
     createdAt: new Date(lead.created_at),
