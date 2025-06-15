@@ -10,6 +10,7 @@ import AgentDashboard from "./pages/AgentDashboard";
 import TvtDashboard from "./pages/TvtDashboard";
 import LeadDetail from "./pages/LeadDetail";
 import TvtLeadDetail from "./pages/TvtLeadDetail";
+import TvtLeadVerification from "./pages/TvtLeadVerification";
 import NotFound from "./pages/NotFound";
 
 // Admin pages

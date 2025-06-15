@@ -1,4 +1,3 @@
-
 import { Lead, Address, AdditionalDetails } from '@/utils/mockData';
 
 // Define all possible CSV headers for comprehensive export/import
@@ -260,7 +259,7 @@ const mapCSVRowToLead = (headers: string[], values: string[]): Partial<Lead> => 
     propertyType: getValue('Property Type'),
     ownershipStatus: getValue('Ownership Status'),
     propertyAge: getValue('Property Age'),
-    monthlyIncome: getValue('Monthly Income'),
+    monthlyIncome: getNumberValue('Monthly Income'),
     annualIncome: getValue('Annual Income'),
     otherIncome: getValue('Other Income'),
     phoneNumber: getValue('Phone Number'),

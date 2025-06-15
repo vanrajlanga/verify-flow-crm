@@ -1,16 +1,24 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Phone, Mail, Building, MapPin, User, Clock } from 'lucide-react';
+import { ArrowLeft, Save } from 'lucide-react';
 import { Lead, User as UserType } from '@/utils/mockData';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
 import LeadVerificationForm from '@/components/tvt/LeadVerificationForm';
 import { getLeadByIdFromDatabase, updateLeadInDatabase } from '@/lib/lead-operations';
 import { toast } from '@/components/ui/use-toast';
+
+interface FieldVerification {
+  fieldName: string;
+  originalValue: string;
+  verifiedValue: string;
+  isVerified: boolean;
+  isCorrect: boolean;
+  notes: string;
+}
 
 const TvtLeadVerification = () => {
   const { leadId } = useParams<{ leadId: string }>();
@@ -19,6 +27,7 @@ const TvtLeadVerification = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [lead, setLead] = useState<Lead | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('kycUser');
@@ -43,26 +52,15 @@ const TvtLeadVerification = () => {
   const loadLeadDetail = async (id: string) => {
     try {
       setLoading(true);
-      console.log('TVT: Loading lead detail for verification, ID:', id);
+      console.log('TVT Verification: Loading lead detail for ID:', id);
       
       const leadData = await getLeadByIdFromDatabase(id);
       
       if (leadData) {
-        // Check if this lead is assigned to the current TVT user
-        if (leadData.assignedTo !== currentUser?.name && leadData.assignedTo !== currentUser?.id) {
-          toast({
-            title: "Access Denied",
-            description: "This lead is not assigned to you.",
-            variant: "destructive"
-          });
-          navigate('/tvt/dashboard');
-          return;
-        }
-        
         setLead(leadData);
-        console.log('TVT: Lead detail loaded for verification:', leadData.name);
+        console.log('TVT Verification: Lead detail loaded successfully:', leadData.name);
       } else {
-        console.log('TVT: No lead found with ID:', id);
+        console.log('TVT Verification: No lead found with ID:', id);
         toast({
           title: "Lead not found",
           description: `No lead found with ID: ${id}`,
@@ -71,7 +69,7 @@ const TvtLeadVerification = () => {
         navigate('/tvt/dashboard');
       }
     } catch (error) {
-      console.error('TVT: Error loading lead detail:', error);
+      console.error('TVT Verification: Error loading lead detail:', error);
       toast({
         title: "Error loading lead",
         description: "Failed to load lead details. Please try again.",
@@ -83,58 +81,47 @@ const TvtLeadVerification = () => {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('kycUser');
-    navigate('/');
-  };
+  const handleSaveVerification = async (verificationData: FieldVerification[]) => {
+    if (!lead || !currentUser) return;
 
-  const handleSaveVerification = async (verificationData: any[]) => {
-    if (!lead) return;
-    
     try {
-      // Update lead with verification data
+      setSaving(true);
+      console.log('Saving verification data:', verificationData);
+
       const updatedLead = {
         ...lead,
+        status: 'In Progress' as const,
         verification: {
-          ...lead.verification,
           verificationData,
-          verifiedBy: currentUser?.id,
+          verifiedBy: currentUser.name,
           verifiedAt: new Date(),
-          status: 'Completed'
-        },
-        status: 'Completed' as const
+          status: 'In Progress' as const
+        }
       };
-      
+
       await updateLeadInDatabase(lead.id, updatedLead);
       setLead(updatedLead);
-      
+
       toast({
-        title: "Verification Completed",
-        description: "Lead verification has been saved successfully.",
+        title: "Verification saved",
+        description: "Lead verification data has been saved successfully.",
       });
-      
-      // Navigate back to dashboard after a short delay
-      setTimeout(() => {
-        navigate('/tvt/dashboard');
-      }, 2000);
+
     } catch (error) {
       console.error('Error saving verification:', error);
       toast({
-        title: "Error",
-        description: "Failed to save verification data.",
+        title: "Error saving verification",
+        description: "Failed to save verification data. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setSaving(false);
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Pending': return 'bg-yellow-100 text-yellow-800';
-      case 'In Progress': return 'bg-blue-100 text-blue-800';
-      case 'Completed': return 'bg-green-100 text-green-800';
-      case 'Rejected': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
+  const handleLogout = () => {
+    localStorage.removeItem('kycUser');
+    navigate('/');
   };
 
   if (!currentUser) {
@@ -216,70 +203,30 @@ const TvtLeadVerification = () => {
                   Back to Dashboard
                 </Button>
                 <div>
-                  <h1 className="text-2xl font-bold">Verify Lead - {lead.name}</h1>
+                  <h1 className="text-2xl font-bold">Verify Lead: {lead.name}</h1>
                   <p className="text-muted-foreground">Lead ID: {lead.id}</p>
                 </div>
               </div>
-              <Badge className={getStatusColor(lead.status)}>
-                {lead.status}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">Verifying as: {currentUser.name}</span>
+              </div>
             </div>
 
-            {/* Lead Summary */}
+            {/* Verification Instructions */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  Lead Summary
-                </CardTitle>
-                <CardDescription>
-                  Quick overview of the lead before verification
-                </CardDescription>
+                <CardTitle>Verification Instructions</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <div className="flex items-center gap-2">
-                    <User className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Name</p>
-                      <p className="font-medium">{lead.name}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Phone</p>
-                      <p className="font-medium">{lead.phone || 'Not provided'}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Email</p>
-                      <p className="font-medium">{lead.email || 'Not provided'}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Building className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Bank</p>
-                      <p className="font-medium">{lead.bank || 'Not specified'}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">City</p>
-                      <p className="font-medium">{lead.address?.city || 'Not provided'}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm text-muted-foreground">Created</p>
-                      <p className="font-medium">{new Date(lead.createdAt).toLocaleDateString()}</p>
-                    </div>
-                  </div>
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h3 className="font-semibold text-blue-900 mb-2">How to verify lead data:</h3>
+                  <ul className="text-sm text-blue-800 space-y-1">
+                    <li>• Call the applicant using the provided phone number</li>
+                    <li>• Verify each field by asking the applicant to confirm or provide the correct information</li>
+                    <li>• Mark each field as "Correct" or "Incorrect" based on the applicant's response</li>
+                    <li>• Add notes for any discrepancies or important observations</li>
+                    <li>• Save your verification progress regularly</li>
+                  </ul>
                 </div>
               </CardContent>
             </Card>
