@@ -26,6 +26,19 @@ export const transformFormDataToLead = (formData: any): Lead => {
   const primaryPhone = formData.phoneNumbers?.find((phone: any) => phone.isPrimary) 
     || formData.phoneNumbers?.[0];
 
+  // Map visit type to database-compatible value
+  const getVisitType = (formVisitType: string): 'Residence' | 'Office' | 'Business' => {
+    // From the network logs, I can see existing valid values are "Residence", "Office", etc.
+    // Default to "Residence" for Physical visits
+    if (formVisitType === 'Physical' || !formVisitType) {
+      return 'Residence';
+    }
+    if (formVisitType === 'Office' || formVisitType === 'Business') {
+      return formVisitType as 'Residence' | 'Office' | 'Business';
+    }
+    return 'Residence'; // Safe default
+  };
+
   // Create the lead object
   const lead: Lead = {
     id: `lead-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -84,7 +97,7 @@ export const transformFormDataToLead = (formData: any): Lead => {
     },
     status: 'Pending',
     bank: formData.bankName || formData.bank || '',
-    visitType: (formData.visitType as Lead['visitType']) || 'Physical',
+    visitType: getVisitType(formData.visitType), // Fix: Use proper mapping
     assignedTo: formData.assignedTo || '',
     createdAt: new Date(),
     updatedAt: new Date(),
