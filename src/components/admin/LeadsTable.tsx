@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -12,6 +11,7 @@ import { exportLeadsToCSV, generateSampleCSV, downloadFile } from '@/lib/csv-ope
 import { updateLeadInDatabase } from '@/lib/lead-operations';
 import { toast } from '@/components/ui/use-toast';
 import EditableCell from './EditableCell';
+import ColumnVisibilityControl from './ColumnVisibilityControl';
 
 interface LeadsTableProps {
   leads: Lead[];
@@ -42,10 +42,92 @@ const LeadsTable: React.FC<LeadsTableProps> = ({
   enableBulkSelect = false,
   selectedLeads = [],
   onSelectLeads,
-  visibleColumns
+  visibleColumns: providedVisibleColumns
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isExporting, setIsExporting] = useState(false);
+
+  // Define ALL available columns from database A to Z
+  const allAvailableColumns = [
+    { key: 'leadId', label: 'Lead ID' },
+    { key: 'name', label: 'Name' },
+    { key: 'age', label: 'Age' },
+    { key: 'job', label: 'Job/Occupation' },
+    { key: 'status', label: 'Status' },
+    { key: 'bank', label: 'Bank' },
+    { key: 'visitType', label: 'Visit Type' },
+    { key: 'assignedTo', label: 'Assigned To' },
+    { key: 'instructions', label: 'Instructions' },
+    { key: 'hasCoApplicant', label: 'Has Co-Applicant' },
+    { key: 'coApplicantName', label: 'Co-Applicant Name' },
+    
+    // Complete Address Fields
+    { key: 'streetAddress', label: 'Street Address' },
+    { key: 'city', label: 'City' },
+    { key: 'district', label: 'District' },
+    { key: 'state', label: 'State' },
+    { key: 'pincode', label: 'Pincode' },
+    
+    // Contact Information
+    { key: 'phone', label: 'Phone' },
+    { key: 'email', label: 'Email' },
+    { key: 'phoneNumber', label: 'Phone Number (Additional)' },
+    { key: 'emailAdditional', label: 'Email (Additional)' },
+    
+    // Professional Details
+    { key: 'company', label: 'Company' },
+    { key: 'designation', label: 'Designation' },
+    { key: 'workExperience', label: 'Work Experience' },
+    { key: 'monthlyIncome', label: 'Monthly Income' },
+    { key: 'annualIncome', label: 'Annual Income' },
+    { key: 'otherIncome', label: 'Other Income' },
+    
+    // Family Details
+    { key: 'fatherName', label: 'Father Name' },
+    { key: 'motherName', label: 'Mother Name' },
+    { key: 'gender', label: 'Gender' },
+    { key: 'dateOfBirth', label: 'Date of Birth' },
+    
+    // Loan Details
+    { key: 'loanAmount', label: 'Loan Amount' },
+    { key: 'loanType', label: 'Loan Type' },
+    { key: 'propertyType', label: 'Property Type' },
+    { key: 'propertyAge', label: 'Property Age' },
+    { key: 'ownershipStatus', label: 'Ownership Status' },
+    
+    // Vehicle Details
+    { key: 'vehicleBrand', label: 'Vehicle Brand' },
+    { key: 'vehicleModel', label: 'Vehicle Model' },
+    { key: 'vehicleBrandId', label: 'Vehicle Brand ID' },
+    { key: 'vehicleModelId', label: 'Vehicle Model ID' },
+    
+    // Bank and Product Details
+    { key: 'bankProduct', label: 'Bank Product' },
+    { key: 'bankBranch', label: 'Bank Branch' },
+    
+    // Additional Database Fields
+    { key: 'leadType', label: 'Lead Type' },
+    { key: 'leadTypeId', label: 'Lead Type ID' },
+    { key: 'caseId', label: 'Case ID' },
+    { key: 'agencyFileNo', label: 'Agency File No' },
+    { key: 'applicationBarcode', label: 'Application Barcode' },
+    { key: 'schemeDesc', label: 'Scheme Description' },
+    { key: 'additionalComments', label: 'Additional Comments' },
+    
+    // Timestamps
+    { key: 'createdDate', label: 'Created Date' },
+    { key: 'updatedDate', label: 'Updated Date' },
+    { key: 'verificationDate', label: 'Verification Date' }
+  ];
+
+  // Initialize visible columns - if provided use them, otherwise show key columns
+  const defaultVisibleColumns = providedVisibleColumns || [
+    'leadId', 'name', 'age', 'job', 'status', 'bank', 'visitType', 
+    'city', 'state', 'phone', 'company', 'loanAmount', 'bankProduct', 
+    'assignedTo', 'createdDate'
+  ];
+
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(defaultVisibleColumns);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -55,6 +137,22 @@ const LeadsTable: React.FC<LeadsTableProps> = ({
       case 'Rejected': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  const handleColumnToggle = (columnKey: string) => {
+    setVisibleColumns(prev => 
+      prev.includes(columnKey) 
+        ? prev.filter(col => col !== columnKey)
+        : [...prev, columnKey]
+    );
+  };
+
+  const handleShowAllColumns = () => {
+    setVisibleColumns(allAvailableColumns.map(col => col.key));
+  };
+
+  const handleHideAllColumns = () => {
+    setVisibleColumns(['leadId', 'name']); // Keep essential columns
   };
 
   const handleExportCSV = async () => {
@@ -128,7 +226,7 @@ const LeadsTable: React.FC<LeadsTableProps> = ({
 
       let updates: Partial<Lead> = {};
 
-      // Handle different field types
+      // Handle different field types with complete mapping
       switch (field) {
         case 'name':
           updates.name = value.toString();
@@ -148,52 +246,27 @@ const LeadsTable: React.FC<LeadsTableProps> = ({
         case 'visitType':
           updates.visitType = value.toString() as Lead['visitType'];
           break;
+        case 'streetAddress':
+          updates.address = { ...lead.address, street: value.toString() };
+          break;
         case 'city':
           updates.address = { ...lead.address, city: value.toString() };
+          break;
+        case 'district':
+          updates.address = { ...lead.address, district: value.toString() };
           break;
         case 'state':
           updates.address = { ...lead.address, state: value.toString() };
           break;
-        case 'phoneNumber':
-          updates.additionalDetails = {
-            ...lead.additionalDetails,
-            phoneNumber: value.toString()
-          };
+        case 'pincode':
+          updates.address = { ...lead.address, pincode: value.toString() };
           break;
-        case 'email':
+        // Add all additional field mappings
+        default:
+          // Handle additional details fields
           updates.additionalDetails = {
             ...lead.additionalDetails,
-            email: value.toString()
-          };
-          break;
-        case 'company':
-          updates.additionalDetails = {
-            ...lead.additionalDetails,
-            company: value.toString()
-          };
-          break;
-        case 'loanType':
-          updates.additionalDetails = {
-            ...lead.additionalDetails,
-            loanType: value.toString()
-          };
-          break;
-        case 'loanAmount':
-          updates.additionalDetails = {
-            ...lead.additionalDetails,
-            loanAmount: value.toString()
-          };
-          break;
-        case 'bankProduct':
-          updates.additionalDetails = {
-            ...lead.additionalDetails,
-            bankProduct: value.toString()
-          };
-          break;
-        case 'initiatedUnderBranch':
-          updates.additionalDetails = {
-            ...lead.additionalDetails,
-            initiatedUnderBranch: value.toString()
+            [field]: value.toString()
           };
           break;
       }
@@ -241,23 +314,71 @@ const LeadsTable: React.FC<LeadsTableProps> = ({
     { value: 'Both', label: 'Both' }
   ];
 
-  // Define all available columns
-  const allColumns = [
-    'leadId', 'name', 'age', 'job', 'status', 'bank', 'visitType', 'city', 'state', 
-    'phone', 'email', 'company', 'loanType', 'loanAmount', 'bankProduct', 
-    'initiatedBranch', 'coApplicant', 'assignedTo', 'createdDate'
-  ];
-
-  // Use provided visible columns or show all columns
-  const columnsToShow = visibleColumns || allColumns;
-
   // Helper function to check if column should be visible
   const isColumnVisible = (columnName: string) => {
-    return columnsToShow.includes(columnName);
+    return visibleColumns.includes(columnName);
+  };
+
+  // Helper function to get cell value
+  const getCellValue = (lead: Lead, columnKey: string) => {
+    switch (columnKey) {
+      case 'leadId': return lead.id;
+      case 'name': return lead.name;
+      case 'age': return lead.age;
+      case 'job': return lead.job;
+      case 'status': return lead.status;
+      case 'bank': return lead.bank;
+      case 'visitType': return lead.visitType;
+      case 'assignedTo': return lead.assignedTo;
+      case 'instructions': return lead.instructions;
+      case 'hasCoApplicant': return lead.hasCoApplicant ? 'Yes' : 'No';
+      case 'coApplicantName': return lead.coApplicantName;
+      case 'streetAddress': return lead.address?.street;
+      case 'city': return lead.address?.city;
+      case 'district': return lead.address?.district;
+      case 'state': return lead.address?.state;
+      case 'pincode': return lead.address?.pincode;
+      case 'phone': return lead.phone;
+      case 'email': return lead.email;
+      case 'phoneNumber': return lead.additionalDetails?.phoneNumber;
+      case 'emailAdditional': return lead.additionalDetails?.email;
+      case 'company': return lead.additionalDetails?.company;
+      case 'designation': return lead.additionalDetails?.designation;
+      case 'workExperience': return lead.additionalDetails?.workExperience;
+      case 'monthlyIncome': return lead.additionalDetails?.monthlyIncome;
+      case 'annualIncome': return lead.additionalDetails?.annualIncome;
+      case 'otherIncome': return lead.additionalDetails?.otherIncome;
+      case 'fatherName': return lead.additionalDetails?.fatherName;
+      case 'motherName': return lead.additionalDetails?.motherName;
+      case 'gender': return lead.additionalDetails?.gender;
+      case 'dateOfBirth': return lead.additionalDetails?.dateOfBirth ? new Date(lead.additionalDetails.dateOfBirth).toLocaleDateString() : '';
+      case 'loanAmount': return lead.additionalDetails?.loanAmount;
+      case 'loanType': return lead.additionalDetails?.loanType;
+      case 'propertyType': return lead.additionalDetails?.propertyType;
+      case 'propertyAge': return lead.additionalDetails?.propertyAge;
+      case 'ownershipStatus': return lead.additionalDetails?.ownershipStatus;
+      case 'vehicleBrand': return lead.additionalDetails?.vehicleBrandName;
+      case 'vehicleModel': return lead.additionalDetails?.vehicleModelName;
+      case 'vehicleBrandId': return lead.additionalDetails?.vehicleBrandId;
+      case 'vehicleModelId': return lead.additionalDetails?.vehicleModelId;
+      case 'bankProduct': return lead.additionalDetails?.bankProduct;
+      case 'bankBranch': return lead.additionalDetails?.bankBranch;
+      case 'leadType': return lead.additionalDetails?.leadType;
+      case 'leadTypeId': return lead.additionalDetails?.leadTypeId;
+      case 'caseId': return lead.additionalDetails?.caseId;
+      case 'agencyFileNo': return lead.additionalDetails?.agencyFileNo;
+      case 'applicationBarcode': return lead.additionalDetails?.applicationBarcode;
+      case 'schemeDesc': return lead.additionalDetails?.schemeDesc;
+      case 'additionalComments': return lead.additionalDetails?.additionalComments;
+      case 'createdDate': return new Date(lead.createdAt).toLocaleDateString();
+      case 'updatedDate': return new Date(lead.updatedAt).toLocaleDateString();
+      case 'verificationDate': return lead.verificationDate ? new Date(lead.verificationDate).toLocaleDateString() : '';
+      default: return '';
+    }
   };
 
   // Calculate total columns for empty state
-  const totalColumns = (enableBulkSelect ? 1 : 0) + columnsToShow.length + (showActions ? 1 : 0);
+  const totalColumns = (enableBulkSelect ? 1 : 0) + visibleColumns.length + (showActions ? 1 : 0);
 
   return (
     <Card>
@@ -266,13 +387,13 @@ const LeadsTable: React.FC<LeadsTableProps> = ({
           <div>
             <CardTitle>{title}</CardTitle>
             <CardDescription>
-              {description} - {filteredLeads.length} of {leads.length} leads
+              {description} - {filteredLeads.length} of {leads.length} leads | Showing {visibleColumns.length} of {allAvailableColumns.length} columns
               {enableInlineEdit && " | Click any cell to edit"}
               {enableBulkSelect && " | Select multiple for bulk operations"}
             </CardDescription>
           </div>
           
-          {showActions && !visibleColumns && (
+          {showActions && (
             <div className="flex gap-2 flex-wrap">
               <Button 
                 onClick={handleExportCSV}
@@ -295,16 +416,26 @@ const LeadsTable: React.FC<LeadsTableProps> = ({
           )}
         </div>
         
-        <div className="flex items-center gap-4 mt-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder="Search leads by name, ID, bank, city, phone, or email..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Search leads by name, ID, bank, city, phone, or email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
           </div>
+          
+          <ColumnVisibilityControl
+            availableColumns={allAvailableColumns}
+            visibleColumns={visibleColumns}
+            onColumnToggle={handleColumnToggle}
+            onShowAll={handleShowAllColumns}
+            onHideAll={handleHideAllColumns}
+          />
         </div>
       </CardHeader>
       
@@ -321,25 +452,10 @@ const LeadsTable: React.FC<LeadsTableProps> = ({
                     />
                   </TableHead>
                 )}
-                {isColumnVisible('leadId') && <TableHead>Lead ID</TableHead>}
-                {isColumnVisible('name') && <TableHead>Name</TableHead>}
-                {isColumnVisible('age') && <TableHead>Age</TableHead>}
-                {isColumnVisible('job') && <TableHead>Job</TableHead>}
-                {isColumnVisible('status') && <TableHead>Status</TableHead>}
-                {isColumnVisible('bank') && <TableHead>Bank</TableHead>}
-                {isColumnVisible('visitType') && <TableHead>Visit Type</TableHead>}
-                {isColumnVisible('city') && <TableHead>City</TableHead>}
-                {isColumnVisible('state') && <TableHead>State</TableHead>}
-                {isColumnVisible('phone') && <TableHead>Phone</TableHead>}
-                {isColumnVisible('email') && <TableHead>Email</TableHead>}
-                {isColumnVisible('company') && <TableHead>Company</TableHead>}
-                {isColumnVisible('loanType') && <TableHead>Loan Type</TableHead>}
-                {isColumnVisible('loanAmount') && <TableHead>Loan Amount</TableHead>}
-                {isColumnVisible('bankProduct') && <TableHead>Bank Product</TableHead>}
-                {isColumnVisible('initiatedBranch') && <TableHead>Initiated Branch</TableHead>}
-                {isColumnVisible('coApplicant') && <TableHead>Co-Applicant</TableHead>}
-                {isColumnVisible('assignedTo') && <TableHead>Assigned To</TableHead>}
-                {isColumnVisible('createdDate') && <TableHead>Created Date</TableHead>}
+                {visibleColumns.map(columnKey => {
+                  const column = allAvailableColumns.find(col => col.key === columnKey);
+                  return column ? <TableHead key={columnKey}>{column.label}</TableHead> : null;
+                })}
                 {showActions && <TableHead>Actions</TableHead>}
               </TableRow>
             </TableHeader>
@@ -363,226 +479,53 @@ const LeadsTable: React.FC<LeadsTableProps> = ({
                         />
                       </TableCell>
                     )}
-                    {isColumnVisible('leadId') && (
-                      <TableCell className="font-medium">{lead.id}</TableCell>
-                    )}
-                    {isColumnVisible('name') && (
-                      <TableCell>
-                        {enableInlineEdit ? (
-                          <EditableCell
-                            value={lead.name}
-                            onSave={(value) => handleCellUpdate(lead.id, 'name', value)}
-                            placeholder="Enter name"
-                          />
-                        ) : (
-                          <span className="font-semibold">{lead.name}</span>
-                        )}
-                      </TableCell>
-                    )}
-                    {isColumnVisible('age') && (
-                      <TableCell>
-                        {enableInlineEdit ? (
-                          <EditableCell
-                            value={lead.age}
-                            onSave={(value) => handleCellUpdate(lead.id, 'age', value)}
-                            type="number"
-                          />
-                        ) : (
-                          lead.age
-                        )}
-                      </TableCell>
-                    )}
-                    {isColumnVisible('job') && (
-                      <TableCell>
-                        {enableInlineEdit ? (
-                          <EditableCell
-                            value={lead.job}
-                            onSave={(value) => handleCellUpdate(lead.id, 'job', value)}
-                            placeholder="Enter job"
-                          />
-                        ) : (
-                          lead.job
-                        )}
-                      </TableCell>
-                    )}
-                    {isColumnVisible('status') && (
-                      <TableCell>
-                        {enableInlineEdit ? (
-                          <EditableCell
-                            value={lead.status}
-                            onSave={(value) => handleCellUpdate(lead.id, 'status', value)}
-                            type="select"
-                            options={statusOptions}
-                          />
-                        ) : (
-                          <Badge className={getStatusColor(lead.status)}>
-                            {lead.status}
-                          </Badge>
-                        )}
-                      </TableCell>
-                    )}
-                    {isColumnVisible('bank') && (
-                      <TableCell>
-                        {enableInlineEdit ? (
-                          <EditableCell
-                            value={lead.bank}
-                            onSave={(value) => handleCellUpdate(lead.id, 'bank', value)}
-                            placeholder="Enter bank"
-                          />
-                        ) : (
-                          lead.bank
-                        )}
-                      </TableCell>
-                    )}
-                    {isColumnVisible('visitType') && (
-                      <TableCell>
-                        {enableInlineEdit ? (
-                          <EditableCell
-                            value={lead.visitType}
-                            onSave={(value) => handleCellUpdate(lead.id, 'visitType', value)}
-                            type="select"
-                            options={visitTypeOptions}
-                          />
-                        ) : (
-                          lead.visitType
-                        )}
-                      </TableCell>
-                    )}
-                    {isColumnVisible('city') && (
-                      <TableCell>
-                        {enableInlineEdit ? (
-                          <EditableCell
-                            value={lead.address.city}
-                            onSave={(value) => handleCellUpdate(lead.id, 'city', value)}
-                            placeholder="Enter city"
-                          />
-                        ) : (
-                          lead.address.city
-                        )}
-                      </TableCell>
-                    )}
-                    {isColumnVisible('state') && (
-                      <TableCell>
-                        {enableInlineEdit ? (
-                          <EditableCell
-                            value={lead.address.state}
-                            onSave={(value) => handleCellUpdate(lead.id, 'state', value)}
-                            placeholder="Enter state"
-                          />
-                        ) : (
-                          lead.address.state
-                        )}
-                      </TableCell>
-                    )}
-                    {isColumnVisible('phone') && (
-                      <TableCell>
-                        {enableInlineEdit ? (
-                          <EditableCell
-                            value={lead.additionalDetails?.phoneNumber || ''}
-                            onSave={(value) => handleCellUpdate(lead.id, 'phoneNumber', value)}
-                            placeholder="Enter phone"
-                          />
-                        ) : (
-                          lead.additionalDetails?.phoneNumber || '-'
-                        )}
-                      </TableCell>
-                    )}
-                    {isColumnVisible('email') && (
-                      <TableCell>
-                        {enableInlineEdit ? (
-                          <EditableCell
-                            value={lead.additionalDetails?.email || ''}
-                            onSave={(value) => handleCellUpdate(lead.id, 'email', value)}
-                            placeholder="Enter email"
-                          />
-                        ) : (
-                          lead.additionalDetails?.email || '-'
-                        )}
-                      </TableCell>
-                    )}
-                    {isColumnVisible('company') && (
-                      <TableCell>
-                        {enableInlineEdit ? (
-                          <EditableCell
-                            value={lead.additionalDetails?.company || ''}
-                            onSave={(value) => handleCellUpdate(lead.id, 'company', value)}
-                            placeholder="Enter company"
-                          />
-                        ) : (
-                          lead.additionalDetails?.company || '-'
-                        )}
-                      </TableCell>
-                    )}
-                    {isColumnVisible('loanType') && (
-                      <TableCell>
-                        {enableInlineEdit ? (
-                          <EditableCell
-                            value={lead.additionalDetails?.loanType || ''}
-                            onSave={(value) => handleCellUpdate(lead.id, 'loanType', value)}
-                            placeholder="Enter loan type"
-                          />
-                        ) : (
-                          lead.additionalDetails?.loanType || '-'
-                        )}
-                      </TableCell>
-                    )}
-                    {isColumnVisible('loanAmount') && (
-                      <TableCell>
-                        {enableInlineEdit ? (
-                          <EditableCell
-                            value={lead.additionalDetails?.loanAmount || ''}
-                            onSave={(value) => handleCellUpdate(lead.id, 'loanAmount', value)}
-                            placeholder="Enter amount"
-                          />
-                        ) : (
-                          lead.additionalDetails?.loanAmount || '-'
-                        )}
-                      </TableCell>
-                    )}
-                    {isColumnVisible('bankProduct') && (
-                      <TableCell>
-                        {enableInlineEdit ? (
-                          <EditableCell
-                            value={lead.additionalDetails?.bankProduct || ''}
-                            onSave={(value) => handleCellUpdate(lead.id, 'bankProduct', value)}
-                            placeholder="Enter bank product"
-                          />
-                        ) : (
-                          lead.additionalDetails?.bankProduct || '-'
-                        )}
-                      </TableCell>
-                    )}
-                    {isColumnVisible('initiatedBranch') && (
-                      <TableCell>
-                        {enableInlineEdit ? (
-                          <EditableCell
-                            value={lead.additionalDetails?.initiatedUnderBranch || ''}
-                            onSave={(value) => handleCellUpdate(lead.id, 'initiatedUnderBranch', value)}
-                            placeholder="Enter branch"
-                          />
-                        ) : (
-                          lead.additionalDetails?.initiatedUnderBranch || '-'
-                        )}
-                      </TableCell>
-                    )}
-                    {isColumnVisible('coApplicant') && (
-                      <TableCell>
-                        {lead.additionalDetails?.coApplicant ? (
-                          <span className="text-sm">
-                            {lead.additionalDetails.coApplicant.name}
-                            {lead.additionalDetails.coApplicant.relation && ` (${lead.additionalDetails.coApplicant.relation})`}
-                          </span>
-                        ) : (
-                          '-'
-                        )}
-                      </TableCell>
-                    )}
-                    {isColumnVisible('assignedTo') && (
-                      <TableCell>{lead.assignedTo || 'Unassigned'}</TableCell>
-                    )}
-                    {isColumnVisible('createdDate') && (
-                      <TableCell>{new Date(lead.createdAt).toLocaleDateString()}</TableCell>
-                    )}
+                    {visibleColumns.map(columnKey => {
+                      const cellValue = getCellValue(lead, columnKey);
+                      
+                      return (
+                        <TableCell key={columnKey}>
+                          {enableInlineEdit ? (
+                            columnKey === 'status' ? (
+                              <EditableCell
+                                value={cellValue}
+                                onSave={(value) => handleCellUpdate(lead.id, columnKey, value)}
+                                type="select"
+                                options={statusOptions}
+                              />
+                            ) : columnKey === 'visitType' ? (
+                              <EditableCell
+                                value={cellValue}
+                                onSave={(value) => handleCellUpdate(lead.id, columnKey, value)}
+                                type="select"
+                                options={visitTypeOptions}
+                              />
+                            ) : columnKey === 'age' ? (
+                              <EditableCell
+                                value={cellValue}
+                                onSave={(value) => handleCellUpdate(lead.id, columnKey, value)}
+                                type="number"
+                              />
+                            ) : (
+                              <EditableCell
+                                value={cellValue}
+                                onSave={(value) => handleCellUpdate(lead.id, columnKey, value)}
+                                placeholder={`Enter ${columnKey}`}
+                              />
+                            )
+                          ) : (
+                            columnKey === 'status' ? (
+                              <Badge className={getStatusColor(cellValue?.toString() || '')}>
+                                {cellValue || '-'}
+                              </Badge>
+                            ) : columnKey === 'name' ? (
+                              <span className="font-semibold">{cellValue || '-'}</span>
+                            ) : (
+                              cellValue || '-'
+                            )
+                          )}
+                        </TableCell>
+                      );
+                    })}
                     {showActions && (
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -617,6 +560,7 @@ const LeadsTable: React.FC<LeadsTableProps> = ({
             Showing {filteredLeads.length} of {leads.length} total leads from database
             {enableInlineEdit && " | Click any cell to edit data inline"}
             {enableBulkSelect && selectedLeads.length > 0 && ` | ${selectedLeads.length} selected`}
+            {" | Displaying " + visibleColumns.length + " of " + allAvailableColumns.length + " available columns"}
           </div>
         )}
       </CardContent>
