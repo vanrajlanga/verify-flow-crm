@@ -142,6 +142,7 @@ export interface Lead {
   status: 'Pending' | 'In Progress' | 'Completed' | 'Rejected';
   assignedTo: string;
   createdAt: Date;
+  updatedAt: Date;
   visitType: 'Physical' | 'Virtual';
   bank?: string;
   instructions?: string;
@@ -149,6 +150,8 @@ export interface Lead {
   verification?: Verification;
   verificationDate?: Date;
   additionalDetails?: AdditionalDetails;
+  hasCoApplicant?: boolean;
+  coApplicantName?: string;
   carDetails?: {
     make: string;
     model: string;
