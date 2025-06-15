@@ -3,7 +3,7 @@ import { Lead, Address, User } from '@/utils/mockData';
 
 export const createLead = async (leadData: any) => {
   try {
-    console.log('START createLead: final leadData sent to DB:', JSON.stringify(leadData, null, 2));
+    console.log('[DEBUG] START createLead. Prepared leadData:', JSON.stringify(leadData, null, 2));
 
     // Main lead insert
     const leadInsert = {
@@ -22,6 +22,8 @@ export const createLead = async (leadData: any) => {
       bank_id: leadData.bank || null // This must always be the bank's ID
     };
 
+    console.log('[DEBUG] Inserting lead:', JSON.stringify(leadInsert, null, 2));
+
     const { data: lead, error: leadError } = await supabase
       .from('leads')
       .insert([leadInsert])
@@ -29,9 +31,11 @@ export const createLead = async (leadData: any) => {
       .single();
 
     if (leadError) {
-      console.error('Error creating lead:', leadError);
+      console.error('[ERROR] createLead: Error from Supabase insert:', leadError);
       throw leadError;
     }
+
+    console.log('[DEBUG] Lead inserted, full returned data:', lead);
 
     // Insert phone number
     if (leadData.phone) {
@@ -176,10 +180,10 @@ export const createLead = async (leadData: any) => {
       }
     }
 
-    console.log('Lead created successfully:', lead);
+    console.log('[DEBUG] createLead finished for leadId:', leadData.id);
     return lead;
   } catch (error) {
-    console.error('Error in createLead:', error);
+    console.error('[FATAL ERROR] createLead:', error);
     throw error;
   }
 };

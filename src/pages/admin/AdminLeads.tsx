@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -40,10 +39,8 @@ const AdminLeads = () => {
     try {
       setLoading(true);
       console.log('Loading leads for user:', user);
-      
+
       let leadsData: Lead[];
-      
-      // If user is a manager, only show leads for their managed bank
       if (user.role === 'manager' && user.managedBankId) {
         console.log('Manager loading leads for bank:', user.managedBankId);
         leadsData = await getLeadsByBankFromDatabase(user.managedBankId);
@@ -52,7 +49,11 @@ const AdminLeads = () => {
         console.log('Admin loading all leads');
         leadsData = await getAllLeadsFromDatabase();
       }
-      
+
+      // --------- NEW LOG --------
+      console.log('[DEBUG] AdminLeads: Leads loaded from database:', leadsData);
+      // --------- END LOG --------
+
       setLeads(leadsData);
       console.log(`Loaded ${leadsData.length} leads`);
     } catch (error) {
