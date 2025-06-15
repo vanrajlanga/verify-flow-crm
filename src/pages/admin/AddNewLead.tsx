@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User } from '@/utils/mockData';
@@ -28,7 +29,7 @@ const AddNewLead = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [locationData, setLocationData] = useState<LocationData>({
-    states: []
+    states: [],
   });
   const [isCreatingTestLeads, setIsCreatingTestLeads] = useState(false);
   const navigate = useNavigate();
@@ -52,7 +53,6 @@ const AddNewLead = () => {
   }, [navigate]);
 
   const loadLocationData = () => {
-    // Get location data from localStorage or initialize empty structure
     const storedLocationData = localStorage.getItem('locationData');
     if (storedLocationData) {
       try {
@@ -67,7 +67,6 @@ const AddNewLead = () => {
     }
   };
 
-  // Function to initialize default location data
   const initializeDefaultLocationData = () => {
     const defaultLocationData = {
       states: [
@@ -80,10 +79,10 @@ const AddNewLead = () => {
               name: 'Bangalore Urban',
               cities: [
                 { id: 'city-1', name: 'Bangalore' },
-                { id: 'city-2', name: 'Electronic City' }
-              ]
-            }
-          ]
+                { id: 'city-2', name: 'Electronic City' },
+              ],
+            },
+          ],
         },
         {
           id: 'state-2',
@@ -94,12 +93,12 @@ const AddNewLead = () => {
               name: 'Mumbai',
               cities: [
                 { id: 'city-3', name: 'Mumbai' },
-                { id: 'city-4', name: 'Navi Mumbai' }
-              ]
-            }
-          ]
-        }
-      ]
+                { id: 'city-4', name: 'Navi Mumbai' },
+              ],
+            },
+          ],
+        },
+      ],
     };
     setLocationData(defaultLocationData);
     localStorage.setItem('locationData', JSON.stringify(defaultLocationData));
@@ -110,21 +109,41 @@ const AddNewLead = () => {
     navigate('/');
   };
 
+  /** 
+   * ENHANCED ERROR HANDLING FOR ADD LEAD - with debug info!
+   */
   const handleAddLead = async (formData: any) => {
     try {
       console.log('[AddNewLead] - Received form data:', formData);
 
-      // Validate any missing key fields here
-      if (!formData.name || typeof formData.name !== "string") {
-        throw new Error("Missing/invalid lead name.");
+      //-- Check critical fields for DB --
+      if (!formData.name || typeof formData.name !== "string" || formData.name.trim().length < 2) {
+        throw new Error("Missing or invalid lead name.");
+      }
+      // If lead type and status fields are required, enforce them here!
+
+      // Normalize/force visitType only "Physical" or "Virtual"
+      let visitType = typeof formData.visitType === "string" ? formData.visitType : "";
+      if (!["Physical", "Virtual"].includes(visitType)) {
+        visitType = /virtual|online/i.test(formData.visitType) ? "Virtual" : "Physical";
+      }
+      formData.visitType = visitType;
+
+      // If bankName is object/id, ensure it's string id for DB
+      if (formData.bank && typeof formData.bank === "object" && formData.bank.id) {
+        formData.bankName = formData.bank.id;
       }
 
-      // Transform form data to Lead format (mapping fix - see transformer)
+      // Check all database required fields, map values
+      // (You may need to enforce additional logic here)
+
+      // Transform for DB
       const leadData = transformFormDataToLead(formData);
 
-      console.log('[AddNewLead] - Final transformed lead data:', JSON.stringify(leadData, null, 2));
+      // FINAL DEBUG: Log what will be saved
+      console.log('[AddNewLead] FINAL DB PAYLOAD:', JSON.stringify(leadData, null, 2));
 
-      // Save lead to database
+      // Save to database
       await saveLeadToDatabase(leadData);
 
       toast({
@@ -133,14 +152,17 @@ const AddNewLead = () => {
       });
 
       navigate('/admin/leads');
-    } catch (error) {
-      console.error('[AddNewLead] ERROR:', error);
-
+    } catch (error: any) {
+      // Improved error output
+      console.error('[AddNewLead] ERROR (detailed):', error);
+      const message = error?.message || (typeof error === "string" ? error : JSON.stringify(error));
       toast({
         title: "Database Save Failed",
-        description: `Failed to save lead to database. Error: ${error instanceof Error ? error.message : String(error)}. Please check all fields and try again.`,
+        description: `Failed to save lead to database. Error: ${message}.`,
         variant: "destructive"
       });
+      // Optional: alert full error for admin debugging
+      // alert("Full error: " + JSON.stringify(error));
     }
   };
 
@@ -148,19 +170,18 @@ const AddNewLead = () => {
     try {
       setIsCreatingTestLeads(true);
       await createTestLeads();
-      
+
       toast({
         title: "Test leads created successfully",
         description: "5 test leads with complete data have been added to the database.",
       });
-      
+
       navigate('/admin/leads');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating test leads:', error);
-      
       toast({
         title: "Error creating test leads",
-        description: `Failed to create test leads. Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        description: `Failed to create test leads. Error: ${error?.message || String(error)}`,
         variant: "destructive"
       });
     } finally {
@@ -176,16 +197,16 @@ const AddNewLead = () => {
     <div className="flex min-h-screen bg-muted/30">
       <Sidebar user={currentUser} isOpen={sidebarOpen} />
       <div className="flex flex-col flex-1">
-        <Header 
-          user={currentUser} 
-          onLogout={handleLogout} 
-          toggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
+        <Header
+          user={currentUser}
+          onLogout={handleLogout}
+          toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
         />
         <main className="flex-1 p-4 md:p-6">
           <div className="max-w-7xl mx-auto">
             <div className="flex justify-between items-center mb-6">
               <h1 className="text-2xl font-bold">Add New Lead</h1>
-              <Button 
+              <Button
                 onClick={handleCreateTestLeads}
                 disabled={isCreatingTestLeads}
                 variant="outline"
@@ -193,7 +214,7 @@ const AddNewLead = () => {
                 {isCreatingTestLeads ? 'Creating Test Leads...' : 'Create 5 Test Leads'}
               </Button>
             </div>
-            <AddLeadFormSingleStep 
+            <AddLeadFormSingleStep
               onSubmit={handleAddLead}
               locationData={locationData}
             />
