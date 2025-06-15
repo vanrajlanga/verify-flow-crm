@@ -234,6 +234,9 @@ export const getLeadsFromDatabase = async (): Promise<Lead[]> => {
       visitType: (lead.visit_type || 'Physical') as Lead['visitType'],
       assignedTo: lead.assigned_to || '',
       createdAt: new Date(lead.created_at),
+      updatedAt: new Date(lead.updated_at || lead.created_at),
+      hasCoApplicant: lead.has_co_applicant || false,
+      coApplicantName: lead.co_applicant_name,
       documents: [],
       instructions: lead.instructions || ''
     }));
@@ -370,6 +373,9 @@ const transformLeadFromSupabase = (lead: any): Lead => {
     visitType: (lead.visit_type || 'Physical') as Lead['visitType'],
     assignedTo: lead.assigned_to || '',
     createdAt: new Date(lead.created_at),
+    updatedAt: new Date(lead.updated_at || lead.created_at),
+    hasCoApplicant: lead.has_co_applicant || false,
+    coApplicantName: lead.co_applicant_name,
     documents: [],
     instructions: lead.instructions || ''
   };

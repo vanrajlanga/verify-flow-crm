@@ -1,4 +1,4 @@
-import { Lead, Address, AdditionalDetails } from '@/utils/mockData';
+import { Lead, Address, User } from '@/utils/mockData';
 
 // Define all possible CSV headers for comprehensive export/import
 export const CSV_HEADERS = [
@@ -133,34 +133,76 @@ export const exportLeadsToCSV = (leads: Lead[]): string => {
 };
 
 // Parse CSV data and convert to Lead objects
-export const parseCSVToLeads = (csvContent: string): Partial<Lead>[] => {
-  console.log('Parsing CSV content to leads...');
+export const parseCSVToLeads = (csvData: string): Lead[] => {
+  const lines = csvData.trim().split('\n');
+  const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
   
-  const lines = csvContent.split('\n').filter(line => line.trim());
-  if (lines.length < 2) {
-    throw new Error('CSV file must contain at least headers and one data row');
-  }
-  
-  const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
-  console.log('CSV Headers detected:', headers);
-  
-  const leads: Partial<Lead>[] = [];
-  
-  for (let i = 1; i < lines.length; i++) {
-    const values = parseCSVLine(lines[i]);
-    if (values.length === 0) continue;
+  return lines.slice(1).map((line, index) => {
+    const values = line.split(',').map(v => v.trim());
+    const leadData: any = {};
     
-    try {
-      const lead = mapCSVRowToLead(headers, values);
-      leads.push(lead);
-    } catch (error) {
-      console.error(`Error parsing row ${i + 1}:`, error);
-      throw new Error(`Error parsing CSV row ${i + 1}: ${error}`);
-    }
-  }
-  
-  console.log(`Successfully parsed ${leads.length} leads from CSV`);
-  return leads;
+    headers.forEach((header, i) => {
+      leadData[header] = values[i] || '';
+    });
+
+    // Transform CSV data to Lead format
+    return {
+      id: leadData.id || `csv-lead-${Date.now()}-${index}`,
+      name: leadData.name || '',
+      age: parseInt(leadData.age) || 0,
+      job: leadData.job || '',
+      phone: leadData.phone || '',
+      email: leadData.email || '',
+      address: {
+        type: (leadData.address_type || 'Residence') as Address['type'],
+        street: leadData.street || '',
+        city: leadData.city || '',
+        district: leadData.district || '',
+        state: leadData.state || '',
+        pincode: leadData.pincode || ''
+      },
+      additionalDetails: {
+        company: leadData.company || '',
+        designation: leadData.designation || '',
+        workExperience: leadData.work_experience || '',
+        propertyType: leadData.property_type || '',
+        ownershipStatus: leadData.ownership_status || '',
+        propertyAge: leadData.property_age || '',
+        monthlyIncome: parseFloat(leadData.monthly_income) || 0,
+        annualIncome: leadData.annual_income || '',
+        otherIncome: leadData.other_income || '',
+        loanAmount: leadData.loan_amount || '',
+        addresses: [],
+        phoneNumber: leadData.phone || '',
+        email: leadData.email || '',
+        dateOfBirth: leadData.date_of_birth ? new Date(leadData.date_of_birth) : new Date(),
+        fatherName: leadData.father_name || '',
+        motherName: leadData.mother_name || '',
+        gender: leadData.gender || '',
+        agencyFileNo: leadData.agency_file_no || '',
+        applicationBarcode: leadData.application_barcode || '',
+        caseId: leadData.case_id || '',
+        schemeDesc: leadData.scheme_desc || '',
+        bankProduct: leadData.bank_product || '',
+        bankBranch: leadData.bank_branch || '',
+        additionalComments: leadData.additional_comments || '',
+        leadType: leadData.lead_type || '',
+        loanType: leadData.loan_type || '',
+        vehicleBrandName: leadData.vehicle_brand_name || '',
+        vehicleModelName: leadData.vehicle_model_name || ''
+      },
+      status: (leadData.status || 'Pending') as Lead['status'],
+      bank: leadData.bank || '',
+      visitType: (leadData.visit_type || 'Physical') as Lead['visitType'],
+      assignedTo: leadData.assigned_to || '',
+      createdAt: leadData.created_at ? new Date(leadData.created_at) : new Date(),
+      updatedAt: leadData.updated_at ? new Date(leadData.updated_at) : new Date(),
+      hasCoApplicant: leadData.has_co_applicant === 'true' || false,
+      coApplicantName: leadData.co_applicant_name || undefined,
+      documents: [],
+      instructions: leadData.instructions || ''
+    } as Lead;
+  });
 };
 
 // Parse a single CSV line handling quoted values
