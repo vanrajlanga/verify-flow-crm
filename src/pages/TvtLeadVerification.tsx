@@ -3,11 +3,11 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Lead, User as UserType } from '@/utils/mockData';
 import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
-import LeadVerificationForm from '@/components/tvt/LeadVerificationForm';
+import LeadVerificationTable from '@/components/tvt/LeadVerificationTable';
 import { getLeadByIdFromDatabase, updateLeadInDatabase } from '@/lib/lead-operations';
 import { toast } from '@/components/ui/use-toast';
 
@@ -190,7 +190,7 @@ const TvtLeadVerification = () => {
         />
         
         <main className="flex-1 p-4 md:p-6">
-          <div className="max-w-7xl mx-auto space-y-6">
+          <div className="max-w-full mx-auto space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
@@ -204,7 +204,7 @@ const TvtLeadVerification = () => {
                 </Button>
                 <div>
                   <h1 className="text-2xl font-bold">Verify Lead: {lead.name}</h1>
-                  <p className="text-muted-foreground">Lead ID: {lead.id}</p>
+                  <p className="text-muted-foreground">Lead ID: {lead.id} | Bank: {lead.bank}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -221,18 +221,20 @@ const TvtLeadVerification = () => {
                 <div className="bg-blue-50 p-4 rounded-lg">
                   <h3 className="font-semibold text-blue-900 mb-2">How to verify lead data:</h3>
                   <ul className="text-sm text-blue-800 space-y-1">
-                    <li>• Call the applicant using the provided phone number</li>
+                    <li>• Call the applicant using the provided phone number: <strong>{lead.phone}</strong></li>
                     <li>• Verify each field by asking the applicant to confirm or provide the correct information</li>
-                    <li>• Mark each field as "Correct" or "Incorrect" based on the applicant's response</li>
+                    <li>• Enter the verified data in the "Verified Data" column</li>
+                    <li>• Mark each field as "Verified" and then as "Correct" or "Incorrect"</li>
                     <li>• Add notes for any discrepancies or important observations</li>
-                    <li>• Save your verification progress regularly</li>
+                    <li>• Review all uploaded documents to ensure they match the provided information</li>
+                    <li>• Save your verification progress regularly using the save button</li>
                   </ul>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Verification Form */}
-            <LeadVerificationForm 
+            {/* Verification Table */}
+            <LeadVerificationTable 
               lead={lead} 
               onSave={handleSaveVerification}
             />
