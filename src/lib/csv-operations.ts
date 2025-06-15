@@ -1,4 +1,4 @@
-import { Lead, Address, User } from '@/utils/mockData';
+import { Lead, Address, User, AdditionalDetails } from '@/utils/mockData';
 
 // Define all possible CSV headers for comprehensive export/import
 export const CSV_HEADERS = [
@@ -314,8 +314,8 @@ const mapCSVRowToLead = (headers: string[], values: string[]): Partial<Lead> => 
     applicationBarcode: getValue('Application Barcode'),
     caseId: getValue('Case ID'),
     schemeDesc: getValue('Scheme Description'),
-    bankBranch: getValue('Bank Branch'),
     bankProduct: getValue('Bank Product'),
+    bankBranch: getValue('Bank Branch'),
     initiatedUnderBranch: getValue('Initiated Under Branch'),
     additionalComments: getValue('Additional Comments'),
     leadType: getValue('Lead Type'),
@@ -323,9 +323,7 @@ const mapCSVRowToLead = (headers: string[], values: string[]): Partial<Lead> => 
     loanAmount: getValue('Loan Amount'),
     loanType: getValue('Loan Type'),
     vehicleBrandName: getValue('Vehicle Brand Name'),
-    vehicleBrandId: getValue('Vehicle Brand ID'),
     vehicleModelName: getValue('Vehicle Model Name'),
-    vehicleModelId: getValue('Vehicle Model ID'),
     addresses: []
   };
   
@@ -521,8 +519,11 @@ export const transformLeadsFromCSV = (data: any[]): Lead[] => {
       visitType: validateVisitType(row.visitType || 'Physical'),
       assignedTo: row.assignedTo || '',
       createdAt: parseDate(row.createdAt),
+      updatedAt: parseDate(row.updatedAt) || new Date(),
+      hasCoApplicant: row.hasCoApplicant === 'true' || false,
+      coApplicantName: row.coApplicantName || undefined,
       documents: [],
       instructions: row.instructions || ''
-    };
+    } as Lead;
   });
 };
