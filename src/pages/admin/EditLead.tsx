@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -51,9 +50,9 @@ const EditLead = () => {
   const [lead, setLead] = useState<Lead | null>(null);
   const [loading, setLoading] = useState(true);
   const [locationData, setLocationData] = useState(DEFAULT_LOCATION_DATA);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Optionally try to get locationData from localStorage for consistency with AddNewLead
     const storedLocationData = localStorage.getItem('locationData');
     if (storedLocationData) {
       try {
@@ -72,21 +71,25 @@ const EditLead = () => {
 
   const loadLead = async (leadId: string) => {
     setLoading(true);
+    setError(null);
     try {
-      // Fetch from database (not local)
+      console.log(`Fetching lead with id: ${leadId}`);
       const found = await getLeadByIdFromDatabase(leadId);
       if (found) {
         setLead(found);
+        setError(null);
       } else {
+        setLead(null);
+        setError("Lead not found. Please check the link or try again from the leads list.");
         toast({
           title: "Error",
           description: "Lead not found",
           variant: "destructive"
         });
-        navigate('/admin/leads');
       }
     } catch (error) {
       console.error('Error loading lead:', error);
+      setError("Failed to load lead details. Please try again later.");
       toast({
         title: "Error",
         description: "Failed to load lead details",
@@ -116,8 +119,26 @@ const EditLead = () => {
     }
   };
 
-  if (loading || !lead) {
+  if (loading) {
     return <div className="flex items-center justify-center h-56">Loading...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[40vh]">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative max-w-xl">
+          <strong className="font-bold">Error:</strong>&nbsp; {error}
+        </div>
+        <Button className="mt-6" variant="outline" onClick={() => navigate('/admin/leads')}>
+          Back to Leads
+        </Button>
+      </div>
+    );
+  }
+
+  if (!lead) {
+    // This should not happen, but fallback just in case
+    return <div className="flex items-center justify-center h-56">No lead data found.</div>;
   }
 
   return (
