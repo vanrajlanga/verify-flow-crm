@@ -259,10 +259,11 @@ export const parseCSVToLeads = (csvData: string): Lead[] => {
         ? new Date(rawLead['verificationDate'])
         : undefined,
       instructions: rawLead['instructions'] || '',
-      hasCoApplicant: 
-        (rawLead['hasCoApplicant'] ?? rawLead['Has Co-Applicant'])?.toLowerCase() === 'true' || 
-        (rawLead['hasCoApplicant'] ?? rawLead['Has Co-Applicant']) === '1',
-      coApplicantName: rawLead['coApplicantName'] ?? rawLead['Co-Applicant Name'] || undefined,
+      hasCoApplicant: (
+        ((rawLead['hasCoApplicant'] ?? rawLead['Has Co-Applicant'])?.toLowerCase() === 'true') ||
+        ((rawLead['hasCoApplicant'] ?? rawLead['Has Co-Applicant']) === '1')
+      ),
+      coApplicantName: ((rawLead['coApplicantName'] ?? rawLead['Co-Applicant Name']) || undefined),
       createdAt: rawLead['createdAt']
         ? new Date(rawLead['createdAt'])
         : new Date(),
