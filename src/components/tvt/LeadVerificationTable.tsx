@@ -33,6 +33,17 @@ interface LeadVerificationTableProps {
   onSave: (verificationData: FieldVerification[]) => void;
 }
 
+// Define the document type that matches DocumentViewer expectations
+interface DocumentForViewer {
+  id: string;
+  name: string;
+  type: string;
+  url: string;
+  uploadedBy: string;
+  uploadDate: Date | string;
+  size?: number;
+}
+
 const LeadVerificationTable: React.FC<LeadVerificationTableProps> = ({ lead, onSave }) => {
   const [verificationFields, setVerificationFields] = useState<FieldVerification[]>([]);
   const [overallNotes, setOverallNotes] = useState('');
@@ -132,36 +143,45 @@ const LeadVerificationTable: React.FC<LeadVerificationTableProps> = ({ lead, onS
 
   const stats = getVerificationStats();
 
-  // Mock documents for demonstration
-  const leadDocuments = lead.documents || [
-    {
-      id: '1',
-      name: 'Aadhar Card.pdf',
-      type: 'PDF',
-      url: '/placeholder.svg',
-      uploadedBy: 'Agent',
-      uploadDate: new Date(),
-      size: 1024000
-    },
-    {
-      id: '2',
-      name: 'Income Certificate.jpg',
-      type: 'Image',
-      url: '/placeholder.svg',
-      uploadedBy: 'Applicant',
-      uploadDate: new Date(),
-      size: 512000
-    },
-    {
-      id: '3',
-      name: 'Bank Statement.pdf',
-      type: 'PDF',
-      url: '/placeholder.svg',
-      uploadedBy: 'Agent',
-      uploadDate: new Date(),
-      size: 2048000
-    }
-  ];
+  // Convert lead documents to match DocumentViewer expectations
+  const leadDocuments: DocumentForViewer[] = lead.documents ? 
+    lead.documents.map(doc => ({
+      id: doc.id,
+      name: doc.name || 'Document',
+      type: doc.type,
+      url: doc.url,
+      uploadedBy: 'System', // Default value since mockData doesn't have this field
+      uploadDate: doc.uploadedAt,
+      size: 1024000 // Default size since mockData doesn't have this field
+    })) : [
+      {
+        id: '1',
+        name: 'Aadhar Card.pdf',
+        type: 'PDF',
+        url: '/placeholder.svg',
+        uploadedBy: 'Agent',
+        uploadDate: new Date(),
+        size: 1024000
+      },
+      {
+        id: '2',
+        name: 'Income Certificate.jpg',
+        type: 'Image',
+        url: '/placeholder.svg',
+        uploadedBy: 'Applicant',
+        uploadDate: new Date(),
+        size: 512000
+      },
+      {
+        id: '3',
+        name: 'Bank Statement.pdf',
+        type: 'PDF',
+        url: '/placeholder.svg',
+        uploadedBy: 'Agent',
+        uploadDate: new Date(),
+        size: 2048000
+      }
+    ];
 
   return (
     <div className="space-y-6">
