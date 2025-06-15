@@ -19,7 +19,7 @@ export const transformFormDataToLead = (formData: any): Lead => {
   // Additional addresses (skip the first/main one)
   const additionalAddresses = Array.isArray(formData.addresses) && formData.addresses.length > 1
     ? formData.addresses.slice(1).map((addr: any) => ({
-      type: (addr.type === "Office" || addr.type === "Permanent" || addr.type === "Residence") ? addr.type : 'Residence',
+      type: (["Office", "Permanent", "Residence", "Temporary", "Current"].includes(addr.type)) ? addr.type : 'Residence',
       street: addr.addressLine1 || addr.street || '',
       city: addr.city || '',
       district: addr.district || '',
@@ -43,6 +43,9 @@ export const transformFormDataToLead = (formData: any): Lead => {
     ? (formData.phoneNumbers.find((p: any) => p.isPrimary && !!p.number) || formData.phoneNumbers[0])
     : { number: formData.phone || "" };
 
+  // Vehicle Type
+  const vehicleType = formData.vehicleType || (formData.additionalDetails?.vehicleType ?? '');
+
   // Main lead output
   const lead: Lead = {
     id: formData.id || `lead-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
@@ -52,7 +55,7 @@ export const transformFormDataToLead = (formData: any): Lead => {
     phone: primaryPhone?.number || '',
     email: String(formData.email || ''),
     address: {
-      type: (primaryAddress.type === "Office" || primaryAddress.type === "Permanent" || primaryAddress.type === "Residence")
+      type: (["Office", "Permanent", "Residence", "Temporary", "Current"].includes(primaryAddress.type))
         ? primaryAddress.type : 'Residence',
       street: primaryAddress.addressLine1 || primaryAddress.street || '',
       city: primaryAddress.city || '',
@@ -90,6 +93,7 @@ export const transformFormDataToLead = (formData: any): Lead => {
       loanType: formData.loanType || '',
       vehicleBrandName: formData.vehicleBrand || formData.vehicleBrandName || '',
       vehicleModelName: formData.vehicleModel || formData.vehicleModelName || '',
+      vehicleType,
       coApplicant: formData.hasCoApplicant ? {
         name: formData.coApplicantName || '',
         age: formData.coApplicantAge ? Number(formData.coApplicantAge) : 0,
@@ -103,7 +107,7 @@ export const transformFormDataToLead = (formData: any): Lead => {
     status: 'Pending',
     bank: bankId,
     visitType: visitTypeVal as 'Physical' | 'Virtual',
-    assignedTo: '', // stays empty
+    assignedTo: '',
     createdAt: new Date(),
     updatedAt: new Date(),
     hasCoApplicant: !!formData.hasCoApplicant,
@@ -113,7 +117,7 @@ export const transformFormDataToLead = (formData: any): Lead => {
     verificationDate: undefined
   };
 
-  // Log out every step for deep debugging
+  // Log every step for debugging
   console.log('[Transformer] :: final lead object sending to DB ---');
   Object.entries(lead).forEach(([k, v]) => console.log(k, v));
   return lead;

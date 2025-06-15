@@ -129,11 +129,14 @@ const AddNewLead = () => {
       if (!formData.initiatedUnderBranch || typeof formData.initiatedUnderBranch !== "string") {
         throw new Error("Branch is required.");
       }
-      if (!formData.phoneNumbers || !Array.isArray(formData.phoneNumbers) || !formData.phoneNumbers[0]?.number) {
-        throw new Error("At least one applicant phone number is required.");
-      }
       if (!formData.addresses || !Array.isArray(formData.addresses) || !formData.addresses[0]?.addressLine1) {
         throw new Error("At least one applicant address is required.");
+      }
+      if (!formData.addresses[0]?.state || !formData.addresses[0]?.district || !formData.addresses[0]?.pincode) {
+        throw new Error("Primary address must have state, district, and pincode.");
+      }
+      if ('vehicleType' in formData && !formData.vehicleType) {
+        throw new Error("Vehicle Type is required.");
       }
 
       // Fix bank field - use ID everywhere
@@ -142,15 +145,12 @@ const AddNewLead = () => {
         bankId = formData.bank.id;
       }
 
-      // Enforce allowed visitType
+      // VisitType enforcement
       let visitType = typeof formData.visitType === "string" ? formData.visitType : "";
       if (!["Physical", "Virtual"].includes(visitType)) {
-        // Try to infer from formData, fallback to 'Physical'
         visitType = (typeof formData.visitType === "string" && /virtual|online/i.test(formData.visitType)) ? "Virtual" : "Physical";
       }
 
-      // Create a complete payload as per the DB schema
-      // Don't leave out any required field!
       const cleanedFormData = {
         ...formData,
         bankName: bankId,
@@ -162,7 +162,6 @@ const AddNewLead = () => {
       // FINAL DEBUG: Log what is about to be sent to DB
       console.log('[AddNewLead] FINAL DB PAYLOAD to saveLeadToDatabase:', JSON.stringify(leadData, null, 2));
 
-      // Save to database and catch error with full detail
       await saveLeadToDatabase(leadData);
 
       toast({
