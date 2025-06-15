@@ -13,7 +13,7 @@ export const transformFormDataToLead = (formData: any): Lead => {
   const additionalAddresses = formData.addresses && formData.addresses.length > 1
     ? formData.addresses.slice(1).map((addr: any) => ({
         type: addr.type as 'Residence' | 'Office' | 'Permanent' | 'Temporary' | 'Current',
-        street: addr.addressLine1 || '',
+        street: addr.addressLine1 || addr.street || '',
         city: addr.city || '',
         district: addr.district || '',
         state: addr.state || '',
@@ -27,14 +27,10 @@ export const transformFormDataToLead = (formData: any): Lead => {
 
   // Map visit type to database-compatible value - Lead type expects "Physical" | "Virtual"
   const getVisitType = (formVisitType: string): 'Physical' | 'Virtual' => {
-    // If visitType is not provided or is "Physical", return "Physical"
-    if (!formVisitType || formVisitType === 'Physical' || formVisitType === 'Residence' || formVisitType === 'Office' || formVisitType === 'Business') {
-      return 'Physical';
-    }
     if (formVisitType === 'Virtual' || formVisitType === 'Online') {
       return 'Virtual';
     }
-    return 'Physical'; // Safe default
+    return 'Physical'; // Default to Physical for all other cases
   };
 
   // Create the lead object
@@ -95,8 +91,8 @@ export const transformFormDataToLead = (formData: any): Lead => {
     },
     status: 'Pending',
     bank: formData.bankName || formData.bank || '',
-    visitType: getVisitType(formData.visitType), // Fix: Use proper mapping to "Physical" | "Virtual"
-    assignedTo: formData.assignedTo || '',
+    visitType: getVisitType(formData.visitType),
+    assignedTo: '', // Will be set to empty string initially since we don't have user ID mapping
     createdAt: new Date(),
     updatedAt: new Date(),
     hasCoApplicant: formData.hasCoApplicant || false,

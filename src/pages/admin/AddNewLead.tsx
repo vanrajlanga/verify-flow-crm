@@ -6,8 +6,9 @@ import Header from '@/components/shared/Header';
 import Sidebar from '@/components/shared/Sidebar';
 import AddLeadFormSingleStep from '@/components/admin/AddLeadFormSingleStep';
 import { toast } from '@/components/ui/use-toast';
-import { saveLeadToDatabase } from '@/lib/lead-operations';
+import { saveLeadToDatabase, createTestLeads } from '@/lib/lead-operations';
 import { transformFormDataToLead } from '@/lib/form-data-transformer';
+import { Button } from '@/components/ui/button';
 
 interface LocationData {
   states: {
@@ -30,6 +31,7 @@ const AddNewLead = () => {
   const [locationData, setLocationData] = useState<LocationData>({
     states: []
   });
+  const [isCreatingTestLeads, setIsCreatingTestLeads] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -143,6 +145,31 @@ const AddNewLead = () => {
     }
   };
 
+  const handleCreateTestLeads = async () => {
+    try {
+      setIsCreatingTestLeads(true);
+      await createTestLeads();
+      
+      toast({
+        title: "Test leads created successfully",
+        description: "5 test leads with complete data have been added to the database.",
+      });
+      
+      // Navigate to leads list to see the test leads
+      navigate('/admin/leads');
+    } catch (error) {
+      console.error('Error creating test leads:', error);
+      
+      toast({
+        title: "Error creating test leads",
+        description: `Failed to create test leads. Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: "destructive"
+      });
+    } finally {
+      setIsCreatingTestLeads(false);
+    }
+  };
+
   if (!currentUser) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
   }
@@ -160,6 +187,17 @@ const AddNewLead = () => {
         
         <main className="flex-1 p-4 md:p-6">
           <div className="max-w-7xl mx-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h1 className="text-2xl font-bold">Add New Lead</h1>
+              <Button 
+                onClick={handleCreateTestLeads}
+                disabled={isCreatingTestLeads}
+                variant="outline"
+              >
+                {isCreatingTestLeads ? 'Creating Test Leads...' : 'Create 5 Test Leads'}
+              </Button>
+            </div>
+            
             <AddLeadFormSingleStep 
               onSubmit={handleAddLead}
               locationData={locationData}

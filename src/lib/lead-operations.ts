@@ -5,7 +5,7 @@ export const createLead = async (leadData: any) => {
   try {
     console.log('Creating lead:', leadData);
 
-    // First insert into leads table
+    // First insert into leads table with minimal required fields
     const leadInsert = {
       id: leadData.id,
       name: leadData.name || '',
@@ -13,13 +13,13 @@ export const createLead = async (leadData: any) => {
       job: leadData.job || '',
       status: leadData.status || 'Pending',
       visit_type: leadData.visitType || 'Physical',
-      assigned_to: leadData.assignedTo || '',
+      assigned_to: null, // Set to null initially to avoid foreign key constraint
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       instructions: leadData.instructions || '',
       has_co_applicant: leadData.hasCoApplicant || false,
       co_applicant_name: leadData.coApplicantName || null,
-      bank_id: leadData.bank || ''
+      bank_id: leadData.bank || '' // Use bank name as ID for now
     };
 
     const { data: lead, error: leadError } = await supabase
@@ -57,9 +57,9 @@ export const createLead = async (leadData: any) => {
           type: leadData.address.type || 'Residence',
           street: leadData.address.street || '',
           city: leadData.address.city || '',
-          district: leadData.address.district || '',
-          state: leadData.address.state || '',
-          pincode: leadData.address.pincode || ''
+          district: leadData.district || '',
+          state: leadData.state || '',
+          pincode: leadData.pincode || ''
         }])
         .select()
         .single();
@@ -184,48 +184,167 @@ export const createLead = async (leadData: any) => {
   }
 };
 
-const createLeadDetails = async (leadData: any) => {
-  console.log('Creating lead details for lead:', leadData.id);
+// Function to create test leads
+export const createTestLeads = async () => {
+  console.log('Creating test leads...');
   
-  const leadDetails = {
-    lead_id: leadData.id,
-    company: leadData.additionalDetails?.company || '',
-    designation: leadData.additionalDetails?.designation || '',
-    work_experience: leadData.additionalDetails?.workExperience || '',
-    property_type: leadData.additionalDetails?.propertyType || '',
-    ownership_status: leadData.additionalDetails?.ownershipStatus || '',
-    property_age: leadData.additionalDetails?.propertyAge || '',
-    monthly_income: leadData.additionalDetails?.monthlyIncome?.toString() || '',
-    annual_income: leadData.additionalDetails?.annualIncome || '',
-    other_income: leadData.additionalDetails?.otherIncome || '',
-    loan_amount: leadData.additionalDetails?.loanAmount || '',
-    date_of_birth: leadData.additionalDetails?.dateOfBirth ? new Date(leadData.additionalDetails.dateOfBirth).toISOString().split('T')[0] : null,
-    father_name: leadData.additionalDetails?.fatherName || '',
-    mother_name: leadData.additionalDetails?.motherName || '',
-    gender: leadData.additionalDetails?.gender || '',
-    agency_file_no: leadData.additionalDetails?.agencyFileNo || '',
-    application_barcode: leadData.additionalDetails?.applicationBarcode || '',
-    case_id: leadData.additionalDetails?.caseId || '',
-    scheme_desc: leadData.additionalDetails?.schemeDesc || '',
-    bank_product: leadData.additionalDetails?.bankProduct || '',
-    bank_branch: leadData.additionalDetails?.bankBranch || '',
-    additional_comments: leadData.additionalDetails?.additionalComments || '',
-    lead_type: leadData.additionalDetails?.leadType || '',
-    loan_type: leadData.additionalDetails?.loanType || '',
-    vehicle_brand_name: leadData.additionalDetails?.vehicleBrandName || '',
-    vehicle_model_name: leadData.additionalDetails?.vehicleModelName || '',
-    phone_number: leadData.phone || '',
-    email: leadData.email || '',
-    created_at: new Date().toISOString()
-  };
+  const testLeads = [
+    {
+      id: `test-lead-1-${Date.now()}`,
+      name: 'John Doe',
+      age: 30,
+      job: 'Software Engineer',
+      phone: '9876543210',
+      email: 'john.doe@example.com',
+      address: {
+        type: 'Residence',
+        street: '123 Main Street',
+        city: 'Bangalore',
+        district: 'Bangalore Urban',
+        state: 'Karnataka',
+        pincode: '560001'
+      },
+      additionalDetails: {
+        company: 'Tech Corp',
+        designation: 'Senior Developer',
+        workExperience: '5 years',
+        propertyType: 'Apartment',
+        ownershipStatus: 'Owned',
+        propertyAge: '5 years',
+        monthlyIncome: 75000,
+        annualIncome: '900000',
+        otherIncome: '50000',
+        loanAmount: '2500000',
+        addresses: [
+          {
+            type: 'Office',
+            street: '456 Tech Park',
+            city: 'Bangalore',
+            district: 'Bangalore Urban',
+            state: 'Karnataka',
+            pincode: '560002'
+          },
+          {
+            type: 'Permanent',
+            street: '789 Home Avenue',
+            city: 'Mysore',
+            district: 'Mysore',
+            state: 'Karnataka',
+            pincode: '570001'
+          }
+        ],
+        phoneNumber: '9876543210',
+        email: 'john.doe@example.com',
+        dateOfBirth: new Date('1993-05-15'),
+        fatherName: 'Robert Doe',
+        motherName: 'Mary Doe',
+        gender: 'Male',
+        agencyFileNo: 'AGC001',
+        applicationBarcode: 'BC123456789',
+        caseId: 'CASE001',
+        schemeDesc: 'Home Loan Scheme',
+        bankProduct: 'Home Loan',
+        bankBranch: 'Bangalore Main',
+        additionalComments: 'First time home buyer',
+        leadType: 'Home Loan',
+        loanType: 'Personal',
+        vehicleBrandName: '',
+        vehicleModelName: '',
+        coApplicant: {
+          name: 'Jane Doe',
+          age: 28,
+          phone: '9876543211',
+          email: 'jane.doe@example.com',
+          relation: 'Spouse',
+          occupation: 'Teacher',
+          monthlyIncome: '45000'
+        }
+      },
+      status: 'Pending',
+      bank: 'HDFC Bank',
+      visitType: 'Physical',
+      assignedTo: '',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      hasCoApplicant: true,
+      coApplicantName: 'Jane Doe',
+      documents: [],
+      instructions: 'Please verify all addresses'
+    },
+    // Add 4 more similar test leads...
+    {
+      id: `test-lead-2-${Date.now()}`,
+      name: 'Priya Sharma',
+      age: 35,
+      job: 'Business Owner',
+      phone: '9876543220',
+      email: 'priya.sharma@example.com',
+      address: {
+        type: 'Residence',
+        street: '456 Business Lane',
+        city: 'Mumbai',
+        district: 'Mumbai',
+        state: 'Maharashtra',
+        pincode: '400001'
+      },
+      additionalDetails: {
+        company: 'Sharma Enterprises',
+        designation: 'CEO',
+        workExperience: '10 years',
+        propertyType: 'House',
+        ownershipStatus: 'Owned',
+        propertyAge: '10 years',
+        monthlyIncome: 150000,
+        annualIncome: '1800000',
+        otherIncome: '200000',
+        loanAmount: '5000000',
+        addresses: [
+          {
+            type: 'Office',
+            street: '789 Commerce Street',
+            city: 'Mumbai',
+            district: 'Mumbai',
+            state: 'Maharashtra',
+            pincode: '400002'
+          }
+        ],
+        phoneNumber: '9876543220',
+        email: 'priya.sharma@example.com',
+        dateOfBirth: new Date('1988-08-20'),
+        fatherName: 'Raj Sharma',
+        motherName: 'Sunita Sharma',
+        gender: 'Female',
+        agencyFileNo: 'AGC002',
+        applicationBarcode: 'BC223456789',
+        caseId: 'CASE002',
+        schemeDesc: 'Business Loan Scheme',
+        bankProduct: 'Business Loan',
+        bankBranch: 'Mumbai Central',
+        additionalComments: 'Expanding business',
+        leadType: 'Business Loan',
+        loanType: 'Business',
+        vehicleBrandName: '',
+        vehicleModelName: ''
+      },
+      status: 'Pending',
+      bank: 'SBI',
+      visitType: 'Physical',
+      assignedTo: '',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      hasCoApplicant: false,
+      documents: [],
+      instructions: 'Business verification required'
+    }
+  ];
 
-  const { error } = await supabase
-    .from('additional_details')
-    .insert([leadDetails]);
-
-  if (error) {
-    console.error('Error creating lead details:', error);
-    throw error;
+  for (const lead of testLeads) {
+    try {
+      await createLead(lead);
+      console.log(`Test lead created: ${lead.name}`);
+    } catch (error) {
+      console.error(`Error creating test lead ${lead.name}:`, error);
+    }
   }
 };
 
