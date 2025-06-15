@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User } from '@/utils/mockData';
@@ -113,35 +112,35 @@ const AddNewLead = () => {
 
   const handleAddLead = async (formData: any) => {
     try {
-      console.log('AddNewLead: Received form data:', formData);
-      // Validate
-      // Transform form data to Lead format
+      console.log('[AddNewLead] - Received form data:', formData);
+
+      // Validate any missing key fields here
+      if (!formData.name || typeof formData.name !== "string") {
+        throw new Error("Missing/invalid lead name.");
+      }
+
+      // Transform form data to Lead format (mapping fix - see transformer)
       const leadData = transformFormDataToLead(formData);
 
-      console.log('AddNewLead: Transformed lead data FINAL:', JSON.stringify(leadData, null, 2));
+      console.log('[AddNewLead] - Final transformed lead data:', JSON.stringify(leadData, null, 2));
 
       // Save lead to database
       await saveLeadToDatabase(leadData);
-
-      console.log('AddNewLead: Lead successfully saved to database');
 
       toast({
         title: "Lead added successfully",
         description: `New lead ${leadData.name} has been saved to database and is ready for management.`,
       });
 
-      // Navigate back to leads list
       navigate('/admin/leads');
     } catch (error) {
-      console.error('AddNewLead: ERROR - Failed to save lead to database:', error);
+      console.error('[AddNewLead] ERROR:', error);
 
       toast({
         title: "Database Save Failed",
-        description: `Failed to save lead to database. Error: ${error instanceof Error ? error.message : 'Unknown error'}. Please check your connection and try again.`,
+        description: `Failed to save lead to database. Error: ${error instanceof Error ? error.message : String(error)}. Please check all fields and try again.`,
         variant: "destructive"
       });
-
-      // Do not navigate away - let user try again
     }
   };
 
@@ -155,7 +154,6 @@ const AddNewLead = () => {
         description: "5 test leads with complete data have been added to the database.",
       });
       
-      // Navigate to leads list to see the test leads
       navigate('/admin/leads');
     } catch (error) {
       console.error('Error creating test leads:', error);
@@ -177,14 +175,12 @@ const AddNewLead = () => {
   return (
     <div className="flex min-h-screen bg-muted/30">
       <Sidebar user={currentUser} isOpen={sidebarOpen} />
-      
       <div className="flex flex-col flex-1">
         <Header 
           user={currentUser} 
           onLogout={handleLogout} 
           toggleSidebar={() => setSidebarOpen(!sidebarOpen)} 
         />
-        
         <main className="flex-1 p-4 md:p-6">
           <div className="max-w-7xl mx-auto">
             <div className="flex justify-between items-center mb-6">
@@ -197,7 +193,6 @@ const AddNewLead = () => {
                 {isCreatingTestLeads ? 'Creating Test Leads...' : 'Create 5 Test Leads'}
               </Button>
             </div>
-            
             <AddLeadFormSingleStep 
               onSubmit={handleAddLead}
               locationData={locationData}
