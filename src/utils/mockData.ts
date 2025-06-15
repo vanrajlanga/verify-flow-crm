@@ -150,6 +150,10 @@ export interface Lead {
     model: string;
     year: number;
   };
+  incomeDetails?: {
+    salary?: number;
+    otherIncome?: number;
+  };
 }
 
 export interface Bank {
