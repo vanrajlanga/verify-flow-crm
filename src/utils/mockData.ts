@@ -339,12 +339,14 @@ export const mockLeads: Lead[] = [
     status: 'Pending',
     assignedTo: 'Mike TVT',
     createdAt: new Date('2024-01-20'),
+    updatedAt: new Date('2024-01-20'),
     visitType: 'Physical',
     bank: 'Citibank',
     instructions: 'Verify employment details and address.',
     verification: {
       status: 'Not Started'
     },
+    hasCoApplicant: false,
     additionalDetails: {
       fatherName: 'Robert Doe',
       motherName: 'Jane Doe',
@@ -392,6 +394,7 @@ export const mockLeads: Lead[] = [
     status: 'In Progress',
     assignedTo: 'Rajesh Kumar',
     createdAt: new Date('2024-01-22'),
+    updatedAt: new Date('2024-01-23'),
     visitType: 'Virtual',
     bank: 'Bank of America',
     instructions: 'Check credit score and previous loan history.',
@@ -399,6 +402,7 @@ export const mockLeads: Lead[] = [
       status: 'In Progress',
       startTime: new Date('2024-01-23')
     },
+    hasCoApplicant: false,
     additionalDetails: {
       fatherName: 'Michael Smith',
       motherName: 'Linda Smith',
@@ -446,6 +450,7 @@ export const mockLeads: Lead[] = [
     status: 'Completed',
     assignedTo: 'Admin User',
     createdAt: new Date('2024-01-25'),
+    updatedAt: new Date('2024-01-26'),
     visitType: 'Physical',
     bank: 'Chase Bank',
     instructions: 'Confirm employment and salary details.',
@@ -455,6 +460,7 @@ export const mockLeads: Lead[] = [
       endTime: new Date('2024-01-26')
     },
     verificationDate: new Date('2024-01-26'),
+    hasCoApplicant: false,
     additionalDetails: {
       fatherName: 'William Johnson',
       motherName: 'Mary Johnson',
@@ -502,12 +508,14 @@ export const mockLeads: Lead[] = [
     status: 'Rejected',
     assignedTo: 'Manager User',
     createdAt: new Date('2024-01-28'),
+    updatedAt: new Date('2024-01-28'),
     visitType: 'Virtual',
     bank: 'Wells Fargo',
     instructions: 'Verify financial statements and tax returns.',
     verification: {
       status: 'Rejected'
     },
+    hasCoApplicant: false,
     additionalDetails: {
       fatherName: 'David White',
       motherName: 'Susan White',
@@ -555,12 +563,15 @@ export const mockLeads: Lead[] = [
     status: 'Pending',
     assignedTo: 'Mike TVT',
     createdAt: new Date('2024-02-01'),
+    updatedAt: new Date('2024-02-01'),
     visitType: 'Physical',
     bank: 'Citibank',
     instructions: 'Verify address and contact details.',
     verification: {
       status: 'Not Started'
     },
+    hasCoApplicant: true,
+    coApplicantName: 'Sarah TVT',
     additionalDetails: {
       fatherName: 'Tom TVT',
       motherName: 'Alice TVT',

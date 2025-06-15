@@ -87,6 +87,9 @@ export const transformFormDataToLead = (formData: any): Lead => {
     visitType: formData.visitType || 'Physical',
     assignedTo: '', // Leave empty - will be assigned later by admin
     createdAt: new Date(),
+    updatedAt: new Date(),
+    hasCoApplicant: formData.hasCoApplicant || false,
+    coApplicantName: formData.hasCoApplicant ? formData.coApplicantName : undefined,
     documents: [],
     instructions: formData.instructions || ''
   };

@@ -154,6 +154,9 @@ export const transformSupabaseLead = (supabaseLead: any): Lead => {
     visitType: supabaseLead.visit_type,
     assignedTo: supabaseLead.assigned_to,
     createdAt: new Date(supabaseLead.created_at),
+    updatedAt: new Date(supabaseLead.updated_at || supabaseLead.created_at),
+    hasCoApplicant: supabaseLead.has_co_applicant || false,
+    coApplicantName: supabaseLead.co_applicant_name,
     verificationDate: supabaseLead.verification_date ? new Date(supabaseLead.verification_date) : undefined,
     documents: [], // Will be populated from documents join
     instructions: supabaseLead.instructions,

@@ -284,6 +284,9 @@ const AddLeadForm: React.FC<AddLeadFormProps> = ({ agents: propAgents, banks: pr
       visitType: 'Physical', // Use correct visitType enum value
       assignedTo: selectedAgent,
       createdAt: new Date(),
+      updatedAt: new Date(),
+      hasCoApplicant: coApplicants.length > 0,
+      coApplicantName: coApplicants.length > 0 ? coApplicants[0].name : undefined,
       documents: [],
       instructions: formData.instructions
     };
