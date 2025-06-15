@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User } from '@/utils/mockData';
@@ -114,55 +113,88 @@ const AddNewLead = () => {
    */
   const handleAddLead = async (formData: any) => {
     try {
+      // Log the raw form data for reference
       console.log('[AddNewLead] - Received form data:', formData);
 
-      //-- Check critical fields for DB --
+      // Strict validation per DB schema
       if (!formData.name || typeof formData.name !== "string" || formData.name.trim().length < 2) {
-        throw new Error("Missing or invalid lead name.");
+        throw new Error("Lead name is required and must be at least 2 characters.");
       }
-      // If lead type and status fields are required, enforce them here!
+      if (!formData.bankName || typeof formData.bankName !== "string") {
+        throw new Error("Bank name/id is required.");
+      }
+      if (!formData.bankProduct || typeof formData.bankProduct !== "string") {
+        throw new Error("Bank product is required.");
+      }
+      if (!formData.initiatedUnderBranch || typeof formData.initiatedUnderBranch !== "string") {
+        throw new Error("Branch is required.");
+      }
+      if (!formData.phoneNumbers || !Array.isArray(formData.phoneNumbers) || !formData.phoneNumbers[0]?.number) {
+        throw new Error("At least one applicant phone number is required.");
+      }
+      if (!formData.addresses || !Array.isArray(formData.addresses) || !formData.addresses[0]?.addressLine1) {
+        throw new Error("At least one applicant address is required.");
+      }
 
-      // Normalize/force visitType only "Physical" or "Virtual"
+      // Fix bank field - use ID everywhere
+      let bankId = formData.bankName;
+      if (typeof formData.bank === "object" && formData.bank.id) {
+        bankId = formData.bank.id;
+      }
+
+      // Enforce allowed visitType
       let visitType = typeof formData.visitType === "string" ? formData.visitType : "";
       if (!["Physical", "Virtual"].includes(visitType)) {
-        visitType = /virtual|online/i.test(formData.visitType) ? "Virtual" : "Physical";
-      }
-      formData.visitType = visitType;
-
-      // If bankName is object/id, ensure it's string id for DB
-      if (formData.bank && typeof formData.bank === "object" && formData.bank.id) {
-        formData.bankName = formData.bank.id;
+        // Try to infer from formData, fallback to 'Physical'
+        visitType = (typeof formData.visitType === "string" && /virtual|online/i.test(formData.visitType)) ? "Virtual" : "Physical";
       }
 
-      // Check all database required fields, map values
-      // (You may need to enforce additional logic here)
+      // Create a complete payload as per the DB schema
+      // Don't leave out any required field!
+      const cleanedFormData = {
+        ...formData,
+        bankName: bankId,
+        visitType,
+      };
 
-      // Transform for DB
-      const leadData = transformFormDataToLead(formData);
+      const leadData = transformFormDataToLead(cleanedFormData);
 
-      // FINAL DEBUG: Log what will be saved
-      console.log('[AddNewLead] FINAL DB PAYLOAD:', JSON.stringify(leadData, null, 2));
+      // FINAL DEBUG: Log what is about to be sent to DB
+      console.log('[AddNewLead] FINAL DB PAYLOAD to saveLeadToDatabase:', JSON.stringify(leadData, null, 2));
 
-      // Save to database
+      // Save to database and catch error with full detail
       await saveLeadToDatabase(leadData);
 
       toast({
         title: "Lead added successfully",
-        description: `New lead ${leadData.name} has been saved to database and is ready for management.`,
+        description: `New lead ${leadData.name} has been saved to the database.`,
       });
 
       navigate('/admin/leads');
     } catch (error: any) {
-      // Improved error output
-      console.error('[AddNewLead] ERROR (detailed):', error);
-      const message = error?.message || (typeof error === "string" ? error : JSON.stringify(error));
+      // Log raw error
+      console.error('[AddNewLead] ERROR:', error);
+
+      // Show human-readable error in toast and log full details
+      let toastDescription = "Unknown error occurred";
+      if (error?.message) {
+        toastDescription = error.message;
+      } else if (typeof error === "string") {
+        toastDescription = error;
+      } else if (error?.toString) {
+        toastDescription = error.toString();
+      } else if (error?.error_description) {
+        toastDescription = error.error_description;
+      }
       toast({
         title: "Database Save Failed",
-        description: `Failed to save lead to database. Error: ${message}.`,
+        description: toastDescription,
         variant: "destructive"
       });
-      // Optional: alert full error for admin debugging
-      // alert("Full error: " + JSON.stringify(error));
+      // Also force log the error object as JSON, if any
+      try {
+        console.error('Full error object:', JSON.stringify(error, null, 2));
+      } catch (_) {}
     }
   };
 
