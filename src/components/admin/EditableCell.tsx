@@ -6,7 +6,7 @@ import { Check, X, Edit2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface EditableCellProps {
-  value: string | number;
+  value: string | number | null | undefined;
   onSave: (newValue: string | number) => void;
   type?: 'text' | 'number' | 'select';
   options?: { value: string; label: string }[];
@@ -21,10 +21,12 @@ const EditableCell: React.FC<EditableCellProps> = ({
   placeholder
 }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(value.toString());
+  const [editValue, setEditValue] = useState('');
 
   useEffect(() => {
-    setEditValue(value.toString());
+    // Handle null, undefined, or empty values properly
+    const safeValue = value !== null && value !== undefined ? value.toString() : '';
+    setEditValue(safeValue);
   }, [value]);
 
   const handleSave = () => {
@@ -34,7 +36,9 @@ const EditableCell: React.FC<EditableCellProps> = ({
   };
 
   const handleCancel = () => {
-    setEditValue(value.toString());
+    // Reset to safe value
+    const safeValue = value !== null && value !== undefined ? value.toString() : '';
+    setEditValue(safeValue);
     setIsEditing(false);
   };
 
@@ -46,13 +50,16 @@ const EditableCell: React.FC<EditableCellProps> = ({
     }
   };
 
+  // Display value with proper fallback
+  const displayValue = value !== null && value !== undefined ? value : placeholder || '-';
+
   if (!isEditing) {
     return (
       <div 
         className="group flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-1 rounded"
         onClick={() => setIsEditing(true)}
       >
-        <span className="flex-1">{value || placeholder || '-'}</span>
+        <span className="flex-1">{displayValue}</span>
         <Edit2 className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity" />
       </div>
     );
