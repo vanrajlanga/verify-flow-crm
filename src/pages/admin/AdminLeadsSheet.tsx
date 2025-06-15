@@ -86,6 +86,10 @@ const AdminLeadsSheet = () => {
     navigate(`/admin/leads/${leadId}`);
   };
 
+  const handleEditLead = (leadId: string) => {
+    navigate(`/admin/leads/edit/${leadId}`);
+  };
+
   const handleLeadUpdate = () => {
     if (currentUser) {
       loadLeads(currentUser);
@@ -356,6 +360,7 @@ const AdminLeadsSheet = () => {
                   <LeadsTable 
                     leads={leads} 
                     onViewLead={handleViewLead}
+                    onEditLead={handleEditLead}
                     onLeadUpdate={handleLeadUpdate}
                     showActions={currentUser.role === 'admin'}
                     title="100% Database-Driven Leads Sheet"
